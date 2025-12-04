@@ -24,8 +24,8 @@ import {
 } from '@/components/inventory';
 
 // Make sure this path is correct for your project structure
-import { GET_PRODUCTS, UPDATE_PRODUCT, DELETE_PRODUCT, CREATE_PRODUCT } from '../graphql/products';
-import { GET_CATEGORIES } from '../graphql/categories';
+import { GET_PRODUCTS, UPDATE_PRODUCT, DELETE_PRODUCT, CREATE_PRODUCT } from '../../graphql/products';
+import { GET_CATEGORIES } from '../../graphql/categories';
 import type { Product as BackendProduct, Category, LegacyProduct } from '@/types';
 import { mapProductToLegacy } from '@/types';
 

@@ -7,6 +7,8 @@ const navItems = [
   { label: 'Suppliers', href: '/suppliers' },
   { label: 'Transactions', href: '/transactions' },
   { label: 'Reports', href: '/reports' },
+  { label: 'Settings', href: '/company/settings' },
+  { label: 'Team', href: '/company/team' },
 ];
 
 export default function NavLinks({
