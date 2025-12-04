@@ -31,7 +31,7 @@ export default function CompanySwitcherPage() {
         // TODO: Update active company in context
         // TODO: Redirect to dashboard
 
-        router.push('/dashboard');
+        router.push(`/dashboard?companyId=${companyId}`);
       }
     } catch (error) {
       toast.error('Failed to switch company');
