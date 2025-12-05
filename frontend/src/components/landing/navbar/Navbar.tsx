@@ -11,6 +11,8 @@ import { useTheme } from '@/context/theme-context';
 import { UserButton } from '@clerk/nextjs';
 import { dark } from '@clerk/themes';
 
+import NotificationBell from '@/components/NotificationBell';
+
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const { isAuthenticated } = useAuth();
@@ -35,6 +37,8 @@ export default function Navbar() {
         />
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          
+          {isAuthenticated && <NotificationBell />}
 
           {/* User Authentication Section */}
           {isAuthenticated ? <UserButton appearance={darkMode ? { baseTheme: dark } : {}} /> : null}
