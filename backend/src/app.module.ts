@@ -17,6 +17,10 @@ import { InviteModule } from './invite/invite.module';
 import { UserCompanyModule } from './user-company/user-company.module';
 import { RoleModule } from './role/role.module';
 import { CompanyContextMiddleware } from './common/middleware/company-context.middleware';
+import { ReportsModule } from './reports/reports.module';
+import { AuditLogModule } from './audit-log/audit-log.module';
+import { NotificationModule } from './notification/notification.module';
+import { IntegrationModule } from './integration/integration.module';
 
 @Module({
   imports: [
@@ -63,6 +67,10 @@ import { CompanyContextMiddleware } from './common/middleware/company-context.mi
     UserCompanyModule,
     InviteModule,
     RoleModule,
+    ReportsModule,
+    AuditLogModule,
+    NotificationModule,
+    IntegrationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
