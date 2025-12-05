@@ -84,10 +84,10 @@ export default function AlertsSection({ role }: AlertsSectionProps) {
                 {alert.message}
               </p>
               <div className="mt-3 flex gap-2">
-                <Button size="xs" variant="outline" className="bg-white dark:bg-slate-900">
+                <Button size="sm" variant="outline" className="bg-white dark:bg-slate-900">
                   View Details
                 </Button>
-                <Button size="xs" variant="ghost">
+                <Button size="sm" variant="ghost">
                   Dismiss
                 </Button>
               </div>

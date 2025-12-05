@@ -38,7 +38,7 @@ export default function DashboardHeader({ companyName, role, onRoleChange }: Das
         {/* Role Switcher for Testing */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="xs" className="h-6 text-xs text-slate-500">
+            <Button variant="ghost" size="sm" className="h-6 text-xs text-slate-500">
               Switch Role (Dev)
             </Button>
           </DropdownMenuTrigger>

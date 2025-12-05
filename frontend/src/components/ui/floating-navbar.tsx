@@ -18,12 +18,12 @@ export const FloatingNav = ({
   navItems: {
     name: string;
     link: string;
-    icon?: JSX.Element;
+    icon?: React.ReactNode;
   }[];
   className?: string;
 }) => {
   const { scrollYProgress } = useScroll();
-  const { theme, setTheme } = useTheme();
+  const { darkMode, toggleTheme } = useTheme();
 
   const [visible, setVisible] = useState(false);
 
@@ -75,12 +75,12 @@ export const FloatingNav = ({
             <span className="hidden sm:block text-sm">{navItem.name}</span>
           </a>
         ))}
-        ))}
+
         <button
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          onClick={toggleTheme}
           className="border text-sm font-medium relative border-neutral-200 dark:border-white/[0.2] text-black dark:text-white px-3 py-2 rounded-full mr-2"
         >
-          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {darkMode ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
         </button>
         <a href="/auth/sign-up" className="border text-sm font-medium relative border-neutral-200 dark:border-white/[0.2] text-black dark:text-white px-4 py-2 rounded-full">
           <span>Get Started</span>

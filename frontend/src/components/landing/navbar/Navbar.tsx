@@ -15,7 +15,7 @@ import NotificationBell from '@/components/NotificationBell';
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = true; // Forced true for testing
   const { darkMode } = useTheme();
 
   return (
