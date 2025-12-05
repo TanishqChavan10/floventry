@@ -110,7 +110,7 @@ export function NewTransactionForm({
   // Filter products based on search
   const filteredProducts = useMemo(() => {
     return products.filter(
-      (product) =>
+      (product: Product) =>
         product.product_name.toLowerCase().includes(searchProduct.toLowerCase()) ||
         product.product_id.toString().includes(searchProduct),
     );
@@ -374,7 +374,7 @@ export function NewTransactionForm({
               {/* Product Search Results */}
               {searchProduct && filteredProducts.length > 0 && (
                 <div className="max-h-40 overflow-y-auto border border-gray-200 dark:border-neutral-700 rounded-lg">
-                  {filteredProducts.map((product) => (
+                  {filteredProducts.map((product: Product) => (
                     <div
                       key={product.product_id}
                       className="p-3 border-b border-gray-100 dark:border-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-800 cursor-pointer flex items-center justify-between"

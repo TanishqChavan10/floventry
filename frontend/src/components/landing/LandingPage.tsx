@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import ThemeToggle from '@/components/landing/navbar/ThemeToggle';
+import ThemeToggle from '@/components/landing/ThemeToggle';
 import client from '@/lib/apollo-client';
 
 export default function LandingPage() {
@@ -33,44 +33,6 @@ export default function LandingPage() {
               <span className="text-xl font-bold tracking-tight">Flowventory</span>
             </div>
 
-            <div className="hidden md:flex items-center gap-8">
-              <Link
-                href="#features"
-                className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors"
-              >
-                Features
-              </Link>
-              <Link
-                href="#how-it-works"
-                className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors"
-              >
-                How it Works
-              </Link>
-              <Link
-                href="#pricing"
-                className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors dark:text-slate-400 dark:hover:text-indigo-400"
-              >
-                Pricing
-              </Link>
-              <Link
-                href="#create-company"
-                className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors dark:text-slate-400 dark:hover:text-indigo-400"
-              >
-                Create Company
-              </Link>
-              <Link
-                href="/login"
-                className="text-sm font-medium text-slate-900 hover:text-indigo-600 transition-colors dark:text-slate-100 dark:hover:text-indigo-400"
-              >
-                Log In
-              </Link>
-              <Link href="/auth/sign-up">
-                <Button className="bg-slate-900 hover:bg-slate-800 text-white rounded-full px-5 h-9 text-sm">
-                  Get Started
-                </Button>
-              </Link>
-            </div>
-
             <div className="hidden md:block">
               <ThemeToggle />
             </div>
@@ -86,46 +48,6 @@ export default function LandingPage() {
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden bg-white dark:bg-black border-b border-slate-100 dark:border-slate-800 p-4 space-y-4">
-            <Link
-              href="#features"
-              className="block text-sm font-medium text-slate-600 dark:text-slate-400"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Features
-            </Link>
-            <Link
-              href="#how-it-works"
-              className="block text-sm font-medium text-slate-600 dark:text-slate-400"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              How it Works
-            </Link>
-            <Link
-              href="#pricing"
-              className="block text-sm font-medium text-slate-600 dark:text-slate-400"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Pricing
-            </Link>
-            <Link
-              href="#create-company"
-              className="block text-sm font-medium text-slate-600 dark:text-slate-400"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Create Company
-            </Link>
-            <Link
-              href="/login"
-              className="block text-sm font-medium text-slate-900 dark:text-white"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Log In
-            </Link>
-            <Link href="/auth/sign-up" onClick={() => setIsMenuOpen(false)}>
-              <Button className="w-full bg-slate-900 text-white rounded-full mt-2">
-                Get Started
-              </Button>
-            </Link>
             <ThemeToggle outline fullWidth />
           </div>
         )}
@@ -133,14 +55,6 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-medium mb-8 animate-fade-in-up dark:bg-indigo-900/20 dark:border-indigo-800 dark:text-indigo-300">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-          </span>
-          New: AI-Powered Demand Forecasting is here
-        </div>
-
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-slate-900 mb-6 max-w-4xl mx-auto leading-[1.1] dark:text-white">
           Inventory management that <span className="text-indigo-600">flows</span> as fast as your
           business.

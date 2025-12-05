@@ -33,11 +33,9 @@ export const useDashboardStats = (): UseDashboardStatsReturn => {
   }, [queryError]);
 
   // Process the data and calculate stats
-  const totalInventoryValue = data?.products 
-    ? data.products.reduce((total, product) => total + (product.stock * product.default_price), 0)
-    : 0;
-
-  const processedStats: StatData[] = data ? [
+  const totalInventoryValue = data?.products
+    ? data.products.reduce((total: number, product: DashboardStats['products'][0]) => total + (product.stock * product.default_price), 0)
+    : 0;  const processedStats: StatData[] = data ? [
     {
       title: "Total Products",
       value: data.products?.length || 0,

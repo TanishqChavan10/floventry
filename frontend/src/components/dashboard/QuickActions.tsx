@@ -67,7 +67,7 @@ export default function QuickActions({ role }: QuickActionsProps) {
   const filteredActions = actions.filter((action) => action.roles.includes(role));
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>Quick Actions</CardTitle>
       </CardHeader>

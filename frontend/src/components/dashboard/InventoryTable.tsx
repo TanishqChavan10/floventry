@@ -29,7 +29,7 @@ export default function InventoryTable({ role }: InventoryTableProps) {
   };
 
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Product Overview</CardTitle>
         <Button variant="ghost" size="sm" className="text-xs" asChild>
@@ -40,13 +40,13 @@ export default function InventoryTable({ role }: InventoryTableProps) {
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+          <table className="w-full text-sm text-left table-fixed">
             <thead className="text-xs text-slate-500 uppercase bg-slate-50 dark:bg-slate-900/50">
               <tr>
-                <th className="px-4 py-3 rounded-l-lg">Item Name</th>
-                <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">Qty</th>
-                <th className="px-4 py-3 rounded-r-lg">Status</th>
+                <th className="px-4 py-3 rounded-l-lg w-[40%]">Item Name</th>
+                <th className="px-4 py-3 w-[25%]">Category</th>
+                <th className="px-4 py-3 w-[15%]">Qty</th>
+                <th className="px-4 py-3 rounded-r-lg w-[20%]">Status</th>
               </tr>
             </thead>
             <tbody>

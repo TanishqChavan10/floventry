@@ -20,19 +20,13 @@ function DashboardContent() {
   const [role, setRole] = useState('admin'); // Default role for demo
 
   useEffect(() => {
-    if (!companyId) {
-      // Redirect to switcher if no company selected
-      router.push('/company-switcher');
-      return;
-    }
-
     // Simulate data loading
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [companyId, router]);
+  }, [router]);
 
   if (isLoading) {
     return (
@@ -69,7 +63,7 @@ function DashboardContent() {
         {/* Main Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column (2/3 width) */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 min-w-0">
             <AnalyticsCharts role={role} />
             <div className="grid md:grid-cols-2 gap-6">
               <QuickActions role={role} />
@@ -79,7 +73,7 @@ function DashboardContent() {
           </div>
 
           {/* Right Column (1/3 width) */}
-          <div className="space-y-6">
+          <div className="space-y-6 min-w-0">
             <AlertsSection role={role} />
             <ActivityTimeline role={role} />
           </div>

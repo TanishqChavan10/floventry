@@ -64,7 +64,7 @@ export default function ActivityTimeline({ role }: ActivityTimelineProps) {
   ];
 
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader>
         <CardTitle>Recent Activity</CardTitle>
       </CardHeader>

@@ -66,7 +66,7 @@ export default function AlertsSection({ role }: AlertsSectionProps) {
   }
 
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Action Required</CardTitle>
         <Badge variant="secondary">{alerts.length} New</Badge>
