@@ -23,11 +23,11 @@ export class ClerkService {
 
     // Check if user exists in database
     let user = await this.userRepository.findOne({
-      where: { clerkId },
+      where: { clerk_id: clerkId },
     });
 
     const userData = {
-      clerkId: clerkUser.id,
+      clerk_id: clerkUser.id,
       email: clerkUser.emailAddresses[0]?.emailAddress || '',
       firstName: clerkUser.firstName || undefined,
       lastName: clerkUser.lastName || undefined,
@@ -56,7 +56,7 @@ export class ClerkService {
    */
   async getUserByClerkId(clerkId: string): Promise<User> {
     let user = await this.userRepository.findOne({
-      where: { clerkId },
+      where: { clerk_id: clerkId },
     });
 
     if (!user) {
@@ -65,12 +65,5 @@ export class ClerkService {
     }
 
     return user;
-  }
-
-  /**
-   * Update user's last login time
-   */
-  async updateLastLogin(clerkId: string): Promise<void> {
-    await this.userRepository.update({ clerkId }, { lastLogin: new Date() });
   }
 }

@@ -10,12 +10,21 @@ export class CategoryService {
   constructor(
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
-  ) {}
+  ) { }
 
   async create(
     createCategoryInput: CreateCategoryInput,
     userId: string,
   ): Promise<Category> {
+    if (createCategoryInput.parentId) {
+      const parent = await this.findOne(createCategoryInput.parentId, userId);
+      if (!parent) {
+        throw new NotFoundException(
+          `Parent category with ID ${createCategoryInput.parentId} not found`,
+        );
+      }
+    }
+
     const category = this.categoryRepository.create({
       ...createCategoryInput,
       userId, // Set the owner
@@ -26,20 +35,26 @@ export class CategoryService {
   async findAll(userId: string): Promise<Category[]> {
     return await this.categoryRepository.find({
       where: { userId }, // Filter by user
-      relations: ['products'],
+      relations: ['products', 'parent', 'children'],
+      order: {
+        createdAt: 'DESC',
+      },
     });
   }
 
   async findAllSimple(userId: string): Promise<Category[]> {
     return await this.categoryRepository.find({
       where: { userId }, // Filter by user
+      order: {
+        name: 'ASC',
+      },
     });
   }
 
   async findOne(id: number, userId: string): Promise<Category> {
     const category = await this.categoryRepository.findOne({
       where: { category_id: id, userId }, // Filter by user
-      relations: ['products'],
+      relations: ['products', 'parent', 'children'],
     });
 
     if (!category) {
@@ -55,6 +70,20 @@ export class CategoryService {
     userId: string,
   ): Promise<Category> {
     const category = await this.findOne(id, userId);
+
+    if (updateCategoryInput.parentId) {
+      // Prevent circular dependency: parent cannot be itself
+      if (updateCategoryInput.parentId === id) {
+        throw new Error('Category cannot be its own parent');
+      }
+
+      const parent = await this.findOne(updateCategoryInput.parentId, userId);
+      if (!parent) {
+        throw new NotFoundException(
+          `Parent category with ID ${updateCategoryInput.parentId} not found`,
+        );
+      }
+    }
 
     Object.assign(category, updateCategoryInput);
     return await this.categoryRepository.save(category);

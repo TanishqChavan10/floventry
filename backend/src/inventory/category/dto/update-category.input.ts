@@ -1,6 +1,6 @@
 import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
 import { CreateCategoryInput } from './create-category.input';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength, IsNumber } from 'class-validator';
 
 @InputType()
 export class UpdateCategoryInput extends PartialType(CreateCategoryInput) {
@@ -12,4 +12,15 @@ export class UpdateCategoryInput extends PartialType(CreateCategoryInput) {
   @IsString()
   @MaxLength(100)
   name?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  parentId?: number;
 }

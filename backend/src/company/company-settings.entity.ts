@@ -1,37 +1,33 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+} from 'typeorm';
 
 @Entity('company_settings')
 export class CompanySettings {
-  @PrimaryColumn()
-  company_id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column({ length: 50, nullable: true })
-  theme: string;
+  @Column('uuid')
+  company_id: string; // FK → companies
 
-  @Column({ length: 100, nullable: true })
+  @Column({ default: 'INR' })
+  currency: string; // Default: INR
+
+  @Column()
   timezone: string;
 
-  @Column({ length: 10, nullable: true })
-  currency: string;
-
-  @Column({ length: 10, nullable: true })
-  language: string;
-
-  @Column({ type: 'boolean', default: true })
-  notifications_enabled: boolean;
-
-  @Column({ type: 'boolean', default: false })
-  auto_backup: boolean;
+  @Column()
+  stock_costing_method: string; // FIFO / LIFO / AVG
 
   @Column({ type: 'int', nullable: true })
-  max_users: number;
+  low_stock_threshold: number; // Global default
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-  storage_limit_gb: number;
+  @Column({ default: false })
+  allow_negative_stock: boolean; // Default: false
 
   @CreateDateColumn()
   created_at: Date;
-
-  @UpdateDateColumn({ nullable: true })
-  updated_at: Date;
 }

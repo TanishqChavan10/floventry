@@ -23,21 +23,19 @@ export class AuthResolver {
     // If user doesn't exist → return null (again, no loop)
     if (!user) return null;
 
-    await this.clerkService.updateLastLogin(clerkUser.clerkId);
-
     return {
       id: user.id,
-      clerkId: user.clerkId,
+      clerk_id: user.clerk_id,
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      imageUrl: user.imageUrl,
-      username: user.username,
-      role: user.role,
-      isActive: user.isActive,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      lastLogin: user.lastLogin,
+      firstName: user.full_name.split(' ')[0] || '',
+      lastName: user.full_name.split(' ').slice(1).join(' ') || '',
+      imageUrl: user.avatar_url,
+      username: user.email, // Use email as username
+      role: 'admin', // Default role
+      isActive: true, // Default active
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+      lastLogin: new Date(), // Current login time
     };
   }
 }

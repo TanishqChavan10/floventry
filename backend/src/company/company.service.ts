@@ -15,7 +15,7 @@ export class CompanyService {
     private settingsRepository: Repository<CompanySettings>,
   ) {}
 
-  async createCompany(input: CreateCompanyInput, ownerId: number): Promise<Company> {
+  async createCompany(input: CreateCompanyInput, ownerId: string): Promise<Company> {
     // Check if company name already exists
     const existingCompany = await this.companyRepository.findOne({
       where: { name: input.name },
@@ -28,22 +28,19 @@ export class CompanyService {
     // Create company
     const company = this.companyRepository.create({
       ...input,
-      owner_id: ownerId,
+      created_by: ownerId,
     });
 
     const savedCompany = await this.companyRepository.save(company);
 
     // Create default settings
     const settings = this.settingsRepository.create({
-      company_id: savedCompany.company_id,
-      theme: 'light',
-      timezone: 'UTC',
-      currency: 'USD',
-      language: 'en',
-      notifications_enabled: true,
-      auto_backup: false,
-      max_users: 10,
-      storage_limit_gb: 5,
+      company_id: savedCompany.id,
+      currency: 'INR',
+      timezone: 'Asia/Kolkata',
+      stock_costing_method: 'FIFO',
+      low_stock_threshold: 10,
+      allow_negative_stock: false,
     });
 
     await this.settingsRepository.save(settings);
@@ -51,7 +48,7 @@ export class CompanyService {
     return savedCompany;
   }
 
-  async updateSettings(companyId: number, input: UpdateCompanySettingsInput): Promise<CompanySettings> {
+  async updateSettings(companyId: string, input: UpdateCompanySettingsInput): Promise<CompanySettings> {
     const settings = await this.settingsRepository.findOne({
       where: { company_id: companyId },
     });
@@ -61,14 +58,13 @@ export class CompanyService {
     }
 
     Object.assign(settings, input);
-    settings.updated_at = new Date();
 
     return this.settingsRepository.save(settings);
   }
 
-  async getCompanyById(companyId: number): Promise<Company> {
+  async getCompanyById(companyId: string): Promise<Company> {
     const company = await this.companyRepository.findOne({
-      where: { company_id: companyId },
+      where: { id: companyId },
       relations: ['settings'],
     });
 
@@ -79,10 +75,10 @@ export class CompanyService {
     return company;
   }
 
-  async getCompaniesByUser(userId: number): Promise<Company[]> {
+  async getCompaniesByUser(userId: string): Promise<Company[]> {
     const companies = await this.companyRepository
       .createQueryBuilder('company')
-      .innerJoin('user_companies', 'uc', 'uc.company_id = company.company_id')
+      .innerJoin('user_companies', 'uc', 'uc.company_id = company.id')
       .where('uc.user_id = :userId', { userId })
       .andWhere('uc.status = :status', { status: 'active' })
       .leftJoinAndSelect('company.settings', 'settings')
@@ -91,11 +87,11 @@ export class CompanyService {
     return companies;
   }
 
-  async switchCompany(userId: number, companyId: number): Promise<Company> {
+  async switchCompany(userId: string, companyId: string): Promise<Company> {
     // Verify user is member of the company
     const membership = await this.companyRepository
       .createQueryBuilder('company')
-      .innerJoin('user_companies', 'uc', 'uc.company_id = company.company_id')
+      .innerJoin('user_companies', 'uc', 'uc.company_id = company.id')
       .where('uc.user_id = :userId', { userId })
       .andWhere('uc.company_id = :companyId', { companyId })
       .andWhere('uc.status = :status', { status: 'active' })

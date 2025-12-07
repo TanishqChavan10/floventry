@@ -9,6 +9,18 @@ export class Category {
   @Field()
   name: string;
 
+  @Field({ nullable: true })
+  description?: string;
+
+  @Field(() => Int, { nullable: true })
+  parentId?: number;
+
+  @Field(() => Int)
+  itemCount?: number;
+
+  @Field()
+  createdAt: Date;
+
   // A category can have many products
   @Field(() => [Product], { nullable: true })
   products?: Product[];

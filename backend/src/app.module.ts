@@ -21,6 +21,7 @@ import { ReportsModule } from './reports/reports.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import { NotificationModule } from './notification/notification.module';
 import { IntegrationModule } from './integration/integration.module';
+import { WarehouseModule } from './warehouse/warehouse.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { IntegrationModule } from './integration/integration.module';
     AuditLogModule,
     NotificationModule,
     IntegrationModule,
+    WarehouseModule,
   ],
   controllers: [AppController],
   providers: [AppService],

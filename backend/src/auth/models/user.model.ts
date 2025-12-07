@@ -1,5 +1,4 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
-import { UserRole } from '../entities/user.entity';
 
 @ObjectType()
 export class UserModel {
@@ -7,37 +6,22 @@ export class UserModel {
   id: string;
 
   @Field()
-  clerkId: string;
+  clerk_id: string;
 
   @Field()
   email: string;
 
-  @Field({ nullable: true })
-  firstName?: string;
+  @Field()
+  full_name: string;
 
   @Field({ nullable: true })
-  lastName?: string;
-
-  @Field({ nullable: true })
-  imageUrl?: string;
-
-  @Field({ nullable: true })
-  username?: string;
+  avatar_url?: string;
 
   @Field()
-  role: string;
+  created_at: Date;
 
   @Field()
-  isActive: boolean;
-
-  @Field()
-  createdAt: Date;
-
-  @Field()
-  updatedAt: Date;
-
-  @Field({ nullable: true })
-  lastLogin?: Date;
+  updated_at: Date;
 }
 
 @ObjectType()

@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, Int, ResolveField, Parent } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { Category } from './category.model';
@@ -14,7 +14,7 @@ export class CategoryResolver {
   constructor(
     private readonly categoryService: CategoryService,
     private readonly clerkService: ClerkService,
-  ) {}
+  ) { }
 
   @Mutation(() => Category)
   async createCategory(
@@ -88,5 +88,13 @@ export class CategoryResolver {
   ): Promise<boolean> {
     const user = await this.clerkService.getUserByClerkId(clerkUser.clerkId);
     return await this.categoryService.remove(id, user.id);
+  }
+
+  @ResolveField(() => Int)
+  async itemCount(@Parent() category: any): Promise<number> {
+    if (category.products) {
+      return category.products.length;
+    }
+    return 0;
   }
 }

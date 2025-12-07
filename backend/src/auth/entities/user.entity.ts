@@ -6,18 +6,8 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
-import { Product } from '../../inventory/product/product.entity';
-import { Category } from '../../inventory/category/category.entity';
-import { Supplier } from '../../supplier/supplier.entity';
-import { Shipment } from '../../supplier/shipment.entity';
-import { Transaction } from '../../transaction/transaction.entity';
-
-export enum UserRole {
-  ADMIN = 'admin',
-  MANAGER = 'manager',
-  CASHIER = 'cashier',
-  INVENTORY = 'inventory',
-}
+import { UserCompany } from './user-company.entity';
+import { UserWarehouse } from './user-warehouse.entity';
 
 @Entity('users')
 export class User {
@@ -25,58 +15,27 @@ export class User {
   id: string;
 
   @Column({ unique: true })
-  clerkId: string;
-
-  @Column({ unique: true })
   email: string;
 
-  @Column({ nullable: true })
-  firstName: string;
+  @Column()
+  full_name: string;
 
   @Column({ nullable: true })
-  lastName: string;
+  avatar_url: string;
 
-  @Column({ nullable: true })
-  imageUrl: string;
-
-  @Column({ nullable: true })
-  username: string;
-
-  @Column({ nullable: true })
-  password: string;
-
-  @Column({
-    type: 'enum',
-    enum: UserRole,
-    default: UserRole.CASHIER,
-  })
-  role: UserRole;
-
-  @Column({ default: true })
-  isActive: boolean;
+  @Column({ unique: true })
+  clerk_id: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  created_at: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updated_at: Date;
 
-  @Column({ nullable: true })
-  lastLogin: Date;
+  // Relationships
+  @OneToMany(() => UserCompany, (userCompany) => userCompany.user)
+  userCompanies: UserCompany[];
 
-  // Relationships for multi-tenant data isolation
-  @OneToMany(() => Product, (product) => product.user)
-  products: Product[];
-
-  @OneToMany(() => Category, (category) => category.user)
-  categories: Category[];
-
-  @OneToMany(() => Supplier, (supplier) => supplier.user)
-  suppliers: Supplier[];
-
-  @OneToMany(() => Shipment, (shipment) => shipment.user)
-  shipments: Shipment[];
-
-  @OneToMany(() => Transaction, (transaction) => transaction.user)
-  transactions: Transaction[];
+  @OneToMany(() => UserWarehouse, (userWarehouse) => userWarehouse.user)
+  userWarehouses: UserWarehouse[];
 }
