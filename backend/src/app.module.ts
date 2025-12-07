@@ -7,20 +7,20 @@ import { join } from 'path';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { InventoryModule } from './inventory/inventory.module';
-import { SupplierModule } from './supplier/supplier.module';
-import { TransactionModule } from './transaction/transaction.module';
-import { RedisModule } from './redis';
-import { S3Module } from './s3';
-import { CompanyModule } from './company/company.module';
+// import { InventoryModule } from './inventory/inventory.module';
+// import { SupplierModule } from './supplier/supplier.module';
+// import { TransactionModule } from './transaction/transaction.module';
+// import { RedisModule } from './redis';
+// import { S3Module } from './s3';
+import { CompanyModule } from './config/company/company.module';
 import { InviteModule } from './invite/invite.module';
 import { UserCompanyModule } from './user-company/user-company.module';
 import { RoleModule } from './role/role.module';
 import { CompanyContextMiddleware } from './common/middleware/company-context.middleware';
-import { ReportsModule } from './reports/reports.module';
-import { AuditLogModule } from './audit-log/audit-log.module';
-import { NotificationModule } from './notification/notification.module';
-import { IntegrationModule } from './integration/integration.module';
+// import { ReportsModule } from './reports/reports.module';
+// import { AuditLogModule } from './audit-log/audit-log.module';
+// import { NotificationModule } from './notification/notification.module';
+// import { IntegrationModule } from './integration/integration.module';
 import { WarehouseModule } from './warehouse/warehouse.module';
 
 @Module({
@@ -28,7 +28,7 @@ import { WarehouseModule } from './warehouse/warehouse.module';
     ConfigModule.forRoot({
       isGlobal: true, // Makes ConfigService available everywhere
     }),
-    RedisModule.forRootAsync(),
+    // RedisModule.forRootAsync(),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
@@ -59,19 +59,19 @@ import { WarehouseModule } from './warehouse/warehouse.module';
     }),
 
     AuthModule,
-    InventoryModule,
-    SupplierModule,
-    TransactionModule,
-    RedisModule.forRootAsync(),
-    S3Module.forRootAsync(),
+    // InventoryModule,
+    // SupplierModule,
+    // TransactionModule,
+    // RedisModule.forRootAsync(),
+    // S3Module.forRootAsync(),
     CompanyModule,
     UserCompanyModule,
     InviteModule,
-    RoleModule,
-    ReportsModule,
-    AuditLogModule,
-    NotificationModule,
-    IntegrationModule,
+    // RoleModule,
+    // ReportsModule,
+    // AuditLogModule,
+    // NotificationModule,
+    // IntegrationModule,
     WarehouseModule,
   ],
   controllers: [AppController],
@@ -79,6 +79,6 @@ import { WarehouseModule } from './warehouse/warehouse.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(CompanyContextMiddleware).forRoutes('*');
+    // consumer.apply(CompanyContextMiddleware).forRoutes('*');
   }
 }

@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Invite } from './invite.entity';
 import { UserCompany } from '../user-company/user-company.entity';
-import { Role } from '../role/role.entity';
 import { SendInviteInput } from './dto/send-invite.input';
 import { AcceptInviteInput } from './dto/accept-invite.input';
 import { v4 as uuidv4 } from 'uuid';
@@ -15,19 +14,10 @@ export class InviteService {
     private inviteRepository: Repository<Invite>,
     @InjectRepository(UserCompany)
     private userCompanyRepository: Repository<UserCompany>,
-    @InjectRepository(Role)
-    private roleRepository: Repository<Role>,
-  ) {}
+  ) { }
 
-  async createInvite(input: SendInviteInput, companyId: number, invitedBy: number): Promise<Invite> {
-    // Check if user is already a member
-    const existingMembership = await this.userCompanyRepository.findOne({
-      where: { company_id: companyId, user_id: invitedBy }, // Note: need user_id from email, but since no user table, assume we get user_id later
-    });
-
-    // For now, assume we check by email, but since no user table, skip this check
-
-    // Check if invite already exists
+  async createInvite(input: SendInviteInput, companyId: string, invitedBy: string): Promise<Invite> {
+    // Check if invite already exists for this email
     const existingInvite = await this.inviteRepository.findOne({
       where: { email: input.email, company_id: companyId, status: 'pending' },
     });
@@ -36,20 +26,11 @@ export class InviteService {
       throw new ConflictException('Invite already sent to this email');
     }
 
-    // Verify role exists
-    const role = await this.roleRepository.findOne({
-      where: { role_id: input.role_id },
-    });
-
-    if (!role) {
-      throw new NotFoundException('Role not found');
-    }
-
     // Create invite
     const invite = this.inviteRepository.create({
       email: input.email,
       company_id: companyId,
-      role_id: input.role_id,
+      role: input.role,
       invited_by: invitedBy,
       token: uuidv4(),
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
@@ -61,7 +42,7 @@ export class InviteService {
   async validateInviteToken(token: string): Promise<Invite> {
     const invite = await this.inviteRepository.findOne({
       where: { token, status: 'pending' },
-      relations: ['company', 'role'],
+      relations: ['company'],
     });
 
     if (!invite) {
@@ -77,7 +58,7 @@ export class InviteService {
     return invite;
   }
 
-  async acceptInvite(input: AcceptInviteInput, userId: number): Promise<UserCompany> {
+  async acceptInvite(input: AcceptInviteInput, userId: string): Promise<UserCompany> {
     const invite = await this.validateInviteToken(input.token);
 
     // Check if user is already a member
@@ -93,7 +74,7 @@ export class InviteService {
     const membership = this.userCompanyRepository.create({
       user_id: userId,
       company_id: invite.company_id,
-      role_id: invite.role_id,
+      role: invite.role,
       invited_by: invite.invited_by,
       status: 'active',
     });
@@ -108,7 +89,7 @@ export class InviteService {
     return savedMembership;
   }
 
-  async cancelInvite(inviteId: number, userId: number): Promise<void> {
+  async cancelInvite(inviteId: string, userId: string): Promise<void> {
     const invite = await this.inviteRepository.findOne({
       where: { invite_id: inviteId },
     });
@@ -119,7 +100,7 @@ export class InviteService {
 
     // Check if user can cancel (owner or invited_by)
     if (invite.invited_by !== userId) {
-      // TODO: Check if user is company owner
+      // TODO: Check if user is company owner (when we have full RBAC/owner check accessible here easily or via context)
       throw new BadRequestException('Not authorized to cancel this invite');
     }
 

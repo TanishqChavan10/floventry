@@ -8,15 +8,15 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { User } from './user.entity';
-import { Company } from '../../company/company.entity';
+import { Company } from '../../config/company/company.entity';
 
 @Entity('user_companies')
 export class UserCompany {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('uuid')
-  user_id: string;
+  @Column({ type: 'text' })
+user_id: string;
 
   @Column('uuid')
   company_id: string;
@@ -31,8 +31,8 @@ export class UserCompany {
   updated_at: Date;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: 'user_id' })
-  user: User;
+@JoinColumn({ name: 'user_id' })
+user: User;
 
   @ManyToOne(() => Company)
   @JoinColumn({ name: 'company_id' })

@@ -1,22 +1,22 @@
-import { ObjectType, Field, Int } from '@nestjs/graphql';
-import { Role } from '../role/role.model';
+import { ObjectType, Field } from '@nestjs/graphql';
+import { Role } from '../auth/enums/role.enum';
 
 @ObjectType()
 export class Invite {
-  @Field(() => Int)
-  invite_id: number;
+  @Field(() => String)
+  invite_id: string;
 
   @Field()
   email: string;
 
-  @Field(() => Int)
-  company_id: number;
+  @Field(() => String)
+  company_id: string;
 
   @Field(() => Role, { nullable: true })
   role?: Role;
 
-  @Field(() => Int)
-  invited_by: number;
+  @Field(() => String)
+  invited_by: string;
 
   @Field()
   status: string; // pending, accepted, rejected, expired

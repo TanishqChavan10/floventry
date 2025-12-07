@@ -11,7 +11,7 @@ export class ClerkService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   /**
    * Sync Clerk user with local database
@@ -23,21 +23,14 @@ export class ClerkService {
 
     // Check if user exists in database
     let user = await this.userRepository.findOne({
-      where: { clerk_id: clerkId },
+      where: { id: clerkId },
     });
 
     const userData = {
-      clerk_id: clerkUser.id,
+      id: clerkUser.id,
       email: clerkUser.emailAddresses[0]?.emailAddress || '',
-      firstName: clerkUser.firstName || undefined,
-      lastName: clerkUser.lastName || undefined,
-      imageUrl: clerkUser.imageUrl || undefined,
-      username:
-        clerkUser.username ||
-        clerkUser.emailAddresses[0]?.emailAddress.split('@')[0] ||
-        '',
-      isActive: !clerkUser.banned,
-      lastLogin: new Date(),
+      fullName: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim(),
+      avatarUrl: clerkUser.imageUrl || undefined,
     };
 
     if (user) {
@@ -45,7 +38,7 @@ export class ClerkService {
       Object.assign(user, userData);
       return await this.userRepository.save(user);
     } else {
-      // Create new user
+      // Create new user (including ID explicitly)
       user = this.userRepository.create(userData);
       return await this.userRepository.save(user);
     }
@@ -56,7 +49,7 @@ export class ClerkService {
    */
   async getUserByClerkId(clerkId: string): Promise<User> {
     let user = await this.userRepository.findOne({
-      where: { clerk_id: clerkId },
+      where: { id: clerkId },
     });
 
     if (!user) {

@@ -30,7 +30,11 @@ export class WarehouseService {
 
   async update(id: string, warehouseData: Partial<Warehouse>): Promise<Warehouse> {
     await this.warehouseRepository.update(id, warehouseData);
-    return this.findOne(id);
+    const warehouse = await this.findOne(id);
+    if (!warehouse) {
+      throw new Error('Warehouse not found');
+    }
+    return warehouse;
   }
 
   async remove(id: string): Promise<void> {

@@ -5,26 +5,24 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  PrimaryColumn
 } from 'typeorm';
-import { UserCompany } from './user-company.entity';
+import { UserCompany } from '../../user-company/user-company.entity';
 import { UserWarehouse } from './user-warehouse.entity';
 
-@Entity('users')
+@Entity('app_users')
 export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryColumn({ type: 'text' })
+  id: string; // Clerk ID
 
-  @Column({ unique: true })
+  @Column({ type: 'text' })
   email: string;
 
-  @Column()
-  full_name: string;
+  @Column({ type: 'text', nullable: true })
+  fullName: string;
 
-  @Column({ nullable: true })
-  avatar_url: string;
-
-  @Column({ unique: true })
-  clerk_id: string;
+  @Column({ type: 'text', nullable: true })
+  avatarUrl: string;
 
   @CreateDateColumn()
   created_at: Date;

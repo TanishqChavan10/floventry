@@ -6,16 +6,6 @@ input AcceptInviteInput {
   token: String!
 }
 
-type Category {
-  category_id: Int!
-  createdAt: DateTime!
-  description: String
-  itemCount: Int!
-  name: String!
-  parentId: Int
-  products: [Product!]
-}
-
 type Company {
   company_id: Int!
   created_at: DateTime!
@@ -41,99 +31,10 @@ type CompanySettings {
   updated_at: DateTime
 }
 
-input CreateCategoryInput {
-  description: String
-  name: String!
-  parentId: Int
-}
-
 input CreateCompanyInput {
   description: String
   logo_url: String
   name: String!
-}
-
-input CreateCustomerInput {
-  customer_id: ID!
-  name: String!
-  phone_number: String
-}
-
-input CreateEmployeeInput {
-  employee_id: ID!
-  name: String!
-}
-
-input CreateProductCategoryInput {
-  category_id: Int!
-  product_id: Int!
-}
-
-input CreateProductInput {
-  categoryIds: [Int!]
-  default_price: Float!
-  min_stock: Int!
-  product_name: String!
-  stock: Int!
-}
-
-input CreateShipmentInput {
-  invoice_amt: Float!
-  items: [ShipmentItemInput!]!
-  payment_mthd: String!
-  payment_status: String! = "Pending"
-  received_date: DateTime
-  ref_no: String!
-  supplier_id: String!
-  total_items: Int!
-}
-
-input CreateShipmentItemInput {
-  batch_number: String
-  expiry_date: DateTime
-  mfg_date: DateTime
-  product_id: String!
-  product_name: String!
-  quantity_received: Int!
-  shipment_id: String!
-  unit_price: Float!
-}
-
-input CreateSupplierInput {
-  address: String
-  category_id: Int!
-  contact_person: String
-  email: String!
-  name: String!
-  phone_no: String!
-  registration_number: String
-  status: String! = "Active"
-  tax_id: String
-}
-
-input CreateTransactionInput {
-  customer_name: String
-  customer_phone: String
-  employee_id: String!
-  items: [CreateTransactionItemInput!]!
-  payment_method: String!
-  payment_refno: String
-  transaction_id: ID!
-}
-
-input CreateTransactionItemInput {
-  discount: Float! = 0
-  product_id: Int!
-  quantity: Int!
-  unit_price: Float!
-}
-
-type CustomerModel {
-  created_date: DateTime!
-  customer_id: ID!
-  name: String!
-  phone_number: String
-  transactions: [TransactionModel!]
 }
 
 """
@@ -141,20 +42,14 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
-type EmployeeModel {
-  employee_id: ID!
-  name: String!
-  transactions: [TransactionModel!]
-}
-
 type Invite {
   accepted_at: DateTime
-  company_id: Int!
+  company_id: String!
   created_at: DateTime!
   email: String!
   expires_at: DateTime!
-  invite_id: Int!
-  invited_by: Int!
+  invite_id: String!
+  invited_by: String!
   role: Role
   status: String!
   token: String
@@ -162,240 +57,33 @@ type Invite {
 
 type Mutation {
   acceptInvite(input: AcceptInviteInput!): UserCompany!
-  addShipment(createShipmentInput: CreateShipmentInput!): ShipmentModel!
-  addShipmentItem(createShipmentItemInput: CreateShipmentItemInput!): ShipmentItemModel!
-  addShipmentItems(createShipmentItemsInput: [CreateShipmentItemInput!]!): [ShipmentItemModel!]!
-  addSupplier(createSupplierInput: CreateSupplierInput!): SupplierModel!
-  bulkAssignCategoriesToProduct(categoryIds: [Int!]!, productId: Int!): [ProductCategory!]!
-  cancelInvite(inviteId: Float!): Boolean!
-  createCategory(createCategoryInput: CreateCategoryInput!): Category!
+  cancelInvite(inviteId: String!): Boolean!
   createCompany(input: CreateCompanyInput!): Company!
-  createCustomer(createCustomerInput: CreateCustomerInput!): CustomerModel!
-  createEmployee(createEmployeeInput: CreateEmployeeInput!): EmployeeModel!
-  createProduct(createProductInput: CreateProductInput!): Product!
-  createProductCategory(createProductCategoryInput: CreateProductCategoryInput!): ProductCategory!
-  createTransaction(createTransactionInput: CreateTransactionInput!): TransactionModel!
-  deleteShipment(shipment_id: ID!): ShipmentModel!
-  deleteShipmentItem(id: ID!): ShipmentItemModel!
-  deleteSupplier(supplier_id: ID!): SupplierModel!
-  removeAllCategoriesFromProduct(productId: Int!): Boolean!
-  removeAllProductsFromCategory(categoryId: Int!): Boolean!
-  removeCategory(id: Int!): Boolean!
-  removeProduct(id: Int!): Boolean!
-  removeProductCategory(removeProductCategoryInput: RemoveProductCategoryInput!): Boolean!
-  removeUser(membershipId: Float!): Boolean!
+  removeUser(membershipId: String!): Boolean!
   sendInvite(input: SendInviteInput!): Invite!
-  switchCompany(companyId: Float!): Company!
-  updateCategory(updateCategoryInput: UpdateCategoryInput!): Category!
+  switchCompany(companyId: String!): Company!
   updateCompanySettings(input: UpdateCompanySettingsInput!): CompanySettings!
-  updateProduct(updateProductInput: UpdateProductInput!): Product!
-  updateProductStock(id: Int!, quantity: Int!): Product!
   updateRole(input: UpdateRoleInput!): UserCompany!
-  updateShipmentPaymentStatus(payment_status: String!, shipment_id: ID!): ShipmentModel!
-  updateSupplier(updateSupplierInput: UpdateSupplierInput!): SupplierModel!
-}
-
-type PaymentMethodStatsModel {
-  count: Int!
-  method: String!
-  percentage: Float!
-  total_amount: Float!
-}
-
-type Product {
-  categories: [Category!]
-  default_price: Float!
-  min_stock: Int!
-  product_id: Int!
-  product_name: String!
-  stock: Int!
-}
-
-type ProductCategory {
-  category_id: Int!
-  product_id: Int!
 }
 
 type Query {
-  categories: [Category!]!
-  categoriesByName(name: String!): [Category!]!
-  categoriesSimple: [Category!]!
-  category(id: Int!): Category!
   companies: [Company!]!
-  company(id: Float!): Company!
-  customer(customer_id: ID!): CustomerModel!
-  customers: [CustomerModel!]!
-  employee(employee_id: ID!): EmployeeModel!
-  employees: [EmployeeModel!]!
-  expiringShipmentItems(days: Int! = 30): [ShipmentItemModel!]!
-  lowStockProducts: [Product!]!
+  company(id: String!): Company!
   me: UserModel
-  paymentMethodStats: [PaymentMethodStatsModel!]!
-  product(id: Int!): Product!
-  productCategories: [ProductCategory!]!
-  productCategoriesByCategory(categoryId: Int!): [ProductCategory!]!
-  productCategoriesByProduct(productId: Int!): [ProductCategory!]!
-  products: [Product!]!
-  productsByCategory(categoryId: Int!): [Product!]!
-  productsByName(name: String!): [Product!]!
-  revenueByCategory: [RevenueByCategoryModel!]!
-  roles: [Role!]!
-  salesAnalytics: SalesAnalyticsModel!
-  salesOverview: SalesOverviewModel!
-  searchCategories(searchTerm: String!): [Category!]!
-  searchProducts(searchTerm: String!): [Product!]!
-  shipment(shipment_id: ID!): ShipmentModel!
-  shipmentItem(id: ID!): ShipmentItemModel!
-  shipmentItems(limit: Int! = 10, page: Int! = 1): [ShipmentItemModel!]!
-  shipmentItemsByShipment(shipment_id: ID!): [ShipmentItemModel!]!
-  shipmentItemsBySupplier(supplier_id: ID!): [ShipmentItemModel!]!
-  shipments(limit: Int! = 10, page: Int! = 1, supplier_id: String): [ShipmentModel!]!
-  shipmentsBySupplier(supplier_id: ID!): [ShipmentModel!]!
-  supplier(supplier_id: ID!): SupplierModel!
-  supplierProducts(supplier_id: ID!): [Product!]!
-  supplierStats(supplier_id: ID!): String!
-  suppliers(limit: Int! = 10, page: Int! = 1, status: String): [SupplierModel!]!
-  topProducts(limit: Int! = 5): [TopProductModel!]!
-  totalInventoryValue: Float!
-  transaction(transaction_id: ID!): TransactionModel!
-  transactions(customer_id: String, limit: Int! = 10, page: Int! = 1, status: String): [TransactionModel!]!
-  transactionsByCustomer(customer_id: ID!): [TransactionModel!]!
-  transactionsByEmployee(employee_id: ID!): [TransactionModel!]!
   usersInCompany: [UserCompany!]!
 }
 
-input RemoveProductCategoryInput {
-  category_id: Int!
-  product_id: Int!
-}
-
-type RevenueByCategoryModel {
-  category: String!
-  percentage: Float!
-  revenue: Float!
-}
-
-type Role {
-  color: String
-  created_at: DateTime!
-  description: String
-  is_default: Boolean!
-  name: String!
-  permissions: [String!]!
-  role_id: Int!
-  updated_at: DateTime
-}
-
-type SalesAnalyticsModel {
-  overview: SalesOverviewModel!
-  paymentMethods: [PaymentMethodStatsModel!]!
-  revenueByCategory: [RevenueByCategoryModel!]!
-  topProducts: [TopProductModel!]!
-}
-
-type SalesOverviewModel {
-  avgOrderValue: Float!
-  growthRate: Float!
-  totalRevenue: Float!
-  totalTransactions: Int!
+"""User roles in the company"""
+enum Role {
+  ADMIN
+  MANAGER
+  OWNER
+  WAREHOUSE_STAFF
 }
 
 input SendInviteInput {
   email: String!
-  role_id: Int!
-}
-
-input ShipmentItemInput {
-  batch_number: String
-  product_id: String!
-  product_name: String!
-  quantity_received: Int!
-  unit_price: Float!
-}
-
-type ShipmentItemModel {
-  batch_number: String
-  expiry_date: DateTime
-  id: ID!
-  mfg_date: DateTime
-  product_id: String!
-  product_name: String!
-  quantity_received: Int!
-  shipment_id: String!
-  unit_price: Float!
-}
-
-type ShipmentModel {
-  invoice_amt: Float!
-  payment_mthd: String!
-  payment_status: String!
-  received_date: DateTime!
-  ref_no: String!
-  shipment_id: ID!
-  supplier_id: String!
-  total_items: Int!
-}
-
-type SupplierModel {
-  address: String
-  category_id: Int!
-  contact_person: String
-  created_date: DateTime!
-  email: String!
-  name: String!
-  phone_no: String!
-  registration_number: String
-  status: String!
-  supplier_id: ID!
-  tax_id: String
-  updated_date: DateTime!
-}
-
-type TopProductModel {
-  avg_price: Float!
-  category_name: String!
-  product_id: Int!
-  product_name: String!
-  revenue: Float!
-  total_sold: Int!
-  trend: String!
-}
-
-type TransactionItemModel {
-  category_name: String
-  discount: Float!
-  product_id: Int!
-  product_name: String!
-  quantity: Int!
-  transaction_id: ID!
-  unit_price: Float!
-}
-
-type TransactionModel {
-  customer: CustomerModel
-  customer_id: String
-  customer_name: String
-  discount_amount: Float!
-  employee: EmployeeModel!
-  employee_id: String!
-  employee_name: String
-  items: [TransactionItemModel!]!
-  notes: String
-  payment_method: String!
-  payment_refno: String
-  status: String!
-  subtotal: Float!
-  tax_amount: Float!
-  total_amount: Float!
-  transaction_date: DateTime!
-  transaction_id: ID!
-}
-
-input UpdateCategoryInput {
-  category_id: Int!
-  description: String
-  name: String
-  parentId: Int
+  role: Role!
 }
 
 input UpdateCompanySettingsInput {
@@ -409,54 +97,27 @@ input UpdateCompanySettingsInput {
   timezone: String
 }
 
-input UpdateProductInput {
-  categoryIds: [Int!]
-  default_price: Float
-  min_stock: Int
-  product_id: Int!
-  product_name: String
-  stock: Int
-}
-
 input UpdateRoleInput {
-  membership_id: Int!
-  role_id: Int!
-}
-
-input UpdateSupplierInput {
-  address: String
-  category_id: Int
-  contact_person: String
-  email: String
-  name: String
-  phone_no: String
-  registration_number: String
-  status: String
-  supplier_id: ID!
-  tax_id: String
+  membership_id: String!
+  role: Role!
 }
 
 type UserCompany {
-  company_id: Int!
-  invited_by: Float
+  company_id: String!
+  invited_by: String
   joined_at: DateTime!
-  membership_id: Int!
+  membership_id: String!
   role: Role
   status: String
-  user_id: Int!
+  user_id: String!
 }
 
 type UserModel {
-  clerkId: String!
-  createdAt: DateTime!
+  avatar_url: String
+  clerk_id: String!
+  created_at: DateTime!
   email: String!
-  firstName: String
+  full_name: String!
   id: ID!
-  imageUrl: String
-  isActive: Boolean!
-  lastLogin: DateTime
-  lastName: String
-  role: String!
-  updatedAt: DateTime!
-  username: String
+  updated_at: DateTime!
 }

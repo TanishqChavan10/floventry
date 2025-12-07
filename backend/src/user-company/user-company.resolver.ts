@@ -6,21 +6,22 @@ import { UpdateRoleInput } from './dto/update-role.input';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../auth/enums/role.enum';
 
 @Resolver(() => UserCompany)
 export class UserCompanyResolver {
-  constructor(private readonly userCompanyService: UserCompanyService) {}
+  constructor(private readonly userCompanyService: UserCompanyService) { }
 
   @Query(() => [UserCompany])
   @UseGuards(ClerkAuthGuard)
   async usersInCompany(@Context() context: any) {
-    const companyId = 1; // TODO: Get from context
+    const companyId = '00000000-0000-0000-0000-000000000001'; // TODO: Get from context dummy UUID
     return this.userCompanyService.listUsersInCompany(companyId);
   }
 
   @Mutation(() => UserCompany)
   @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles(Role.ADMIN)
   async updateRole(
     @Args('input') input: UpdateRoleInput,
     @Context() context: any,
@@ -31,9 +32,9 @@ export class UserCompanyResolver {
 
   @Mutation(() => Boolean)
   @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles(Role.ADMIN)
   async removeUser(
-    @Args('membershipId') membershipId: number,
+    @Args('membershipId', { type: () => String }) membershipId: string,
     @Context() context: any,
   ) {
     const requestingUserId = context.req.user.id;

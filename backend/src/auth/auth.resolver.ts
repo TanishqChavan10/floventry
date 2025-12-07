@@ -8,7 +8,7 @@ import { GraphQLError } from 'graphql';
 
 @Resolver(() => UserModel)
 export class AuthResolver {
-  constructor(private clerkService: ClerkService) {}
+  constructor(private clerkService: ClerkService) { }
 
   @Query(() => UserModel, { nullable: true })
   @UseGuards(ClerkAuthGuard)
@@ -25,17 +25,12 @@ export class AuthResolver {
 
     return {
       id: user.id,
-      clerk_id: user.clerk_id,
+      clerk_id: user.id,
       email: user.email,
-      firstName: user.full_name.split(' ')[0] || '',
-      lastName: user.full_name.split(' ').slice(1).join(' ') || '',
-      imageUrl: user.avatar_url,
-      username: user.email, // Use email as username
-      role: 'admin', // Default role
-      isActive: true, // Default active
-      createdAt: user.created_at,
-      updatedAt: user.updated_at,
-      lastLogin: new Date(), // Current login time
+      full_name: user.fullName,
+      avatar_url: user.avatarUrl,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
     };
   }
 }

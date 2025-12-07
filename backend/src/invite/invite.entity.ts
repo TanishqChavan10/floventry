@@ -1,23 +1,23 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Company } from '../company/company.entity';
-import { Role } from '../role/role.entity';
+import { Company } from '../config/company/company.entity';
+import { Role } from '../auth/enums/role.enum';
 
 @Entity('invites')
 export class Invite {
-  @PrimaryGeneratedColumn()
-  invite_id: number;
+  @PrimaryGeneratedColumn('uuid')
+  invite_id: string;
 
   @Column({ length: 255 })
   email: string;
 
-  @Column()
-  company_id: number;
+  @Column('uuid')
+  company_id: string;
 
-  @Column({ nullable: true })
-  role_id: number;
+  @Column({ type: 'enum', enum: Role, default: Role.WAREHOUSE_STAFF })
+  role: Role;
 
-  @Column()
-  invited_by: number;
+  @Column({ type: 'text' })
+  invited_by: string;
 
   @Column({ length: 20, default: 'pending' })
   status: string; // pending, accepted, rejected, expired
@@ -38,7 +38,7 @@ export class Invite {
   @JoinColumn({ name: 'company_id' })
   company: Company;
 
-  @ManyToOne(() => Role)
-  @JoinColumn({ name: 'role_id' })
-  role: Role;
+  // @ManyToOne(() => Role)
+  // @JoinColumn({ name: 'role_id' })
+  // role: Role;
 }

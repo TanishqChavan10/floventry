@@ -5,13 +5,14 @@ import { Company } from './company.model';
 import { CompanySettings } from './company-settings.model';
 import { CreateCompanyInput } from './dto/create-company.input';
 import { UpdateCompanySettingsInput } from './dto/update-company-settings.input';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { ClerkAuthGuard } from '../../auth/guards/clerk-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { Role } from '../../auth/enums/role.enum';
 
 @Resolver(() => Company)
 export class CompanyResolver {
-  constructor(private readonly companyService: CompanyService) {}
+  constructor(private readonly companyService: CompanyService) { }
 
   @Query(() => [Company])
   @UseGuards(ClerkAuthGuard)
@@ -22,7 +23,7 @@ export class CompanyResolver {
 
   @Query(() => Company)
   @UseGuards(ClerkAuthGuard)
-  async company(@Args('id') id: number) {
+  async company(@Args('id') id: string) {
     return this.companyService.getCompanyById(id);
   }
 
@@ -38,20 +39,20 @@ export class CompanyResolver {
 
   @Mutation(() => CompanySettings)
   @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles(Role.ADMIN)
   async updateCompanySettings(
     @Args('input') input: UpdateCompanySettingsInput,
     @Context() context: any,
   ) {
     // TODO: Get companyId from context or args
-    const companyId = 1; // Placeholder
+    const companyId = 'placeholder-uuid'; // Placeholder
     return this.companyService.updateSettings(companyId, input);
   }
 
   @Mutation(() => Company)
   @UseGuards(ClerkAuthGuard)
   async switchCompany(
-    @Args('companyId') companyId: number,
+    @Args('companyId') companyId: string,
     @Context() context: any,
   ) {
     const userId = context.req.user.id;

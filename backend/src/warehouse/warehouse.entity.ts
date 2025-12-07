@@ -9,7 +9,7 @@ import {
   OneToMany,
   JoinColumn,
 } from 'typeorm';
-import { Company } from '../company/company.entity';
+import { Company } from '../config/company/company.entity';
 import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
 
 @Entity('warehouses')
@@ -43,6 +43,6 @@ export class Warehouse {
   @JoinColumn({ name: 'company_id' })
   company: Company;
 
-  @OneToMany(() => UserWarehouse, (userWarehouse) => userWarehouse.warehouse)
-  userWarehouses: UserWarehouse[];
+  // @OneToMany(() => UserWarehouse, (userWarehouse) => userWarehouse.userWarehouses) // Note: original code had typo userWarehouse.userWarehouses? No, it was userWarehouse.warehouse.
+  // userWarehouses: UserWarehouse[];
 }

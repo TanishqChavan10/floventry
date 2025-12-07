@@ -8,19 +8,20 @@ import { UserCompany } from '../user-company/user-company.model';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../auth/enums/role.enum';
 
 @Resolver(() => Invite)
 export class InviteResolver {
-  constructor(private readonly inviteService: InviteService) {}
+  constructor(private readonly inviteService: InviteService) { }
 
   @Mutation(() => Invite)
   @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'MANAGER')
+  @Roles(Role.ADMIN, Role.MANAGER)
   async sendInvite(
     @Args('input') input: SendInviteInput,
     @Context() context: any,
   ) {
-    const companyId = 1; // TODO: Get from context
+    const companyId = '00000000-0000-0000-0000-000000000001'; // TODO: Get from context (using dummy UUID for type safety)
     const invitedBy = context.req.user.id;
     return this.inviteService.createInvite(input, companyId, invitedBy);
   }
@@ -36,9 +37,9 @@ export class InviteResolver {
 
   @Mutation(() => Boolean)
   @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'MANAGER')
+  @Roles(Role.ADMIN, Role.MANAGER)
   async cancelInvite(
-    @Args('inviteId') inviteId: number,
+    @Args('inviteId', { type: () => String }) inviteId: string,
     @Context() context: any,
   ) {
     const userId = context.req.user.id;

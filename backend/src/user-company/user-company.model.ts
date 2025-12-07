@@ -1,16 +1,16 @@
-import { ObjectType, Field, Int } from '@nestjs/graphql';
-import { Role } from '../role/role.model';
+import { ObjectType, Field } from '@nestjs/graphql';
+import { Role } from '../auth/enums/role.enum';
 
 @ObjectType()
 export class UserCompany {
-  @Field(() => Int)
-  membership_id: number;
+  @Field(() => String)
+  membership_id: string;
 
-  @Field(() => Int)
-  user_id: number;
+  @Field(() => String)
+  user_id: string;
 
-  @Field(() => Int)
-  company_id: number;
+  @Field(() => String)
+  company_id: string;
 
   @Field(() => Role, { nullable: true })
   role?: Role;
@@ -18,8 +18,8 @@ export class UserCompany {
   @Field()
   joined_at: Date;
 
-  @Field({ nullable: true })
-  invited_by?: number;
+  @Field(() => String, { nullable: true })
+  invited_by?: string;
 
   @Field({ nullable: true })
   status?: string; // active, pending, inactive

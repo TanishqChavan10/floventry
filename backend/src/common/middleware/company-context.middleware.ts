@@ -4,7 +4,7 @@ import { UserCompanyService } from '../../user-company/user-company.service';
 
 @Injectable()
 export class CompanyContextMiddleware implements NestMiddleware {
-  constructor(private readonly userCompanyService: UserCompanyService) {}
+  constructor(private readonly userCompanyService: UserCompanyService) { }
 
   async use(req: Request, res: Response, next: NextFunction) {
     if (req.user && req.user.id) {
@@ -12,10 +12,10 @@ export class CompanyContextMiddleware implements NestMiddleware {
       const companyId = req.headers['x-company-id'] as string || req.user.activeCompany;
 
       if (companyId) {
-        const membership = await this.userCompanyService.getMembership(req.user.id, parseInt(companyId));
+        const membership = await this.userCompanyService.getMembership(req.user.id, companyId);
         if (membership) {
           req.companyId = companyId;
-          req.role = membership.role?.name;
+          req.role = membership.role;
         }
       }
     }
