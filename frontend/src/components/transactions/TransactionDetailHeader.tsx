@@ -1,3 +1,6 @@
+'use client';
+
+import { useParams } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, User, CreditCard, Calendar, Receipt } from 'lucide-react';
@@ -10,6 +13,9 @@ export function TransactionDetailHeader({
   customer,
   cashier,
 }: TransactionDetailHeaderProps) {
+  const params = useParams();
+  const companySlug = params?.slug as string;
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Completed':
@@ -41,7 +47,7 @@ export function TransactionDetailHeader({
     <div className="bg-white dark:bg-neutral-800 rounded-lg border border-gray-200 dark:border-neutral-700 p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <Link href="/transactions">
+          <Link href={`/${companySlug}/transactions`}>
             <Button variant="ghost" size="sm" className="flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" />
             </Button>

@@ -5,6 +5,9 @@ import { Company } from './company.entity';
 import { CompanySettings } from './company-settings.entity';
 import { CreateCompanyInput } from './dto/create-company.input';
 import { UpdateCompanySettingsInput } from './dto/update-company-settings.input';
+import { User } from '../../auth/entities/user.entity';
+import { UserCompany } from '../../user-company/user-company.entity';
+import { Role } from '../../auth/enums/role.enum';
 
 @Injectable()
 export class CompanyService {
@@ -13,7 +16,11 @@ export class CompanyService {
     private companyRepository: Repository<Company>,
     @InjectRepository(CompanySettings)
     private settingsRepository: Repository<CompanySettings>,
-  ) {}
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    @InjectRepository(UserCompany)
+    private userCompanyRepository: Repository<UserCompany>,
+  ) { }
 
   async createCompany(input: CreateCompanyInput, ownerId: string): Promise<Company> {
     // Check if company name already exists
@@ -23,6 +30,15 @@ export class CompanyService {
 
     if (existingCompany) {
       throw new BadRequestException('Company name already exists');
+    }
+
+    // Check if slug already exists
+    const existingSlug = await this.companyRepository.findOne({
+      where: { slug: input.slug },
+    });
+
+    if (existingSlug) {
+      throw new BadRequestException('Workspace URL is already taken');
     }
 
     // Create company
@@ -44,6 +60,19 @@ export class CompanyService {
     });
 
     await this.settingsRepository.save(settings);
+
+    // Create user-company relationship with owner role
+    const userCompany = this.userCompanyRepository.create({
+      user_id: ownerId,
+      company_id: savedCompany.id,
+      role: Role.OWNER,
+      status: 'active',
+    });
+
+    await this.userCompanyRepository.save(userCompany);
+
+    // Set as active company for the user
+    await this.userRepository.update({ id: ownerId }, { activeCompanyId: savedCompany.id });
 
     return savedCompany;
   }
@@ -101,6 +130,22 @@ export class CompanyService {
       throw new BadRequestException('User is not a member of this company');
     }
 
+    await this.userRepository.update({ id: userId }, { activeCompanyId: companyId });
+
     return this.getCompanyById(companyId);
+  }
+
+
+  async getCompanyBySlug(slug: string): Promise<Company> {
+    const company = await this.companyRepository.findOne({
+      where: { slug: slug },
+      relations: ['settings'],
+    });
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    return company;
   }
 }

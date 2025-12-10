@@ -8,6 +8,7 @@ import { GET_CURRENT_USER } from '@/app/graphql/auth';
 interface Company {
   id: string;
   name: string;
+  slug: string;
   role: string;
   isActive: boolean;
 }

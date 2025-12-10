@@ -27,12 +27,11 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     // Check if user has required role (if specified)
     if (!loading && isAuthenticated && requiredRole && user?.role !== requiredRole) {
       const timer = setTimeout(() => {
-        router.push('/dashboard');
+        router.push('/');
       }, 100);
       return () => clearTimeout(timer);
     }
   }, [isAuthenticated, loading, router, user, requiredRole]);
-
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">

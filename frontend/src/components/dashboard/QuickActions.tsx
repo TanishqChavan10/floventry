@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useParams } from 'next/navigation';
 import {
   Plus,
   ShoppingCart,
@@ -19,46 +20,49 @@ interface QuickActionsProps {
 }
 
 export default function QuickActions({ role }: QuickActionsProps) {
+  const params = useParams();
+  const companySlug = params?.slug as string;
+
   const actions = [
     {
       label: 'Add Item',
       icon: Plus,
-      href: '/inventory/add',
+      href: `/${companySlug}/inventory/add`,
       roles: ['admin', 'manager'],
       variant: 'default' as const,
     },
     {
       label: 'Create PO',
       icon: ShoppingCart,
-      href: '/purchase-orders/new',
+      href: `/${companySlug}/purchase-orders/new`,
       roles: ['admin', 'manager'],
       variant: 'outline' as const,
     },
     {
       label: 'Receive Stock',
       icon: Truck,
-      href: '/inventory/receive',
+      href: `/${companySlug}/inventory/receive`,
       roles: ['admin', 'manager', 'employee'],
       variant: 'outline' as const,
     },
     {
       label: 'Transfer Stock',
       icon: ArrowRightLeft,
-      href: '/inventory/transfer',
+      href: `/${companySlug}/inventory/transfer`,
       roles: ['admin', 'manager'],
       variant: 'outline' as const,
     },
     {
       label: 'Invite Team',
       icon: Users,
-      href: '/company/team',
+      href: `/${companySlug}/settings/team`,
       roles: ['admin'],
       variant: 'outline' as const,
     },
     {
       label: 'Reports',
       icon: FileText,
-      href: '/reports',
+      href: `/${companySlug}/reports`,
       roles: ['admin', 'manager'],
       variant: 'outline' as const,
     },

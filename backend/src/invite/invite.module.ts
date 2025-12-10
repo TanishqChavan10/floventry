@@ -1,14 +1,22 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { InviteService } from './invite.service';
-import { InviteResolver } from './invite.resolver';
+import { User } from '../auth/entities/user.entity';
 import { Invite } from './invite.entity';
 import { UserCompany } from '../user-company/user-company.entity';
-import { Role } from '../role/role.entity';
+
+import { AuthModule } from '../auth/auth.module';
+import { InviteController } from './invite.controller';
+import { InviteResolver } from './invite.resolver';
+
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Invite, UserCompany, Role])],
+  imports: [
+    TypeOrmModule.forFeature([Invite, UserCompany, User]),
+    AuthModule,
+  ],
+  controllers: [InviteController],
   providers: [InviteService, InviteResolver],
   exports: [InviteService],
 })
-export class InviteModule {}
+export class InviteModule { }

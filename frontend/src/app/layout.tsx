@@ -7,6 +7,7 @@ import { ClerkThemeProvider } from '@/components/ClerkThemeProvider';
 
 // Providers
 import { ApolloAppProvider } from '@/components/ApolloAppProvider';
+import { WarehouseProvider } from '@/context/warehouse-context';
 import { ThemeProvider } from '@/context/theme-context';
 
 // UI Wrappers
@@ -32,17 +33,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {/* --- 2) Clerk with theme --- */}
             <ClerkThemeProvider>
               {/* --- 3) Apollo loads AFTER Clerk (prevents redirect loops) --- */}
+            {/* --- 3) Apollo loads AFTER Clerk (prevents redirect loops) --- */}
               <ApolloAppProvider>
-                {/* --- 4) Page wrapper handles animations only (safe) --- */}
-                <PageWrapper>
-                  {/* --- 5) Layout wrapper for navbar/footer etc. --- */}
-                  <AppLayoutWrapper>
-                    <main className="flex-1 min-h-screen">{children}</main>
-                  </AppLayoutWrapper>
+                <WarehouseProvider>
+                  {/* --- 4) Page wrapper handles animations only (safe) --- */}
+                  <PageWrapper>
+                    {/* --- 5) Layout wrapper for navbar/footer etc. --- */}
+                    <AppLayoutWrapper>
+                      <main className="flex-1 min-h-screen">{children}</main>
+                    </AppLayoutWrapper>
 
-                  {/* Toasts */}
-                  <Toaster richColors position="top-center" />
-                </PageWrapper>
+                    {/* Toasts */}
+                    <Toaster richColors position="top-center" />
+                  </PageWrapper>
+                </WarehouseProvider>
               </ApolloAppProvider>
             </ClerkThemeProvider>
           </ThemeProvider>

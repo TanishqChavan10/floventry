@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Company } from '../config/company/company.entity';
-import { Role } from '../auth/enums/role.enum';
+
 
 @Entity('invites')
 export class Invite {
@@ -13,8 +13,8 @@ export class Invite {
   @Column('uuid')
   company_id: string;
 
-  @Column({ type: 'enum', enum: Role, default: Role.WAREHOUSE_STAFF })
-  role: Role;
+  @Column({ default: 'warehouse_staff' })
+  role: string;
 
   @Column({ type: 'text' })
   invited_by: string;

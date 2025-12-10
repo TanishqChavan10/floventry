@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -39,11 +40,13 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
       if (!hasCompanies && !isOnboardingRoute && !isPublicRoute) {
         // User has no companies and is not on onboarding pages
+        toast.error('You are not linked to any company.');
         router.push('/onboarding');
         return;
       }
 
       if (
+
         hasCompanies &&
         !hasActiveCompany &&
         hasMultipleCompanies &&
@@ -54,17 +57,35 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         return;
       }
 
-      if (hasCompanies && isOnboardingRoute) {
+      if (
+        hasCompanies &&
+        isOnboardingRoute &&
+        !pathname.startsWith('/onboarding/create-company') &&
+        !pathname.startsWith('/onboarding/join-company')
+      ) {
         // User has companies but is on onboarding pages, redirect appropriately
         if (hasMultipleCompanies && !hasActiveCompany) {
           router.push('/company-switcher');
         } else {
-          router.push('/dashboard');
+          // Find the active company or default to the first one
+          const activeSlug = user?.companies?.find(c => c.isActive)?.slug || user?.companies?.[0]?.slug;
+          if (activeSlug) {
+              router.push(`/${activeSlug}`);
+          }
         }
         return;
       }
 
       // User has companies and appropriate active company - allow access
+      
+      // Redirect authenticated users away from auth pages
+      if (pathname.startsWith('/auth/') || pathname === '/login' || pathname === '/dashboard') {
+        const activeSlug = user?.companies?.find(c => c.isActive)?.slug || user?.companies?.[0]?.slug;
+        if (activeSlug) {
+            router.push(`/${activeSlug}`);
+        }
+        return;
+      }
     }
   }, [isAuthenticated, user, loading, pathname, router, isPublicRoute, isOnboardingRoute]);
 

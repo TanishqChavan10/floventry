@@ -1,12 +1,15 @@
-import { ObjectType, Field, Int } from '@nestjs/graphql';
+import { ObjectType, Field, ID } from '@nestjs/graphql';
 
 @ObjectType()
 export class Company {
-  @Field(() => Int)
-  company_id: number;
+  @Field(() => ID)
+  id: string;
 
   @Field()
   name: string;
+
+  @Field()
+  slug: string;
 
   @Field({ nullable: true })
   description?: string;
@@ -21,5 +24,14 @@ export class Company {
   updated_at?: Date;
 
   @Field({ nullable: true })
-  owner_id?: number;
+  created_by?: string;
+}
+
+@ObjectType()
+export class SwitchCompanyResponse {
+  @Field()
+  success: boolean;
+
+  @Field({ nullable: true })
+  activeCompanyId?: string;
 }

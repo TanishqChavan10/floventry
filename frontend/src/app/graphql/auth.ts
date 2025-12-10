@@ -4,24 +4,21 @@ export const GET_CURRENT_USER = gql`
   query Me {
     me {
       id
-      clerkId
+      clerk_id
       email
-      firstName
-      lastName
-      imageUrl
-      username
-      role
-      isActive
-      createdAt
-      updatedAt
-      lastLogin
+      full_name
+      avatar_url
+      activeCompanyId
       companies {
         id
+        id
         name
+        slug
         role
         isActive
       }
-      activeCompanyId
+      created_at
+      updated_at
     }
   }
 `;
@@ -30,13 +27,11 @@ export const GET_CURRENT_USER = gql`
 export const CREATE_COMPANY = gql`
   mutation CreateCompany($input: CreateCompanyInput!) {
     createCompany(input: $input) {
-      id
+      company_id
       name
-      gstNumber
-      currency
-      businessType
-      logoUrl
-      createdAt
+      description
+      logo_url
+      created_at
     }
   }
 `;

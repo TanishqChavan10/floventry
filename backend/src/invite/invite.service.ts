@@ -6,6 +6,7 @@ import { UserCompany } from '../user-company/user-company.entity';
 import { SendInviteInput } from './dto/send-invite.input';
 import { AcceptInviteInput } from './dto/accept-invite.input';
 import { v4 as uuidv4 } from 'uuid';
+import { User } from '../auth/entities/user.entity';
 
 @Injectable()
 export class InviteService {
@@ -14,29 +15,44 @@ export class InviteService {
     private inviteRepository: Repository<Invite>,
     @InjectRepository(UserCompany)
     private userCompanyRepository: Repository<UserCompany>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) { }
 
   async createInvite(input: SendInviteInput, companyId: string, invitedBy: string): Promise<Invite> {
+    const email = input.email.toLowerCase(); // Ensure lowercase
+
+    console.log('Creating invite with data:', { email, companyId, role: input.role, invitedBy });
+
     // Check if invite already exists for this email
     const existingInvite = await this.inviteRepository.findOne({
-      where: { email: input.email, company_id: companyId, status: 'pending' },
+      where: { email, company_id: companyId, status: 'pending' },
     });
 
     if (existingInvite) {
+      console.log('Invite already exists for this email');
       throw new ConflictException('Invite already sent to this email');
     }
 
     // Create invite
     const invite = this.inviteRepository.create({
-      email: input.email,
+      email,
       company_id: companyId,
       role: input.role,
       invited_by: invitedBy,
       token: uuidv4(),
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      status: 'pending',
+      expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours
     });
 
-    return this.inviteRepository.save(invite);
+    try {
+      const savedInvite = await this.inviteRepository.save(invite);
+      console.log('Invite saved successfully:', savedInvite);
+      return savedInvite;
+    } catch (error) {
+      console.error('Error saving invite:', error);
+      throw error;
+    }
   }
 
   async validateInviteToken(token: string): Promise<Invite> {
@@ -61,6 +77,16 @@ export class InviteService {
   async acceptInvite(input: AcceptInviteInput, userId: string): Promise<UserCompany> {
     const invite = await this.validateInviteToken(input.token);
 
+    // Fetch user to check email match
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.email.toLowerCase() !== invite.email.toLowerCase()) {
+      throw new BadRequestException(`This invitation was sent to ${invite.email}. Please sign in with that email to accept.`);
+    }
+
     // Check if user is already a member
     const existingMembership = await this.userCompanyRepository.findOne({
       where: { user_id: userId, company_id: invite.company_id },
@@ -74,7 +100,7 @@ export class InviteService {
     const membership = this.userCompanyRepository.create({
       user_id: userId,
       company_id: invite.company_id,
-      role: invite.role,
+      role: invite.role as unknown as string,
       invited_by: invite.invited_by,
       status: 'active',
     });
@@ -106,5 +132,26 @@ export class InviteService {
 
     invite.status = 'cancelled';
     await this.inviteRepository.save(invite);
+  }
+
+  async getInvites(companyId: string): Promise<Invite[]> {
+    return this.inviteRepository.find({
+      where: { company_id: companyId, status: 'pending' },
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async getInvitesByEmail(email: string): Promise<Invite[]> {
+    console.log(`Checking pending invites for email: ${email}`);
+    const normalizedEmail = email.toLowerCase();
+
+    const invites = await this.inviteRepository.find({
+      where: { email: normalizedEmail, status: 'pending' },
+      relations: ['company'],
+      order: { created_at: 'DESC' },
+    });
+
+    console.log(`Found ${invites.length} invites for ${normalizedEmail}`);
+    return invites;
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,10 +36,19 @@ interface POItem {
 }
 
 export default function POForm() {
+  const params = useParams();
+  const companySlug = params?.slug as string;
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [items, setItems] = useState<POItem[]>([
-    { id: '1', itemName: 'Disinfectant Liquid 500ml', sku: 'DL-500', quantity: 100, unitPrice: 80, total: 8000 },
+    {
+      id: '1',
+      itemName: 'Disinfectant Liquid 500ml',
+      sku: 'DL-500',
+      quantity: 100,
+      unitPrice: 80,
+      total: 8000,
+    },
   ]);
 
   const addItem = () => {
@@ -63,7 +73,7 @@ export default function POForm() {
           return updated;
         }
         return item;
-      })
+      }),
     );
   };
 
@@ -78,7 +88,7 @@ export default function POForm() {
     setTimeout(() => {
       setIsLoading(false);
       toast.success('Purchase Order created successfully');
-      router.push('/purchase-orders');
+      router.push(`/${companySlug}/purchase-orders`);
     }, 1500);
   };
 
@@ -172,9 +182,7 @@ export default function POForm() {
                         required
                       />
                     </TableCell>
-                    <TableCell className="font-semibold">
-                      ₹{item.total.toFixed(2)}
-                    </TableCell>
+                    <TableCell className="font-semibold">₹{item.total.toFixed(2)}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         type="button"
@@ -205,7 +213,9 @@ export default function POForm() {
               </div>
               <div className="flex justify-between text-lg border-t pt-2">
                 <span className="font-bold">Grand Total:</span>
-                <span className="font-bold text-indigo-600">₹{calculateGrandTotal().toFixed(2)}</span>
+                <span className="font-bold text-indigo-600">
+                  ₹{calculateGrandTotal().toFixed(2)}
+                </span>
               </div>
             </div>
           </div>
@@ -236,7 +246,11 @@ export default function POForm() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" placeholder="Add any special instructions or notes..." className="min-h-[100px]" />
+            <Textarea
+              id="notes"
+              placeholder="Add any special instructions or notes..."
+              className="min-h-[100px]"
+            />
           </div>
         </CardContent>
       </Card>

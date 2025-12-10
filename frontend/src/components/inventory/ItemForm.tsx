@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +24,8 @@ interface ItemFormProps {
 }
 
 export default function ItemForm({ initialData, isEditing = false }: ItemFormProps) {
+  const params = useParams();
+  const companySlug = params?.slug as string;
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [images, setImages] = useState<string[]>(initialData?.images || []);
@@ -35,7 +38,7 @@ export default function ItemForm({ initialData, isEditing = false }: ItemFormPro
     setTimeout(() => {
       setIsLoading(false);
       toast.success(isEditing ? 'Item updated successfully' : 'Item created successfully');
-      router.push('/inventory/items');
+      router.push(`/${companySlug}/inventory/items`);
     }, 1500);
   };
 
@@ -61,21 +64,39 @@ export default function ItemForm({ initialData, isEditing = false }: ItemFormPro
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Item Name *</Label>
-              <Input id="name" defaultValue={initialData?.name} required placeholder="e.g. Wireless Mouse" />
+              <Input
+                id="name"
+                defaultValue={initialData?.name}
+                required
+                placeholder="e.g. Wireless Mouse"
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="sku">SKU *</Label>
-                <Input id="sku" defaultValue={initialData?.sku} required placeholder="e.g. WM-001" />
+                <Input
+                  id="sku"
+                  defaultValue={initialData?.sku}
+                  required
+                  placeholder="e.g. WM-001"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="barcode">Barcode</Label>
-                <Input id="barcode" defaultValue={initialData?.barcode} placeholder="Scan barcode" />
+                <Input
+                  id="barcode"
+                  defaultValue={initialData?.barcode}
+                  placeholder="Scan barcode"
+                />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea id="description" defaultValue={initialData?.description} placeholder="Product details..." />
+              <Textarea
+                id="description"
+                defaultValue={initialData?.description}
+                placeholder="Product details..."
+              />
             </div>
           </CardContent>
         </Card>
@@ -120,7 +141,12 @@ export default function ItemForm({ initialData, isEditing = false }: ItemFormPro
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="quantity">Quantity *</Label>
-                <Input id="quantity" type="number" defaultValue={initialData?.quantity || 0} required />
+                <Input
+                  id="quantity"
+                  type="number"
+                  defaultValue={initialData?.quantity || 0}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="minStock">Min Stock</Label>
@@ -143,11 +169,23 @@ export default function ItemForm({ initialData, isEditing = false }: ItemFormPro
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="buyingPrice">Buying Price ($)</Label>
-                <Input id="buyingPrice" type="number" step="0.01" defaultValue={initialData?.buyingPrice} placeholder="0.00" />
+                <Input
+                  id="buyingPrice"
+                  type="number"
+                  step="0.01"
+                  defaultValue={initialData?.buyingPrice}
+                  placeholder="0.00"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="sellingPrice">Selling Price ($)</Label>
-                <Input id="sellingPrice" type="number" step="0.01" defaultValue={initialData?.sellingPrice} placeholder="0.00" />
+                <Input
+                  id="sellingPrice"
+                  type="number"
+                  step="0.01"
+                  defaultValue={initialData?.sellingPrice}
+                  placeholder="0.00"
+                />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -167,8 +205,15 @@ export default function ItemForm({ initialData, isEditing = false }: ItemFormPro
           <CardContent className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
               {images.map((img, index) => (
-                <div key={index} className="relative aspect-square rounded-lg border overflow-hidden group">
-                  <img src={img} alt={`Product ${index + 1}`} className="object-cover w-full h-full" />
+                <div
+                  key={index}
+                  className="relative aspect-square rounded-lg border overflow-hidden group"
+                >
+                  <img
+                    src={img}
+                    alt={`Product ${index + 1}`}
+                    className="object-cover w-full h-full"
+                  />
                   <button
                     type="button"
                     onClick={() => removeImage(index)}

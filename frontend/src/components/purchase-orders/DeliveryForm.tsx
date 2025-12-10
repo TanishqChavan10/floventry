@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,7 +39,14 @@ interface DeliveryFormProps {
   expectedItems: DeliveryItem[];
 }
 
-export default function DeliveryForm({ poId, poNumber, supplier, expectedItems }: DeliveryFormProps) {
+export default function DeliveryForm({
+  poId,
+  poNumber,
+  supplier,
+  expectedItems,
+}: DeliveryFormProps) {
+  const params = useParams();
+  const companySlug = params?.slug as string;
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [items, setItems] = useState<DeliveryItem[]>(expectedItems);
@@ -56,7 +64,7 @@ export default function DeliveryForm({ poId, poNumber, supplier, expectedItems }
           return { ...item, deliveredQty: qty, status };
         }
         return item;
-      })
+      }),
     );
   };
 
@@ -96,7 +104,7 @@ export default function DeliveryForm({ poId, poNumber, supplier, expectedItems }
     const totalDelivered = items.reduce((sum, item) => sum + item.deliveredQty, 0);
     const shortageCount = items.filter((item) => item.status === 'shortage').length;
     const matchCount = items.filter((item) => item.status === 'match').length;
-    
+
     return { totalOrdered, totalDelivered, shortageCount, matchCount };
   };
 
@@ -107,8 +115,10 @@ export default function DeliveryForm({ poId, poNumber, supplier, expectedItems }
     setTimeout(() => {
       setIsLoading(false);
       const { totalDelivered, shortageCount } = calculateTotals();
-      toast.success(`Delivery recorded: ${totalDelivered} units received${shortageCount > 0 ? ` (${shortageCount} items short)` : ''}`);
-      router.push('/purchase-orders');
+      toast.success(
+        `Delivery recorded: ${totalDelivered} units received${shortageCount > 0 ? ` (${shortageCount} items short)` : ''}`,
+      );
+      router.push(`/${companySlug}/purchase-orders`);
     }, 1500);
   };
 
@@ -134,9 +144,13 @@ export default function DeliveryForm({ poId, poNumber, supplier, expectedItems }
             <div>
               <Label className="text-slate-500">Delivery Status</Label>
               <div className="flex gap-2 mt-1">
-                <Badge variant="outline">{totals.matchCount}/{items.length} matched</Badge>
+                <Badge variant="outline">
+                  {totals.matchCount}/{items.length} matched
+                </Badge>
                 {totals.shortageCount > 0 && (
-                  <Badge variant="outline" className="text-yellow-600">{totals.shortageCount} short</Badge>
+                  <Badge variant="outline" className="text-yellow-600">
+                    {totals.shortageCount} short
+                  </Badge>
                 )}
               </div>
             </div>
@@ -195,7 +209,9 @@ export default function DeliveryForm({ poId, poNumber, supplier, expectedItems }
                         className="w-36"
                       />
                     </TableCell>
-                    <TableCell>{getStatusBadge(item.status, item.poQty, item.deliveredQty)}</TableCell>
+                    <TableCell>
+                      {getStatusBadge(item.status, item.poQty, item.deliveredQty)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -214,7 +230,9 @@ export default function DeliveryForm({ poId, poNumber, supplier, expectedItems }
               </div>
               <div className="flex justify-between text-lg border-t pt-2">
                 <span className="font-bold">Variance:</span>
-                <span className={`font-bold ${totals.totalDelivered < totals.totalOrdered ? 'text-yellow-600' : 'text-green-600'}`}>
+                <span
+                  className={`font-bold ${totals.totalDelivered < totals.totalOrdered ? 'text-yellow-600' : 'text-green-600'}`}
+                >
                   {totals.totalDelivered - totals.totalOrdered > 0 ? '+' : ''}
                   {totals.totalDelivered - totals.totalOrdered}
                 </span>

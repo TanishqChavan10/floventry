@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Company } from '../config/company/company.entity';
-import { Role } from '../auth/enums/role.enum';
+
 import { User } from '../auth/entities/user.entity';
 
 @Entity('user_companies')
@@ -14,8 +14,8 @@ export class UserCompany {
     @Column('uuid')
     company_id: string;
 
-    @Column({ type: 'enum', enum: Role, default: Role.WAREHOUSE_STAFF })
-    role: Role;
+    @Column({ default: 'warehouse_staff' })
+    role: string;
 
     @CreateDateColumn()
     joined_at: Date;

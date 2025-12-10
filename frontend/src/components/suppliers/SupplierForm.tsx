@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +24,8 @@ interface SupplierFormProps {
 }
 
 export default function SupplierForm({ initialData, isEditing = false }: SupplierFormProps) {
+  const params = useParams();
+  const companySlug = params?.slug as string;
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -34,7 +37,7 @@ export default function SupplierForm({ initialData, isEditing = false }: Supplie
     setTimeout(() => {
       setIsLoading(false);
       toast.success(isEditing ? 'Supplier updated successfully' : 'Supplier added successfully');
-      router.push('/suppliers');
+      router.push(`/${companySlug}/suppliers`);
     }, 1500);
   };
 
@@ -49,16 +52,30 @@ export default function SupplierForm({ initialData, isEditing = false }: Supplie
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Supplier Name *</Label>
-              <Input id="name" defaultValue={initialData?.name} required placeholder="e.g. EcoSupply Pvt Ltd" />
+              <Input
+                id="name"
+                defaultValue={initialData?.name}
+                required
+                placeholder="e.g. EcoSupply Pvt Ltd"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="contactPerson">Contact Person</Label>
-              <Input id="contactPerson" defaultValue={initialData?.contactPerson} placeholder="e.g. John Doe" />
+              <Input
+                id="contactPerson"
+                defaultValue={initialData?.contactPerson}
+                placeholder="e.g. John Doe"
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue={initialData?.email} placeholder="contact@example.com" />
+                <Input
+                  id="email"
+                  type="email"
+                  defaultValue={initialData?.email}
+                  placeholder="contact@example.com"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
@@ -67,7 +84,11 @@ export default function SupplierForm({ initialData, isEditing = false }: Supplie
             </div>
             <div className="space-y-2">
               <Label htmlFor="address">Address</Label>
-              <Textarea id="address" defaultValue={initialData?.address} placeholder="Full address..." />
+              <Textarea
+                id="address"
+                defaultValue={initialData?.address}
+                placeholder="Full address..."
+              />
             </div>
           </CardContent>
         </Card>
@@ -114,9 +135,14 @@ export default function SupplierForm({ initialData, isEditing = false }: Supplie
             </div>
             <div className="space-y-2">
               <Label htmlFor="creditLimit">Credit Limit</Label>
-              <Input id="creditLimit" type="number" defaultValue={initialData?.creditLimit} placeholder="0.00" />
+              <Input
+                id="creditLimit"
+                type="number"
+                defaultValue={initialData?.creditLimit}
+                placeholder="0.00"
+              />
             </div>
-            
+
             {isEditing && (
               <div className="space-y-2 pt-4 border-t">
                 <Label>Status</Label>
@@ -146,14 +172,14 @@ export default function SupplierForm({ initialData, isEditing = false }: Supplie
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
-              <Textarea 
-                id="notes" 
-                defaultValue={initialData?.notes} 
-                placeholder="Internal notes about this supplier..." 
+              <Textarea
+                id="notes"
+                defaultValue={initialData?.notes}
+                placeholder="Internal notes about this supplier..."
                 className="min-h-[100px]"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>Documents</Label>
               <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors cursor-pointer">

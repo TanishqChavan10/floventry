@@ -1,5 +1,24 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 
+
+@ObjectType()
+export class UserCompanyInfo {
+  @Field(() => ID)
+  id: string;
+
+  @Field()
+  name: string;
+
+  @Field()
+  slug: string;
+
+  @Field(() => String)
+  role: string;
+
+  @Field()
+  isActive: boolean;
+}
+
 @ObjectType()
 export class UserModel {
   @Field(() => ID)
@@ -16,6 +35,12 @@ export class UserModel {
 
   @Field({ nullable: true })
   avatar_url?: string;
+
+  @Field({ nullable: true })
+  activeCompanyId?: string;
+
+  @Field(() => [UserCompanyInfo])
+  companies: UserCompanyInfo[];
 
   @Field()
   created_at: Date;

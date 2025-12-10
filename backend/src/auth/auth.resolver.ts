@@ -29,6 +29,14 @@ export class AuthResolver {
       email: user.email,
       full_name: user.fullName,
       avatar_url: user.avatarUrl,
+      activeCompanyId: user.activeCompanyId,
+      companies: user.userCompanies?.map((uc) => ({
+        id: uc.company.id,
+        name: uc.company.name,
+        slug: uc.company.slug,
+        role: uc.role,
+        isActive: user.activeCompanyId === uc.company.id,
+      })) || [],
       created_at: user.created_at,
       updated_at: user.updated_at,
     };

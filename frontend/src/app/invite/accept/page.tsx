@@ -1,51 +1,47 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Users, Check, Loader2, AlertCircle, Building2 } from 'lucide-react';
+import React, { useEffect, useState, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useMutation } from '@apollo/client';
-import { ACCEPT_INVITE } from '@/app/graphql/auth';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface InviteDetails {
-  companyName: string;
-  invitedRole: string;
-  inviterName: string;
-}
+import { useAuth, ClerkLoaded, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/nextjs';
 
-export default function InviteAcceptancePage() {
-  const router = useRouter();
+function InviteAcceptContent() {
   const searchParams = useSearchParams();
+  const token = searchParams.get('token');
+  const router = useRouter();
+  const { getToken, isSignedIn, isLoaded } = useAuth();
+  
   const [isLoading, setIsLoading] = useState(true);
   const [isAccepting, setIsAccepting] = useState(false);
-  const [inviteDetails, setInviteDetails] = useState<InviteDetails | null>(null);
-  const [error, setError] = useState('');
-
-  const token = searchParams.get('token');
+  const [inviteDetails, setInviteDetails] = useState<{
+    email: string;
+    companyName: string;
+    role: string;
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!token) {
+      setError('Invalid invite link.');
+      setIsLoading(false);
+      return;
+    }
+
     const validateInvite = async () => {
-      if (!token) {
-        setError('Invalid invite link. Please check your email for a valid invitation.');
-        setIsLoading(false);
-        return;
-      }
-
       try {
-        // TODO: Implement invite validation API call
-        // For now, simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
-        // Simulate invite details
-        setInviteDetails({
-          companyName: 'Orion Electronics Pvt. Ltd.',
-          invitedRole: 'Manager',
-          inviterName: 'Riya Sharma',
-        });
-      } catch (error) {
-        setError('This invite link is invalid or has expired.');
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/invites/validate?token=${token}`);
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.message || 'Invalid or expired invite.');
+        }
+        const data = await res.json();
+        setInviteDetails(data);
+      } catch (err: any) {
+        setError(err.message);
       } finally {
         setIsLoading(false);
       }
@@ -54,26 +50,37 @@ export default function InviteAcceptancePage() {
     validateInvite();
   }, [token]);
 
-  const [acceptInvite, { loading: acceptLoading }] = useMutation(ACCEPT_INVITE);
+  const handleAccept = async () => {
+    if (!token) return;
+    
+    if (!isSignedIn) {
+        // Should be handled by UI showing "Sign In" button, but checking here too.
+        router.push(`/auth/sign-in?redirect_url=${encodeURIComponent(window.location.href)}`);
+        return;
+    }
 
-  const handleAcceptInvite = async () => {
     setIsAccepting(true);
-
     try {
-      const { data } = await acceptInvite({
-        variables: { token },
+      const authToken = await getToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/invites/accept`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ token }),
       });
 
-      if (data?.acceptInvite?.success) {
-        toast.success(`You've joined ${inviteDetails?.companyName}!`);
-
-        // TODO: Set active company
-        // TODO: Redirect to dashboard
-
-        router.push('/dashboard');
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Failed to accept invite.');
       }
-    } catch (error: any) {
-      toast.error('Failed to accept invite. Please try again.');
+
+      toast.success('Joined company successfully!');
+      router.push('/dashboard'); 
+    } catch (err: any) {
+      toast.error(err.message);
+      setError(err.message);
     } finally {
       setIsAccepting(false);
     }
@@ -81,106 +88,92 @@ export default function InviteAcceptancePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-600 mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400">Validating your invitation...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
-        <div className="max-w-md mx-auto text-center">
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-
-          <Button
-            onClick={() => router.push('/onboarding/join-company')}
-            className="bg-slate-600 hover:bg-slate-700 text-white"
-          >
-            Try Joining with Code
-          </Button>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
+        <Card className="w-full max-w-md border-red-200 shadow-lg">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <XCircle className="w-6 h-6 text-red-600" />
+            </div>
+            <CardTitle className="text-xl text-red-700">Invite Invalid</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardFooter className="justify-center">
+             <Button variant="outline" onClick={() => router.push('/')}>
+               Go Home
+             </Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
-      <div className="max-w-lg mx-auto text-center">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-sm font-medium mb-6">
-            <Users className="h-4 w-4" />
-            Team Invitation
-          </div>
-
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">
-            You've been invited!
-          </h1>
-          <p className="text-lg text-slate-600 dark:text-slate-400">
-            Join your team and start collaborating on inventory management
-          </p>
-        </div>
-
-        {/* Invite Details Card */}
-        {inviteDetails && (
-          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-lg mb-8">
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/50 rounded-2xl flex items-center justify-center">
-                <Building2 className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-              </div>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
+      <Card className="w-full max-w-md shadow-xl border-slate-200 dark:border-slate-800">
+        <CardHeader className="text-center">
+           <div className="mx-auto w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
             </div>
-
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-              {inviteDetails.companyName}
-            </h2>
-
-            <div className="space-y-3 mb-8">
-              <div className="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400">
-                <span className="font-medium">Role:</span>
-                <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-sm">
-                  {inviteDetails.invitedRole}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-400">
-                <span className="font-medium">Invited by:</span>
-                <span>{inviteDetails.inviterName}</span>
-              </div>
-            </div>
-
-            <Button
-              onClick={handleAcceptInvite}
-              disabled={isAccepting || acceptLoading}
-              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+          <CardTitle className="text-2xl font-bold">You're Invited!</CardTitle>
+          <CardDescription>
+            You have been invited to join <strong>{inviteDetails?.companyName}</strong> as a <strong>{inviteDetails?.role}</strong>.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+           <div className="bg-slate-100 dark:bg-slate-900 p-4 rounded-lg text-sm text-center">
+             <p className="text-slate-500 dark:text-slate-400">Invited Email</p>
+             <p className="font-medium text-slate-900 dark:text-white">{inviteDetails?.email}</p>
+           </div>
+           
+           <div className="text-xs text-center text-slate-500">
+             By accepting, you will be granted access to the company workspace.
+           </div>
+        </CardContent>
+        <CardFooter className="flex flex-col gap-3">
+          {!isSignedIn ? (
+            <Button 
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" 
+              size="lg"
+              onClick={() => router.push(`/auth/sign-in?redirect_url=${encodeURIComponent(window.location.href)}`)}
             >
-              {isAccepting || acceptLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Joining Team...
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Accept Invitation
-                </>
-              )}
+              Sign In to Accept
             </Button>
-          </div>
-        )}
-
-        {/* Footer */}
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          By accepting this invitation, you'll have access to the company's inventory management
-          system.
-        </p>
-      </div>
+          ) : (
+            <Button 
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" 
+                size="lg"
+                onClick={handleAccept}
+                disabled={isAccepting}
+            >
+                {isAccepting ? (
+                <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Joining...
+                </>
+                ) : 'Accept Invite'}
+            </Button>
+          )}
+          <Button variant="ghost" className="w-full" onClick={() => router.push('/')}>
+            Decline
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
+  );
+}
+
+export default function InviteAcceptPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <InviteAcceptContent />
+    </Suspense>
   );
 }

@@ -2,13 +2,20 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn,
+CreateDateColumn,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Company } from './company.entity';
 
 @Entity('company_settings')
 export class CompanySettings {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @OneToOne(() => Company, (company) => company.settings)
+  @JoinColumn({ name: 'company_id' })
+  company: Company;
 
   @Column('uuid')
   company_id: string; // FK → companies

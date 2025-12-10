@@ -24,6 +24,9 @@ export class User {
   @Column({ type: 'text', nullable: true })
   avatarUrl: string;
 
+  @Column({ type: 'text', nullable: true })
+  activeCompanyId: string;
+
   @CreateDateColumn()
   created_at: Date;
 

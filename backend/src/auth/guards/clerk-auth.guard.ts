@@ -6,11 +6,19 @@ import { GraphQLError } from 'graphql';
 
 @Injectable()
 export class ClerkAuthGuard implements CanActivate {
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const ctx = GqlExecutionContext.create(context);
-    const request = ctx.getContext().req;
+    let request: any;
+
+    // Check if context is GraphQL or HTTP
+    if (context.getType().toString() === 'graphql') {
+      const ctx = GqlExecutionContext.create(context);
+      request = ctx.getContext().req;
+    } else {
+      // Http
+      request = context.switchToHttp().getRequest();
+    }
 
     const authHeader = request.headers.authorization;
 

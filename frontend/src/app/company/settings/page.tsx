@@ -1,15 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  Building2, 
-  CreditCard, 
-  Package, 
-  MapPin, 
-  Settings, 
+import {
+  Building2,
+  CreditCard,
+  Package,
+  MapPin,
+  Settings,
   Save,
   Loader2,
-  Upload
+  Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,15 +26,16 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import CompanyGuard from '@/components/CompanyGuard';
 
-export default function CompanySettingsPage() {
+function CompanySettingsContent() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     setIsLoading(false);
     toast.success('Settings saved successfully');
   };
@@ -51,23 +52,38 @@ export default function CompanySettingsPage() {
 
         <Tabs defaultValue="general" className="w-full">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto p-1 bg-slate-200/50 dark:bg-slate-800/50 rounded-xl mb-8">
-            <TabsTrigger value="general" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm py-2.5 rounded-lg">
+            <TabsTrigger
+              value="general"
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm py-2.5 rounded-lg"
+            >
               <Building2 className="w-4 h-4 mr-2" />
               General
             </TabsTrigger>
-            <TabsTrigger value="financial" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm py-2.5 rounded-lg">
+            <TabsTrigger
+              value="financial"
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm py-2.5 rounded-lg"
+            >
               <CreditCard className="w-4 h-4 mr-2" />
               Financial
             </TabsTrigger>
-            <TabsTrigger value="inventory" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm py-2.5 rounded-lg">
+            <TabsTrigger
+              value="inventory"
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm py-2.5 rounded-lg"
+            >
               <Package className="w-4 h-4 mr-2" />
               Inventory
             </TabsTrigger>
-            <TabsTrigger value="address" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm py-2.5 rounded-lg">
+            <TabsTrigger
+              value="address"
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm py-2.5 rounded-lg"
+            >
               <MapPin className="w-4 h-4 mr-2" />
               Address
             </TabsTrigger>
-            <TabsTrigger value="preferences" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm py-2.5 rounded-lg">
+            <TabsTrigger
+              value="preferences"
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm py-2.5 rounded-lg"
+            >
               <Settings className="w-4 h-4 mr-2" />
               Preferences
             </TabsTrigger>
@@ -98,13 +114,15 @@ export default function CompanySettingsPage() {
                       </Button>
                     </div>
                   </div>
-                  
+
                   <Separator />
 
                   <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
                     <div>
                       <h4 className="font-medium">Team Management</h4>
-                      <p className="text-sm text-slate-500">Manage users, roles, and permissions.</p>
+                      <p className="text-sm text-slate-500">
+                        Manage users, roles, and permissions.
+                      </p>
                     </div>
                     <Button variant="outline" asChild>
                       <a href="/company/team">Manage Team</a>
@@ -124,8 +142,8 @@ export default function CompanySettingsPage() {
                     </div>
                     <div className="space-y-2 md:col-span-2">
                       <Label htmlFor="description">Description</Label>
-                      <Textarea 
-                        id="description" 
+                      <Textarea
+                        id="description"
                         placeholder="Tell us a bit about your company..."
                         className="resize-none"
                       />
@@ -186,21 +204,22 @@ export default function CompanySettingsPage() {
                     <div className="space-y-2">
                       <Label htmlFor="lowStock">Default Low Stock Threshold</Label>
                       <div className="flex items-center gap-2">
-                        <Input 
-                          id="lowStock" 
-                          type="number" 
-                          defaultValue="10" 
-                          className="max-w-[150px]" 
+                        <Input
+                          id="lowStock"
+                          type="number"
+                          defaultValue="10"
+                          className="max-w-[150px]"
                         />
                         <span className="text-sm text-slate-500">units</span>
                       </div>
                       <p className="text-xs text-slate-500">
-                        Products below this quantity will be flagged as "Low Stock". You can override this per product.
+                        Products below this quantity will be flagged as "Low Stock". You can
+                        override this per product.
                       </p>
                     </div>
-                    
+
                     <Separator />
-                    
+
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label>Auto-generate POs</Label>
@@ -274,9 +293,7 @@ export default function CompanySettingsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>System Preferences</CardTitle>
-                  <CardDescription>
-                    Customize your workspace experience.
-                  </CardDescription>
+                  <CardDescription>Customize your workspace experience.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
@@ -313,8 +330,8 @@ export default function CompanySettingsPage() {
             </TabsContent>
 
             <div className="mt-8 flex justify-end">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 size="lg"
                 className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[150px]"
                 disabled={isLoading}
@@ -336,5 +353,13 @@ export default function CompanySettingsPage() {
         </Tabs>
       </div>
     </div>
+  );
+}
+
+export default function CompanySettingsPage() {
+  return (
+    <CompanyGuard>
+      <CompanySettingsContent />
+    </CompanyGuard>
   );
 }

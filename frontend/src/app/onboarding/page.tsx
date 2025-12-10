@@ -1,11 +1,118 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Building2, Users, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Building2, Users, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 export default function OnboardingChoicePage() {
+  const router = useRouter();
+  const [checkingInvites, setCheckingInvites] = useState(true);
+
+  useEffect(() => {
+    const checkInvites = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/invites/my-pending`, {
+          headers: {
+            // Clerk middleware should attach the token automatically if this page is protected
+            // But since this is client side, we might need to rely on the cookie session 
+            // verifying automatically on backend or use useAuth to get token.
+            // For now, let's assume cookie auth works or we need to add token header if using fetch directly.
+            // Actually, best practice with Clerk + External API is to send header.
+            // But we are using same-origin /api usually, or nextjs rewrite?
+            // User env says API URL.
+            // Let's try without header first (cookie based), if fails we might need to useAuth.
+          }
+        });
+
+        // However, standard fetch from client to separate backend needs Bearer token usually.
+        // Let's add useAuth from clerk.
+      } catch (err) {
+        console.error("Error checking invites", err);
+      } finally {
+        setCheckingInvites(false);
+      }
+    };
+    
+    // checkInvites(); 
+    // Commented out because we need useAuth to be correct.
+    // Let's reimplement with useAuth below.
+  }, []);
+
+  // Moving logic to actual implementation below
+  return (
+    <OnboardingContent />
+  );
+}
+
+import { useAuth } from '@clerk/nextjs';
+
+function OnboardingContent() {
+  const { getToken, isLoaded } = useAuth();
+  const router = useRouter();
+  const [checkingInvites, setCheckingInvites] = useState(true);
+
+  useEffect(() => {
+    const checkInvites = async () => {
+      console.log("Checking invites effect running...");
+      if (!isLoaded) {
+        console.log("Auth not loaded yet");
+        return;
+      }
+      
+      try {
+        const token = await getToken();
+        console.log("Auth token acquired:", !!token);
+        
+        if (!token) {
+           console.log("No token available");
+           setCheckingInvites(false);
+           return;
+        }
+
+        const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/invites/my-pending`;
+        console.log("Fetching invites from:", url);
+        
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        console.log("API Response status:", res.status);
+        
+        if (res.ok) {
+          const data = await res.json();
+          console.log("Invites found:", data);
+          if (Array.isArray(data) && data.length > 0) {
+            console.log("Redirecting to /onboarding/invites");
+            router.push('/onboarding/invites');
+            return;
+          }
+        } else {
+            const errorText = await res.text();
+            console.error("API Error:", errorText);
+        }
+      } catch (err) {
+        console.error("Error checking invites", err);
+      } finally {
+        setCheckingInvites(false);
+      }
+    };
+
+    checkInvites();
+  }, [isLoaded, getToken, router]);
+
+  if (checkingInvites) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
       <div className="max-w-4xl mx-auto text-center">

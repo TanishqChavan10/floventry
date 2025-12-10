@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useParams } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Filter, Download, Plus } from 'lucide-react';
@@ -17,6 +18,9 @@ interface InventoryFiltersProps {
 }
 
 export default function InventoryFilters({ role }: InventoryFiltersProps) {
+  const params = useParams();
+  const companySlug = params?.slug as string;
+
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div className="flex flex-1 items-center gap-2">
@@ -59,7 +63,7 @@ export default function InventoryFilters({ role }: InventoryFiltersProps) {
         </Button>
         {(role === 'admin' || role === 'manager' || role === 'employee') && (
           <Button asChild>
-            <a href="/inventory/items/new">
+            <a href={`/${companySlug}/inventory/items/new`}>
               <Plus className="mr-2 h-4 w-4" />
               Add Item
             </a>

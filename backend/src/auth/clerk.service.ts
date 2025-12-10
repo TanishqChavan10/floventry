@@ -50,6 +50,7 @@ export class ClerkService {
   async getUserByClerkId(clerkId: string): Promise<User> {
     let user = await this.userRepository.findOne({
       where: { id: clerkId },
+      relations: ['userCompanies', 'userCompanies.company'],
     });
 
     if (!user) {

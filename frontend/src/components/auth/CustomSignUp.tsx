@@ -202,6 +202,9 @@ export default function CustomSignUp() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* CAPTCHA element for Clerk bot protection */}
+          <div id="clerk-captcha" className="flex justify-center mb-4"></div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="firstName">First name</Label>

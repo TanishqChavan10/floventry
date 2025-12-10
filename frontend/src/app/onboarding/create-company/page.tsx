@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Building2, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,18 +14,45 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useMutation } from '@apollo/client';
+import { CREATE_COMPANY } from '@/app/graphql/company';
+import { GET_CURRENT_USER } from '@/app/graphql/auth';
+import { toast } from 'sonner';
 
 export default function CreateCompanyPage() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [companyName, setCompanyName] = React.useState('');
+  const [slug, setSlug] = React.useState('');
+
+  const [createCompany] = useMutation(CREATE_COMPANY, {
+    refetchQueries: [{ query: GET_CURRENT_USER }],
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // TODO: Implement actual creation logic
-    setTimeout(() => {
+
+    try {
+      const { data } = await createCompany({
+        variables: {
+          input: {
+            name: companyName,
+            slug: slug,
+          },
+        },
+      });
+
+      if (data?.createCompany) {
+        toast.success('Company created successfully!');
+        router.push(`/${slug}/settings`);
+      }
+    } catch (error: any) {
+      console.error('Error creating company:', error);
+      toast.error(error.message || 'Failed to create company');
+    } finally {
       setIsLoading(false);
-      window.location.href = '/company/settings';
-    }, 2000);
+    }
   };
 
   return (
@@ -38,7 +66,7 @@ export default function CreateCompanyPage() {
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to options
           </Link>
-          
+
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg">
               <Building2 className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
@@ -59,21 +87,26 @@ export default function CreateCompanyPage() {
               <Input
                 id="companyName"
                 placeholder="e.g. Acme Corp"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
                 required
                 className="h-11"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="slug">Workspace URL</Label>
+              <Label htmlFor="slug">Custom Company URL</Label>
               <div className="flex rounded-md shadow-sm">
                 <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-500 text-sm">
                   flowventory.com/
                 </span>
-                <Input
-                  id="slug"
-                  placeholder="acme-corp"
-                  className="rounded-l-none h-11"
+                <Input 
+                  id="slug" 
+                  placeholder="acme-corp" 
+                  className="rounded-l-none h-11" 
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  required
                 />
               </div>
             </div>

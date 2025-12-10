@@ -7,12 +7,13 @@ input AcceptInviteInput {
 }
 
 type Company {
-  company_id: Int!
   created_at: DateTime!
+  created_by: String
   description: String
+  id: ID!
   logo_url: String
   name: String!
-  owner_id: Float
+  slug: String!
   updated_at: DateTime
 }
 
@@ -35,6 +36,7 @@ input CreateCompanyInput {
   description: String
   logo_url: String
   name: String!
+  slug: String!
 }
 
 """
@@ -61,7 +63,7 @@ type Mutation {
   createCompany(input: CreateCompanyInput!): Company!
   removeUser(membershipId: String!): Boolean!
   sendInvite(input: SendInviteInput!): Invite!
-  switchCompany(companyId: String!): Company!
+  switchCompany(companyId: String!): SwitchCompanyResponse!
   updateCompanySettings(input: UpdateCompanySettingsInput!): CompanySettings!
   updateRole(input: UpdateRoleInput!): UserCompany!
 }
@@ -69,6 +71,7 @@ type Mutation {
 type Query {
   companies: [Company!]!
   company(id: String!): Company!
+  companyBySlug(slug: String!): Company!
   me: UserModel
   usersInCompany: [UserCompany!]!
 }
@@ -84,6 +87,11 @@ enum Role {
 input SendInviteInput {
   email: String!
   role: Role!
+}
+
+type SwitchCompanyResponse {
+  activeCompanyId: String
+  success: Boolean!
 }
 
 input UpdateCompanySettingsInput {
@@ -112,9 +120,19 @@ type UserCompany {
   user_id: String!
 }
 
+type UserCompanyInfo {
+  id: ID!
+  isActive: Boolean!
+  name: String!
+  role: String!
+  slug: String!
+}
+
 type UserModel {
+  activeCompanyId: String
   avatar_url: String
   clerk_id: String!
+  companies: [UserCompanyInfo!]!
   created_at: DateTime!
   email: String!
   full_name: String!

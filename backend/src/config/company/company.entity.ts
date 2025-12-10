@@ -23,6 +23,9 @@ export class Company {
   @Column()
   name: string; // Company legal name
 
+  @Column({ unique: true })
+  slug: string; // url slug
+
   @Column({ nullable: true })
   logo_url: string; // Optional (S3)
 
@@ -44,7 +47,7 @@ export class Company {
   @Column({ nullable: true })
   gst_number: string; // India-specific
 
-  @Column('uuid')
+  @Column({ type: "text" })
   created_by: string; // FK → users(id)
 
   @CreateDateColumn()
@@ -57,12 +60,11 @@ export class Company {
   deleted_at: Date; // Soft delete
 
   // Relationships
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'created_by' })
-  creator: User;
+  @ManyToOne(() => User, { nullable: false })
+  @JoinColumn({ name: "created_by" })
+  createdBy: User;
 
-  @OneToOne(() => CompanySettings, { cascade: true })
-  @JoinColumn({ name: 'id' })
+  @OneToOne(() => CompanySettings, (settings) => settings.company, { cascade: true })
   settings: CompanySettings;
 
   @OneToMany(() => UserCompany, (userCompany) => userCompany.company)
