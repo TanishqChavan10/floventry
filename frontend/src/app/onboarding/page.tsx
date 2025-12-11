@@ -14,37 +14,38 @@ export default function OnboardingChoicePage() {
   useEffect(() => {
     const checkInvites = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/invites/my-pending`, {
-          headers: {
-            // Clerk middleware should attach the token automatically if this page is protected
-            // But since this is client side, we might need to rely on the cookie session 
-            // verifying automatically on backend or use useAuth to get token.
-            // For now, let's assume cookie auth works or we need to add token header if using fetch directly.
-            // Actually, best practice with Clerk + External API is to send header.
-            // But we are using same-origin /api usually, or nextjs rewrite?
-            // User env says API URL.
-            // Let's try without header first (cookie based), if fails we might need to useAuth.
-          }
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/invites/my-pending`,
+          {
+            headers: {
+              // Clerk middleware should attach the token automatically if this page is protected
+              // But since this is client side, we might need to rely on the cookie session
+              // verifying automatically on backend or use useAuth to get token.
+              // For now, let's assume cookie auth works or we need to add token header if using fetch directly.
+              // Actually, best practice with Clerk + External API is to send header.
+              // But we are using same-origin /api usually, or nextjs rewrite?
+              // User env says API URL.
+              // Let's try without header first (cookie based), if fails we might need to useAuth.
+            },
+          },
+        );
 
         // However, standard fetch from client to separate backend needs Bearer token usually.
         // Let's add useAuth from clerk.
       } catch (err) {
-        console.error("Error checking invites", err);
+        console.error('Error checking invites', err);
       } finally {
         setCheckingInvites(false);
       }
     };
-    
-    // checkInvites(); 
+
+    // checkInvites();
     // Commented out because we need useAuth to be correct.
     // Let's reimplement with useAuth below.
   }, []);
 
   // Moving logic to actual implementation below
-  return (
-    <OnboardingContent />
-  );
+  return <OnboardingContent />;
 }
 
 import { useAuth } from '@clerk/nextjs';
@@ -56,47 +57,47 @@ function OnboardingContent() {
 
   useEffect(() => {
     const checkInvites = async () => {
-      console.log("Checking invites effect running...");
+      console.log('Checking invites effect running...');
       if (!isLoaded) {
-        console.log("Auth not loaded yet");
+        console.log('Auth not loaded yet');
         return;
       }
-      
+
       try {
         const token = await getToken();
-        console.log("Auth token acquired:", !!token);
-        
+        console.log('Auth token acquired:', !!token);
+
         if (!token) {
-           console.log("No token available");
-           setCheckingInvites(false);
-           return;
+          console.log('No token available');
+          setCheckingInvites(false);
+          return;
         }
 
         const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/invites/my-pending`;
-        console.log("Fetching invites from:", url);
-        
+        console.log('Fetching invites from:', url);
+
         const res = await fetch(url, {
           headers: {
-            Authorization: `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
 
-        console.log("API Response status:", res.status);
-        
+        console.log('API Response status:', res.status);
+
         if (res.ok) {
           const data = await res.json();
-          console.log("Invites found:", data);
+          console.log('Invites found:', data);
           if (Array.isArray(data) && data.length > 0) {
-            console.log("Redirecting to /onboarding/invites");
+            console.log('Redirecting to /onboarding/invites');
             router.push('/onboarding/invites');
             return;
           }
         } else {
-            const errorText = await res.text();
-            console.error("API Error:", errorText);
+          const errorText = await res.text();
+          console.error('API Error:', errorText);
         }
       } catch (err) {
-        console.error("Error checking invites", err);
+        console.error('Error checking invites', err);
       } finally {
         setCheckingInvites(false);
       }
@@ -153,7 +154,7 @@ function OnboardingContent() {
           </Link>
 
           {/* Join Company Card */}
-          <Link href="/onboarding/join-company" className="group">
+          <Link href="/onboarding/invites" className="group">
             <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 hover:shadow-xl hover:border-green-300 dark:hover:border-green-600 transition-all duration-300 transform hover:-translate-y-1">
               <div className="w-16 h-16 bg-green-100 dark:bg-green-900/50 rounded-2xl flex items-center justify-center mb-6 mx-auto group-hover:scale-110 transition-transform">
                 <Users className="h-8 w-8 text-green-600 dark:text-green-400" />
@@ -162,11 +163,11 @@ function OnboardingContent() {
                 Join an Existing Company
               </h3>
               <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
-                You've been invited to join a team. Enter your invite code or accept a pending
-                invitation.
+                Check for pending email invitations and join a team that has invited you to their
+                workspace.
               </p>
               <div className="flex items-center justify-center text-green-600 dark:text-green-400 font-medium group-hover:text-green-700 dark:group-hover:text-green-300">
-                Join team
+                View invites
                 <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>

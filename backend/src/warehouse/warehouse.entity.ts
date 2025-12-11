@@ -9,7 +9,7 @@ import {
   OneToMany,
   JoinColumn,
 } from 'typeorm';
-import { Company } from '../config/company/company.entity';
+import { Company } from '../company/company.entity';
 import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
 
 @Entity('warehouses')

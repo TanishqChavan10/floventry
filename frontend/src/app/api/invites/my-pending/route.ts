@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const response = await fetch(`${BACKEND_URL}/invites/my-pending`, {
+    const response = await fetch(`${BACKEND_URL}/api/invites/my-pending`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

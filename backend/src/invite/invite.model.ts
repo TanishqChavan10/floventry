@@ -1,5 +1,5 @@
+// invite.model.ts
 import { ObjectType, Field } from '@nestjs/graphql';
-import { Role } from '../auth/enums/role.enum';
 
 @ObjectType()
 export class Invite {
@@ -12,14 +12,14 @@ export class Invite {
   @Field(() => String)
   company_id: string;
 
-  @Field(() => Role, { nullable: true })
-  role?: Role;
+  @Field(() => String)
+  role: string; // Use string to avoid enum mismatch
 
   @Field(() => String)
   invited_by: string;
 
   @Field()
-  status: string; // pending, accepted, rejected, expired
+  status: string;
 
   @Field({ nullable: true })
   token?: string;

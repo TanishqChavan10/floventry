@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const response = await fetch(`${BACKEND_URL}/invites/accept`, {
+    const response = await fetch(`${BACKEND_URL}/api/invites/accept`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

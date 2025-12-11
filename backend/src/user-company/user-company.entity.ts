@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Company } from '../config/company/company.entity';
+import { Company } from '../company/company.entity';
 
 import { User } from '../auth/entities/user.entity';
 
@@ -14,7 +14,7 @@ export class UserCompany {
     @Column('uuid')
     company_id: string;
 
-    @Column({ default: 'warehouse_staff' })
+    @Column({ default: 'WAREHOUSE_STAFF' })
     role: string;
 
     @CreateDateColumn()

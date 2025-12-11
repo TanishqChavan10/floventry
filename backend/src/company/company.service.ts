@@ -5,9 +5,10 @@ import { Company } from './company.entity';
 import { CompanySettings } from './company-settings.entity';
 import { CreateCompanyInput } from './dto/create-company.input';
 import { UpdateCompanySettingsInput } from './dto/update-company-settings.input';
-import { User } from '../../auth/entities/user.entity';
-import { UserCompany } from '../../user-company/user-company.entity';
-import { Role } from '../../auth/enums/role.enum';
+import { User } from '../auth/entities/user.entity';
+import { UserCompany } from '../user-company/user-company.entity';
+import { Role } from '../auth/enums/role.enum';
+import { ClerkService } from '../auth/clerk.service';
 
 @Injectable()
 export class CompanyService {
@@ -20,6 +21,7 @@ export class CompanyService {
     private userRepository: Repository<User>,
     @InjectRepository(UserCompany)
     private userCompanyRepository: Repository<UserCompany>,
+    private clerkService: ClerkService,
   ) { }
 
   async createCompany(input: CreateCompanyInput, ownerId: string): Promise<Company> {
@@ -74,6 +76,12 @@ export class CompanyService {
     // Set as active company for the user
     await this.userRepository.update({ id: ownerId }, { activeCompanyId: savedCompany.id });
 
+    // UPDATE CLERK METADATA
+    await this.clerkService.updateUserMetadata(ownerId, {
+      activeCompanyId: savedCompany.id,
+      activeRole: Role.OWNER,
+    });
+
     return savedCompany;
   }
 
@@ -118,19 +126,26 @@ export class CompanyService {
 
   async switchCompany(userId: string, companyId: string): Promise<Company> {
     // Verify user is member of the company
-    const membership = await this.companyRepository
-      .createQueryBuilder('company')
-      .innerJoin('user_companies', 'uc', 'uc.company_id = company.id')
-      .where('uc.user_id = :userId', { userId })
-      .andWhere('uc.company_id = :companyId', { companyId })
-      .andWhere('uc.status = :status', { status: 'active' })
-      .getOne();
+    // Verify user is member of the company
+    const membership = await this.userCompanyRepository.findOne({
+      where: {
+        user_id: userId,
+        company_id: companyId,
+        status: 'active',
+      },
+    });
 
     if (!membership) {
       throw new BadRequestException('User is not a member of this company');
     }
 
     await this.userRepository.update({ id: userId }, { activeCompanyId: companyId });
+
+    // UPDATE CLERK METADATA
+    await this.clerkService.updateUserMetadata(userId, {
+      activeCompanyId: companyId,
+      activeRole: membership.role.toUpperCase(),
+    });
 
     return this.getCompanyById(companyId);
   }

@@ -1,3 +1,4 @@
+// send-invite.input.ts
 import { InputType, Field } from '@nestjs/graphql';
 import { IsNotEmpty, IsEmail, IsEnum } from 'class-validator';
 import { Role } from '../../auth/enums/role.enum';
@@ -12,5 +13,5 @@ export class SendInviteInput {
   @Field(() => Role)
   @IsNotEmpty()
   @IsEnum(Role)
-  role: Role;
+  role: Role; // Values like "ADMIN", "MANAGER", "WAREHOUSE_STAFF"
 }

@@ -69,9 +69,7 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
   };
 
   const activeWarehouse =
-    activeWarehouseId === 'ALL'
-      ? null
-      : warehouses.find((w) => w.id === activeWarehouseId) || null;
+    activeWarehouseId === 'ALL' ? null : warehouses.find((w) => w.id === activeWarehouseId) || null;
 
   const value = {
     warehouses,

@@ -21,7 +21,7 @@ export class UserCompanyResolver {
 
   @Mutation(() => UserCompany)
   @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
   async updateRole(
     @Args('input') input: UpdateRoleInput,
     @Context() context: any,
@@ -32,7 +32,7 @@ export class UserCompanyResolver {
 
   @Mutation(() => Boolean)
   @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
   async removeUser(
     @Args('membershipId', { type: () => String }) membershipId: string,
     @Context() context: any,

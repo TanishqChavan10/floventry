@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
 import { Building2, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,7 @@ import { toast } from 'sonner';
 
 export default function CreateCompanyPage() {
   const router = useRouter();
+  const { user } = useUser();
   const [isLoading, setIsLoading] = React.useState(false);
   const [companyName, setCompanyName] = React.useState('');
   const [slug, setSlug] = React.useState('');
@@ -45,6 +47,8 @@ export default function CreateCompanyPage() {
 
       if (data?.createCompany) {
         toast.success('Company created successfully!');
+        // Force refresh session to ensure middleware sees the new activeCompanyId
+        await user?.reload();
         router.push(`/${slug}/settings`);
       }
     } catch (error: any) {

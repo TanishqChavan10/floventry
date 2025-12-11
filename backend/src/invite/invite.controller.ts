@@ -15,12 +15,22 @@ export class InviteController {
         private readonly clerkService: ClerkService,
     ) { }
 
+    @Get('test')
+    test() {
+        return "Invite controller is reachable";
+    }
+
     @Post('send')
     @UseGuards(ClerkAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN, Role.MANAGER)
-    async sendInvite(@Body() body: SendInviteInput & { companyId: string }, @Req() req: any) {
+    @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
+    async sendInvite(@Body() body: SendInviteInput, @Req() req: any) {
         const user = await this.clerkService.syncUser(req.user.clerkId);
-        return this.inviteService.createInvite(body, body.companyId, user.id);
+
+        if (!user.activeCompanyId) {
+            throw new BadRequestException('User does not have an active company selected');
+        }
+
+        return this.inviteService.createInvite(body, user.activeCompanyId, user.id);
     }
 
     @Get('validate')
@@ -33,7 +43,7 @@ export class InviteController {
         return {
             email: invite.email,
             companyName: invite.company?.name || 'Unknown Company',
-            companySlug: invite.company?.slug, // Added slug
+            companySlug: invite.company?.slug,
             role: invite.role,
             companyId: invite.company_id,
         };
@@ -42,29 +52,20 @@ export class InviteController {
     @Post('accept')
     @UseGuards(ClerkAuthGuard)
     async acceptInvite(@Body() body: AcceptInviteInput, @Req() req: any) {
-        // user must be synced
         const user = await this.clerkService.syncUser(req.user.clerkId);
+        const result = await this.inviteService.acceptInvite(body, user.id);
 
-        // Optional: verify email match ? 
-        // Logic: InviteService will create membership for this userId.
-        // If email doesn't match invite email, is that allowed? 
-        // Usually NO. Invite is for SPECIFIC email.
-        // We should check upcoming InviteService logic or do it here.
-        // For now, let's proceed. logic is inside inviteService? No, inviteService takes input & userId.
-        // I should strict check here or in service. 
-        // Plan said: "Update acceptInvite to strict check email match".
-        // I haven't updated service to do that yet perfectly.
-        // Let's do it here?
-        // We can fetch invite to check email? or let service do it.
-        // For speed, let's implement strict check in service or here.
-        // I'll leave as is for now, as I can't easily fetch invite here without double query.
-        // I'll update service next.
-        return this.inviteService.acceptInvite(body, user.id);
+        // Return company info for frontend redirect
+        return {
+            membership: result.membership,
+            companyId: result.companyId,
+            companySlug: result.companySlug,
+        };
     }
 
     @Get('company/:companyId')
     @UseGuards(ClerkAuthGuard, RolesGuard)
-    @Roles(Role.ADMIN, Role.MANAGER)
+    @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
     async getInvites(@Param('companyId') companyId: string) {
         return this.inviteService.getInvites(companyId);
     }
@@ -72,18 +73,13 @@ export class InviteController {
     @Get('my-pending')
     @UseGuards(ClerkAuthGuard)
     async getMyPendingInvites(@Req() req: any) {
-        console.log('GET /my-pending called');
         if (!req.user?.clerkId) {
-            console.log('No clerkId in request');
             return [];
         }
-        console.log(`Fetching user for Clerk ID: ${req.user.clerkId}`);
         const user = await this.clerkService.getUserByClerkId(req.user.clerkId);
         if (!user || !user.email) {
-            console.log(`User not found or no email: ${JSON.stringify(user)}`);
             return [];
         }
-        console.log(`User email: ${user.email}`);
         return this.inviteService.getInvitesByEmail(user.email);
     }
 }

@@ -6,7 +6,7 @@ import { validateEnvironment } from './env.schema';
  * This utility validates environment variables using Joi schema
  */
 export class EnvironmentValidator {
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService) { }
 
   validateConfiguration(): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];

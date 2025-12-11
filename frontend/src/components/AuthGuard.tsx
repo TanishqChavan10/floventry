@@ -16,7 +16,8 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const pathname = usePathname();
 
   // Define public routes that don't require authentication
-  const publicRoutes = ['/', '/login', '/auth'];
+  // Define public routes that don't require authentication
+  const publicRoutes = ['/', '/auth/sign-in', '/auth/sign-up', '/auth'];
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
   // Define onboarding routes
@@ -46,7 +47,6 @@ export default function AuthGuard({ children }: AuthGuardProps) {
       }
 
       if (
-
         hasCompanies &&
         !hasActiveCompany &&
         hasMultipleCompanies &&
@@ -57,32 +57,29 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         return;
       }
 
-      if (
-        hasCompanies &&
-        isOnboardingRoute &&
-        !pathname.startsWith('/onboarding/create-company') &&
-        !pathname.startsWith('/onboarding/join-company')
-      ) {
+      if (hasCompanies && isOnboardingRoute && !pathname.startsWith('/onboarding/create-company')) {
         // User has companies but is on onboarding pages, redirect appropriately
         if (hasMultipleCompanies && !hasActiveCompany) {
           router.push('/company-switcher');
         } else {
           // Find the active company or default to the first one
-          const activeSlug = user?.companies?.find(c => c.isActive)?.slug || user?.companies?.[0]?.slug;
+          const activeSlug =
+            user?.companies?.find((c) => c.isActive)?.slug || user?.companies?.[0]?.slug;
           if (activeSlug) {
-              router.push(`/${activeSlug}`);
+            router.push(`/${activeSlug}`);
           }
         }
         return;
       }
 
       // User has companies and appropriate active company - allow access
-      
+
       // Redirect authenticated users away from auth pages
-      if (pathname.startsWith('/auth/') || pathname === '/login' || pathname === '/dashboard') {
-        const activeSlug = user?.companies?.find(c => c.isActive)?.slug || user?.companies?.[0]?.slug;
+      if (pathname.startsWith('/auth/') || pathname === '/auth/sign-in' || pathname === '/dashboard') {
+        const activeSlug =
+          user?.companies?.find((c) => c.isActive)?.slug || user?.companies?.[0]?.slug;
         if (activeSlug) {
-            router.push(`/${activeSlug}`);
+          router.push(`/${activeSlug}`);
         }
         return;
       }

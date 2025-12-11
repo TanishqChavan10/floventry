@@ -10,20 +10,30 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
 
+import { ClerkService } from '../auth/clerk.service';
+import { BadRequestException } from '@nestjs/common';
+
 @Resolver(() => Invite)
 export class InviteResolver {
-  constructor(private readonly inviteService: InviteService) { }
+  constructor(
+    private readonly inviteService: InviteService,
+    private readonly clerkService: ClerkService,
+  ) { }
 
   @Mutation(() => Invite)
   @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER)
+@Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
   async sendInvite(
     @Args('input') input: SendInviteInput,
     @Context() context: any,
   ) {
-    const companyId = '00000000-0000-0000-0000-000000000001'; // TODO: Get from context (using dummy UUID for type safety)
-    const invitedBy = context.req.user.id;
-    return this.inviteService.createInvite(input, companyId, invitedBy);
+    const user = await this.clerkService.syncUser(context.req.user.clerkId);
+
+    if (!user.activeCompanyId) {
+      throw new BadRequestException('User does not have an active company selected');
+    }
+
+    return this.inviteService.createInvite(input, user.activeCompanyId, user.id);
   }
 
   @Mutation(() => UserCompany)
@@ -37,7 +47,7 @@ export class InviteResolver {
 
   @Mutation(() => Boolean)
   @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER,Role.OWNER)
   async cancelInvite(
     @Args('inviteId', { type: () => String }) inviteId: string,
     @Context() context: any,

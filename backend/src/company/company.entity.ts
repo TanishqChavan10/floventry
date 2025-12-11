@@ -11,9 +11,9 @@ import {
   ManyToOne,
 } from 'typeorm';
 import { CompanySettings } from './company-settings.entity';
-import { UserCompany } from '../../user-company/user-company.entity';
-import { Warehouse } from '../../warehouse/warehouse.entity';
-import { User } from '../../auth/entities/user.entity';
+import { UserCompany } from '../user-company/user-company.entity';
+import { Warehouse } from '../warehouse/warehouse.entity';
+import { User } from '../auth/entities/user.entity';
 
 @Entity('companies')
 export class Company {

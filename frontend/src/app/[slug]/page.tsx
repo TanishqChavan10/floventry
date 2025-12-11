@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import StatsCards from '@/components/dashboard/StatsCards';
 import AlertsSection from '@/components/dashboard/AlertsSection';
@@ -13,17 +13,20 @@ import InventoryTable from '@/components/dashboard/InventoryTable';
 import { Loader2 } from 'lucide-react';
 
 import { useAuth } from '@/context/auth-context';
+import { useWarehouse } from '@/context/warehouse-context';
+import EmptyWarehouseState from '@/components/dashboard/EmptyWarehouseState';
 
 interface DashboardPageProps {
-  params: {
-    slug: string;
-  };
+  // params prop is no longer used directly to avoid Next.js 15 Promise<params> issues
 }
 
-function DashboardContent({ params }: DashboardPageProps) {
+function DashboardContent() {
   const router = useRouter();
+  const params = useParams();
+  const slug = params?.slug as string;
+
   const { user } = useAuth();
-  const { slug } = params;
+  const { warehouses, isLoading: warehousesLoading } = useWarehouse();
   const [isLoading, setIsLoading] = useState(true);
 
   // Derive active company and role
@@ -47,7 +50,7 @@ function DashboardContent({ params }: DashboardPageProps) {
     }
   }, [user, router]); // Reduced dependency on timer
 
-  if (isLoading) {
+  if (isLoading || warehousesLoading) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col">
         <DashboardHeader companyName="Loading..." role="viewer" onRoleChange={() => {}} />
@@ -59,6 +62,11 @@ function DashboardContent({ params }: DashboardPageProps) {
         </div>
       </div>
     );
+  }
+
+  // Show empty state if no warehouses
+  if (warehouses.length === 0) {
+    return <EmptyWarehouseState companySlug={slug} />;
   }
 
   return (
@@ -100,7 +108,7 @@ function DashboardContent({ params }: DashboardPageProps) {
   );
 }
 
-export default function DashboardPage({ params }: DashboardPageProps) {
+export default function DashboardPage() {
   return (
     <Suspense
       fallback={
@@ -109,7 +117,7 @@ export default function DashboardPage({ params }: DashboardPageProps) {
         </div>
       }
     >
-      <DashboardContent params={params} />
+      <DashboardContent />
     </Suspense>
   );
 }

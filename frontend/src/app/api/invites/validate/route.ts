@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Token is required' }, { status: 400 });
     }
 
-    const response = await fetch(`${BACKEND_URL}/invites/validate?token=${token}`, {
+    const response = await fetch(`${BACKEND_URL}/api/invites/validate?token=${token}`, {
       method: 'GET',
     });
 

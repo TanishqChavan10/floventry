@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
 import { clerkClient } from '@clerk/clerk-sdk-node';
 import { User } from './entities/user.entity';
 
@@ -10,42 +9,44 @@ export class ClerkService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    private configService: ConfigService,
-  ) { }
+  ) {}
 
   /**
    * Sync Clerk user with local database
-   * This creates or updates a user in your database based on Clerk data
    */
   async syncUser(clerkId: string): Promise<User> {
-    // Get user data from Clerk
+    // 1. Fetch user from Clerk
     const clerkUser = await clerkClient.users.getUser(clerkId);
 
-    // Check if user exists in database
+    // 2. Try to find local user (PK = clerkId)
     let user = await this.userRepository.findOne({
       where: { id: clerkId },
     });
 
+    // Data to sync (never overwrite PK)
     const userData = {
-      id: clerkUser.id,
       email: clerkUser.emailAddresses[0]?.emailAddress || '',
       fullName: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim(),
       avatarUrl: clerkUser.imageUrl || undefined,
     };
 
     if (user) {
-      // Update existing user
+      // Update ONLY mutable fields
       Object.assign(user, userData);
-      return await this.userRepository.save(user);
-    } else {
-      // Create new user (including ID explicitly)
-      user = this.userRepository.create(userData);
-      return await this.userRepository.save(user);
+      return this.userRepository.save(user);
     }
+
+    // 3. If user does not exist → create new user
+    user = this.userRepository.create({
+      id: clerkId,       // PK stays Clerk ID
+      ...userData,
+    });
+
+    return this.userRepository.save(user);
   }
 
   /**
-   * Get or create user from Clerk ID
+   * Get an internal user by Clerk ID
    */
   async getUserByClerkId(clerkId: string): Promise<User> {
     let user = await this.userRepository.findOne({
@@ -54,10 +55,27 @@ export class ClerkService {
     });
 
     if (!user) {
-      // User doesn't exist, sync from Clerk
       user = await this.syncUser(clerkId);
     }
 
     return user;
+  }
+
+  /**
+   * Update Clerk metadata (activeCompanyId, activeRole)
+   */
+  async updateUserMetadata(
+    clerkId: string,
+    metadata: { activeCompanyId?: string; activeRole?: string },
+  ) {
+    try {
+      await clerkClient.users.updateUserMetadata(clerkId, {
+        publicMetadata: {
+          ...metadata,
+        },
+      });
+    } catch (error) {
+      console.error('Error updating Clerk metadata:', error);
+    }
   }
 }

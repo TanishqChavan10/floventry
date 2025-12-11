@@ -15,7 +15,12 @@ interface DashboardHeaderProps {
   onRoleChange: (role: string) => void; // For testing purposes
 }
 
+import { useParams } from 'next/navigation';
+
 export default function DashboardHeader({ companyName, role, onRoleChange }: DashboardHeaderProps) {
+  const params = useParams();
+  const companySlug = params?.slug as string;
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white dark:bg-slate-950 px-6 shadow-sm">
       <CompanySwitcher />
@@ -47,7 +52,7 @@ export default function DashboardHeader({ companyName, role, onRoleChange }: Das
         </Button>
 
         <Button variant="ghost" size="icon" asChild>
-          <a href="/company/settings">
+          <a href={`/${companySlug}/settings`}>
             <Settings className="h-5 w-5" />
             <span className="sr-only">Settings</span>
           </a>

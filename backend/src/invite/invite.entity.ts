@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Company } from '../config/company/company.entity';
+import { Company } from '../company/company.entity';
 
 
 @Entity('invites')
@@ -13,7 +13,7 @@ export class Invite {
   @Column('uuid')
   company_id: string;
 
-  @Column({ default: 'warehouse_staff' })
+  @Column({ default: 'WAREHOUSE_STAFF' })
   role: string;
 
   @Column({ type: 'text' })

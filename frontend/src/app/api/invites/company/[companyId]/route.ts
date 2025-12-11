@@ -17,7 +17,7 @@ export async function GET(
 
     const { companyId } = await params;
 
-    const response = await fetch(`${BACKEND_URL}/invites/company/${companyId}`, {
+    const response = await fetch(`${BACKEND_URL}/api/invites/company/${companyId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

@@ -12,7 +12,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 // import { TransactionModule } from './transaction/transaction.module';
 // import { RedisModule } from './redis';
 // import { S3Module } from './s3';
-import { CompanyModule } from './config/company/company.module';
+import { CompanyModule } from './company/company.module';
 import { InviteModule } from './invite/invite.module';
 import { UserCompanyModule } from './user-company/user-company.module';
 import { RoleModule } from './role/role.module';
@@ -22,6 +22,7 @@ import { CompanyContextMiddleware } from './common/middleware/company-context.mi
 // import { NotificationModule } from './notification/notification.module';
 // import { IntegrationModule } from './integration/integration.module';
 import { WarehouseModule } from './warehouse/warehouse.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { WarehouseModule } from './warehouse/warehouse.module';
     CompanyModule,
     UserCompanyModule,
     InviteModule,
+    EmailModule,
     // RoleModule,
     // ReportsModule,
     // AuditLogModule,

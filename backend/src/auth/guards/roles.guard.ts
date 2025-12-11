@@ -14,16 +14,30 @@ export class RolesGuard implements CanActivate {
     );
 
     if (!requiredRoles) {
-      return true; // No role requirements
+      return true;
     }
 
     const ctx = GqlExecutionContext.create(context);
     const request = ctx.getContext().req;
 
-    if (!request.role) {
-      return false; // No role in context
+    console.log("🟦 DEBUG User in RolesGuard:", request.user);
+    // THE FIX → correct field for role
+    const userRole = request.user?.role || request.user?.activeRole;
+
+    if (!userRole) {
+      console.log("❌ No role found in request.user");
+      return false;
     }
 
-    return requiredRoles.some((role) => request.role === role);
+    // Normalize for safety
+    const normalizedRole = userRole.toUpperCase();
+
+    const allowed = requiredRoles.includes(normalizedRole);
+
+    if (!allowed) {
+      console.log("❌ User role not allowed:", normalizedRole, "Required:", requiredRoles);
+    }
+
+    return allowed;
   }
 }

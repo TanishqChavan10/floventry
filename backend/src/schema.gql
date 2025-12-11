@@ -52,7 +52,7 @@ type Invite {
   expires_at: DateTime!
   invite_id: String!
   invited_by: String!
-  role: Role
+  role: String!
   status: String!
   token: String
 }
