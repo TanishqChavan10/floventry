@@ -35,7 +35,9 @@ export const useDashboardStats = (): UseDashboardStatsReturn => {
   // Process the data and calculate stats
   const totalInventoryValue = data?.products
     ? data.products.reduce((total: number, product: DashboardStats['products'][0]) => total + (product.stock * product.default_price), 0)
-    : 0;  const processedStats: StatData[] = data ? [
+    : 0;
+
+  const processedStats: StatData[] = data ? [
     {
       title: "Total Products",
       value: data.products?.length || 0,
@@ -145,7 +147,7 @@ export const useDashboardStats = (): UseDashboardStatsReturn => {
 const filterRecentShipments = (shipments: Array<{ shipment_id: string; received_date: string }>): number => {
   const now = new Date();
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  
+
   return shipments.filter(shipment => {
     if (!shipment.received_date) return false;
     const receivedDate = new Date(shipment.received_date);

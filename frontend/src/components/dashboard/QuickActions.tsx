@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useWarehouse } from '@/context/warehouse-context';
 
 interface QuickActionsProps {
   role: string;
@@ -22,47 +23,51 @@ interface QuickActionsProps {
 export default function QuickActions({ role }: QuickActionsProps) {
   const params = useParams();
   const companySlug = params?.slug as string;
+  const { activeWarehouse } = useWarehouse();
+  
+  // Use active warehouse slug or fallback (though it should exist if we are here)
+  const warehouseSlug = activeWarehouse?.slug || 'all';
 
   const actions = [
     {
       label: 'Add Item',
       icon: Plus,
-      href: `/${companySlug}/inventory/add`,
+      href: `/${companySlug}/${warehouseSlug}/inventory/add`,
       roles: ['admin', 'manager'],
       variant: 'default' as const,
     },
     {
       label: 'Create PO',
       icon: ShoppingCart,
-      href: `/${companySlug}/purchase-orders/new`,
+      href: `/${companySlug}/${warehouseSlug}/purchase-orders/new`,
       roles: ['admin', 'manager'],
       variant: 'outline' as const,
     },
     {
       label: 'Receive Stock',
       icon: Truck,
-      href: `/${companySlug}/inventory/receive`,
+      href: `/${companySlug}/${warehouseSlug}/inventory/receive`,
       roles: ['admin', 'manager', 'employee'],
       variant: 'outline' as const,
     },
     {
       label: 'Transfer Stock',
       icon: ArrowRightLeft,
-      href: `/${companySlug}/inventory/transfer`,
+      href: `/${companySlug}/${warehouseSlug}/inventory/transfer`,
       roles: ['admin', 'manager'],
       variant: 'outline' as const,
     },
     {
       label: 'Invite Team',
       icon: Users,
-      href: `/${companySlug}/settings/team`,
+      href: `/${companySlug}/${warehouseSlug}/settings/team`,
       roles: ['admin'],
       variant: 'outline' as const,
     },
     {
       label: 'Reports',
       icon: FileText,
-      href: `/${companySlug}/reports`,
+      href: `/${companySlug}/${warehouseSlug}/reports`,
       roles: ['admin', 'manager'],
       variant: 'outline' as const,
     },

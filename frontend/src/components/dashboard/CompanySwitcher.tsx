@@ -14,8 +14,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/auth-context';
 import { useMutation } from '@apollo/client';
-import { SWITCH_COMPANY } from '@/app/graphql/company';
-import { GET_CURRENT_USER } from '@/app/graphql/auth';
+import { SWITCH_COMPANY } from '@/lib/graphql/company';
+import { GET_CURRENT_USER } from '@/lib/graphql/auth';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
@@ -86,7 +86,10 @@ export default function CompanySwitcher() {
         ))}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/onboarding/create-company" className="cursor-pointer flex items-center w-full">
+          <Link
+            href="/onboarding/create-company"
+            className="cursor-pointer flex items-center w-full"
+          >
             <Plus className="mr-2 h-4 w-4" />
             <span>Create New Company</span>
           </Link>

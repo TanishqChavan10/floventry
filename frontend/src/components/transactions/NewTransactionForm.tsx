@@ -29,7 +29,7 @@ import { formatIndianRupee } from '@/lib/formatters';
 import type { Product } from '@/types';
 import { useEmployees } from '@/hooks/useTransactions';
 import { useProducts } from '@/hooks/useProducts';
-import type { TransactionItem } from '@/types/transaction.types';
+import type { TransactionItem } from '@/types/transaction';
 
 // Define Employee type if not imported from types
 interface Employee {

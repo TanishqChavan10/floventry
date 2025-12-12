@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/auth-context';
 import Link from 'next/link';
 import { useMutation } from '@apollo/client';
-import { SWITCH_COMPANY } from '@/app/graphql/auth';
+import { SWITCH_COMPANY } from '@/lib/graphql/auth';
 import { toast } from 'sonner';
 
 export default function CompanySwitcherPage() {

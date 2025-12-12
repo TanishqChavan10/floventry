@@ -18,8 +18,11 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 
+import { useRouter } from 'next/navigation';
+
 export default function WarehouseSwitcher() {
   const params = useParams();
+  const router = useRouter();
   const companySlug = params?.slug as string;
   const { warehouses, activeWarehouse, activeWarehouseId, setActiveWarehouseId, isLoading } =
     useWarehouse();
@@ -27,6 +30,20 @@ export default function WarehouseSwitcher() {
   if (isLoading) {
     return <div className="w-[180px] h-9 bg-slate-100 dark:bg-slate-800 animate-pulse rounded" />;
   }
+
+  const handleSelect = (warehouseId: string) => {
+    setActiveWarehouseId(warehouseId);
+    if (warehouseId === 'ALL') {
+         // TODO: Handle 'ALL' route if we want a consolidated view
+         // For now, maybe redirect to main or keep current logic but we need a route
+         router.push(`/${companySlug}/`);
+    } else {
+        const wh = warehouses.find(w => w.id === warehouseId);
+        if (wh && wh.slug) {
+            router.push(`/${companySlug}/${wh.slug}`);
+        }
+    }
+  };
 
   const getIcon = (type: WarehouseType['type']) => {
     switch (type) {
@@ -66,7 +83,7 @@ export default function WarehouseSwitcher() {
         </DropdownMenuLabel>
         <DropdownMenuGroup>
           <DropdownMenuItem
-            onSelect={() => setActiveWarehouseId('ALL')}
+            onSelect={() => handleSelect('ALL')}
             className="flex items-center justify-between cursor-pointer"
           >
             <div className="flex items-center gap-2">
@@ -83,7 +100,7 @@ export default function WarehouseSwitcher() {
             return (
               <DropdownMenuItem
                 key={warehouse.id}
-                onSelect={() => setActiveWarehouseId(warehouse.id)}
+                onSelect={() => handleSelect(warehouse.id)}
                 className="flex items-center justify-between cursor-pointer"
               >
                 <div className="flex items-center gap-2 truncate">
@@ -100,7 +117,7 @@ export default function WarehouseSwitcher() {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link
-            href={`/${companySlug}/warehouses`}
+            href={`/${companySlug}/${activeWarehouse?.slug || 'main'}/warehouses`} 
             className="cursor-pointer font-medium text-indigo-600"
           >
             <Warehouse className="mr-2 h-4 w-4" />

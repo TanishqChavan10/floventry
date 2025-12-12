@@ -1,0 +1,87 @@
+'use client';
+
+import { useUser } from '@clerk/nextjs';
+import { useMemo } from 'react';
+
+export enum Role {
+    OWNER = 'OWNER',
+    ADMIN = 'ADMIN',
+    MANAGER = 'MANAGER',
+    WAREHOUSE_STAFF = 'WAREHOUSE_STAFF',
+}
+
+interface PermissionsReturn {
+    role: Role | null;
+    canInviteUsers: boolean;
+    canRemoveUsers: boolean;
+    canManageRoles: boolean;
+    canAssignWarehouses: boolean;
+    canViewFullUserDetails: boolean;
+    isOwner: boolean;
+    isAdmin: boolean;
+    isManager: boolean;
+    isStaff: boolean;
+}
+
+export function usePermissions(): PermissionsReturn {
+    const { user } = useUser();
+
+    const role = useMemo(() => {
+        const activeRole = user?.publicMetadata?.activeRole as string;
+        if (!activeRole) return null;
+
+        // Normalize role to enum
+        const normalized = activeRole.toUpperCase();
+        if (Object.values(Role).includes(normalized as Role)) {
+            return normalized as Role;
+        }
+
+        return null;
+    }, [user]);
+
+    const permissions = useMemo(() => {
+        if (!role) {
+            return {
+                role: null,
+                canInviteUsers: false,
+                canRemoveUsers: false,
+                canManageRoles: false,
+                canAssignWarehouses: false,
+                canViewFullUserDetails: false,
+                isOwner: false,
+                isAdmin: false,
+                isManager: false,
+                isStaff: false,
+            };
+        }
+
+        const isOwner = role === Role.OWNER;
+        const isAdmin = role === Role.ADMIN;
+        const isManager = role === Role.MANAGER;
+        const isStaff = role === Role.WAREHOUSE_STAFF;
+
+        return {
+            role,
+            // Invite and remove users - OWNER and ADMIN only
+            canInviteUsers: isOwner || isAdmin,
+            canRemoveUsers: isOwner || isAdmin,
+
+            // Manage roles - OWNER and ADMIN only
+            canManageRoles: isOwner || isAdmin,
+
+            // Assign warehouses - OWNER, ADMIN, and MANAGER (with restrictions)
+            canAssignWarehouses: isOwner || isAdmin || isManager,
+
+            // View full user details - OWNER and ADMIN see everything
+            canViewFullUserDetails: isOwner || isAdmin,
+
+            // Role flags
+            isOwner,
+            isAdmin,
+            isManager,
+            isStaff,
+        };
+    }, [role]);
+
+    return permissions;
+}

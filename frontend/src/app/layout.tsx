@@ -11,7 +11,7 @@ import { WarehouseProvider } from '@/context/warehouse-context';
 import { ThemeProvider } from '@/context/theme-context';
 
 // UI Wrappers
-import PageWrapper from '@/components/landing/PageWrapper';
+import PageWrapper from '@/components/ui/PageWrapper';
 import AppLayoutWrapper from './layout-wrapper';
 
 // UI
@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {/* --- 2) Clerk with theme --- */}
             <ClerkThemeProvider>
               {/* --- 3) Apollo loads AFTER Clerk (prevents redirect loops) --- */}
-            {/* --- 3) Apollo loads AFTER Clerk (prevents redirect loops) --- */}
+              {/* --- 3) Apollo loads AFTER Clerk (prevents redirect loops) --- */}
               <ApolloAppProvider>
                 <WarehouseProvider>
                   {/* --- 4) Page wrapper handles animations only (safe) --- */}

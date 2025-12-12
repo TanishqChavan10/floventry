@@ -4,6 +4,7 @@ import { CompanyService } from './company.service';
 import { Company, SwitchCompanyResponse } from './company.model';
 import { CompanySettings } from './company-settings.model';
 import { CreateCompanyInput } from './dto/create-company.input';
+import { UpdateCompanyInput } from './dto/update-company.input';
 import { UpdateCompanySettingsInput } from './dto/update-company-settings.input';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -76,6 +77,21 @@ export class CompanyResolver {
     // TODO: Get companyId from context or args
     const companyId = 'placeholder-uuid'; // Placeholder
     return this.companyService.updateSettings(companyId, input);
+  }
+
+  @Mutation(() => Company)
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
+  async updateCompany(
+    @Args('id') id: string,
+    @Args('input') input: UpdateCompanyInput,
+    @ClerkUser() user: any,
+  ) {
+    // Security check: ensure user belongs to company or is owner
+    if (user.activeCompanyId !== id) {
+      throw new Error('Unauthorized');
+    }
+    return this.companyService.updateCompany(id, input);
   }
 
   @Mutation(() => SwitchCompanyResponse)

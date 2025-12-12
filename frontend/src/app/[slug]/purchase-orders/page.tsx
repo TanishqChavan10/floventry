@@ -1,136 +1,243 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useParams } from 'next/navigation';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import POTable from '@/components/purchase-orders/POTable';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Plus, Search, Filter, Download } from 'lucide-react';
-import Link from 'next/link';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import CompanyGuard from '@/components/CompanyGuard';
+import RoleGuard from '@/components/guards/RoleGuard';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Plus, Search, Eye, FileText, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 
-// Mock Data
-const MOCK_POS = [
+// Mock data for company-wide purchase orders
+const mockPurchaseOrders = [
   {
     id: '1',
-    poNumber: 'PO-4502',
-    supplier: 'PrimeChem Industries',
-    date: 'Dec 12, 2024',
-    itemCount: 1,
-    total: '₹8,500',
-    status: 'Partially Delivered' as const,
+    poNumber: 'PO-2024-001',
+    warehouse: 'Main Warehouse',
+    supplier: 'SafeGuard Industries',
+    items: 15,
+    totalAmount: '₹1,25,000',
+    status: 'pending',
+    createdBy: 'Rajesh Kumar',
+    createdAt: '2024-12-10',
+    expectedDelivery: '2024-12-20',
   },
   {
     id: '2',
-    poNumber: 'PO-4501',
-    supplier: 'EcoSupply Pvt Ltd',
-    date: 'Dec 10, 2024',
-    itemCount: 3,
-    total: '₹12,400',
-    status: 'Delivered' as const,
+    poNumber: 'PO-2024-002',
+    warehouse: 'South Warehouse',
+    supplier: 'MetalCraft Ltd',
+    items: 8,
+    totalAmount: '₹85,000',
+    status: 'approved',
+    createdBy: 'Priya Sharma',
+    createdAt: '2024-12-09',
+    expectedDelivery: '2024-12-18',
   },
   {
     id: '3',
-    poNumber: 'PO-4500',
-    supplier: 'TechComponents Inc.',
-    date: 'Dec 8, 2024',
-    itemCount: 5,
-    total: '₹45,000',
-    status: 'Sent' as const,
+    poNumber: 'PO-2024-003',
+    warehouse: 'North Warehouse',
+    supplier: 'TechTools Co',
+    items: 22,
+    totalAmount: '₹2,45,000',
+    status: 'received',
+    createdBy: 'Amit Singh',
+    createdAt: '2024-12-05',
+    expectedDelivery: '2024-12-15',
+  },
+  {
+    id: '4',
+    poNumber: 'PO-2024-004',
+    warehouse: 'Main Warehouse',
+    supplier: 'BrightLight Systems',
+    items: 12,
+    totalAmount: '₹1,65,000',
+    status: 'approved',
+    createdBy: 'Rajesh Kumar',
+    createdAt: '2024-12-08',
+    expectedDelivery: '2024-12-19',
+  },
+  {
+    id: '5',
+    poNumber: 'PO-2024-005',
+    warehouse: 'South Warehouse',
+    supplier: 'SafeGuard Industries',
+    items: 18,
+    totalAmount: '₹95,000',
+    status: 'pending',
+    createdBy: 'Priya Sharma',
+    createdAt: '2024-12-11',
+    expectedDelivery: '2024-12-22',
   },
 ];
 
-function PurchaseOrdersContent() {
-  const params = useParams();
-  const slug = params?.slug as string;
-  const [role, setRole] = useState('admin');
-  const [searchQuery, setSearchQuery] = useState('');
+const getStatusBadge = (status: string) => {
+  const variants: Record<string, { variant: any; label: string }> = {
+    pending: { variant: 'secondary', label: 'Pending Approval' },
+    approved: { variant: 'default', label: 'Approved' },
+    received: { variant: 'outline', label: 'Received' },
+  };
+  const config = variants[status] || variants.pending;
+  return <Badge variant={config.variant}>{config.label}</Badge>;
+};
 
-  const filteredOrders = MOCK_POS.filter(
-    (po) =>
-      po.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      po.supplier.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+function CompanyPurchaseOrdersContent() {
+  const pendingCount = mockPurchaseOrders.filter((po) => po.status === 'pending').length;
+  const approvedCount = mockPurchaseOrders.filter((po) => po.status === 'approved').length;
+  const receivedCount = mockPurchaseOrders.filter((po) => po.status === 'received').length;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col">
-      <DashboardHeader companyName="Acme Corp" role={role} onRoleChange={setRole} />
-
-      <main className="flex-1 p-6 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Purchase Orders</h1>
-            <p className="text-slate-500 dark:text-slate-400">
-              Manage and track all purchase orders and deliveries.
-            </p>
-          </div>
-          {(role === 'admin' || role === 'manager') && (
-            <Button asChild>
-              <Link href={`/${slug}/purchase-orders/new`}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create PO
-              </Link>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* Header */}
+      <header className="border-b bg-white dark:bg-slate-900">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                Company Purchase Orders
+              </h1>
+              <p className="text-slate-600 dark:text-slate-400">
+                View and approve purchase orders from all warehouses
+              </p>
+            </div>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create PO
             </Button>
-          )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-6 py-8 space-y-6">
+        {/* Stats */}
+        <div className="grid gap-6 md:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total POs</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{mockPurchaseOrders.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
+              <Clock className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">{pendingCount}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Approved</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{approvedCount}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Value</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₹7,15,000</div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex flex-1 items-center gap-2">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
-              <Input
-                type="search"
-                placeholder="Search by PO# or supplier..."
-                className="pl-9 bg-white dark:bg-slate-900"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input placeholder="Search purchase orders..." className="pl-9" />
+                </div>
+              </div>
+              <Button variant="outline">Filter by Status</Button>
+              <Button variant="outline">Filter by Warehouse</Button>
+              <Button variant="outline">Export</Button>
             </div>
-            <Select defaultValue="all">
-              <SelectTrigger className="w-[180px] bg-white dark:bg-slate-900">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="sent">Sent</SelectItem>
-                <SelectItem value="partial">Partially Delivered</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" className="bg-white dark:bg-slate-900">
-              <Filter className="mr-2 h-4 w-4" />
-              Filter
-            </Button>
-            <Button variant="outline" className="bg-white dark:bg-slate-900">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <POTable orders={filteredOrders} role={role} />
+        {/* Purchase Orders Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Purchase Orders</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>PO Number</TableHead>
+                  <TableHead>Warehouse</TableHead>
+                  <TableHead>Supplier</TableHead>
+                  <TableHead>Items</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Created By</TableHead>
+                  <TableHead>Expected Delivery</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mockPurchaseOrders.map((po) => (
+                  <TableRow key={po.id}>
+                    <TableCell className="font-mono text-sm font-medium">{po.poNumber}</TableCell>
+                    <TableCell>{po.warehouse}</TableCell>
+                    <TableCell>{po.supplier}</TableCell>
+                    <TableCell>{po.items} items</TableCell>
+                    <TableCell className="font-semibold">{po.totalAmount}</TableCell>
+                    <TableCell className="text-slate-600 dark:text-slate-400">
+                      {po.createdBy}
+                    </TableCell>
+                    <TableCell>{po.expectedDelivery}</TableCell>
+                    <TableCell>{getStatusBadge(po.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="icon">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {po.status === 'pending' && (
+                          <Button size="sm" variant="default">
+                            Approve
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );
 }
 
-export default function PurchaseOrdersPage() {
+export default function CompanyPurchaseOrdersPage() {
   return (
     <CompanyGuard>
-      <PurchaseOrdersContent />
+      <RoleGuard allowedRoles={['OWNER', 'ADMIN']}>
+        <CompanyPurchaseOrdersContent />
+      </RoleGuard>
     </CompanyGuard>
   );
 }

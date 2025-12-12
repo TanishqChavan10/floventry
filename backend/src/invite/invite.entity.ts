@@ -16,6 +16,12 @@ export class Invite {
   @Column({ default: 'WAREHOUSE_STAFF' })
   role: string;
 
+  @Column({ type: 'simple-json', nullable: true })
+  warehouse_ids: string[]; // Warehouses user will have access to
+
+  @Column({ type: 'simple-json', nullable: true })
+  manages_warehouse_ids: string[]; // Warehouses user will manage (MANAGER only)
+
   @Column({ type: 'text' })
   invited_by: string;
 

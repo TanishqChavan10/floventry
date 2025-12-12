@@ -17,6 +17,8 @@ import { User } from '../auth/entities/user.entity';
 import { Company } from '../company/company.entity';
 import { EmailService } from '../email/email.service';
 import { ClerkService } from '../auth/clerk.service';
+import { UserWarehouseService } from '../auth/user-warehouse.service';
+import { Role } from '../auth/enums/role.enum';
 
 @Injectable()
 export class InviteService {
@@ -34,6 +36,7 @@ export class InviteService {
     private emailService: EmailService,
     private clerkService: ClerkService,
     private dataSource: DataSource,
+    private userWarehouseService: UserWarehouseService,
   ) { }
 
   //------------------------------------------------------------
@@ -96,6 +99,8 @@ export class InviteService {
       email,
       company_id: companyId,
       role,
+      warehouse_ids: input.warehouseIds || [],
+      manages_warehouse_ids: input.managesWarehouseIds || [],
       invited_by: invitedBy,
       token: uuidv4(),
       status: 'pending',
@@ -176,14 +181,32 @@ export class InviteService {
       const savedMembership = await queryRunner.manager.save(membership);
 
       //------------------------------------------------------------
-      // 5) UPDATE INVITE STATUS
+      // 5) ASSIGN WAREHOUSES
+      //------------------------------------------------------------
+      if (invite.warehouse_ids && invite.warehouse_ids.length > 0) {
+        try {
+          await this.userWarehouseService.assignUserToWarehouses(
+            userId,
+            invite.warehouse_ids,
+            invite.manages_warehouse_ids || [],
+            invite.invited_by,
+            Role.OWNER, // Assuming inviter has permission (validated earlier)
+          );
+        } catch (error) {
+          this.logger.error('Error assigning warehouses:', error);
+          // Continue with invite acceptance even if warehouse assignment fails
+        }
+      }
+
+      //------------------------------------------------------------
+      // 6) UPDATE INVITE STATUS
       //------------------------------------------------------------
       invite.status = 'accepted';
       invite.accepted_at = new Date();
       await queryRunner.manager.save(invite);
 
       //------------------------------------------------------------
-      // 6) COMMIT TRANSACTION
+      // 7) COMMIT TRANSACTION
       //------------------------------------------------------------
       await queryRunner.commitTransaction();
 

@@ -7,8 +7,8 @@ import { join } from 'path';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-// import { InventoryModule } from './inventory/inventory.module';
-// import { SupplierModule } from './supplier/supplier.module';
+import { InventoryModule } from './inventory/inventory.module';
+import { SupplierModule } from './supplier/supplier.module';
 // import { TransactionModule } from './transaction/transaction.module';
 // import { RedisModule } from './redis';
 // import { S3Module } from './s3';
@@ -60,8 +60,8 @@ import { EmailModule } from './email/email.module';
     }),
 
     AuthModule,
-    // InventoryModule,
-    // SupplierModule,
+    InventoryModule,
+    SupplierModule,
     // TransactionModule,
     // RedisModule.forRootAsync(),
     // S3Module.forRootAsync(),

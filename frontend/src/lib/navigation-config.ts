@@ -1,0 +1,251 @@
+import {
+    IconHome,
+    IconPackage,
+    IconCategory,
+    IconTruck,
+    IconShoppingCart,
+    IconFileText,
+    IconSettings,
+    IconBuilding,
+    IconCreditCard,
+    IconBoxSeam,
+    IconArrowsExchange,
+    IconUsers,
+    IconFileInvoice,
+    IconAlertTriangle,
+    IconCalendarTime,
+    IconClipboardList,
+    IconHistory,
+    IconTruckDelivery,
+    IconInfoCircle,
+} from '@tabler/icons-react';
+
+export type UserRole = 'OWNER' | 'ADMIN' | 'MANAGER' | 'WAREHOUSE_STAFF';
+
+export interface NavigationItem {
+    label: string;
+    href: string;
+    icon: React.ComponentType<any>;
+    roles?: UserRole[]; // If undefined, visible to all roles
+    children?: NavigationItem[];
+}
+
+export interface NavigationSection {
+    title?: string;
+    items: NavigationItem[];
+    roles?: UserRole[]; // If undefined, visible to all roles
+}
+
+/**
+ * Get navigation configuration for Company Context
+ */
+export function getCompanyNavigation(companySlug: string): NavigationSection[] {
+    const basePath = `/${companySlug}`;
+
+    return [
+        {
+            items: [
+                {
+                    label: 'Dashboard',
+                    href: `${basePath}/dashboard`, // Assuming dashboard is at /slug/dashboard or just /slug (will check layout)
+                    icon: IconHome,
+                },
+                {
+                    label: 'Warehouses',
+                    href: `${basePath}/warehouses`,
+                    icon: IconBuilding,
+                    roles: ['OWNER', 'ADMIN'],
+                },
+            ],
+        },
+        {
+            title: 'Catalog',
+            items: [
+                {
+                    label: 'Products',
+                    href: `${basePath}/catalog/products`,
+                    icon: IconBoxSeam,
+                },
+                {
+                    label: 'Categories',
+                    href: `${basePath}/catalog/categories`,
+                    icon: IconCategory,
+                },
+            ],
+        },
+        {
+            items: [
+                {
+                    label: 'Suppliers',
+                    href: `${basePath}/suppliers`,
+                    icon: IconTruck,
+                },
+                {
+                    label: 'Purchase Orders',
+                    href: `${basePath}/purchase-orders`,
+                    icon: IconShoppingCart,
+                },
+                {
+                    label: 'Reports',
+                    href: `${basePath}/reports`,
+                    icon: IconFileText,
+                },
+            ],
+        },
+        {
+            title: 'Inventory',
+            items: [
+                 {
+                    label: 'Expiry',
+                    href: `${basePath}/inventory/expiry`,
+                    icon: IconCalendarTime,
+                },
+            ],
+        },
+        {
+           items: [
+                {
+                    label: 'Purchase', // User listed "Purchase" separately from "Purchase Orders"
+                    href: `${basePath}/purchase`,
+                    icon: IconCreditCard,
+                },
+                 {
+                    label: 'Audit Log',
+                    href: `${basePath}/audit-log`,
+                    icon: IconHistory,
+                },
+           ]
+        },
+        {
+            title: 'Settings',
+            items: [
+                {
+                    label: 'General',
+                    href: `${basePath}/settings/general`,
+                    icon: IconSettings,
+                },
+                {
+                    label: 'Billing',
+                    href: `${basePath}/settings/billing`,
+                    icon: IconFileInvoice, // or IconCreditCard
+                     roles: ['OWNER'],
+                },
+                {
+                    label: 'Team',
+                    href: `${basePath}/settings/team`,
+                    icon: IconUsers,
+                },
+                 {
+                    label: 'Roles',
+                    href: `${basePath}/settings/roles`,
+                    icon: IconInfoCircle, // Placeholder
+                },
+            ],
+            roles: ['OWNER', 'ADMIN'],
+        },
+    ];
+}
+
+/**
+ * Get navigation configuration for Warehouse Context
+ */
+export function getWarehouseNavigation(
+    companySlug: string,
+    warehouseSlug: string
+): NavigationSection[] {
+    const basePath = `/${companySlug}/${warehouseSlug}`;
+
+    return [
+        {
+            items: [
+                {
+                    label: 'Overview',
+                    href: basePath,
+                    icon: IconHome,
+                },
+            ],
+        },
+        {
+            items: [
+                {
+                    label: 'Products',
+                    href: `${basePath}/products`, // Scoped products?
+                    icon: IconBoxSeam,
+                },
+                {
+                    label: 'Stock',
+                    href: `${basePath}/stock`,
+                    icon: IconPackage,
+                },
+                 {
+                    label: 'Expiry',
+                    href: `${basePath}/expiry`,
+                    icon: IconCalendarTime,
+                },
+                {
+                    label: 'Damaged',
+                    href: `${basePath}/damaged`,
+                    icon: IconAlertTriangle,
+                },
+                 {
+                    label: 'Stock Movements',
+                    href: `${basePath}/stock-movements`,
+                    icon: IconArrowsExchange,
+                },
+            ]
+        },
+        {
+            items: [
+                 {
+                    label: 'Purchase Orders',
+                    href: `${basePath}/purchase-orders`,
+                    icon: IconShoppingCart,
+                },
+                {
+                    label: 'Transfers',
+                    href: `${basePath}/transfers`,
+                    icon: IconTruckDelivery,
+                },
+            ]
+        },
+        {
+            title: 'Settings',
+            items: [
+                {
+                    label: 'Settings',
+                    href: `${basePath}/settings`,
+                    icon: IconSettings,
+                },
+            ],
+        },
+    ];
+}
+
+
+/**
+ * Filter navigation sections based on user role
+ */
+export function filterNavigationByRole(
+    sections: NavigationSection[],
+    userRole: UserRole
+): NavigationSection[] {
+    return sections
+        .filter((section) => {
+            // If section has role restrictions, check if user has access
+            if (section.roles && !section.roles.includes(userRole)) {
+                return false;
+            }
+            return true;
+        })
+        .map((section) => ({
+            ...section,
+            items: section.items.filter((item) => {
+                // If item has role restrictions, check if user has access
+                if (item.roles && !item.roles.includes(userRole)) {
+                    return false;
+                }
+                return true;
+            }),
+        }))
+        .filter((section) => section.items.length > 0); // Remove empty sections
+}

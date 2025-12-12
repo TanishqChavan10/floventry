@@ -5,6 +5,7 @@ import { User } from '../auth/entities/user.entity';
 import { Invite } from './invite.entity';
 import { UserCompany } from '../user-company/user-company.entity';
 import { Company } from '../company/company.entity';
+import { UserWarehouseService } from '../auth/user-warehouse.service';
 
 import { AuthModule } from '../auth/auth.module';
 import { EmailModule } from '../email/email.module';

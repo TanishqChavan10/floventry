@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@apollo/client';
-import { GET_COMPANY_BY_SLUG } from '@/app/graphql/company';
+import { GET_COMPANY_BY_SLUG } from '@/lib/graphql/company';
 import { InviteUserDialog } from '@/components/settings/team/InviteUserDialog';
 import { InvitesTable } from '@/components/settings/team/InvitesTable';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,24 +48,16 @@ function TeamManagementContent() {
               Manage members and pending invitations for {company.name}.
             </p>
           </div>
-          <InviteUserDialog 
-            companyId={company.id} 
-            onSuccess={() => setRefreshKey(k => k + 1)} 
-          />
+          <InviteUserDialog companyId={company.id} onSuccess={() => setRefreshKey((k) => k + 1)} />
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle>Pending Invites</CardTitle>
-            <CardDescription>
-              Invitations sent but not yet accepted.
-            </CardDescription>
+            <CardDescription>Invitations sent but not yet accepted.</CardDescription>
           </CardHeader>
           <CardContent>
-            <InvitesTable 
-              companyId={company.id} 
-              refreshTrigger={refreshKey} 
-            />
+            <InvitesTable companyId={company.id} refreshTrigger={refreshKey} />
           </CardContent>
         </Card>
 
@@ -73,14 +65,10 @@ function TeamManagementContent() {
         <Card>
           <CardHeader>
             <CardTitle>Active Members</CardTitle>
-            <CardDescription>
-              Current team members with access to this workspace.
-            </CardDescription>
+            <CardDescription>Current team members with access to this workspace.</CardDescription>
           </CardHeader>
           <CardContent>
-             <div className="text-sm text-slate-500 italic">
-               Member management coming soon...
-             </div>
+            <div className="text-sm text-slate-500 italic">Member management coming soon...</div>
           </CardContent>
         </Card>
       </div>

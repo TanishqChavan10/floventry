@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useQuery } from '@apollo/client';
 import { useAuth as useClerkAuth, useUser } from '@clerk/nextjs';
-import { GET_CURRENT_USER } from '@/app/graphql/auth';
+import { GET_CURRENT_USER } from '@/lib/graphql/auth';
 
 interface Company {
   id: string;

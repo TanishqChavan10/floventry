@@ -16,8 +16,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useMutation } from '@apollo/client';
-import { CREATE_COMPANY } from '@/app/graphql/company';
-import { GET_CURRENT_USER } from '@/app/graphql/auth';
+import { CREATE_COMPANY } from '@/lib/graphql/company';
+import { GET_CURRENT_USER } from '@/lib/graphql/auth';
 import { toast } from 'sonner';
 
 export default function CreateCompanyPage() {
@@ -104,10 +104,10 @@ export default function CreateCompanyPage() {
                 <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-500 text-sm">
                   flowventory.com/
                 </span>
-                <Input 
-                  id="slug" 
-                  placeholder="acme-corp" 
-                  className="rounded-l-none h-11" 
+                <Input
+                  id="slug"
+                  placeholder="acme-corp"
+                  className="rounded-l-none h-11"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   required

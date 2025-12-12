@@ -163,4 +163,13 @@ export class CompanyService {
 
     return company;
   }
+
+  async updateCompany(companyId: string, input: any): Promise<Company> {
+    const company = await this.companyRepository.findOne({ where: { id: companyId } });
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+    Object.assign(company, input);
+    return this.companyRepository.save(company);
+  }
 }

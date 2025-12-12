@@ -47,6 +47,21 @@ export class Company {
   @Column({ nullable: true })
   gst_number: string; // India-specific
 
+  @Column({ nullable: true })
+  industry: string;
+
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
+  @Column({ nullable: true })
+  phone: string;
+
+  @Column({ nullable: true })
+  email: string;
+
+  @Column({ nullable: true })
+  website: string;
+
   @Column({ type: "text" })
   created_by: string; // FK → users(id)
 
@@ -72,4 +87,18 @@ export class Company {
 
   @OneToMany(() => Warehouse, (warehouse) => warehouse.company)
   warehouses: Warehouse[];
+
+  // Catalog relationships (lazy loading - only fetch when needed)
+  // Using lazy: true to avoid circular dependency issues
+  @OneToMany('Product', 'company', { lazy: true })
+  products: Promise<any[]>;
+
+  @OneToMany('Category', 'company', { lazy: true })
+  categories: Promise<any[]>;
+
+  @OneToMany('Supplier', 'company', { lazy: true })
+  suppliers: Promise<any[]>;
+
+  @OneToMany('Unit', 'company', { lazy: true })
+  units: Promise<any[]>;
 }

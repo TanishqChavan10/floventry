@@ -23,6 +23,9 @@ export class UserWarehouse {
   @Column({ nullable: true })
   role: string; // Optional warehouse-level roles
 
+  @Column({ default: false })
+  is_manager_of_warehouse: boolean; // Indicates if user manages this warehouse
+
   @CreateDateColumn()
   created_at: Date;
 
