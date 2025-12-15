@@ -29,12 +29,13 @@ export class InviteResolver {
     @Context() context: any,
   ) {
     const user = await this.clerkService.syncUser(context.req.user.clerkId);
+    const activeCompanyId = context.req.user.activeCompanyId; // Get from Clerk metadata
 
-    if (!user.activeCompanyId) {
+    if (!activeCompanyId) {
       throw new BadRequestException('User does not have an active company selected');
     }
 
-    return this.inviteService.createInvite(input, user.activeCompanyId, user.id);
+    return this.inviteService.createInvite(input, activeCompanyId, user.id);
   }
 
   @Mutation(() => UserCompany)

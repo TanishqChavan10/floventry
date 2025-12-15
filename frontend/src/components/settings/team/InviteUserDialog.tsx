@@ -268,10 +268,6 @@ export function InviteUserDialog({
                         return (
                           <div
                             key={warehouse.id}
-                            onClick={() => role === 'MANAGER' 
-                              ? handleManagerWarehouseToggle(warehouse.id)
-                              : handleWarehouseToggle(warehouse.id)
-                            }
                             className={`
                               flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 border
                               ${isSelected 
@@ -282,10 +278,16 @@ export function InviteUserDialog({
                             <Checkbox
                               id={`wh-${warehouse.id}`}
                               checked={isSelected}
-                              onCheckedChange={() => {}} // Handled by parent click
+                              onCheckedChange={() => role === 'MANAGER' 
+                                ? handleManagerWarehouseToggle(warehouse.id)
+                                : handleWarehouseToggle(warehouse.id)
+                              }
                               className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                             />
-                            <div className="flex-1">
+                            <div className="flex-1" onClick={() => role === 'MANAGER' 
+                              ? handleManagerWarehouseToggle(warehouse.id)
+                              : handleWarehouseToggle(warehouse.id)
+                            }>
                               <label
                                 htmlFor={`wh-${warehouse.id}`}
                                 className="text-sm font-medium leading-none cursor-pointer block text-foreground"

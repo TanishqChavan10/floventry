@@ -1,6 +1,7 @@
 'use client';
 
 import AuthGuard from '@/components/AuthGuard';
+import { ManagerGuard } from '@/components/guards/ManagerGuard';
 import { Sidebar, SidebarBody, SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { Navbar } from '@/components/navigation/Navbar';
 import { SidebarSection } from '@/components/navigation/SidebarSection';
@@ -99,24 +100,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthGuard>
-      <div className="flex h-screen overflow-hidden bg-white dark:bg-slate-900">
-        {/* Sidebar - only show for authenticated pages that are not landing/auth */}
-        {shouldShowSidebar && (
-          <SidebarProvider>
-            <Sidebar>
-              <AppSidebarContent />
-            </Sidebar>
-          </SidebarProvider>
-        )}
+      <ManagerGuard>
+        <div className="flex h-screen overflow-hidden bg-white dark:bg-slate-900">
+          {/* Sidebar - only show for authenticated pages that are not landing/auth */}
+          {shouldShowSidebar && (
+            <SidebarProvider>
+              <Sidebar>
+                <AppSidebarContent />
+              </Sidebar>
+            </SidebarProvider>
+          )}
 
-        {/* Main Content */}
-        <main className={`flex-1 flex flex-col overflow-hidden ${shouldShowSidebar ? '' : 'w-full'}`}>
-          {shouldShowSidebar && <Navbar />}
-          <div className="flex-1 overflow-y-auto">
-             {children}
-          </div>
-        </main>
-      </div>
+          {/* Main Content */}
+          <main className={`flex-1 flex flex-col overflow-hidden ${shouldShowSidebar ? '' : 'w-full'}`}>
+            {shouldShowSidebar && <Navbar />}
+            <div className="flex-1 overflow-y-auto">
+               {children}
+            </div>
+          </main>
+        </div>
+      </ManagerGuard>
     </AuthGuard>
   );
 }

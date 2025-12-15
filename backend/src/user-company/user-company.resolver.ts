@@ -68,7 +68,7 @@ export class UserCompanyResolver {
     @Context() context: any
   ) {
     const removerId = context.req.user.id;
-    const removerRole = context.req.user.activeRole || Role.STAFF;
+    const removerRole = context.req.user.role || Role.STAFF;
 
     await this.userCompanyService.removeMemberWithValidation(
       membershipId,
@@ -91,7 +91,7 @@ export class UserCompanyResolver {
     @Context() context: any
   ) {
     const updaterId = context.req.user.id;
-    const updaterRole = context.req.user.activeRole || Role.STAFF;
+    const updaterRole = context.req.user.role || Role.STAFF;
 
     await this.userCompanyService.updateMemberWarehouses(
       membershipId,

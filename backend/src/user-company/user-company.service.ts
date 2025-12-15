@@ -3,12 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserCompany } from './user-company.entity';
 import { UpdateRoleInput } from './dto/update-role.input';
+import { ClerkService } from '../auth/clerk.service';
 
 @Injectable()
 export class UserCompanyService {
   constructor(
     @InjectRepository(UserCompany)
     private userCompanyRepository: Repository<UserCompany>,
+    private clerkService: ClerkService,
   ) { }
 
   async listUsersInCompany(companyId: string): Promise<UserCompany[]> {
@@ -194,6 +196,18 @@ export class UserCompanyService {
     // Set status to inactive
     membership.status = 'inactive';
     await this.userCompanyRepository.save(membership);
+
+    // CRITICAL: Clear Clerk metadata to revoke access immediately
+    // If this was their active company, they'll need to switch companies on next request
+    try {
+      await this.clerkService.updateUserMetadata(membership.user_id, {
+        activeCompanyId: undefined,
+        activeRole: undefined,
+      });
+    } catch (error) {
+      console.error('Failed to clear Clerk metadata for removed user:', error);
+      // Don't throw - member is already marked inactive in DB
+    }
   }
 
   //------------------------------------------------------------

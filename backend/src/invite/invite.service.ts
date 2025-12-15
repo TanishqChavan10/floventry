@@ -275,22 +275,39 @@ export class InviteService {
         where: { user_id: userId, company_id: invite.company_id },
       });
 
+      let savedMembership: UserCompany;
+
       if (existing) {
-        throw new ConflictException('User is already a member of this company');
+        // If user was previously removed (inactive), reactivate them
+        if (existing.status === 'inactive') {
+          this.logger.log(`Reactivating previously removed user ${userId} for company ${invite.company_id}`);
+
+          existing.role = invite.role.toUpperCase();
+          existing.status = 'active';
+          existing.invited_by = invite.invited_by;
+          existing.joined_at = new Date(); // Update to latest join date
+          savedMembership = await queryRunner.manager.save(existing);
+
+          this.logger.log(`✅ Membership reactivated with role ${savedMembership.role}`);
+        } else {
+          // User is already an active member
+          throw new ConflictException('User is already a member of this company');
+        }
+      } else {
+        //------------------------------------------------------------
+        // 4) CREATE NEW MEMBERSHIP
+        //------------------------------------------------------------
+        const membership = queryRunner.manager.create(UserCompany, {
+          user_id: userId,
+          company_id: invite.company_id,
+          role: invite.role.toUpperCase(),
+          invited_by: invite.invited_by,
+          status: 'active',
+        });
+
+        savedMembership = await queryRunner.manager.save(UserCompany, membership);
+        this.logger.log(`✅ New membership created with role ${savedMembership.role}`);
       }
-
-      //------------------------------------------------------------
-      // 4) CREATE MEMBERSHIP
-      //------------------------------------------------------------
-      const membership = this.userCompanyRepository.create({
-        user_id: userId,
-        company_id: invite.company_id,
-        role: invite.role.toUpperCase(),
-        invited_by: invite.invited_by,
-        status: 'active',
-      });
-
-      const savedMembership = await queryRunner.manager.save(membership);
 
       //------------------------------------------------------------
       // 5) ASSIGN WAREHOUSES

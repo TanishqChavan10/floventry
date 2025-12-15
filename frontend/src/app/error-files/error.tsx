@@ -44,9 +44,9 @@ export default function Error({
             Try Again
           </Button>
           <Button asChild variant="outline" size="lg">
-            <Link href="/dashboard">
+            <Link href="/">
               <Home className="mr-2 h-4 w-4" />
-              Go Home
+              Return Home
             </Link>
           </Button>
         </div>

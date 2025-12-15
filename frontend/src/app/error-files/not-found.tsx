@@ -23,7 +23,7 @@ export default function NotFound() {
 
         <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
           <Button asChild variant="default" size="lg">
-            <Link href="/dashboard">
+            <Link href="/">
               <Home className="mr-2 h-4 w-4" />
               Go Home
             </Link>

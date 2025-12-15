@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { useWarehouse } from '@/context/warehouse-context';
-import EmptyWarehouseState from '@/components/warehouses/EmptyWarehouseState';
+// import EmptyWarehouseState from '@/components/warehouses/EmptyWarehouseState'; // REMOVED - No longer used
 import { Loader2 } from 'lucide-react';
 
 export default function CompanyRootPage() {
@@ -25,8 +25,14 @@ export default function CompanyRootPage() {
         return;
       }
 
-      // MANAGER and STAFF go to first accessible warehouse
-      if (warehouses.length > 0) {
+      // MANAGER goes to warehouses list page to select warehouse
+      if (userRole === 'MANAGER') {
+        router.replace(`/${companySlug}/warehouses`);
+        return;
+      }
+
+      // STAFF go to first accessible warehouse
+      if (userRole === 'STAFF' && warehouses.length > 0) {
         const firstWarehouse = warehouses[0];
         const targetSlug = firstWarehouse.slug || 'main-warehouse';
         router.replace(`/${companySlug}/warehouses/${targetSlug}`);
@@ -34,19 +40,8 @@ export default function CompanyRootPage() {
     }
   }, [isLoading, warehouses, user, companySlug, router]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-      </div>
-    );
-  }
-
-  // Render Empty State if no warehouses
-  if (warehouses.length === 0) {
-    return <EmptyWarehouseState companySlug={companySlug} />;
-  }
-
+  // Always show loading state during redirects
+  // EmptyWarehouseState removed - no longer needed
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
       <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />

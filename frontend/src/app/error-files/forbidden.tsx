@@ -26,9 +26,9 @@ export default function Forbidden() {
 
         <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
           <Button asChild variant="default" size="lg">
-            <Link href="/dashboard">
+            <Link href="/">
               <Home className="mr-2 h-4 w-4" />
-              Return to Dashboard
+              Go to Home
             </Link>
           </Button>
           <Button asChild variant="outline" size="lg">
