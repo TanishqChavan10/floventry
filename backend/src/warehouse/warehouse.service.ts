@@ -2,9 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Warehouse } from './warehouse.entity';
+import { WarehouseSettings } from './warehouse-settings.entity';
 import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 import { UpdateWarehouseDto } from './dto/update-warehouse.dto';
+import { UpdateWarehouseSettingsInput } from './dto/update-warehouse.input';
 import slugify from 'slugify';
 
 @Injectable()
@@ -13,6 +15,8 @@ export class WarehouseService {
   constructor(
     @InjectRepository(Warehouse)
     private warehouseRepository: Repository<Warehouse>,
+    @InjectRepository(WarehouseSettings)
+    private warehouseSettingsRepository: Repository<WarehouseSettings>,
     @InjectRepository(UserWarehouse)
     private userWarehouseRepository: Repository<UserWarehouse>,
     private dataSource: DataSource,
@@ -61,6 +65,7 @@ export class WarehouseService {
   async findOne(id: string): Promise<Warehouse> {
     const warehouse = await this.warehouseRepository.findOne({
       where: { id },
+      relations: ['settings'],
     });
     if (!warehouse) {
       throw new NotFoundException(`Warehouse with ID ${id} not found`);
@@ -115,5 +120,25 @@ export class WarehouseService {
       warehouse_id: warehouseId,
       user_id: userId,
     });
+  }
+
+  async updateSettings(warehouseId: string, input: UpdateWarehouseSettingsInput): Promise<WarehouseSettings> {
+    // Check if settings exist
+    let settings = await this.warehouseSettingsRepository.findOne({
+      where: { warehouse_id: warehouseId },
+    });
+
+    if (!settings) {
+      // Create new settings if they don't exist
+      settings = this.warehouseSettingsRepository.create({
+        warehouse_id: warehouseId,
+        ...input,
+      });
+    } else {
+      // Update existing settings
+      Object.assign(settings, input);
+    }
+
+    return this.warehouseSettingsRepository.save(settings);
   }
 }

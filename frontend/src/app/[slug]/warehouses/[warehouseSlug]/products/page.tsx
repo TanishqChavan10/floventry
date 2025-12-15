@@ -163,7 +163,7 @@ function WarehouseProductsContent() {
 export default function WarehouseProductsPage() {
   return (
     <CompanyGuard>
-      <RoleGuard allowedRoles={['MANAGER', 'STAFF']}>
+      <RoleGuard allowedRoles={['OWNER', 'ADMIN']}>
         <WarehouseProductsContent />
       </RoleGuard>
     </CompanyGuard>

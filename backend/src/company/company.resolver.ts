@@ -71,11 +71,14 @@ export class CompanyResolver {
   @UseGuards(ClerkAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
   async updateCompanySettings(
+    @Args('companyId') companyId: string,
     @Args('input') input: UpdateCompanySettingsInput,
-    @Context() context: any,
+    @ClerkUser() user: any,
   ) {
-    // TODO: Get companyId from context or args
-    const companyId = 'placeholder-uuid'; // Placeholder
+    // Security check: ensure user belongs to company (Role guard handles role, but need to check if company matches active or owned)
+    if (user.activeCompanyId !== companyId) {
+      throw new Error('Unauthorized: You can only update settings for your active company');
+    }
     return this.companyService.updateSettings(companyId, input);
   }
 

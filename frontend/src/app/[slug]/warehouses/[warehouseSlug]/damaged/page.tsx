@@ -132,7 +132,7 @@ function DamagedContent() {
 export default function DamagedPage() {
   return (
     <CompanyGuard>
-      <RoleGuard allowedRoles={['MANAGER', 'STAFF']}>
+      <RoleGuard allowedRoles={['OWNER', 'ADMIN']}>
         <DamagedContent />
       </RoleGuard>
     </CompanyGuard>

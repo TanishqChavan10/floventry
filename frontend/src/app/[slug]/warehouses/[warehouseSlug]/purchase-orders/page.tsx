@@ -122,7 +122,7 @@ function WarehousePurchaseOrdersContent() {
 export default function WarehousePurchaseOrdersPage() {
   return (
     <CompanyGuard>
-      <RoleGuard allowedRoles={['MANAGER', 'STAFF']}>
+      <RoleGuard allowedRoles={['OWNER', 'ADMIN']}>
         <WarehousePurchaseOrdersContent />
       </RoleGuard>
     </CompanyGuard>

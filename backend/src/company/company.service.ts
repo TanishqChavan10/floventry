@@ -102,7 +102,7 @@ export class CompanyService {
   async getCompanyById(companyId: string): Promise<Company> {
     const company = await this.companyRepository.findOne({
       where: { id: companyId },
-      relations: ['settings'],
+      relations: ['settings', 'warehouses'],
     });
 
     if (!company) {
@@ -154,7 +154,7 @@ export class CompanyService {
   async getCompanyBySlug(slug: string): Promise<Company> {
     const company = await this.companyRepository.findOne({
       where: { slug: slug },
-      relations: ['settings'],
+      relations: ['settings', 'warehouses'],
     });
 
     if (!company) {

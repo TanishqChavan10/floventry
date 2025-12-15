@@ -40,7 +40,7 @@ export default function WarehouseSwitcher() {
     } else {
         const wh = warehouses.find(w => w.id === warehouseId);
         if (wh && wh.slug) {
-            router.push(`/${companySlug}/${wh.slug}`);
+            router.push(`/${companySlug}/warehouses/${wh.slug}`);
         }
     }
   };

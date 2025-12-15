@@ -15,60 +15,13 @@ import { useAuth } from '@/context/auth-context';
 import { useParams, usePathname } from 'next/navigation';
 
 function BottomSection() {
-  const { signOut } = useClerk();
-  const { open, animate } = useSidebar();
-  const params = useParams();
-  const companySlug = params?.slug as string;
-
-  const bottomItems = [
-    {
-      label: 'Profile',
-      href: '/profile',
-      icon: IconUser,
-    },
-    {
-      label: 'Notifications',
-      href: '/notifications',
-      icon: IconBell,
-    },
-  ];
-
-  return (
-    <div className="mt-auto pt-4 border-t border-neutral-200 dark:border-neutral-700">
-      <div className="space-y-1 mb-2">
-        {bottomItems.map((item) => (
-          <SidebarItem key={item.href} {...item} />
-        ))}
-      </div>
-
-      {/* Sign Out Button */}
-      <button
-        onClick={() => signOut()}
-        className={cn(
-          'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg',
-          'text-red-600 dark:text-red-400',
-          'hover:bg-red-50 dark:hover:bg-red-950/30',
-          'transition-all duration-200',
-        )}
-      >
-        <IconLogout className="h-5 w-5 shrink-0" />
-        <motion.span
-          animate={{
-            display: animate ? (open ? 'inline-block' : 'none') : 'inline-block',
-            opacity: animate ? (open ? 1 : 0) : 1,
-          }}
-          className="text-sm font-medium whitespace-nowrap"
-        >
-          Sign Out
-        </motion.span>
-      </button>
-    </div>
-  );
+  return null;
 }
 
 function AppSidebarContent() {
   const { user } = useAuth();
   const params = useParams();
+  const pathname = usePathname();
   const companySlug = params?.slug as string;
   const warehouseSlug = params?.warehouseSlug as string;
 
@@ -79,8 +32,13 @@ function AppSidebarContent() {
 
   // Get navigation configuration based on context
   let navigationSections = [];
-  if (warehouseSlug) {
-    navigationSections = getWarehouseNavigation(companySlug, warehouseSlug);
+  
+  // Use warehouse navigation if we're in a warehouse route OR on the warehouses list page
+  const isWarehousesListPage = pathname?.includes('/warehouses') && !warehouseSlug;
+  
+  if (warehouseSlug || isWarehousesListPage) {
+    // For warehouses list page, we don't have a specific warehouse, so pass empty string
+    navigationSections = getWarehouseNavigation(companySlug, warehouseSlug || '');
   } else {
     navigationSections = getCompanyNavigation(companySlug);
   }
@@ -130,8 +88,14 @@ function AppSidebarContent() {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  // Don't show sidebar for landing page and auth pages
-  const shouldShowSidebar = !pathname?.startsWith('/auth') && pathname !== '/';
+  // Don't show sidebar for landing page, auth pages, onboarding, invite, and profile pages
+  const shouldShowSidebar = 
+    !pathname?.startsWith('/auth') && 
+    !pathname?.startsWith('/onboarding') &&
+    !pathname?.startsWith('/invite') &&
+    !pathname?.startsWith('/profile') &&
+    !pathname?.startsWith('/notifications') &&
+    pathname !== '/';
 
   return (
     <AuthGuard>

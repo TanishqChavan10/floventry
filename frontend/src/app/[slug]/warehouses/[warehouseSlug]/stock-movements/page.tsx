@@ -158,7 +158,7 @@ function StockMovementsContent() {
 export default function StockMovementsPage() {
   return (
     <CompanyGuard>
-      <RoleGuard allowedRoles={['MANAGER', 'STAFF']}>
+      <RoleGuard allowedRoles={['OWNER', 'ADMIN']}>
         <StockMovementsContent />
       </RoleGuard>
     </CompanyGuard>

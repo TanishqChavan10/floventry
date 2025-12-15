@@ -32,4 +32,10 @@ export class Invite {
 
   @Field({ nullable: true })
   accepted_at?: Date;
+
+  @Field(() => [String], { nullable: true })
+  warehouse_ids?: string[];
+
+  @Field(() => [String], { nullable: true })
+  manages_warehouse_ids?: string[];
 }

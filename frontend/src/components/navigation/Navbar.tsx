@@ -41,12 +41,13 @@ export function Navbar() {
 
   const handleWarehouseSwitch = (warehouseSlug: string) => {
     if (companySlug) {
-      router.push(`/${companySlug}/${warehouseSlug}`);
+      router.push(`/${companySlug}/warehouses/${warehouseSlug}`);
     }
   };
 
-  const handleCompanySwitch = () => {
-    router.push('/company-switcher');
+  const handleCompanySwitch = (newSlug: string) => {
+    // Navigate to the new company's dashboard
+    router.push(`/${newSlug}`);
   };
 
   if (!activeCompany) return null;
@@ -76,14 +77,20 @@ export function Navbar() {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-[200px]">
-             <DropdownMenuLabel>Current Company</DropdownMenuLabel>
-             <DropdownMenuItem disabled>
-                {activeCompany.name}
-             </DropdownMenuItem>
+             <DropdownMenuLabel>Switch Company</DropdownMenuLabel>
              <DropdownMenuSeparator />
-             <DropdownMenuItem onClick={handleCompanySwitch} className="cursor-pointer">
-                Switch Company
-             </DropdownMenuItem>
+             {user?.companies?.map((company) => (
+               <DropdownMenuItem 
+                 key={company.slug}
+                 onClick={() => handleCompanySwitch(company.slug)}
+                 className={cn(
+                   'cursor-pointer',
+                   company.slug === companySlug && 'bg-neutral-100 dark:bg-neutral-800'
+                 )}
+               >
+                 {company.name}
+               </DropdownMenuItem>
+             ))}
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -137,11 +144,11 @@ export function Navbar() {
       </div>
 
       {/* Center/Right: Search, Alerts, User */}
-      <div className="flex items-center gap-4 flex-1 justify-end">
+      <div className="flex items-center gap-4 flex-1">
         
         {/* Search Bar */}
-        <div className="relative max-w-md w-full hidden md:block">
-            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+        <div className="relative flex-1 w-full max-w-4xl px-4 hidden md:block">
+            <IconSearch className="absolute left-7 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
           <input
             type="text"
             placeholder="Search..."
@@ -154,15 +161,6 @@ export function Navbar() {
           />
         </div>
 
-        {/* Settings Button (Company Level) */}
-        <Link 
-            href={`/${companySlug}/settings`}
-            className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            title="Company Settings"
-        >
-            <IconSettings className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
-        </Link>
-        
         {/* Alerts */}
         <button className="relative p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
             <IconBell className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />

@@ -67,4 +67,14 @@ export class UpdateCompanyInput {
     @IsOptional()
     @IsString()
     gst_number?: string;
+
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsString()
+    legal_name?: string;
+
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsString()
+    company_type?: string;
 }

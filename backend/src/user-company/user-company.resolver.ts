@@ -2,6 +2,7 @@ import { Resolver, Query, Mutation, Args, Context } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { UserCompanyService } from './user-company.service';
 import { UserCompany } from './user-company.model';
+import { CompanyMemberDetails } from './dto/company-member-details';
 import { UpdateRoleInput } from './dto/update-role.input';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -39,6 +40,66 @@ export class UserCompanyResolver {
   ) {
     const requestingUserId = context.req.user.id;
     await this.userCompanyService.removeUser(membershipId, requestingUserId);
+    return true;
+  }
+
+  //------------------------------------------------------------
+  // NEW: Get company members with warehouse details
+  //------------------------------------------------------------
+  @Query(() => [CompanyMemberDetails], { name: 'companyMembers' })
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  async getCompanyMembers(
+    @Args('companyId', { type: () => String }) companyId: string,
+    @Context() context: any
+  ) {
+    // TODO: Add permission check if MANAGER - filter to only their warehouse users
+    return this.userCompanyService.getCompanyMembersWithDetails(companyId);
+  }
+
+  //------------------------------------------------------------
+  // NEW: Remove member with validation
+  //------------------------------------------------------------
+  @Mutation(() => Boolean, { name: 'removeMemberValidated' })
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  async removeMemberValidated(
+    @Args('membershipId', { type: () => String }) membershipId: string,
+    @Context() context: any
+  ) {
+    const removerId = context.req.user.id;
+    const removerRole = context.req.user.activeRole || Role.STAFF;
+
+    await this.userCompanyService.removeMemberWithValidation(
+      membershipId,
+      removerId,
+      removerRole
+    );
+
+    return true;
+  }
+
+  //------------------------------------------------------------
+  // NEW: Update member warehouses
+  //------------------------------------------------------------  
+  @Mutation(() => Boolean, { name: 'updateMemberWarehouses' })
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  async updateMemberWarehouses(
+    @Args('membershipId', { type: () => String }) membershipId: string,
+    @Args('warehouseIds', { type: () => [String] }) warehouseIds: string[],
+    @Context() context: any
+  ) {
+    const updaterId = context.req.user.id;
+    const updaterRole = context.req.user.activeRole || Role.STAFF;
+
+    await this.userCompanyService.updateMemberWarehouses(
+      membershipId,
+      warehouseIds,
+      updaterRole,
+      updaterId
+    );
+
     return true;
   }
 }

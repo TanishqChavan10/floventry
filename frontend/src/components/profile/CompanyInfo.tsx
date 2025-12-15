@@ -32,14 +32,11 @@ export function CompanyInfo() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t pt-4">
+        <div className="border-t pt-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Users className="h-4 w-4" />
             <span>{company.members} Team Members</span>
           </div>
-          <Link href="/company-switcher">
-            <Button variant="outline">Switch Company</Button>
-          </Link>
         </div>
       </CardContent>
     </Card>

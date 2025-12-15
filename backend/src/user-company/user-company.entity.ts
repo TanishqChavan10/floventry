@@ -14,7 +14,7 @@ export class UserCompany {
     @Column('uuid')
     company_id: string;
 
-    @Column({ default: 'WAREHOUSE_STAFF' })
+    @Column({ default: 'STAFF' })
     role: string;
 
     @CreateDateColumn()

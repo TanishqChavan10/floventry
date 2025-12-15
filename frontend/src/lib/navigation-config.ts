@@ -20,7 +20,7 @@ import {
     IconInfoCircle,
 } from '@tabler/icons-react';
 
-export type UserRole = 'OWNER' | 'ADMIN' | 'MANAGER' | 'WAREHOUSE_STAFF';
+export type UserRole = 'OWNER' | 'ADMIN' | 'MANAGER' | 'STAFF';
 
 export interface NavigationItem {
     label: string;
@@ -46,8 +46,8 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
         {
             items: [
                 {
-                    label: 'Dashboard',
-                    href: `${basePath}/dashboard`, // Assuming dashboard is at /slug/dashboard or just /slug (will check layout)
+                    label: 'Overview',
+                    href: basePath,
                     icon: IconHome,
                 },
                 {
@@ -95,7 +95,7 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
         {
             title: 'Inventory',
             items: [
-                 {
+                {
                     label: 'Expiry',
                     href: `${basePath}/inventory/expiry`,
                     icon: IconCalendarTime,
@@ -103,39 +103,39 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
             ],
         },
         {
-           items: [
+            items: [
                 {
                     label: 'Purchase', // User listed "Purchase" separately from "Purchase Orders"
                     href: `${basePath}/purchase`,
                     icon: IconCreditCard,
                 },
-                 {
+                {
                     label: 'Audit Log',
                     href: `${basePath}/audit-log`,
                     icon: IconHistory,
                 },
-           ]
+            ]
         },
         {
             title: 'Settings',
             items: [
                 {
-                    label: 'General',
-                    href: `${basePath}/settings/general`,
+                    label: 'Settings',
+                    href: `${basePath}/settings`,
                     icon: IconSettings,
                 },
                 {
                     label: 'Billing',
                     href: `${basePath}/settings/billing`,
                     icon: IconFileInvoice, // or IconCreditCard
-                     roles: ['OWNER'],
+                    roles: ['OWNER'],
                 },
                 {
                     label: 'Team',
                     href: `${basePath}/settings/team`,
                     icon: IconUsers,
                 },
-                 {
+                {
                     label: 'Roles',
                     href: `${basePath}/settings/roles`,
                     icon: IconInfoCircle, // Placeholder
@@ -153,7 +153,7 @@ export function getWarehouseNavigation(
     companySlug: string,
     warehouseSlug: string
 ): NavigationSection[] {
-    const basePath = `/${companySlug}/${warehouseSlug}`;
+    const basePath = `/${companySlug}/warehouses/${warehouseSlug}`;
 
     return [
         {
@@ -162,6 +162,11 @@ export function getWarehouseNavigation(
                     label: 'Overview',
                     href: basePath,
                     icon: IconHome,
+                },
+                {
+                    label: 'Company',
+                    href: `/${companySlug}`,
+                    icon: IconBuilding,
                 },
             ],
         },
@@ -177,7 +182,7 @@ export function getWarehouseNavigation(
                     href: `${basePath}/stock`,
                     icon: IconPackage,
                 },
-                 {
+                {
                     label: 'Expiry',
                     href: `${basePath}/expiry`,
                     icon: IconCalendarTime,
@@ -187,7 +192,7 @@ export function getWarehouseNavigation(
                     href: `${basePath}/damaged`,
                     icon: IconAlertTriangle,
                 },
-                 {
+                {
                     label: 'Stock Movements',
                     href: `${basePath}/stock-movements`,
                     icon: IconArrowsExchange,
@@ -196,7 +201,7 @@ export function getWarehouseNavigation(
         },
         {
             items: [
-                 {
+                {
                     label: 'Purchase Orders',
                     href: `${basePath}/purchase-orders`,
                     icon: IconShoppingCart,

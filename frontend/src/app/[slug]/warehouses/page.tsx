@@ -1,55 +1,48 @@
 'use client';
 
+import React from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useQuery } from '@apollo/client';
+import { GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
+import { Loader2 } from 'lucide-react';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Building2, MapPin, Users, Package, Plus, Settings, TrendingUp } from 'lucide-react';
+import { CreateWarehouseDialog } from '@/components/warehouses/CreateWarehouseDialog';
 
 // Mock data for warehouses
-const mockWarehouses = [
-  {
-    id: '1',
-    name: 'Main Warehouse',
-    slug: 'main-warehouse',
-    address: '123 Industrial Ave, Mumbai, Maharashtra 400001',
-    manager: 'Rajesh Kumar',
-    status: 'active',
-    totalProducts: 1250,
-    totalValue: '₹45,50,000',
-    staffCount: 12,
-  },
-  {
-    id: '2',
-    name: 'South Warehouse',
-    slug: 'south-warehouse',
-    address: '456 Storage Road, Bangalore, Karnataka 560001',
-    manager: 'Priya Sharma',
-    status: 'active',
-    totalProducts: 890,
-    totalValue: '₹32,20,000',
-    staffCount: 8,
-  },
-  {
-    id: '3',
-    name: 'North Warehouse',
-    slug: 'north-warehouse',
-    address: '789 Logistics Park, Delhi, NCR 110001',
-    manager: 'Amit Singh',
-    status: 'active',
-    totalProducts: 1450,
-    totalValue: '₹52,80,000',
-    staffCount: 15,
-  },
-];
-
 function WarehousesContent() {
   const params = useParams();
   const companySlug = params.slug as string;
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false); 
 
+  const { data, loading, error } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
+    variables: { slug: companySlug },
+    skip: !companySlug,
+  });
+
+  const warehouses = data?.companyBySlug?.warehouses || [];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+     return (
+      <div className="p-8 text-center text-red-500">
+        Error loading warehouses: {error.message}
+      </div>
+    );
+  }
+ 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Header */}
@@ -64,7 +57,7 @@ function WarehousesContent() {
                 Manage all warehouse locations across your company
               </p>
             </div>
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="h-4 w-4" />
               Add Warehouse
             </Button>
@@ -82,7 +75,7 @@ function WarehousesContent() {
               <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockWarehouses.length}</div>
+              <div className="text-2xl font-bold">{warehouses.length}</div>
               <p className="text-xs text-muted-foreground">All locations active</p>
             </CardContent>
           </Card>
@@ -94,7 +87,8 @@ function WarehousesContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {mockWarehouses.reduce((sum, w) => sum + w.staffCount, 0)}
+                 --
+                {/* {mockWarehouses.reduce((sum, w) => sum + w.staffCount, 0)} */}
               </div>
               <p className="text-xs text-muted-foreground">Across all locations</p>
             </CardContent>
@@ -106,49 +100,56 @@ function WarehousesContent() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₹1,30,50,000</div>
+              <div className="text-2xl font-bold">--</div>
               <p className="text-xs text-muted-foreground">Combined value</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Warehouses List */}
+        {warehouses.length === 0 ? (
+            <div className="text-center py-12">
+                <p className="text-slate-500">No warehouses found.</p>
+            </div>
+        ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {mockWarehouses.map((warehouse) => (
+          {warehouses.map((warehouse: any) => (
             <Card key={warehouse.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-lg">{warehouse.name}</CardTitle>
-                    <Badge variant={warehouse.status === 'active' ? 'default' : 'secondary'}>
-                      {warehouse.status}
+                    <Badge variant={'default'}>
+                      Active
                     </Badge>
                   </div>
-                  <Button variant="ghost" size="icon">
-                    <Settings className="h-4 w-4" />
-                  </Button>
+                  <Link href={`/${companySlug}/warehouses/${warehouse.slug}/settings`}>
+                    <Button variant="ghost" size="icon">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </Link>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2 text-sm">
                   <div className="flex items-start gap-2 text-slate-600 dark:text-slate-400">
                     <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                    <span>{warehouse.address}</span>
+                    <span>{warehouse.address || 'No address provided'}</span>
                   </div>
                   <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                     <Users className="h-4 w-4" />
-                    <span>Manager: {warehouse.manager}</span>
+                    <span>Type: {warehouse.type || 'Standard'}</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                   <div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Products</p>
-                    <p className="text-lg font-semibold">{warehouse.totalProducts}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Code</p>
+                    <p className="text-lg font-semibold">{warehouse.code || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Value</p>
-                    <p className="text-lg font-semibold">{warehouse.totalValue}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Timezone</p>
+                    <p className="text-lg font-semibold text-sm truncate">{warehouse.timezone || 'UTC'}</p>
                   </div>
                 </div>
 
@@ -161,7 +162,14 @@ function WarehousesContent() {
             </Card>
           ))}
         </div>
+        )}
       </main>
+
+      <CreateWarehouseDialog 
+        open={isCreateDialogOpen} 
+        onOpenChange={setIsCreateDialogOpen}
+        companySlug={companySlug}
+      />
     </div>
   );
 }

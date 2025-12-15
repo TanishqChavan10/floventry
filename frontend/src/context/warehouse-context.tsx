@@ -52,6 +52,7 @@ const INITIAL_WAREHOUSES: Warehouse[] = [
 
 import { useAuth } from '@clerk/nextjs';
 import { toast } from 'sonner';
+import { useParams } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -60,6 +61,7 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
   const [activeWarehouseId, setActiveWarehouseId] = useState<string | 'ALL'>('ALL');
   const [isLoading, setIsLoading] = useState(true);
   const { getToken, isSignedIn } = useAuth();
+  const params = useParams();
 
   const fetchWarehouses = async () => {
     if (!isSignedIn) return;
@@ -94,6 +96,17 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
     }
   }, [isSignedIn]);
+
+  // Detect active warehouse from URL
+  useEffect(() => {
+    const warehouseSlug = params?.warehouseSlug as string;
+    if (warehouseSlug && warehouses.length > 0) {
+      const currentWarehouse = warehouses.find(w => w.slug === warehouseSlug);
+      if (currentWarehouse && currentWarehouse.id !== activeWarehouseId) {
+        setActiveWarehouseId(currentWarehouse.id);
+      }
+    }
+  }, [params?.warehouseSlug, warehouses]);
 
   const addWarehouse = async (newWarehouseData: Omit<Warehouse, 'id' | 'slug'>) => {
     try {

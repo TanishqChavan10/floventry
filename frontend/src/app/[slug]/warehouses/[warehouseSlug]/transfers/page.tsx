@@ -118,7 +118,7 @@ function TransfersContent() {
 export default function TransfersPage() {
   return (
     <CompanyGuard>
-      <RoleGuard allowedRoles={['MANAGER', 'STAFF']}>
+      <RoleGuard allowedRoles={['OWNER', 'ADMIN']}>
         <TransfersContent />
       </RoleGuard>
     </CompanyGuard>

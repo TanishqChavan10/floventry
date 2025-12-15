@@ -7,11 +7,14 @@ import {
   DeleteDateColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   JoinColumn,
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { Company } from '../company/company.entity';
 import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
+import { WarehouseSettings } from './warehouse-settings.entity';
+import { WarehouseSettings as WarehouseSettingsModel } from './warehouse-settings.model';
 
 @ObjectType()
 @Entity('warehouses')
@@ -51,6 +54,30 @@ export class Warehouse {
   @Column({ nullable: true })
   timezone: string;
 
+  @Field({ nullable: true })
+  @Column({ nullable: true })
+  city: string;
+
+  @Field({ nullable: true })
+  @Column({ nullable: true })
+  state: string;
+
+  @Field({ nullable: true })
+  @Column({ nullable: true })
+  country: string;
+
+  @Field({ nullable: true })
+  @Column({ nullable: true })
+  contact_person: string;
+
+  @Field({ nullable: true })
+  @Column({ nullable: true })
+  contact_phone: string;
+
+  @Field()
+  @Column({ default: 'active' })
+  status: string; // active / inactive
+
   @Field()
   @Column({ default: false })
   is_default: boolean;
@@ -71,6 +98,9 @@ export class Warehouse {
   @JoinColumn({ name: 'company_id' })
   company: Company;
 
-  // @OneToMany(() => UserWarehouse, (userWarehouse) => userWarehouse.userWarehouses) // Note: original code had typo userWarehouse.userWarehouses? No, it was userWarehouse.warehouse.
-  // userWarehouses: UserWarehouse[];
+  @Field(() => WarehouseSettingsModel, { nullable: true })
+  @OneToOne(() => WarehouseSettings, (settings) => settings.warehouse, { cascade: true })
+  settings: WarehouseSettings;
+
+  // Removed commented code - userWarehouses relation
 }

@@ -169,7 +169,7 @@ function WarehouseDashboardContent() {
 export default function WarehouseDashboardPage() {
   return (
     <CompanyGuard>
-      <RoleGuard allowedRoles={['MANAGER', 'STAFF']}>
+        <RoleGuard allowedRoles={['OWNER', 'ADMIN']}>
         <WarehouseDashboardContent />
       </RoleGuard>
     </CompanyGuard>

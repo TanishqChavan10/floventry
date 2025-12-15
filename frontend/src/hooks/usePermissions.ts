@@ -7,7 +7,7 @@ export enum Role {
     OWNER = 'OWNER',
     ADMIN = 'ADMIN',
     MANAGER = 'MANAGER',
-    WAREHOUSE_STAFF = 'WAREHOUSE_STAFF',
+    STAFF = 'STAFF',
 }
 
 interface PermissionsReturn {
@@ -58,7 +58,7 @@ export function usePermissions(): PermissionsReturn {
         const isOwner = role === Role.OWNER;
         const isAdmin = role === Role.ADMIN;
         const isManager = role === Role.MANAGER;
-        const isStaff = role === Role.WAREHOUSE_STAFF;
+        const isStaff = role === Role.STAFF;
 
         return {
             role,

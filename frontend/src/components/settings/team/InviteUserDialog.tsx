@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useMutation } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -24,6 +25,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Mail, Plus, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePermissions, Role } from '@/hooks/usePermissions';
+import { SEND_INVITE } from '@/lib/graphql/invite';
 
 interface Warehouse {
   id: string;
@@ -46,12 +48,12 @@ export function InviteUserDialog({
 }: InviteUserDialogProps) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<string>('MANAGER');
+  const [role, setRole] = useState<string>('STAFF');
   const [selectedWarehouses, setSelectedWarehouses] = useState<string[]>([]);
   const [managedWarehouseIds, setManagedWarehouseIds] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   
   const permissions = usePermissions();
+  const [sendInviteMutation, { loading: isLoading }] = useMutation(SEND_INVITE);
 
   // Available warehouses for assignment
   const availableWarehouses = permissions.isManager
@@ -64,7 +66,7 @@ export function InviteUserDialog({
     setManagedWarehouseIds([]);
   }, [role]);
 
-  const needsWarehouseAssignment = role === 'MANAGER' || role === 'WAREHOUSE_STAFF';
+  const needsWarehouseAssignment = role === 'MANAGER' || role === 'STAFF';
 
   const handleWarehouseToggle = (warehouseId: string) => {
     setSelectedWarehouses(prev =>
@@ -100,54 +102,37 @@ export function InviteUserDialog({
       return;
     }
     
-    if (role === 'WAREHOUSE_STAFF' && selectedWarehouses.length === 0) {
+    if (role === 'STAFF' && selectedWarehouses.length === 0) {
       toast.error('Please select at least one warehouse for staff access');
       return;
     }
 
-    setIsLoading(true);
-
     try {
-      const payload: any = {
+      const input: any = {
         email,
         role,
-        companyId,
       };
 
       if (needsWarehouseAssignment) {
-        payload.warehouseIds = selectedWarehouses;
+        input.warehouseIds = selectedWarehouses;
         if (role === 'MANAGER') {
-          payload.managesWarehouseIds = managedWarehouseIds;
+          input.managesWarehouseIds = managedWarehouseIds;
         }
       }
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/invites/send`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || 'Failed to send invite');
-      }
+      await sendInviteMutation({
+        variables: { input },
+      });
 
       toast.success('Invite sent successfully');
       setOpen(false);
       setEmail('');
-      setRole('MANAGER');
+      setRole('STAFF');
       setSelectedWarehouses([]);
       setManagedWarehouseIds([]);
       onSuccess();
     } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setIsLoading(false);
+      toast.error(err.message || 'Failed to send invite');
     }
   };
 
@@ -164,127 +149,179 @@ export function InviteUserDialog({
           Invite User
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] border-none shadow-2xl bg-white dark:bg-slate-950">
         <form onSubmit={handleSend}>
-          <DialogHeader>
-            <DialogTitle>Invite Team Member</DialogTitle>
-            <DialogDescription>
-              Send an email invitation to join your company workspace.
-            </DialogDescription>
+          <DialogHeader className="pb-4 border-b">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <Mail className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl">Invite Team Member</DialogTitle>
+                <DialogDescription className="mt-1">
+                  Invite a new member to join your workspace.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+
+          <div className="py-6 space-y-6">
             {/* Email Field */}
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email Address</Label>
+            <div className="space-y-3">
+              <Label htmlFor="email" className="text-sm font-medium">
+                Email Address
+              </Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="colleague@example.com"
+                placeholder="colleague@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
               />
             </div>
 
             {/* Role Selection */}
-            <div className="grid gap-2">
-              <Label htmlFor="role">Role</Label>
+            <div className="space-y-3">
+              <Label htmlFor="role" className="text-sm font-medium">
+                Role Assignment
+              </Label>
               <Select value={role} onValueChange={setRole}>
-                <SelectTrigger>
+                <SelectTrigger className="h-auto py-3 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {permissions.isOwner && (
-                    <SelectItem value="ADMIN">Admin</SelectItem>
+                    <>
+                      <SelectItem value="OWNER" className="py-3">
+                        <div className="flex items-start gap-3">
+                          <span className="text-xl mt-0.5">👑</span>
+                          <div>
+                            <div className="font-medium text-base">Owner</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">Full company control & billing</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="ADMIN" className="py-3">
+                        <div className="flex items-start gap-3">
+                          <span className="text-xl mt-0.5">🛡️</span>
+                          <div>
+                            <div className="font-medium text-base">Admin</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">Full access to all warehouses</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    </>
                   )}
-                  <SelectItem value="MANAGER">Manager</SelectItem>
-                  <SelectItem value="WAREHOUSE_STAFF">Warehouse Staff</SelectItem>
+                  {(permissions.isOwner || permissions.isAdmin) && (
+                    <SelectItem value="MANAGER" className="py-3">
+                      <div className="flex items-start gap-3">
+                        <span className="text-xl mt-0.5">📊</span>
+                        <div>
+                          <div className="font-medium text-base">Manager</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">Manages operations in specific warehouses</div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  )}
+                  <SelectItem value="STAFF" className="py-3">
+                    <div className="flex items-start gap-3">
+                      <span className="text-xl mt-0.5">👤</span>
+                      <div>
+                        <div className="font-medium text-base">Staff</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">Limited access to specific warehouses</div>
+                      </div>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                {role === 'ADMIN' && 'Full access except billing'}
-                {role === 'MANAGER' && 'Can manage assigned warehouses'}
-                {role === 'WAREHOUSE_STAFF' && 'Limited warehouse access'}
-              </p>
             </div>
 
             {/* Warehouse Assignment */}
             {needsWarehouseAssignment && (
-              <div className="grid gap-3 border rounded-lg p-4 bg-muted/50">
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <Label className="text-sm font-medium">
-                    {role === 'MANAGER' ? 'Warehouse Management' : 'Warehouse Access'}
+              <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    {role === 'MANAGER' ? 'Managed Warehouses' : 'Warehouse Access'}
                   </Label>
+                  <span className="text-xs text-muted-foreground">
+                    {role === 'MANAGER' 
+                      ? 'Select warehouses to manage' 
+                      : 'Select warehouses to access'}
+                  </span>
                 </div>
 
-                {role === 'MANAGER' && (
-                  <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground">
-                      Select warehouses this manager will manage and have access to:
-                    </p>
-                    <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                      {availableWarehouses.map((warehouse) => (
-                        <div key={warehouse.id} className="flex items-start space-x-3 p-2 hover:bg-background rounded">
-                          <Checkbox
-                            id={`manage-${warehouse.id}`}
-                            checked={managedWarehouseIds.includes(warehouse.id)}
-                            onCheckedChange={() => handleManagerWarehouseToggle(warehouse.id)}
-                          />
-                          <div className="flex-1">
-                            <label
-                              htmlFor={`manage-${warehouse.id}`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                            >
-                              {warehouse.name}
-                              {managedWarehouseIds.includes(warehouse.id) && (
-                                <span className="ml-2 text-xs text-primary">(Manager)</span>
-                              )}
-                            </label>
-                          </div>
-                        </div>
-                      ))}
+                <div className="border rounded-xl bg-slate-50/50 dark:bg-slate-900/50 p-1 max-h-[220px] overflow-y-auto">
+                  {availableWarehouses.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No warehouses available to assign
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="grid gap-1">
+                      {availableWarehouses.map((warehouse) => {
+                        const isSelected = role === 'MANAGER' 
+                          ? managedWarehouseIds.includes(warehouse.id)
+                          : selectedWarehouses.includes(warehouse.id);
 
-                {role === 'WAREHOUSE_STAFF' && (
-                  <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground">
-                      Select warehouses this staff member can access:
-                    </p>
-                    <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                      {availableWarehouses.map((warehouse) => (
-                        <div key={warehouse.id} className="flex items-start space-x-3 p-2 hover:bg-background rounded">
-                          <Checkbox
-                            id={`access-${warehouse.id}`}
-                            checked={selectedWarehouses.includes(warehouse.id)}
-                            onCheckedChange={() => handleWarehouseToggle(warehouse.id)}
-                          />
-                          <div className="flex-1">
-                            <label
-                              htmlFor={`access-${warehouse.id}`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                            >
-                              {warehouse.name}
-                            </label>
+                        return (
+                          <div
+                            key={warehouse.id}
+                            onClick={() => role === 'MANAGER' 
+                              ? handleManagerWarehouseToggle(warehouse.id)
+                              : handleWarehouseToggle(warehouse.id)
+                            }
+                            className={`
+                              flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 border
+                              ${isSelected 
+                                ? 'bg-white dark:bg-slate-800 border-primary/20 shadow-sm' 
+                                : 'hover:bg-white dark:hover:bg-slate-800 border-transparent hover:shadow-sm'}
+                            `}
+                          >
+                            <Checkbox
+                              id={`wh-${warehouse.id}`}
+                              checked={isSelected}
+                              onCheckedChange={() => {}} // Handled by parent click
+                              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                            />
+                            <div className="flex-1">
+                              <label
+                                htmlFor={`wh-${warehouse.id}`}
+                                className="text-sm font-medium leading-none cursor-pointer block text-foreground"
+                              >
+                                {warehouse.name}
+                              </label>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
-                  </div>
-                )}
-
-                {availableWarehouses.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    No warehouses available for assignment
-                  </p>
-                )}
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {!needsWarehouseAssignment && (
+              <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 text-xs text-primary/80 flex items-center gap-2 animate-in fade-in zoom-in-95 duration-300">
+                <span className="text-lg">ℹ️</span>
+                {role === 'OWNER' 
+                  ? 'Owners automatically have full access to all warehouses and settings.' 
+                  : 'Admins automatically have access to all warehouses.'}
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button type="submit" disabled={isLoading}>
+
+          <DialogFooter className="pt-4 border-t">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setOpen(false)}
+              className="mr-2"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isLoading} className="bg-primary hover:bg-primary/90">
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -293,7 +330,7 @@ export function InviteUserDialog({
               ) : (
                 <>
                   <Mail className="w-4 h-4 mr-2" />
-                  Send Invite
+                  Send Invitation
                 </>
               )}
             </Button>

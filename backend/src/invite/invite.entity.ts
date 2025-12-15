@@ -13,7 +13,7 @@ export class Invite {
   @Column('uuid')
   company_id: string;
 
-  @Column({ default: 'WAREHOUSE_STAFF' })
+  @Column({ default: 'STAFF' })
   role: string;
 
   @Column({ type: 'simple-json', nullable: true })

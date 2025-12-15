@@ -30,28 +30,69 @@ type Category {
 }
 
 type Company {
+  address_line1: String
+  address_line2: String
+  city: String
+  company_type: String
+  country: String
   created_at: DateTime!
   created_by: String
   description: String
+  email: String
+  gst_number: String
   id: ID!
+  industry: String
+  legal_name: String
   logo_url: String
   name: String!
+  phone: String
+  settings: CompanySettings
   slug: String!
+  state: String
   updated_at: DateTime
+  warehouses: [Warehouse!]
+  website: String
+}
+
+type CompanyMemberDetails {
+  invited_by: String
+  joined_at: DateTime!
+  membership_id: String!
+  role: Role!
+  status: String!
+  user: UserDetails!
+  user_id: String!
+  warehouses: [WarehouseAssignment!]!
 }
 
 type CompanySettings {
-  auto_backup: Boolean
-  company_id: Int!
+  allow_negative_stock: Boolean
+  audit_retention_days: Int
+  company_id: ID!
   created_at: DateTime!
   currency: String
+  default_user_role: String
+  enable_audit_logs: Boolean
+  enable_expiry_tracking: Boolean
+  expiry_warning_days: Int
+  id: ID!
   language: String
-  max_users: Float
-  notifications_enabled: Boolean
-  settings_id: Int!
-  storage_limit_gb: Float
+  low_stock_threshold: Int
+  notify_expiry: Boolean
+  notify_low_stock: Boolean
+  notify_po_status: Boolean
+  notify_transfers: Boolean
+  po_approval_threshold: Float
+  po_auto_receive: Boolean
+  po_default_payment_terms: String
+  po_require_approval: Boolean
+  restrict_manager_catalog: Boolean
+  restrict_staff_stock: Boolean
+  session_timeout_minutes: Int
+  stock_valuation_method: String
   theme: String
   timezone: String
+  track_stock_adjustments: Boolean
   updated_at: DateTime
 }
 
@@ -102,6 +143,16 @@ input CreateUnitInput {
   shortCode: String!
 }
 
+input CreateWarehouseInput {
+  address: String
+  code: String
+  is_default: Boolean
+  name: String!
+  slug: String
+  timezone: String
+  type: String
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
@@ -115,9 +166,11 @@ type Invite {
   expires_at: DateTime!
   invite_id: String!
   invited_by: String!
+  manages_warehouse_ids: [String!]
   role: String!
   status: String!
   token: String
+  warehouse_ids: [String!]
 }
 
 """Type of stock movement"""
@@ -139,7 +192,9 @@ type Mutation {
   createStock(input: CreateStockInput!): Stock!
   createSupplier(input: CreateSupplierInput!): Supplier!
   createUnit(input: CreateUnitInput!): Unit!
+  createWarehouse(input: CreateWarehouseInput!): Warehouse!
   removeCategory(id: String!): Boolean!
+  removeMemberValidated(membershipId: String!): Boolean!
   removeProduct(id: String!): Boolean!
   removeSupplier(id: String!): Boolean!
   removeUnit(id: String!): Boolean!
@@ -148,12 +203,15 @@ type Mutation {
   switchCompany(companyId: String!): SwitchCompanyResponse!
   updateCategory(input: UpdateCategoryInput!): Category!
   updateCompany(id: String!, input: UpdateCompanyInput!): Company!
-  updateCompanySettings(input: UpdateCompanySettingsInput!): CompanySettings!
+  updateCompanySettings(companyId: String!, input: UpdateCompanySettingsInput!): CompanySettings!
+  updateMemberWarehouses(membershipId: String!, warehouseIds: [String!]!): Boolean!
   updateProduct(input: UpdateProductInput!): Product!
   updateRole(input: UpdateRoleInput!): UserCompany!
   updateStockLevels(input: UpdateStockInput!): Stock!
   updateSupplier(input: UpdateSupplierInput!): Supplier!
   updateUnit(input: UpdateUnitInput!): Unit!
+  updateWarehouse(id: String!, input: UpdateWarehouseInput!): Warehouse!
+  updateWarehouseSettings(input: UpdateWarehouseSettingsInput!, warehouseId: String!): WarehouseSettings!
 }
 
 type Product {
@@ -183,8 +241,11 @@ type Query {
   companies: [Company!]!
   company(id: String!): Company!
   companyBySlug(slug: String!): Company!
+  companyInvites(companyId: String!): [Invite!]!
+  companyMembers(companyId: String!): [CompanyMemberDetails!]!
   lowStockItems(warehouseId: String): [Stock!]!
   me: UserModel
+  myPendingInvites: [Invite!]!
   product(id: String!): Product!
   products: [Product!]!
   stock(productId: String!, warehouseId: String!): Stock!
@@ -195,6 +256,9 @@ type Query {
   suppliers: [Supplier!]!
   units: [Unit!]!
   usersInCompany: [UserCompany!]!
+  validateInvite(token: String!): ValidateInviteResponse!
+  warehouse(id: String!): Warehouse!
+  warehouses: [Warehouse!]!
 }
 
 """Reference type for stock movement"""
@@ -211,7 +275,7 @@ enum Role {
   ADMIN
   MANAGER
   OWNER
-  WAREHOUSE_STAFF
+  STAFF
 }
 
 input SendInviteInput {
@@ -307,11 +371,13 @@ input UpdateCompanyInput {
   address_line1: String
   address_line2: String
   city: String
+  company_type: String
   country: String
   description: String
   email: String
   gst_number: String
   industry: String
+  legal_name: String
   logo_url: String
   name: String
   phone: String
@@ -320,14 +386,31 @@ input UpdateCompanyInput {
 }
 
 input UpdateCompanySettingsInput {
-  auto_backup: Boolean
+  allow_negative_stock: Boolean
+  audit_retention_days: Int
   currency: String
+  default_user_role: String
+  enable_audit_logs: Boolean
+  enable_expiry_tracking: Boolean
+  expiry_warning_days: Int
   language: String
-  max_users: Int
+  low_stock_threshold: Int
   notifications_enabled: Boolean
-  storage_limit_gb: Float
+  notify_expiry: Boolean
+  notify_low_stock: Boolean
+  notify_po_status: Boolean
+  notify_transfers: Boolean
+  po_approval_threshold: Float
+  po_auto_receive: Boolean
+  po_default_payment_terms: String
+  po_require_approval: Boolean
+  restrict_manager_catalog: Boolean
+  restrict_staff_stock: Boolean
+  session_timeout_minutes: Int
+  stock_valuation_method: String
   theme: String
   timezone: String
+  track_stock_adjustments: Boolean
 }
 
 input UpdateProductInput {
@@ -372,6 +455,31 @@ input UpdateUnitInput {
   shortCode: String!
 }
 
+input UpdateWarehouseInput {
+  address: String
+  city: String
+  code: String
+  contact_person: String
+  contact_phone: String
+  country: String
+  description: String
+  name: String
+  slug: String
+  state: String
+  status: String
+  timezone: String
+  type: String
+}
+
+input UpdateWarehouseSettingsInput {
+  allow_inbound_transfers: Boolean
+  allow_negative_stock: Boolean
+  allow_outbound_transfers: Boolean
+  expiry_warning_days: Float
+  low_stock_threshold: Float
+  require_transfer_approval: Boolean
+}
+
 type User {
   activeCompanyId: String
   avatarUrl: String
@@ -400,6 +508,11 @@ type UserCompanyInfo {
   slug: String!
 }
 
+type UserDetails {
+  email: String!
+  fullName: String
+}
+
 type UserModel {
   activeCompanyId: String
   avatar_url: String
@@ -412,16 +525,49 @@ type UserModel {
   updated_at: DateTime!
 }
 
+type ValidateInviteResponse {
+  companyId: String!
+  companyName: String!
+  companySlug: String
+  email: String!
+  role: String!
+}
+
 type Warehouse {
   address: String
+  city: String
   code: String
+  contact_person: String
+  contact_phone: String
+  country: String
   created_at: DateTime!
   description: String
   id: ID!
   is_default: Boolean!
   name: String!
+  settings: WarehouseSettings
   slug: String
+  state: String
+  status: String!
   timezone: String
   type: String
   updated_at: DateTime
+}
+
+type WarehouseAssignment {
+  isManager: Boolean!
+  warehouseId: String!
+  warehouseName: String!
+}
+
+type WarehouseSettings {
+  allow_inbound_transfers: Boolean!
+  allow_negative_stock: Boolean
+  allow_outbound_transfers: Boolean!
+  created_at: DateTime!
+  expiry_warning_days: Float
+  id: ID!
+  low_stock_threshold: Float
+  require_transfer_approval: Boolean!
+  warehouse_id: String!
 }

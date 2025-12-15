@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useMutation, useApolloClient } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -13,114 +14,165 @@ import {
 } from '@/components/ui/card';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
-
-import { useAuth, ClerkLoaded, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/nextjs';
+import { useAuth } from '@clerk/nextjs';
+import { ACCEPT_INVITE, VALIDATE_INVITE } from '@/lib/graphql/invite';
 
 function InviteAcceptContent() {
   const searchParams = useSearchParams();
-  const token = searchParams.get('token');
   const router = useRouter();
-  const { getToken, isSignedIn, isLoaded } = useAuth();
+  const client = useApolloClient();
+  const { isSignedIn, isLoaded } = useAuth();
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAccepting, setIsAccepting] = useState(false);
+  /** ✅ Token persistence (SSO safe) */
+  const urlToken = searchParams.get('token');
+  const storedToken =
+    typeof window !== 'undefined' ? localStorage.getItem('inviteToken') : null;
+  const token = urlToken || storedToken;
+
   const [inviteDetails, setInviteDetails] = useState<{
     email: string;
     companyName: string;
+    companySlug: string;
     role: string;
   } | null>(null);
+
   const [error, setError] = useState<string | null>(null);
+  const [hasAccepted, setHasAccepted] = useState(false);
 
+  const [acceptInvite, { loading: isAccepting }] = useMutation(ACCEPT_INVITE);
+
+  /** -----------------------------
+   *  1️⃣ Validate invite token (ONCE)
+   * ----------------------------- */
   useEffect(() => {
-    if (!token) {
-      setError('Invalid invite link.');
-      setIsLoading(false);
+    // Don't validate if:
+    // - No token
+    // - Already have invite details (already validated)
+    // - Already accepted the invite
+    if (!token || inviteDetails || hasAccepted) {
       return;
     }
 
-    const validateInvite = async () => {
+    localStorage.setItem('inviteToken', token);
+
+    (async () => {
       try {
-        const res = await fetch(`/api/invites/validate?token=${token}`);
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.message || 'Invalid or expired invite.');
+        const { data } = await client.query({
+          query: VALIDATE_INVITE,
+          variables: { token },
+          fetchPolicy: 'network-only',
+        });
+
+        if (!data?.validateInvite) {
+          throw new Error('Invite not found or expired');
         }
-        const data = await res.json();
-        setInviteDetails(data);
+
+        setInviteDetails(data.validateInvite);
       } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
+        setError(err.message || 'Invalid or expired invite.');
       }
-    };
+    })();
+  }, [token, client, inviteDetails, hasAccepted]);
 
-    validateInvite();
-  }, [token]);
-
-  const handleAccept = async () => {
-    if (!token) return;
-
-    if (!isSignedIn) {
-      // Should be handled by UI showing "Sign In" button, but checking here too.
-      router.push(`/auth/sign-in?redirect_url=${encodeURIComponent(window.location.href)}`);
+  /** ------------------------------------
+   *  2️⃣ Auto-accept AFTER SSO login
+   * ------------------------------------ */
+  useEffect(() => {
+    if (
+      !token ||
+      !inviteDetails ||
+      !isLoaded ||
+      !isSignedIn ||
+      hasAccepted ||
+      isAccepting
+    ) {
       return;
     }
 
-    setIsAccepting(true);
-    try {
-      const authToken = await getToken();
-      const res = await fetch('/api/invites/accept', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ token }),
-      });
+    (async () => {
+      try {
+        setHasAccepted(true);
 
-      const responseBody = await res.json();
+        await acceptInvite({
+          variables: { input: { token } },
+        });
 
-      if (!res.ok) {
-        throw new Error(responseBody.message);
+        localStorage.removeItem('inviteToken');
+        toast.success('Joined company successfully');
+
+        router.replace(`/${inviteDetails.companySlug}/dashboard`);
+      } catch (err: any) {
+        setHasAccepted(false);
+        setError(err.message || 'Failed to accept invite');
       }
-      
-      toast.success('Joined company successfully!');
-      
-      if (responseBody.companySlug) {
-        router.push(`/${responseBody.companySlug}`);
-      } else {
-        router.push('/dashboard');
-      }
-    } catch (err: any) {
-      toast.error(err.message);
-      setError(err.message);
-    } finally {
-      setIsAccepting(false);
-    }
-  };
+    })();
+  }, [
+    token,
+    inviteDetails,
+    isLoaded,
+    isSignedIn,
+    hasAccepted,
+    isAccepting,
+    acceptInvite,
+    router,
+  ]);
 
-  if (isLoading) {
+  /** -----------------------------
+   *  UI STATES
+   * ----------------------------- */
+
+  if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <XCircle className="mx-auto h-10 w-10 text-red-500" />
+            <CardTitle>Invite Invalid</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardFooter className="justify-center">
+            <Button onClick={() => router.push('/')}>Go Home</Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
 
-  if (error) {
+  if (!inviteDetails || !isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
-        <Card className="w-full max-w-md border-red-200 shadow-lg">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-              <XCircle className="w-6 h-6 text-red-600" />
-            </div>
-            <CardTitle className="text-xl text-red-700">Invite Invalid</CardTitle>
-            <CardDescription>{error}</CardDescription>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  /** -----------------------------
+   *  Not signed in → Sign in
+   * ----------------------------- */
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="max-w-md w-full text-center">
+          <CardHeader>
+            <CheckCircle className="mx-auto h-10 w-10 text-indigo-600" />
+            <CardTitle>You’re invited!</CardTitle>
+            <CardDescription>
+              Join <strong>{inviteDetails.companyName}</strong> as{' '}
+              <strong>{inviteDetails.role.replace(/_/g, ' ')}</strong>
+            </CardDescription>
           </CardHeader>
-          <CardFooter className="justify-center">
-            <Button variant="outline" onClick={() => router.push('/')}>
-              Go Home
+          <CardFooter>
+            <Button
+              className="w-full"
+              onClick={() =>
+                router.push(
+                  `/auth/sign-in?redirect_url=${encodeURIComponent(
+                    window.location.href,
+                  )}`,
+                )
+              }
+            >
+              Sign in to accept
             </Button>
           </CardFooter>
         </Card>
@@ -128,63 +180,19 @@ function InviteAcceptContent() {
     );
   }
 
+  /** -----------------------------
+   *  Signed in → auto accepting
+   * ----------------------------- */
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
-      <Card className="w-full max-w-md shadow-xl border-slate-200 dark:border-slate-800">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-          </div>
-          <CardTitle className="text-2xl font-bold">You're Invited!</CardTitle>
+    <div className="min-h-screen flex items-center justify-center">
+      <Card className="max-w-md w-full text-center">
+        <CardHeader>
+          <Loader2 className="mx-auto h-8 w-8 animate-spin" />
+          <CardTitle>Accepting invite…</CardTitle>
           <CardDescription>
-            You have been invited to join <strong>{inviteDetails?.companyName}</strong> as a{' '}
-            <strong className="capitalize">{inviteDetails?.role?.replace(/_/g, ' ')}</strong>.
+            Joining <strong>{inviteDetails.companyName}</strong>
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-slate-100 dark:bg-slate-900 p-4 rounded-lg text-sm text-center">
-            <p className="text-slate-500 dark:text-slate-400">Invited Email</p>
-            <p className="font-medium text-slate-900 dark:text-white">{inviteDetails?.email}</p>
-          </div>
-
-          <div className="text-xs text-center text-slate-500">
-            By accepting, you will be granted access to the company workspace.
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-3">
-          {!isSignedIn ? (
-            <Button
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-              size="lg"
-              onClick={() =>
-                router.push(
-                  `/auth/sign-in?redirect_url=${encodeURIComponent(window.location.href)}`,
-                )
-              }
-            >
-              Sign In to Accept
-            </Button>
-          ) : (
-            <Button
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-              size="lg"
-              onClick={handleAccept}
-              disabled={isAccepting}
-            >
-              {isAccepting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Joining...
-                </>
-              ) : (
-                'Accept Invite'
-              )}
-            </Button>
-          )}
-          <Button variant="ghost" className="w-full" onClick={() => router.push('/')}>
-            Decline
-          </Button>
-        </CardFooter>
       </Card>
     </div>
   );

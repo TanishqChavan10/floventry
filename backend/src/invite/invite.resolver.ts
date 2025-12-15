@@ -1,9 +1,10 @@
-import { Resolver, Mutation, Args, Context } from '@nestjs/graphql';
+import { Resolver, Mutation, Query, Args, Context } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { InviteService } from './invite.service';
 import { Invite } from './invite.model';
 import { SendInviteInput } from './dto/send-invite.input';
 import { AcceptInviteInput } from './dto/accept-invite.input';
+import { ValidateInviteResponse } from './dto/validate-invite-response';
 import { UserCompany } from '../user-company/user-company.model';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -22,7 +23,7 @@ export class InviteResolver {
 
   @Mutation(() => Invite)
   @UseGuards(ClerkAuthGuard, RolesGuard)
-@Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
   async sendInvite(
     @Args('input') input: SendInviteInput,
     @Context() context: any,
@@ -37,17 +38,18 @@ export class InviteResolver {
   }
 
   @Mutation(() => UserCompany)
+  @UseGuards(ClerkAuthGuard)
   async acceptInvite(
     @Args('input') input: AcceptInviteInput,
     @Context() context: any,
   ) {
-    const userId = context.req.user.id;
-    return this.inviteService.acceptInvite(input, userId);
+    const user = await this.clerkService.syncUser(context.req.user.clerkId);
+    return this.inviteService.acceptInvite(input, user.id);
   }
 
   @Mutation(() => Boolean)
   @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.MANAGER,Role.OWNER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
   async cancelInvite(
     @Args('inviteId', { type: () => String }) inviteId: string,
     @Context() context: any,
@@ -55,5 +57,48 @@ export class InviteResolver {
     const userId = context.req.user.id;
     await this.inviteService.cancelInvite(inviteId, userId);
     return true;
+  }
+
+  //------------------------------------------------------------
+  // QUERIES
+  //------------------------------------------------------------
+
+  @Query(() => ValidateInviteResponse)
+  async validateInvite(
+    @Args('token', { type: () => String }) token: string,
+  ) {
+    if (!token) {
+      throw new BadRequestException('Token is required');
+    }
+    const invite = await this.inviteService.validateInviteToken(token);
+    return {
+      email: invite.email,
+      companyName: invite.company?.name || 'Unknown Company',
+      companySlug: invite.company?.slug,
+      role: invite.role,
+      companyId: invite.company_id,
+    };
+  }
+
+  @Query(() => [Invite])
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  async companyInvites(
+    @Args('companyId', { type: () => String }) companyId: string,
+  ) {
+    return this.inviteService.getInvites(companyId);
+  }
+
+  @Query(() => [Invite])
+  @UseGuards(ClerkAuthGuard)
+  async myPendingInvites(@Context() context: any) {
+    if (!context.req.user?.clerkId) {
+      return [];
+    }
+    const user = await this.clerkService.getUserByClerkId(context.req.user.clerkId);
+    if (!user || !user.email) {
+      return [];
+    }
+    return this.inviteService.getInvitesByEmail(user.email);
   }
 }

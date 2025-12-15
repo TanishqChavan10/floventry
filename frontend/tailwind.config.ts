@@ -6,8 +6,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-inter)', 'sans-serif'],
-        heading: ['var(--font-jakarta)', 'sans-serif'],
+        sans: ['var(--font-poppins)', 'sans-serif'],
+        heading: ['var(--font-poppins)', 'sans-serif'],
       },
       animation: {
         'fade-in-up': 'fadeInUp 0.5s ease-out',

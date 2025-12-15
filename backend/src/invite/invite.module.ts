@@ -9,7 +9,6 @@ import { UserWarehouseService } from '../auth/user-warehouse.service';
 
 import { AuthModule } from '../auth/auth.module';
 import { EmailModule } from '../email/email.module';
-import { InviteController } from './invite.controller';
 import { InviteResolver } from './invite.resolver';
 
 
@@ -19,7 +18,6 @@ import { InviteResolver } from './invite.resolver';
     AuthModule,
     EmailModule,
   ],
-  controllers: [InviteController],
   providers: [InviteService, InviteResolver],
   exports: [InviteService],
 })

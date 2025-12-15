@@ -62,6 +62,12 @@ export class Company {
   @Column({ nullable: true })
   website: string;
 
+  @Column({ nullable: true })
+  company_type: string; // Retail / Wholesale / Distributor / Other
+
+  @Column({ nullable: true })
+  legal_name: string;
+
   @Column({ type: "text" })
   created_by: string; // FK → users(id)
 

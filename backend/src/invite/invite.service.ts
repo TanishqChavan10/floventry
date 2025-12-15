@@ -65,6 +65,90 @@ export class InviteService {
   }
 
   //------------------------------------------------------------
+  // ROLE HIERARCHY VALIDATION
+  //------------------------------------------------------------
+  /**
+   * Validate if inviter has permission to invite target role
+   * Rule: STAFF < MANAGER < ADMIN < OWNER
+   */
+  private validateInvitePermissions(inviterRole: string, targetRole: string): void {
+    const hierarchy = {
+      STAFF: 1,
+      MANAGER: 2,
+      ADMIN: 3,
+      OWNER: 4,
+    };
+
+    const inviterLevel = hierarchy[inviterRole] || 0;
+    const targetLevel = hierarchy[targetRole] || 0;
+
+    // OWNER can invite anyone
+    if (inviterRole === Role.OWNER) return;
+
+    // ADMIN can invite ADMIN, MANAGER, STAFF
+    if (inviterRole === Role.ADMIN && targetRole !== Role.OWNER) return;
+
+    // MANAGER can only invite STAFF
+    if (inviterRole === Role.MANAGER && targetRole === Role.STAFF) return;
+
+    // Otherwise, deny
+    throw new BadRequestException(
+      `${inviterRole} does not have permission to invite ${targetRole}`
+    );
+  }
+
+  /**
+   * Validate warehouse assignment requirements based on role
+   * OWNER/ADMIN: No warehouses needed
+   * MANAGER/STAFF: At least one warehouse required
+   */
+  private validateWarehouseRequirements(
+    role: string,
+    warehouseIds: string[]
+  ): void {
+    const needsWarehouse = role === Role.MANAGER || role === Role.STAFF;
+
+    if (needsWarehouse && (!warehouseIds || warehouseIds.length === 0)) {
+      throw new BadRequestException(
+        `${role} must be assigned to at least one warehouse`
+      );
+    }
+
+    if (!needsWarehouse && warehouseIds && warehouseIds.length > 0) {
+      throw new BadRequestException(
+        `${role} should not be assigned to specific warehouses (has access to all)`
+      );
+    }
+  }
+
+  /**
+   * For MANAGER invites: ensure they can only assign warehouses they manage
+   */
+  private async validateManagerScope(
+    inviterId: string,
+    warehouseIds: string[]
+  ): Promise<void> {
+    if (!warehouseIds || warehouseIds.length === 0) return;
+
+    // Get manager's warehouses
+    const managerWarehouses = await this.userWarehouseService.getUserWarehouses(inviterId);
+    const managedWarehouseIds = managerWarehouses
+      .filter(uw => uw.is_manager_of_warehouse)
+      .map(uw => uw.warehouse_id);
+
+    // Check if all target warehouses are in manager's scope
+    const invalidWarehouses = warehouseIds.filter(
+      id => !managedWarehouseIds.includes(id)
+    );
+
+    if (invalidWarehouses.length > 0) {
+      throw new BadRequestException(
+        'You can only assign warehouses that you manage'
+      );
+    }
+  }
+
+  //------------------------------------------------------------
   // CREATE INVITE
   //------------------------------------------------------------
   async createInvite(
@@ -94,6 +178,34 @@ export class InviteService {
 
     const inviter = await this.userRepository.findOne({ where: { id: invitedBy } });
     const inviterName = inviter?.fullName || inviter?.email || 'A team member';
+
+    // Get inviter's role from user_companies
+    const inviterMembership = await this.userCompanyRepository.findOne({
+      where: { user_id: invitedBy, company_id: companyId }
+    });
+
+    if (!inviterMembership) {
+      throw new BadRequestException('Inviter is not a member of this company');
+    }
+
+    const inviterRole = inviterMembership.role;
+
+    //------------------------------------------------------------
+    // VALIDATION: Role Hierarchy
+    //------------------------------------------------------------
+    this.validateInvitePermissions(inviterRole, role);
+
+    //------------------------------------------------------------
+    // VALIDATION: Warehouse Requirements
+    //------------------------------------------------------------
+    this.validateWarehouseRequirements(role, input.warehouseIds || []);
+
+    //------------------------------------------------------------
+    // VALIDATION: Manager Scope (if inviter is MANAGER)
+    //------------------------------------------------------------
+    if (inviterRole === Role.MANAGER && input.warehouseIds) {
+      await this.validateManagerScope(invitedBy, input.warehouseIds);
+    }
 
     const invite = this.inviteRepository.create({
       email,
@@ -183,17 +295,49 @@ export class InviteService {
       //------------------------------------------------------------
       // 5) ASSIGN WAREHOUSES
       //------------------------------------------------------------
-      if (invite.warehouse_ids && invite.warehouse_ids.length > 0) {
+      const isAdminOrOwner = invite.role === 'ADMIN' || invite.role === 'OWNER';
+
+      if (isAdminOrOwner) {
+        // ADMIN and OWNER get access to ALL company warehouses automatically
+        try {
+          const allWarehouses = await queryRunner.manager
+            .createQueryBuilder()
+            .select('id')
+            .from('warehouses', 'w')
+            .where('w.company_id = :companyId', { companyId: invite.company_id })
+            .getRawMany();
+
+          const warehouseIds = allWarehouses.map(w => w.id);
+
+          if (warehouseIds.length > 0) {
+            await this.userWarehouseService.assignUserToWarehouses(
+              userId,
+              warehouseIds,
+              [], // ADMIN/OWNER are not managers of specific warehouses, they have global access
+              invite.invited_by,
+              Role.OWNER,
+            );
+            this.logger.log(`✅ Assigned ${warehouseIds.length} warehouses to ${invite.role} user ${userId}`);
+          } else {
+            this.logger.warn(`⚠️ No warehouses found for company ${invite.company_id}`);
+          }
+        } catch (error) {
+          this.logger.error('❌ Error assigning all warehouses to ADMIN/OWNER:', error);
+          // Continue with invite acceptance even if warehouse assignment fails
+        }
+      } else if (invite.warehouse_ids && invite.warehouse_ids.length > 0) {
+        // MANAGER and STAFF get assigned to specific warehouses
         try {
           await this.userWarehouseService.assignUserToWarehouses(
             userId,
             invite.warehouse_ids,
             invite.manages_warehouse_ids || [],
             invite.invited_by,
-            Role.OWNER, // Assuming inviter has permission (validated earlier)
+            Role.OWNER,
           );
+          this.logger.log(`✅ Assigned ${invite.warehouse_ids.length} warehouses to ${invite.role} user ${userId}`);
         } catch (error) {
-          this.logger.error('Error assigning warehouses:', error);
+          this.logger.error('❌ Error assigning warehouses to MANAGER/STAFF:', error);
           // Continue with invite acceptance even if warehouse assignment fails
         }
       }

@@ -28,20 +28,107 @@ export class UpdateCompanySettingsInput {
   @IsBoolean()
   notifications_enabled?: boolean;
 
-  @Field({ nullable: true })
+  @Field(() => Int, { nullable: true })
   @IsOptional()
-  @IsBoolean()
-  auto_backup?: boolean;
+  @IsNumber()
+  low_stock_threshold?: number;
 
   @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsNumber()
-  @Min(1)
-  max_users?: number;
+  expiry_warning_days?: number;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  enable_expiry_tracking?: boolean;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  allow_negative_stock?: boolean;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  stock_valuation_method?: string;
+
+  // PO Settings
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  po_require_approval?: boolean;
 
   @Field(() => Float, { nullable: true })
   @IsOptional()
   @IsNumber()
-  @Min(0.1)
-  storage_limit_gb?: number;
+  po_approval_threshold?: number;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  po_auto_receive?: boolean;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  po_default_payment_terms?: string;
+
+  // Notifications
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  notify_low_stock?: boolean;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  notify_expiry?: boolean;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  notify_po_status?: boolean;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  notify_transfers?: boolean;
+
+  // Access
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  default_user_role?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  restrict_manager_catalog?: boolean;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  restrict_staff_stock?: boolean;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  session_timeout_minutes?: number;
+
+  // Audit
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  enable_audit_logs?: boolean;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  audit_retention_days?: number;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  track_stock_adjustments?: boolean;
 }

@@ -29,7 +29,7 @@ export default function CompanyRootPage() {
       if (warehouses.length > 0) {
         const firstWarehouse = warehouses[0];
         const targetSlug = firstWarehouse.slug || 'main-warehouse';
-        router.replace(`/${companySlug}/${targetSlug}`);
+        router.replace(`/${companySlug}/warehouses/${targetSlug}`);
       }
     }
   }, [isLoading, warehouses, user, companySlug, router]);

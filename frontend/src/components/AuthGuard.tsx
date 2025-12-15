@@ -41,7 +41,6 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
       if (!hasCompanies && !isOnboardingRoute && !isPublicRoute) {
         // User has no companies and is not on onboarding pages
-        toast.error('You are not linked to any company.');
         router.push('/onboarding');
         return;
       }
@@ -50,24 +49,24 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         hasCompanies &&
         !hasActiveCompany &&
         hasMultipleCompanies &&
-        !pathname.startsWith('/company-switcher')
+        !isOnboardingRoute
       ) {
         // User has multiple companies but no active company selected
-        router.push('/company-switcher');
+        // Redirect to first company's dashboard
+        const firstCompanySlug = user?.companies?.[0]?.slug;
+        if (firstCompanySlug) {
+          router.push(`/${firstCompanySlug}`);
+        }
         return;
       }
 
       if (hasCompanies && isOnboardingRoute && !pathname.startsWith('/onboarding/create-company')) {
         // User has companies but is on onboarding pages, redirect appropriately
-        if (hasMultipleCompanies && !hasActiveCompany) {
-          router.push('/company-switcher');
-        } else {
-          // Find the active company or default to the first one
-          const activeSlug =
-            user?.companies?.find((c) => c.isActive)?.slug || user?.companies?.[0]?.slug;
-          if (activeSlug) {
-            router.push(`/${activeSlug}`);
-          }
+        // Find the active company or default to the first one
+        const activeSlug =
+          user?.companies?.find((c) => c.isActive)?.slug || user?.companies?.[0]?.slug;
+        if (activeSlug) {
+          router.push(`/${activeSlug}`);
         }
         return;
       }
@@ -76,6 +75,14 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
       // Redirect authenticated users away from auth pages
       if (pathname.startsWith('/auth/') || pathname === '/auth/sign-in' || pathname === '/dashboard') {
+        // First check if user has companies
+        if (!hasCompanies) {
+          // No companies - redirect to onboarding
+          router.push('/onboarding');
+          return;
+        }
+        
+        // Has companies - redirect to company dashboard
         const activeSlug =
           user?.companies?.find((c) => c.isActive)?.slug || user?.companies?.[0]?.slug;
         if (activeSlug) {
