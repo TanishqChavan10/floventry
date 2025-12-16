@@ -31,7 +31,7 @@ export default function CustomSignUp() {
     return signUp.authenticateWithRedirect({
       strategy,
       redirectUrl: '/sso-callback',
-      redirectUrlComplete: '/',
+      redirectUrlComplete: '/onboarding',
     });
   };
 
@@ -76,7 +76,7 @@ export default function CustomSignUp() {
 
       if (completeSignUp.status === 'complete') {
         await setActive({ session: completeSignUp.createdSessionId });
-        router.push('/');
+        router.push('/onboarding');
       } else {
         console.log(completeSignUp);
         setError('Verification failed. Please try again.');

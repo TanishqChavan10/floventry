@@ -12,10 +12,12 @@ import { RemoveMemberDialog } from '@/components/settings/team/RemoveMemberDialo
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import CompanyGuard from '@/components/CompanyGuard';
+import { useAuth } from '@/context/auth-context';
 
 function TeamManagementContent() {
   const params = useParams();
   const slug = params?.slug as string;
+  const { user } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
   const [editingMember, setEditingMember] = useState<any>(null);
   const [removingMember, setRemovingMember] = useState<any>(null);
@@ -99,6 +101,7 @@ function TeamManagementContent() {
         onOpenChange={(open: boolean) => !open && setEditingMember(null)}
         member={editingMember}
         availableWarehouses={company.warehouses || []}
+        currentUser={user}
         onSuccess={handleRefresh}
       />
 

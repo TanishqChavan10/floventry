@@ -193,32 +193,6 @@ export function Navbar() {
              </span>
         </div>
 
-        {/* User Menu */}
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
-                     <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
-                        <span className="font-medium text-sm text-indigo-700 dark:text-indigo-300">
-                            {user?.firstName ? user.firstName[0].toUpperCase() : 'U'}
-                        </span>
-                     </div>
-                </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                    <Link href="/profile" className="cursor-pointer flex items-center gap-2">
-                         <IconUser className="h-4 w-4" />
-                         <span>Profile</span>
-                    </Link>
-                </DropdownMenuItem>
-                 <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer text-red-600 dark:text-red-400 flex items-center gap-2">
-                     <IconLogout className="h-4 w-4" />
-                    <span>Sign Out</span>
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
 
       </div>
     </div>

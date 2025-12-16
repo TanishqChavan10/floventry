@@ -75,19 +75,38 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
       // Redirect authenticated users away from auth pages
       if (pathname.startsWith('/auth/') || pathname === '/auth/sign-in' || pathname === '/dashboard') {
+        console.log('[AuthGuard] Redirecting from auth page, pathname:', pathname);
+        
         // First check if user has companies
         if (!hasCompanies) {
           // No companies - redirect to onboarding
+          console.log('[AuthGuard] No companies, redirecting to onboarding');
           router.push('/onboarding');
           return;
         }
         
-        // Has companies - redirect to company dashboard
-        const activeSlug =
-          user?.companies?.find((c) => c.isActive)?.slug || user?.companies?.[0]?.slug;
-        if (activeSlug) {
-          router.push(`/${activeSlug}`);
+        // Has companies - check user role and redirect accordingly
+        const activeCompany = user?.companies?.find((c) => c.isActive) || user?.companies?.[0];
+        const activeSlug = activeCompany?.slug;
+        const userRole = activeCompany?.role;
+
+        console.log('[AuthGuard] User role:', userRole);
+        console.log('[AuthGuard] Active slug:', activeSlug);
+
+        if (!activeSlug) return;
+
+        // If user is STAFF or MANAGER, redirect to their assigned warehouse dashboard
+        if (userRole === 'STAFF' || userRole === 'MANAGER') {
+          // Fetch user's assigned warehouses (we'll need to add this to the query)
+          // For now, redirect to the warehouses list page which will handle the redirect
+          console.log('[AuthGuard] STAFF/MANAGER detected, redirecting to warehouses page');
+          router.push(`/${activeSlug}/warehouses`);
+          return;
         }
+
+        // For OWNER/ADMIN, redirect to company dashboard
+        console.log('[AuthGuard] OWNER/ADMIN detected, redirecting to company dashboard');
+        router.push(`/${activeSlug}`);
         return;
       }
     }

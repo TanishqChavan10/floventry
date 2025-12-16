@@ -120,7 +120,7 @@ function ExpiryContent() {
 export default function ExpiryPage() {
   return (
     <CompanyGuard>
-      <RoleGuard allowedRoles={['OWNER', 'ADMIN']}>
+      <RoleGuard allowedRoles={['OWNER', 'ADMIN', 'MANAGER', 'STAFF']}>
         <ExpiryContent />
       </RoleGuard>
     </CompanyGuard>

@@ -97,7 +97,7 @@ function WarehouseStockContent() {
 export default function WarehouseStockPage() {
   return (
     <CompanyGuard>
-      <RoleGuard allowedRoles={['OWNER', 'ADMIN']}>
+      <RoleGuard allowedRoles={['OWNER', 'ADMIN', 'MANAGER', 'STAFF']}>
         <WarehouseStockContent />
       </RoleGuard>
     </CompanyGuard>

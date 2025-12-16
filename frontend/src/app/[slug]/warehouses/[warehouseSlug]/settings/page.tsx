@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { WarehouseAccessList } from '@/components/warehouse/WarehouseAccessList';
 import {
   Select,
   SelectContent,
@@ -541,43 +542,17 @@ function WarehouseSettingsContent() {
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-indigo-600" />
-                  <CardTitle>Key Personnel</CardTitle>
+                  <CardTitle>Staff & Manager</CardTitle>
                 </div>
                 <CardDescription>
-                  Manage leadership for this location
+                  View warehouse staff and manager assignments
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
-                   <div className="space-y-2">
-                      <Label>Warehouse Manager</Label>
-                      <div className="flex items-center gap-3 p-3 border rounded-lg bg-slate-50 dark:bg-slate-900/50">
-                        <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-bold">
-                            RK
-                        </div>
-                        <div>
-                            <p className="font-medium text-slate-900 dark:text-white">Rajesh Kumar</p>
-                            <p className="text-xs text-slate-500">rajesh.kumar@company.com</p>
-                        </div>
-                        <Button variant="ghost" size="sm" className="ml-auto text-indigo-600">Change</Button>
-                      </div>
-                   </div>
-                   <div className="space-y-2">
-                      <Label>Assistant Manager / Backup</Label>
-                      <Button variant="outline" className="w-full h-[66px] border-dashed text-muted-foreground hover:text-foreground">
-                        + Assign Assistant Manager
-                      </Button>
-                   </div>
-                </div>
+              <CardContent>
+                {warehouse?.id && (
+                  <WarehouseAccessList warehouseId={warehouse.id} companySlug={companySlug} />
+                )}
               </CardContent>
-              <CardFooter className="bg-slate-50 dark:bg-slate-900/50 border-t px-6 py-4">
-                 <div className="flex items-center justify-between w-full">
-                    <div className="text-sm text-muted-foreground">
-                        <span className="font-medium text-foreground">12</span> Staff members assigned
-                    </div>
-                    <Button variant="secondary" size="sm">Manage Staff List</Button>
-                 </div>
-              </CardFooter>
             </Card>
           </TabsContent>
 

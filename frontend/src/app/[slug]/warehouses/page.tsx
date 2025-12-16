@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { useParams } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery } from '@apollo/client';
 import { GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
@@ -13,12 +13,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Building2, MapPin, Users, Package, Plus, Settings, TrendingUp } from 'lucide-react';
 import { CreateWarehouseDialog } from '@/components/warehouses/CreateWarehouseDialog';
+import { useAuth } from '@/context/auth-context';
 
 // Mock data for warehouses
 function WarehousesContent() {
   const params = useParams();
+  const router = useRouter();
   const companySlug = params.slug as string;
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false); 
+  const { user } = useAuth();
 
   const { data, loading, error } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
     variables: { slug: companySlug },
@@ -26,6 +29,37 @@ function WarehousesContent() {
   });
 
   const warehouses = data?.companyBySlug?.warehouses || [];
+
+  console.log('[Warehouses Page] Component rendering - Loading:', loading, 'User:', !!user, 'Warehouses:', warehouses.length);
+
+  // Auto-redirect STAFF/MANAGER to their assigned warehouse
+  useEffect(() => {
+    console.log('[Warehouses useEffect] Triggered - loading:', loading, 'user:', !!user, 'warehouses:', warehouses.length);
+    
+    if (!loading && user && warehouses.length > 0) {
+      const activeCompany = user.companies?.find(c => c.isActive) || user.companies?.[0];
+      const userRole = activeCompany?.role;
+
+      console.log('[Warehouses] User role:', userRole);
+      console.log('[Warehouses] Warehouses count:', warehouses.length);
+
+      // Only redirect for STAFF and MANAGER roles
+      if (userRole === 'STAFF' || userRole === 'MANAGER') {
+        // Redirect to the first warehouse (in future, we can filter by assigned warehouses)
+        const firstWarehouse = warehouses[0];
+        if (firstWarehouse) {
+          console.log('[Warehouses] Redirecting to warehouse:', firstWarehouse.slug);
+          router.push(`/${companySlug}/warehouses/${firstWarehouse.slug}`);
+        } else {
+          console.warn('[Warehouses] No warehouse found to redirect to');
+        }
+      } else {
+        console.log('[Warehouses] Not redirecting - user role is:', userRole);
+      }
+    } else {
+      console.log('[Warehouses] Not redirecting - loading:', loading, 'user:', !!user, 'warehouses.length:', warehouses.length);
+    }
+  }, [loading, warehouses, user, companySlug, router]);
 
   if (loading) {
     return (
@@ -177,7 +211,7 @@ function WarehousesContent() {
 export default function WarehousesPage() {
   return (
     <CompanyGuard>
-      <RoleGuard allowedRoles={['OWNER', 'ADMIN', 'MANAGER']}>
+      <RoleGuard allowedRoles={['OWNER', 'ADMIN', 'MANAGER', 'STAFF']}>
         <WarehousesContent />
       </RoleGuard>
     </CompanyGuard>

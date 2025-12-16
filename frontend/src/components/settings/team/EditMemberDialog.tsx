@@ -47,6 +47,7 @@ interface EditMemberDialogProps {
   onOpenChange: (open: boolean) => void;
   member: Member | null;
   availableWarehouses: Warehouse[];
+  currentUser: any; // Current logged-in user
   onSuccess: () => void;
 }
 
@@ -55,10 +56,41 @@ export function EditMemberDialog({
   onOpenChange,
   member,
   availableWarehouses,
+  currentUser,
   onSuccess,
 }: EditMemberDialogProps) {
   const [selectedWarehouses, setSelectedWarehouses] = useState<string[]>([]);
   const [updateWarehouses, { loading }] = useMutation(UPDATE_MEMBER_WAREHOUSES);
+
+  // Filter warehouses based on current user's role
+  // If current user is a MANAGER, only show warehouses they manage
+  const filteredWarehouses = (() => {
+    if (!currentUser) return availableWarehouses;
+    
+    const currentUserCompany = currentUser.companies?.find((c: any) => 
+      availableWarehouses.some(w => w.id)
+    );
+    
+    const currentUserRole = currentUserCompany?.role;
+    
+    // OWNER and ADMIN can see all warehouses
+    if (currentUserRole === 'OWNER' || currentUserRole === 'ADMIN') {
+      return availableWarehouses;
+    }
+    
+    // MANAGER can only see warehouses they manage
+    if (currentUserRole === 'MANAGER') {
+      // Get warehouse IDs where current user is a manager
+      const managedWarehouseIds = currentUser.warehouses
+        ?.filter((w: any) => w.isManager)
+        .map((w: any) => w.warehouseId) || [];
+      
+      return availableWarehouses.filter(w => managedWarehouseIds.includes(w.id));
+    }
+    
+    // Default: no warehouses
+    return [];
+  })();
 
   // Initialize selected warehouses when member changes
   useEffect(() => {
@@ -106,9 +138,9 @@ export function EditMemberDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Edit Warehouse Access</DialogTitle>
+          <DialogTitle>Transfer Warehouses</DialogTitle>
           <DialogDescription>
-            Update warehouse assignments for{' '}
+            Assign or transfer warehouse access for{' '}
             <span className="font-medium text-foreground">
               {member.user.fullName || member.user.email}
             </span>
@@ -123,12 +155,12 @@ export function EditMemberDialog({
             </div>
 
             <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {availableWarehouses.length === 0 ? (
+              {filteredWarehouses.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No warehouses available
                 </p>
               ) : (
-                availableWarehouses.map((warehouse) => (
+                filteredWarehouses.map((warehouse) => (
                   <div
                     key={warehouse.id}
                     className="flex items-start space-x-3 p-2 hover:bg-background rounded"

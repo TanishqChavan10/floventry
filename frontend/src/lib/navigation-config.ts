@@ -59,7 +59,6 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
             ],
         },
         {
-            title: 'Catalog',
             items: [
                 {
                     label: 'Products',
@@ -93,7 +92,6 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
             ],
         },
         {
-            title: 'Inventory',
             items: [
                 {
                     label: 'Expiry',
@@ -117,28 +115,11 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
             ]
         },
         {
-            title: 'Settings',
             items: [
                 {
                     label: 'Settings',
                     href: `${basePath}/settings`,
                     icon: IconSettings,
-                },
-                {
-                    label: 'Billing',
-                    href: `${basePath}/settings/billing`,
-                    icon: IconFileInvoice, // or IconCreditCard
-                    roles: ['OWNER'],
-                },
-                {
-                    label: 'Team',
-                    href: `${basePath}/settings/team`,
-                    icon: IconUsers,
-                },
-                {
-                    label: 'Roles',
-                    href: `${basePath}/settings/roles`,
-                    icon: IconInfoCircle, // Placeholder
                 },
             ],
             roles: ['OWNER', 'ADMIN'],
@@ -214,7 +195,6 @@ export function getWarehouseNavigation(
             ]
         },
         {
-            title: 'Settings',
             items: [
                 {
                     label: 'Settings',

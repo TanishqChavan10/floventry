@@ -5,6 +5,8 @@ import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, TrendingUp, AlertTriangle, ArrowUpDown } from 'lucide-react';
+import { WarehouseAccessList } from '@/components/warehouse/WarehouseAccessList';
+import { useWarehouse } from '@/context/warehouse-context';
 
 const mockWarehouseData = {
   name: 'Main Warehouse',
@@ -24,6 +26,8 @@ const mockRecentActivities = [
 function WarehouseDashboardContent() {
   const params = useParams();
   const warehouseSlug = params.warehouseSlug as string;
+  const companySlug = params.slug as string;
+  const { activeWarehouse } = useWarehouse();
 
   return (
     <div>
@@ -32,7 +36,7 @@ function WarehouseDashboardContent() {
         {/* Page Header */}
         <div className="space-y-2 mb-6">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            {mockWarehouseData.name} Dashboard
+            {activeWarehouse?.name || mockWarehouseData.name} Dashboard
           </h1>
           <p className="text-slate-600 dark:text-slate-400">
             Warehouse operational metrics and recent activity
@@ -169,7 +173,7 @@ function WarehouseDashboardContent() {
 export default function WarehouseDashboardPage() {
   return (
     <CompanyGuard>
-        <RoleGuard allowedRoles={['OWNER', 'ADMIN']}>
+        <RoleGuard allowedRoles={['OWNER', 'ADMIN', 'MANAGER', 'STAFF']}>
         <WarehouseDashboardContent />
       </RoleGuard>
     </CompanyGuard>

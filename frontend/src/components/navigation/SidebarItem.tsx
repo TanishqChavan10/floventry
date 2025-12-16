@@ -18,7 +18,19 @@ export function SidebarItem({ label, href, icon: Icon }: SidebarItemProps) {
   const { open, animate } = useSidebar();
 
   // Check if current route matches this item
-  const isActive = pathname === href || pathname?.startsWith(href + '/');
+  // Special handling: Don't mark company root as active when in warehouse routes
+  const isActive = (() => {
+    if (pathname === href) return true;
+    
+    // If href is a company root (e.g., /company-slug) and we're in a warehouse route,
+    // don't mark as active
+    if (href.match(/^\/[^\/]+$/) && pathname?.includes('/warehouses/')) {
+      return false;
+    }
+    
+    // For other routes, check if current path starts with href
+    return pathname?.startsWith(href + '/');
+  })();
 
   return (
     <Link

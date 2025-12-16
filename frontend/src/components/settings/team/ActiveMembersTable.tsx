@@ -140,6 +140,20 @@ export function ActiveMembersTable({
     return false;
   };
 
+  // Determine if user can transfer warehouses for this member
+  const canTransferWarehouses = (member: Member) => {
+    // OWNER and ADMIN can transfer both MANAGER and STAFF
+    if (permissions.isOwner || permissions.isAdmin) {
+      return ['MANAGER', 'STAFF'].includes(member.role);
+    }
+    // MANAGER can only transfer STAFF (within their warehouses)
+    if (permissions.isManager) {
+      return member.role === 'STAFF';
+    }
+    // STAFF cannot transfer anyone
+    return false;
+  };
+
   return (
     <div className="space-y-4">
       {/* Search and Filter Bar */}
@@ -267,10 +281,10 @@ export function ActiveMembersTable({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {member.role === 'STAFF' && (
+                          {canTransferWarehouses(member) && (
                             <DropdownMenuItem onClick={() => onEditMember(member)}>
                               <UserCog className="mr-2 h-4 w-4" />
-                              Edit Warehouses
+                              Transfer Warehouses
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem

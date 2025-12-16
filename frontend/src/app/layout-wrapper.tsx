@@ -8,7 +8,7 @@ import { SidebarSection } from '@/components/navigation/SidebarSection';
 import { SidebarItem } from '@/components/navigation/SidebarItem';
 import { getCompanyNavigation, getWarehouseNavigation } from '@/lib/navigation-config';
 import { IconUser, IconBell, IconLogout } from '@tabler/icons-react';
-import { useClerk } from '@clerk/nextjs';
+import { useClerk, UserButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { motion } from 'motion/react';
@@ -16,7 +16,53 @@ import { useAuth } from '@/context/auth-context';
 import { useParams, usePathname } from 'next/navigation';
 
 function BottomSection() {
-  return null;
+  const { user } = useAuth();
+  const { open } = useSidebar();
+  
+  if (!user) return null;
+
+  return (
+    <div className="border-t border-neutral-200 dark:border-neutral-700 pt-2">
+      <div className={cn(
+        "flex items-center rounded-xl transition-all duration-300 ease-out group",
+        open ? "gap-3 px-3 mx-2 py-2.5" : "justify-center mx-1 px-0 py-2.5",
+        "hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+      )}>
+        {/* Clerk UserButton with custom appearance */}
+        <div className="flex-shrink-0">
+          <UserButton 
+            appearance={{
+              elements: {
+                avatarBox: "h-9 w-9",
+                userButtonPopoverCard: "shadow-lg",
+              }
+            }}
+            afterSignOutUrl="/auth/sign-in"
+          >
+            <UserButton.MenuItems>
+              <UserButton.Link
+                label="Profile"
+                labelIcon={<IconUser className="h-4 w-4" />}
+                href="/profile"
+              />
+            </UserButton.MenuItems>
+          </UserButton>
+        </div>
+        
+        {/* User Info - Only visible when sidebar is open */}
+        {open && (
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
+              {user.firstName} {user.lastName}
+            </p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+              {user.email}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function AppSidebarContent() {
