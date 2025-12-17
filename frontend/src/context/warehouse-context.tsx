@@ -50,7 +50,8 @@ const INITIAL_WAREHOUSES: Warehouse[] = [
   },
 ];
 
-import { useAuth } from '@clerk/nextjs';
+import { useAuth as useClerkAuth } from '@clerk/nextjs';
+import { useAuth } from '@/context/auth-context';
 import { toast } from 'sonner';
 import { useParams } from 'next/navigation';
 
@@ -60,11 +61,14 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [activeWarehouseId, setActiveWarehouseId] = useState<string | 'ALL'>('ALL');
   const [isLoading, setIsLoading] = useState(true);
-  const { getToken, isSignedIn } = useAuth();
+  const { getToken, isSignedIn } = useClerkAuth();
+  const { user, loading: authLoading } = useAuth(); // Get user from auth context
   const params = useParams();
 
   const fetchWarehouses = async () => {
-    if (!isSignedIn) return;
+    if (!isSignedIn || !user) {
+      return;
+    }
     try {
       const token = await getToken();
       const res = await fetch(`${API_URL}/warehouses`, {
@@ -72,17 +76,21 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
           Authorization: `Bearer ${token}`,
         },
       });
+
       if (res.ok) {
         const data = await res.json();
+
         setWarehouses(data);
         if (data.length > 0 && activeWarehouseId === 'ALL') {
              // Optionally set default if 'ALL' is not desired as initial state, but 'ALL' is fine.
              // If we want to mimic the logic of "select first if exists", we can do it here.
              // For now, let's keep 'ALL' or user preference.
         }
+      } else {
+
       }
     } catch (error) {
-      console.error('Failed to fetch warehouses', error);
+      console.error('[WarehouseContext] Failed to fetch warehouses', error);
       toast.error('Failed to load warehouses');
     } finally {
       setIsLoading(false);
@@ -90,12 +98,15 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    if (isSignedIn) {
+    if (isSignedIn && user && !authLoading) {
         fetchWarehouses();
     } else {
-        setIsLoading(false);
+        if (!authLoading) {
+          setIsLoading(false);
+        }
     }
-  }, [isSignedIn]);
+  }, [isSignedIn, user, authLoading, params?.slug]); // Added user and authLoading dependencies
+
 
   // Detect active warehouse from URL
   useEffect(() => {

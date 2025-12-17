@@ -17,6 +17,13 @@ export const GET_CURRENT_USER = gql`
         role
         isActive
       }
+      warehouses {
+        warehouseId
+        warehouseName
+        warehouseSlug
+        isManager
+      }
+      defaultWarehouseId
       created_at
       updated_at
     }
@@ -68,5 +75,11 @@ export const JOIN_COMPANY_WITH_CODE = gql`
       }
       role
     }
+  }
+`;
+
+export const SWITCH_WAREHOUSE = gql`
+  mutation SwitchWarehouse($warehouseId: String!) {
+    switchWarehouse(warehouseId: $warehouseId)
   }
 `;

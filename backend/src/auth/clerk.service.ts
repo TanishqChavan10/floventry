@@ -9,7 +9,7 @@ export class ClerkService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-  ) {}
+  ) { }
 
   /**
    * Sync Clerk user with local database
@@ -51,7 +51,7 @@ export class ClerkService {
   async getUserByClerkId(clerkId: string): Promise<User> {
     let user = await this.userRepository.findOne({
       where: { id: clerkId },
-      relations: ['userCompanies', 'userCompanies.company'],
+      relations: ['userCompanies', 'userCompanies.company', 'userWarehouses', 'userWarehouses.warehouse'],
     });
 
     if (!user) {
@@ -63,19 +63,33 @@ export class ClerkService {
 
   /**
    * Update Clerk metadata (activeCompanyId, activeRole)
+   * Also updates the local database
    */
   async updateUserMetadata(
     clerkId: string,
     metadata: { activeCompanyId?: string; activeRole?: string },
   ) {
     try {
+      // Update Clerk metadata
       await clerkClient.users.updateUserMetadata(clerkId, {
         publicMetadata: {
           ...metadata,
         },
       });
+
+      // Also update the local database if activeCompanyId is provided
+      if (metadata.activeCompanyId !== undefined) {
+        const user = await this.userRepository.findOne({
+          where: { id: clerkId },
+        });
+
+        if (user) {
+          user.activeCompanyId = metadata.activeCompanyId;
+          await this.userRepository.save(user);
+        }
+      }
     } catch (error) {
-      console.error('Error updating Clerk metadata:', error);
+      console.error('Error updating user metadata:', error);
     }
   }
 }

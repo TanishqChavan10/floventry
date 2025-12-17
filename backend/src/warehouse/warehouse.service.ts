@@ -75,6 +75,15 @@ export class WarehouseService {
 
   async update(id: string, updateWarehouseDto: UpdateWarehouseDto): Promise<Warehouse> {
     const warehouse = await this.findOne(id);
+
+    // If setting this warehouse as default, unset all other defaults in the same company
+    if (updateWarehouseDto.is_default === true) {
+      await this.warehouseRepository.update(
+        { company_id: warehouse.company_id },
+        { is_default: false }
+      );
+    }
+
     Object.assign(warehouse, updateWarehouseDto);
     return this.warehouseRepository.save(warehouse);
   }

@@ -12,7 +12,7 @@ export default async function SignInPage() {
   const { userId } = await auth();
 
   if (userId) {
-    redirect('/onboarding');
+    redirect('/');
   }
 
   return (

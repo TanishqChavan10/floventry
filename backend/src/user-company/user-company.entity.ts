@@ -26,6 +26,9 @@ export class UserCompany {
     @Column({ length: 20, default: 'active' })
     status: string; // active, pending, inactive
 
+    @Column({ type: 'uuid', nullable: true })
+    default_warehouse_id: string;
+
     @ManyToOne(() => Company)
     @JoinColumn({ name: 'company_id' })
     company: Company;

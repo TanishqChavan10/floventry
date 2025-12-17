@@ -26,4 +26,31 @@ export class UpdateWarehouseDto {
     @IsOptional()
     @IsString()
     timezone?: string;
+
+    @IsOptional()
+    @IsString()
+    city?: string;
+
+    @IsOptional()
+    @IsString()
+    state?: string;
+
+    @IsOptional()
+    @IsString()
+    country?: string;
+
+    @IsOptional()
+    @IsString()
+    contact_person?: string;
+
+    @IsOptional()
+    @IsString()
+    contact_phone?: string;
+
+    @IsOptional()
+    @IsString()
+    status?: string;
+
+    @IsOptional()
+    is_default?: boolean;
 }

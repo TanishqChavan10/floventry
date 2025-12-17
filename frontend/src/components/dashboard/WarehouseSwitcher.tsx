@@ -17,8 +17,11 @@ import { useWarehouse, Warehouse as WarehouseType } from '@/context/warehouse-co
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-
 import { useRouter } from 'next/navigation';
+import { useMutation } from '@apollo/client';
+import { SWITCH_WAREHOUSE } from '@/lib/graphql/auth';
+import { GET_CURRENT_USER } from '@/lib/graphql/auth';
+import { toast } from 'sonner';
 
 export default function WarehouseSwitcher() {
   const params = useParams();
@@ -27,21 +30,37 @@ export default function WarehouseSwitcher() {
   const { warehouses, activeWarehouse, activeWarehouseId, setActiveWarehouseId, isLoading } =
     useWarehouse();
 
+  const [switchWarehouse] = useMutation(SWITCH_WAREHOUSE, {
+    refetchQueries: [{ query: GET_CURRENT_USER }],
+  });
+
   if (isLoading) {
     return <div className="w-[180px] h-9 bg-slate-100 dark:bg-slate-800 animate-pulse rounded" />;
   }
 
-  const handleSelect = (warehouseId: string) => {
+  const handleSelect = async (warehouseId: string) => {
     setActiveWarehouseId(warehouseId);
+    
     if (warehouseId === 'ALL') {
-         // TODO: Handle 'ALL' route if we want a consolidated view
-         // For now, maybe redirect to main or keep current logic but we need a route
-         router.push(`/${companySlug}/`);
+      // TODO: Handle 'ALL' route if we want a consolidated view
+      // For now, maybe redirect to main or keep current logic but we need a route
+      router.push(`/${companySlug}/`);
     } else {
-        const wh = warehouses.find(w => w.id === warehouseId);
-        if (wh && wh.slug) {
-            router.push(`/${companySlug}/warehouses/${wh.slug}`);
+      const wh = warehouses.find(w => w.id === warehouseId);
+      if (wh && wh.slug) {
+        try {
+          // Update default warehouse in backend
+          await switchWarehouse({
+            variables: { warehouseId },
+          });
+          
+          router.push(`/${companySlug}/warehouses/${wh.slug}`);
+          toast.success('Warehouse switched successfully');
+        } catch (error: any) {
+          console.error('Error switching warehouse:', error);
+          toast.error(error.message || 'Failed to switch warehouse');
         }
+      }
     }
   };
 

@@ -201,6 +201,7 @@ type Mutation {
   removeUser(membershipId: String!): Boolean!
   sendInvite(input: SendInviteInput!): Invite!
   switchCompany(companyId: String!): SwitchCompanyResponse!
+  switchWarehouse(warehouseId: String!): Boolean!
   updateCategory(input: UpdateCategoryInput!): Category!
   updateCompany(id: String!, input: UpdateCompanyInput!): Company!
   updateCompanySettings(companyId: String!, input: UpdateCompanySettingsInput!): CompanySettings!
@@ -258,6 +259,7 @@ type Query {
   usersInCompany: [UserCompany!]!
   validateInvite(token: String!): ValidateInviteResponse!
   warehouse(id: String!): Warehouse!
+  warehouseMembers(warehouseId: String!): [WarehouseMember!]!
   warehouses: [Warehouse!]!
 }
 
@@ -463,6 +465,7 @@ input UpdateWarehouseInput {
   contact_phone: String
   country: String
   description: String
+  is_default: Boolean
   name: String
   slug: String
   state: String
@@ -519,10 +522,19 @@ type UserModel {
   clerk_id: String!
   companies: [UserCompanyInfo!]!
   created_at: DateTime!
+  defaultWarehouseId: String
   email: String!
   full_name: String!
   id: ID!
   updated_at: DateTime!
+  warehouses: [UserWarehouseInfo!]
+}
+
+type UserWarehouseInfo {
+  isManager: Boolean!
+  warehouseId: ID!
+  warehouseName: String!
+  warehouseSlug: String!
 }
 
 type ValidateInviteResponse {
@@ -558,6 +570,14 @@ type WarehouseAssignment {
   isManager: Boolean!
   warehouseId: String!
   warehouseName: String!
+}
+
+type WarehouseMember {
+  email: String!
+  fullName: String
+  isManager: Boolean!
+  role: String!
+  userId: String!
 }
 
 type WarehouseSettings {

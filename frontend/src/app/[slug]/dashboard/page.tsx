@@ -16,8 +16,8 @@ function CompanyDashboardContent() {
   const companySlug = params.slug as string;
   const permissions = usePermissions();
 
-  // Only OWNER and ADMIN can access company dashboard
-  if (!permissions.isOwner && !permissions.isAdmin) {
+  // Only OWNER, ADMIN, and MANAGER can access company dashboard
+  if (!permissions.isOwner && !permissions.isAdmin && !permissions.isManager) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6">
         <div className="max-w-md mx-auto text-center space-y-4">
@@ -26,7 +26,7 @@ function CompanyDashboardContent() {
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Access Denied</h1>
           <p className="text-slate-600 dark:text-slate-400">
-            Only company owners and administrators can access the company dashboard. Please contact
+            Only company owners, administrators, and managers can access the company dashboard. Please contact
             your administrator if you believe this is an error.
           </p>
         </div>

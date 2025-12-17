@@ -3,6 +3,7 @@ import { UseGuards } from '@nestjs/common';
 import { UserCompanyService } from './user-company.service';
 import { UserCompany } from './user-company.model';
 import { CompanyMemberDetails } from './dto/company-member-details';
+import { WarehouseMember } from './dto/warehouse-member.dto';
 import { UpdateRoleInput } from './dto/update-role.input';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -100,6 +101,41 @@ export class UserCompanyResolver {
       updaterId
     );
 
+    return true;
+  }
+
+  //------------------------------------------------------------
+  // NEW: Get warehouse members
+  //------------------------------------------------------------
+  @Query(() => [WarehouseMember], { name: 'warehouseMembers' })
+  @UseGuards(ClerkAuthGuard)
+  async getWarehouseMembers(
+    @Args('warehouseId', { type: () => String }) warehouseId: string,
+    @Context() context: any
+  ): Promise<WarehouseMember[]> {
+    const members = await this.userCompanyService.getMembersByWarehouse(warehouseId);
+
+    // Map the raw query result to WarehouseMember DTO
+    return members.map((member: any) => ({
+      userId: member.user_id,
+      email: member.email,
+      fullName: member.fullName,
+      role: member.role,
+      isManager: member.is_manager || false,
+    }));
+  }
+
+  //------------------------------------------------------------
+  // NEW: Switch default warehouse
+  //------------------------------------------------------------
+  @Mutation(() => Boolean, { name: 'switchWarehouse' })
+  @UseGuards(ClerkAuthGuard)
+  async switchWarehouse(
+    @Args('warehouseId', { type: () => String }) warehouseId: string,
+    @Context() context: any
+  ): Promise<boolean> {
+    const userId = context.req.user.id;
+    await this.userCompanyService.setDefaultWarehouse(userId, warehouseId);
     return true;
   }
 }

@@ -13,6 +13,14 @@ interface Company {
   isActive: boolean;
 }
 
+
+interface Warehouse {
+  warehouseId: string;
+  warehouseName: string;
+  warehouseSlug: string;
+  isManager: boolean;
+}
+
 interface User {
   id: string;
   clerkId: string;
@@ -25,6 +33,8 @@ interface User {
   isActive: boolean;
   companies?: Company[];
   activeCompanyId?: string;
+  warehouses?: Warehouse[];
+  defaultWarehouseId?: string;
 }
 
 interface AuthContextType {

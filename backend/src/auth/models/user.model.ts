@@ -2,6 +2,21 @@ import { ObjectType, Field, ID } from '@nestjs/graphql';
 
 
 @ObjectType()
+export class UserWarehouseInfo {
+  @Field(() => ID)
+  warehouseId: string;
+
+  @Field()
+  warehouseName: string;
+
+  @Field()
+  warehouseSlug: string;
+
+  @Field()
+  isManager: boolean;
+}
+
+@ObjectType()
 export class UserCompanyInfo {
   @Field(() => ID)
   id: string;
@@ -41,6 +56,12 @@ export class UserModel {
 
   @Field(() => [UserCompanyInfo])
   companies: UserCompanyInfo[];
+
+  @Field(() => [UserWarehouseInfo], { nullable: true })
+  warehouses?: UserWarehouseInfo[];
+
+  @Field({ nullable: true })
+  defaultWarehouseId?: string;
 
   @Field()
   created_at: Date;

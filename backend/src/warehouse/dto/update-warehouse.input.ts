@@ -40,6 +40,9 @@ export class UpdateWarehouseInput {
 
     @Field({ nullable: true })
     status?: string;
+
+    @Field({ nullable: true })
+    is_default?: boolean;
 }
 
 @InputType()

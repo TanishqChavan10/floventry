@@ -135,12 +135,11 @@ function AppSidebarContent() {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  // Don't show sidebar for landing page, auth pages, onboarding, invite, and profile pages
+  // Don't show sidebar for landing page, auth pages, onboarding, and invite pages
   const shouldShowSidebar = 
     !pathname?.startsWith('/auth') && 
     !pathname?.startsWith('/onboarding') &&
     !pathname?.startsWith('/invite') &&
-    !pathname?.startsWith('/profile') &&
     !pathname?.startsWith('/notifications') &&
     pathname !== '/';
 

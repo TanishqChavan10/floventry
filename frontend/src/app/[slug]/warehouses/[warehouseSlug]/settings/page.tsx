@@ -146,6 +146,7 @@ function WarehouseSettingsContent() {
             contact_person: contactPerson,
             contact_phone: contactPhone,
             status,
+            is_default: isDefault,
           },
         },
       });

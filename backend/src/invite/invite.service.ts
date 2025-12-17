@@ -46,21 +46,37 @@ export class InviteService {
     token: string,
     manager: EntityManager = this.inviteRepository.manager,
   ): Promise<Invite> {
+    this.logger.log(`Validating invite token: ${token}`);
+
     const invite = await manager.findOne(Invite, {
       where: { token, status: 'pending' },
       relations: ['company'],
     });
 
     if (!invite) {
+      // Check if invite exists with any status
+      const anyInvite = await manager.findOne(Invite, {
+        where: { token },
+        relations: ['company'],
+      });
+
+      if (anyInvite) {
+        this.logger.warn(`Invite found but status is: ${anyInvite.status}, expected: pending`);
+        throw new NotFoundException(`Invite status is '${anyInvite.status}', cannot be accepted`);
+      }
+
+      this.logger.warn(`No invite found with token: ${token}`);
       throw new NotFoundException('Invalid or expired invite');
     }
 
     if (invite.expires_at < new Date()) {
       invite.status = 'expired';
       await manager.save(invite);
+      this.logger.warn(`Invite expired at: ${invite.expires_at}`);
       throw new BadRequestException('Invite has expired');
     }
 
+    this.logger.log(`Invite validated successfully for email: ${invite.email}`);
     return invite;
   }
 
@@ -367,7 +383,28 @@ export class InviteService {
       await queryRunner.manager.save(invite);
 
       //------------------------------------------------------------
-      // 7) COMMIT TRANSACTION
+      // 7) SET DEFAULT COMPANY (if first company)
+      //------------------------------------------------------------
+      if (!user.activeCompanyId) {
+        await queryRunner.manager.update(User, { id: userId }, {
+          activeCompanyId: invite.company_id
+        });
+        this.logger.log(`✅ Set default company for user ${userId}`);
+      }
+
+      //------------------------------------------------------------
+      // 8) SET DEFAULT WAREHOUSE (if warehouses assigned)
+      //------------------------------------------------------------
+      if (invite.warehouse_ids && invite.warehouse_ids.length > 0) {
+        await queryRunner.manager.update(UserCompany,
+          { user_id: userId, company_id: invite.company_id },
+          { default_warehouse_id: invite.warehouse_ids[0] }
+        );
+        this.logger.log(`✅ Set default warehouse for user ${userId}`);
+      }
+
+      //------------------------------------------------------------
+      // 9) COMMIT TRANSACTION
       //------------------------------------------------------------
       await queryRunner.commitTransaction();
 

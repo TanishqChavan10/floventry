@@ -39,7 +39,8 @@ export function Navbar() {
   const warehouseSlug = params?.warehouseSlug as string;
   
   // Get current active company from user's companies
-  const activeCompany = user?.companies?.find((c) => c.slug === companySlug);
+  // If no company slug in URL (e.g., /profile), use the first company as fallback
+  const activeCompany = user?.companies?.find((c) => c.slug === companySlug) || user?.companies?.[0];
 
   // Check if we're in a warehouse-specific route (has warehouseSlug in URL)
   // vs a company-level route (no warehouseSlug)
@@ -50,8 +51,9 @@ export function Navbar() {
   const displayWarehouse = isWarehouseRoute ? activeWarehouse : null;
 
   const handleWarehouseSwitch = (warehouseSlug: string) => {
-    if (companySlug) {
-      router.push(`/${companySlug}/warehouses/${warehouseSlug}`);
+    const currentCompanySlug = companySlug || activeCompany?.slug;
+    if (currentCompanySlug) {
+      router.push(`/${currentCompanySlug}/warehouses/${warehouseSlug}`);
     }
   };
 
@@ -67,78 +69,66 @@ export function Navbar() {
       
       {/* Left Side: Switchers */}
       <div className="flex items-center gap-4">
-        {/* Company Switcher - Only for OWNER and ADMIN */}
-        {(() => {
-          const userRole = user?.companies?.find(c => c.slug === companySlug)?.role;
-          const canSwitchCompany = userRole === 'OWNER' || userRole === 'ADMIN';
-          
-          return canSwitchCompany ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-2 rounded-lg',
-                    'bg-neutral-50 dark:bg-neutral-800',
-                    'border border-neutral-200 dark:border-neutral-700',
-                    'hover:bg-neutral-100 dark:hover:bg-neutral-700',
-                    'transition-colors duration-200'
-                  )}
-                >
-                  <IconBuilding className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
-                  <span className="font-medium text-sm text-neutral-900 dark:text-neutral-100 max-w-[150px] truncate">
-                    {activeCompany.name}
-                  </span>
-                  <IconChevronDown className="h-4 w-4 text-neutral-500" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-[200px]">
-                <DropdownMenuLabel>Switch Company</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {user?.companies?.map((company) => (
-                  <DropdownMenuItem 
-                    key={company.slug}
-                    onClick={() => handleCompanySwitch(company.slug)}
-                    className={cn(
-                      'cursor-pointer',
-                      company.slug === companySlug && 'bg-neutral-100 dark:bg-neutral-800'
-                    )}
-                  >
-                    {company.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null;
-        })()}
-
-        {/* Warehouse Switcher */}
-         {/* Show warehouse switcher on ALL company-related pages when warehouses exist.
-             This allows users to quickly switch between warehouses from any company page,
-             including company dashboard, settings, catalog, etc.
-             On the warehouses list page, it shows "Select Warehouse" to prompt navigation.
-         */}
-        {warehouses.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
+        {/* Company Switcher - Available for all roles */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-lg',
+                'bg-neutral-50 dark:bg-neutral-800',
+                'border border-neutral-200 dark:border-neutral-700',
+                'hover:bg-neutral-100 dark:hover:bg-neutral-700',
+                'transition-colors duration-200'
+              )}
+            >
+              <IconBuilding className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
+              <span className="font-medium text-sm text-neutral-900 dark:text-neutral-100 max-w-[150px] truncate">
+                {activeCompany.name}
+              </span>
+              <IconChevronDown className="h-4 w-4 text-neutral-500" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[200px]">
+            <DropdownMenuLabel>Switch Company</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {user?.companies?.map((company) => (
+              <DropdownMenuItem 
+                key={company.slug}
+                onClick={() => handleCompanySwitch(company.slug)}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-lg',
-                  'bg-indigo-50 dark:bg-indigo-950/30',
-                  'border border-indigo-200 dark:border-indigo-800',
-                  'hover:bg-indigo-100 dark:hover:bg-indigo-900/30',
-                  'transition-colors duration-200'
+                  'cursor-pointer',
+                  company.slug === companySlug && 'bg-neutral-100 dark:bg-neutral-800'
                 )}
               >
-                  <span className="font-medium text-sm text-indigo-700 dark:text-indigo-300 max-w-[150px] truncate">
-                    {displayWarehouse ? displayWarehouse.name : 'Select Warehouse'}
-                  </span>
-                <IconChevronDown className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[250px]">
-              <DropdownMenuLabel>Switch Warehouse</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {warehouses.map((warehouse) => (
+                {company.name}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Warehouse Switcher - Always visible for all roles */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-lg',
+                'bg-indigo-50 dark:bg-indigo-950/30',
+                'border border-indigo-200 dark:border-indigo-800',
+                'hover:bg-indigo-100 dark:hover:bg-indigo-900/30',
+                'transition-colors duration-200'
+              )}
+            >
+                <span className="font-medium text-sm text-indigo-700 dark:text-indigo-300 max-w-[150px] truncate">
+                  {displayWarehouse ? displayWarehouse.name : warehouses.length > 0 ? 'Select Warehouse' : 'No Warehouses'}
+                </span>
+              <IconChevronDown className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[250px]">
+            <DropdownMenuLabel>Switch Warehouse</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {warehouses.length > 0 ? (
+              warehouses.map((warehouse) => (
                 <DropdownMenuItem
                   key={warehouse.id}
                   onClick={() => handleWarehouseSwitch(warehouse.slug)}
@@ -155,10 +145,14 @@ export function Navbar() {
                     </span>
                   </div>
                 </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+              ))
+            ) : (
+              <div className="px-2 py-6 text-center text-sm text-neutral-500">
+                No warehouses available
+              </div>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Center/Right: Search, Alerts, User */}

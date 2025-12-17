@@ -2,46 +2,53 @@
 
 import { useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/context/auth-context';
 import { useWarehouse } from '@/context/warehouse-context';
-// import EmptyWarehouseState from '@/components/warehouses/EmptyWarehouseState'; // REMOVED - No longer used
 import { Loader2 } from 'lucide-react';
 
 export default function CompanyRootPage() {
   const router = useRouter();
   const params = useParams();
   const companySlug = params?.slug as string;
-  const { warehouses, isLoading } = useWarehouse();
-  const { user } = useUser();
+  const { warehouses, isLoading: warehousesLoading } = useWarehouse();
+  const { user, loading: userLoading } = useAuth();
 
   useEffect(() => {
-    if (!isLoading && user) {
-      // Get user role from Clerk metadata
-      const userRole = user?.publicMetadata?.activeRole as string;
+    if (!userLoading && user && !warehousesLoading) {
+      // Get user role from their active company
+      const activeCompany = user.companies?.find((c) => c.slug === companySlug) || user.companies?.[0];
+      const userRole = activeCompany?.role;
 
-      // OWNER and ADMIN go to company dashboard
-      if (userRole === 'OWNER' || userRole === 'ADMIN') {
+      if (!userRole) {
+        // No role found, redirect to onboarding
+        router.replace('/onboarding');
+        return;
+      }
+
+      /**
+       * 🎯 ROLE-BASED REDIRECT LOGIC
+       * OWNER/ADMIN/MANAGER → /dashboard
+       * STAFF → /warehouses
+       */
+
+      // OWNER, ADMIN, and MANAGER go to company dashboard
+      if (userRole === 'OWNER' || userRole === 'ADMIN' || userRole === 'MANAGER') {
         router.replace(`/${companySlug}/dashboard`);
         return;
       }
 
-      // MANAGER goes to warehouses list page to select warehouse
-      if (userRole === 'MANAGER') {
+      // STAFF goes to warehouses page
+      if (userRole === 'STAFF') {
         router.replace(`/${companySlug}/warehouses`);
         return;
       }
 
-      // STAFF go to first accessible warehouse
-      if (userRole === 'STAFF' && warehouses.length > 0) {
-        const firstWarehouse = warehouses[0];
-        const targetSlug = firstWarehouse.slug || 'main-warehouse';
-        router.replace(`/${companySlug}/warehouses/${targetSlug}`);
-      }
+      // Fallback: redirect to dashboard
+      router.replace(`/${companySlug}/dashboard`);
     }
-  }, [isLoading, warehouses, user, companySlug, router]);
+  }, [userLoading, warehousesLoading, user, companySlug, router]);
 
-  // Always show loading state during redirects
-  // EmptyWarehouseState removed - no longer needed
+  // Show loading state during redirects
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
       <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />

@@ -2,6 +2,8 @@
 'use client';
 import { Poppins } from 'next/font/google';
 import './globals.css';
+import Head from 'next/head';
+import { useEffect } from 'react';
 
 import { ClerkThemeProvider } from '@/components/ClerkThemeProvider';
 
@@ -24,8 +26,16 @@ const poppins = Poppins({
 });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Set the document title for the browser tab
+  useEffect(() => {
+    document.title = 'Floventory';
+  }, []);
+
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <title>Floventory</title>
+      </head>
       <body
         className={`${poppins.variable} font-sans bg-white text-gray-800 dark:bg-black dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col`}
       >
@@ -58,3 +68,5 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
+
+

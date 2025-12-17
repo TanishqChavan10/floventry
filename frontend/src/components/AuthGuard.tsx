@@ -73,9 +73,9 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
       // User has companies and appropriate active company - allow access
 
-      // Redirect authenticated users away from auth pages
-      if (pathname.startsWith('/auth/') || pathname === '/auth/sign-in' || pathname === '/dashboard') {
-        console.log('[AuthGuard] Redirecting from auth page, pathname:', pathname);
+      // Redirect authenticated users away from auth pages and root route
+      if (pathname.startsWith('/auth/') || pathname === '/auth/sign-in' || pathname === '/dashboard' || pathname === '/') {
+        console.log('[AuthGuard] Redirecting from auth/root page, pathname:', pathname);
         
         // First check if user has companies
         if (!hasCompanies) {
@@ -95,17 +95,52 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
         if (!activeSlug) return;
 
-        // If user is STAFF or MANAGER, redirect to their assigned warehouse dashboard
-        if (userRole === 'STAFF' || userRole === 'MANAGER') {
-          // Fetch user's assigned warehouses (we'll need to add this to the query)
-          // For now, redirect to the warehouses list page which will handle the redirect
-          console.log('[AuthGuard] STAFF/MANAGER detected, redirecting to warehouses page');
+        /**
+         * 🎯 ROLE-BASED REDIRECT LOGIC
+         * 
+         * OWNER & ADMIN → Company Dashboard
+         * MANAGER → Company Dashboard (data filtered to their warehouses)
+         * STAFF → Primary Warehouse Dashboard
+         */
+
+        if (userRole === 'OWNER' || userRole === 'ADMIN') {
+          // ✅ OWNER/ADMIN: Redirect to company dashboard
+          console.log('[AuthGuard] OWNER/ADMIN detected, redirecting to company dashboard');
+          router.push(`/${activeSlug}/dashboard`);
+          return;
+        }
+
+        if (userRole === 'MANAGER' || userRole === 'STAFF') {
+          // ✅ MANAGER/STAFF: Redirect to default warehouse
+          const defaultWarehouseId = user?.defaultWarehouseId;
+          
+          if (defaultWarehouseId) {
+            // Find warehouse slug from warehouses array
+            const warehouse = user?.warehouses?.find(w => w.warehouseId === defaultWarehouseId);
+            
+            if (warehouse) {
+              console.log(`[AuthGuard] ${userRole} detected, redirecting to default warehouse:`, warehouse.warehouseSlug);
+              router.push(`/${activeSlug}/warehouses/${warehouse.warehouseSlug}`);
+              return;
+            }
+          }
+          
+          // Fallback: try to find any warehouse
+          if (user?.warehouses && user.warehouses.length > 0) {
+            const firstWarehouse = user.warehouses[0];
+            console.log(`[AuthGuard] ${userRole} has no default warehouse, using first assigned:`, firstWarehouse.warehouseSlug);
+            router.push(`/${activeSlug}/warehouses/${firstWarehouse.warehouseSlug}`);
+            return;
+          }
+          
+          // Last fallback: warehouses list
+          console.log(`[AuthGuard] ${userRole} has no warehouses, redirecting to warehouses list`);
           router.push(`/${activeSlug}/warehouses`);
           return;
         }
 
-        // For OWNER/ADMIN, redirect to company dashboard
-        console.log('[AuthGuard] OWNER/ADMIN detected, redirecting to company dashboard');
+        // Fallback for unknown roles
+        console.log('[AuthGuard] Unknown role, redirecting to company page');
         router.push(`/${activeSlug}`);
         return;
       }

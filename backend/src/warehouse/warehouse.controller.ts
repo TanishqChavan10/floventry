@@ -35,12 +35,26 @@ export class WarehouseController {
     @Get()
     async findAll(@Req() req: any) {
         const user = await this.clerkService.syncUser(req.user.clerkId);
-        if (!user.activeCompanyId) {
-            throw new BadRequestException('User does not have an active company selected');
+
+        // Get company ID from user's activeCompanyId or first company
+        let companyId = user.activeCompanyId;
+
+        if (!companyId) {
+            // If no activeCompanyId, try to get first company from user's companies
+            const userCompanies = await this.userCompanyRepository.find({
+                where: { user_id: user.id },
+            });
+
+            if (userCompanies.length === 0) {
+                throw new BadRequestException('User is not associated with any company');
+            }
+
+            // Use the first company
+            companyId = userCompanies[0].company_id;
         }
 
         const userCompany = await this.userCompanyRepository.findOne({
-            where: { user_id: user.id, company_id: user.activeCompanyId },
+            where: { user_id: user.id, company_id: companyId },
         });
 
         if (!userCompany) {
@@ -49,7 +63,7 @@ export class WarehouseController {
 
         // Admin/Owner see all
         if (userCompany.role === Role.ADMIN || userCompany.role === Role.OWNER) {
-            return this.warehouseService.findAll(user.activeCompanyId);
+            return this.warehouseService.findAll(companyId);
         }
 
         // Others see assigned

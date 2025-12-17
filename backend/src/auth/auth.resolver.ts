@@ -39,6 +39,15 @@ export class AuthResolver {
           role: uc.role,
           isActive: user.activeCompanyId === uc.company.id,
         })) || [],
+      warehouses: user.userWarehouses?.map((uw) => ({
+        warehouseId: uw.warehouse_id,
+        warehouseName: uw.warehouse.name,
+        warehouseSlug: uw.warehouse.slug,
+        isManager: uw.role === 'MANAGER',
+      })) || [],
+      defaultWarehouseId: user.userCompanies?.find(
+        uc => uc.company_id === user.activeCompanyId
+      )?.default_warehouse_id || undefined,
       created_at: user.created_at,
       updated_at: user.updated_at,
     };
