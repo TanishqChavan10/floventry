@@ -62,9 +62,10 @@ export function usePermissions(): PermissionsReturn {
 
         return {
             role,
-            // Invite and remove users - OWNER and ADMIN only
-            canInviteUsers: isOwner || isAdmin,
-            canRemoveUsers: isOwner || isAdmin,
+            // Invite users - OWNER/ADMIN + MANAGER (MANAGER is limited to STAFF-only in UI + backend)
+            canInviteUsers: isOwner || isAdmin || isManager,
+            // Remove users - OWNER/ADMIN + MANAGER (MANAGER is limited to removing STAFF only, scoped by warehouses)
+            canRemoveUsers: isOwner || isAdmin || isManager,
 
             // Manage roles - OWNER and ADMIN only
             canManageRoles: isOwner || isAdmin,

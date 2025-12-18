@@ -66,8 +66,8 @@ export class WarehouseController {
             return this.warehouseService.findAll(companyId);
         }
 
-        // Others see assigned
-        return this.warehouseService.findByUser(user.id);
+        // Others see assigned (scoped to active/selected company)
+        return this.warehouseService.findByUser(user.id, companyId);
     }
 
     @Get(':id')

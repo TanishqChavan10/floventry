@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, EntityManager } from 'typeorm';
+import { In, Repository, DataSource, EntityManager } from 'typeorm';
 import { Invite } from './invite.entity';
 import { UserCompany } from '../user-company/user-company.entity';
 import { SendInviteInput } from './dto/send-invite.input';
@@ -15,6 +15,7 @@ import { AcceptInviteInput } from './dto/accept-invite.input';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../auth/entities/user.entity';
 import { Company } from '../company/company.entity';
+import { Warehouse } from '../warehouse/warehouse.entity';
 import { EmailService } from '../email/email.service';
 import { ClerkService } from '../auth/clerk.service';
 import { UserWarehouseService } from '../auth/user-warehouse.service';
@@ -33,11 +34,35 @@ export class InviteService {
     private userRepository: Repository<User>,
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
+    @InjectRepository(Warehouse)
+    private warehouseRepository: Repository<Warehouse>,
     private emailService: EmailService,
     private clerkService: ClerkService,
     private dataSource: DataSource,
     private userWarehouseService: UserWarehouseService,
   ) { }
+
+  private async validateWarehousesBelongToCompany(companyId: string, warehouseIds: string[]): Promise<void> {
+    if (!warehouseIds || warehouseIds.length === 0) return;
+
+    const count = await this.warehouseRepository.count({
+      where: { id: In(warehouseIds), company_id: companyId },
+    });
+
+    if (count !== warehouseIds.length) {
+      throw new BadRequestException('One or more warehouses are invalid for this company');
+    }
+  }
+
+  private async assertActiveCompanyMember(userId: string, companyId: string): Promise<void> {
+    const membership = await this.userCompanyRepository.findOne({
+      where: { user_id: userId, company_id: companyId, status: 'active' },
+    });
+
+    if (!membership) {
+      throw new BadRequestException('Not authorized to view invites for this company');
+    }
+  }
 
   //------------------------------------------------------------
   // VALIDATE INVITE TOKEN (Used by both validate & accept)
@@ -206,6 +231,16 @@ export class InviteService {
 
     const inviterRole = inviterMembership.role;
 
+    // Hard rule: Managers can only invite STAFF (role fixed) and cannot set managesWarehouseIds.
+    if (inviterRole === Role.MANAGER) {
+      if (role !== Role.STAFF) {
+        throw new BadRequestException('Managers can only invite STAFF users');
+      }
+      if (input.managesWarehouseIds && input.managesWarehouseIds.length > 0) {
+        throw new BadRequestException('Managers cannot assign managed warehouses via invites');
+      }
+    }
+
     //------------------------------------------------------------
     // VALIDATION: Role Hierarchy
     //------------------------------------------------------------
@@ -215,6 +250,10 @@ export class InviteService {
     // VALIDATION: Warehouse Requirements
     //------------------------------------------------------------
     this.validateWarehouseRequirements(role, input.warehouseIds || []);
+
+    // Ensure any warehouse IDs referenced in the invite belong to this company
+    await this.validateWarehousesBelongToCompany(companyId, input.warehouseIds || []);
+    await this.validateWarehousesBelongToCompany(companyId, input.managesWarehouseIds || []);
 
     //------------------------------------------------------------
     // VALIDATION: Manager Scope (if inviter is MANAGER)
@@ -271,6 +310,12 @@ export class InviteService {
       // 1) USE SHARED VALIDATION METHOD (INSIDE TRANSACTION)
       //------------------------------------------------------------
       const invite = await this.validateInviteToken(input.token, queryRunner.manager);
+
+      // Security: ensure any warehouses referenced by the invite belong to the invite's company.
+      // This protects against legacy pending invites created before validations were added,
+      // and against any unexpected data tampering.
+      await this.validateWarehousesBelongToCompany(invite.company_id, invite.warehouse_ids || []);
+      await this.validateWarehousesBelongToCompany(invite.company_id, invite.manages_warehouse_ids || []);
 
       //------------------------------------------------------------
       // 2) VALIDATE USER
@@ -452,11 +497,17 @@ export class InviteService {
   // GET INVITES FOR COMPANY
   //------------------------------------------------------------
   async getInvites(companyId: string): Promise<Invite[]> {
+    // NOTE: call assertActiveCompanyMember() in resolver before invoking this.
     return this.inviteRepository.find({
       where: { company_id: companyId, status: 'pending' },
       relations: ['company'],
       order: { created_at: 'DESC' },
     });
+  }
+
+  async getInvitesForMember(companyId: string, userId: string): Promise<Invite[]> {
+    await this.assertActiveCompanyMember(userId, companyId);
+    return this.getInvites(companyId);
   }
 
   //------------------------------------------------------------

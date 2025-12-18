@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2 } from 'lucide-react';
 import CompanyGuard from '@/components/CompanyGuard';
 import { useAuth } from '@/context/auth-context';
+import RoleGuard from '@/components/guards/RoleGuard';
 
 function TeamManagementContent() {
   const params = useParams();
@@ -28,6 +29,9 @@ function TeamManagementContent() {
   });
 
   const company = data?.companyBySlug;
+
+  const managedWarehouseIds =
+    user?.warehouses?.filter((w) => w.isManager).map((w) => w.warehouseId) || [];
 
   const handleRefresh = () => {
     setRefreshKey((k) => k + 1);
@@ -60,10 +64,11 @@ function TeamManagementContent() {
                 Manage members and pending invitations for {company.name}.
               </p>
             </div>
-            <InviteUserDialog 
-              companyId={company.id} 
+            <InviteUserDialog
+              companyId={company.id}
               warehouses={company.warehouses || []}
-              onSuccess={handleRefresh} 
+              managedWarehouses={managedWarehouseIds}
+              onSuccess={handleRefresh}
             />
           </div>
 
@@ -74,7 +79,7 @@ function TeamManagementContent() {
               <CardDescription>Current team members with access to this workspace.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ActiveMembersTable 
+              <ActiveMembersTable
                 companyId={company.id}
                 onEditMember={setEditingMember}
                 onRemoveMember={setRemovingMember}
@@ -119,7 +124,9 @@ function TeamManagementContent() {
 export default function TeamManagementPage() {
   return (
     <CompanyGuard>
-      <TeamManagementContent />
+      <RoleGuard allowedRoles={['OWNER', 'ADMIN', 'MANAGER']}>
+        <TeamManagementContent />
+      </RoleGuard>
     </CompanyGuard>
   );
 }

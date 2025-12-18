@@ -40,24 +40,32 @@ interface InviteUserDialogProps {
   onSuccess: () => void;
 }
 
-export function InviteUserDialog({ 
-  companyId, 
+export function InviteUserDialog({
+  companyId,
   warehouses,
   managedWarehouses = [],
-  onSuccess 
+  onSuccess,
 }: InviteUserDialogProps) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<string>('STAFF');
   const [selectedWarehouses, setSelectedWarehouses] = useState<string[]>([]);
   const [managedWarehouseIds, setManagedWarehouseIds] = useState<string[]>([]);
-  
+
   const permissions = usePermissions();
   const [sendInviteMutation, { loading: isLoading }] = useMutation(SEND_INVITE);
 
+  // Managers can only invite STAFF (role fixed)
+  useEffect(() => {
+    if (permissions.isManager) {
+      setRole('STAFF');
+      setManagedWarehouseIds([]);
+    }
+  }, [permissions.isManager]);
+
   // Available warehouses for assignment
   const availableWarehouses = permissions.isManager
-    ? warehouses.filter(w => managedWarehouses.includes(w.id))
+    ? warehouses.filter((w) => managedWarehouses.includes(w.id))
     : warehouses;
 
   // Reset selections when role changes
@@ -69,39 +77,42 @@ export function InviteUserDialog({
   const needsWarehouseAssignment = role === 'MANAGER' || role === 'STAFF';
 
   const handleWarehouseToggle = (warehouseId: string) => {
-    setSelectedWarehouses(prev =>
-      prev.includes(warehouseId)
-        ? prev.filter(id => id !== warehouseId)
-        : [...prev, warehouseId]
+    setSelectedWarehouses((prev) =>
+      prev.includes(warehouseId) ? prev.filter((id) => id !== warehouseId) : [...prev, warehouseId],
     );
   };
 
   const handleManagerWarehouseToggle = (warehouseId: string) => {
-    setManagedWarehouseIds(prev => {
+    setManagedWarehouseIds((prev) => {
       const newManaged = prev.includes(warehouseId)
-        ? prev.filter(id => id !== warehouseId)
+        ? prev.filter((id) => id !== warehouseId)
         : [...prev, warehouseId];
-      
+
       // Auto-add to selectedWarehouses if adding to managed
       if (!prev.includes(warehouseId)) {
-        setSelectedWarehouses(current => 
-          current.includes(warehouseId) ? current : [...current, warehouseId]
+        setSelectedWarehouses((current) =>
+          current.includes(warehouseId) ? current : [...current, warehouseId],
         );
       }
-      
+
       return newManaged;
     });
   };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (permissions.isManager && role !== 'STAFF') {
+      toast.error('Managers can only invite STAFF');
+      return;
+    }
+
     // Validation
     if (role === 'MANAGER' && managedWarehouseIds.length === 0) {
       toast.error('Please select at least one warehouse for the manager to manage');
       return;
     }
-    
+
     if (role === 'STAFF' && selectedWarehouses.length === 0) {
       toast.error('Please select at least one warehouse for staff access');
       return;
@@ -110,12 +121,12 @@ export function InviteUserDialog({
     try {
       const input: any = {
         email,
-        role,
+        role: permissions.isManager ? 'STAFF' : role,
       };
 
       if (needsWarehouseAssignment) {
         input.warehouseIds = selectedWarehouses;
-        if (role === 'MANAGER') {
+        if (!permissions.isManager && role === 'MANAGER') {
           input.managesWarehouseIds = managedWarehouseIds;
         }
       }
@@ -187,55 +198,77 @@ export function InviteUserDialog({
               <Label htmlFor="role" className="text-sm font-medium">
                 Role Assignment
               </Label>
-              <Select value={role} onValueChange={setRole}>
-                <SelectTrigger className="h-auto py-3 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {permissions.isOwner && (
-                    <>
-                      <SelectItem value="OWNER" className="py-3">
+              {permissions.isManager ? (
+                <div className="h-auto py-3 px-3 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm">
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl mt-0.5">👤</span>
+                    <div>
+                      <div className="font-medium text-base">Staff</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        Managers can invite STAFF only
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <Select value={role} onValueChange={setRole}>
+                  <SelectTrigger className="h-auto py-3 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {permissions.isOwner && (
+                      <>
+                        <SelectItem value="OWNER" className="py-3">
+                          <div className="flex items-start gap-3">
+                            <span className="text-xl mt-0.5">👑</span>
+                            <div>
+                              <div className="font-medium text-base">Owner</div>
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                Full company control & billing
+                              </div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="ADMIN" className="py-3">
+                          <div className="flex items-start gap-3">
+                            <span className="text-xl mt-0.5">🛡️</span>
+                            <div>
+                              <div className="font-medium text-base">Admin</div>
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                Full access to all warehouses
+                              </div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      </>
+                    )}
+                    {(permissions.isOwner || permissions.isAdmin) && (
+                      <SelectItem value="MANAGER" className="py-3">
                         <div className="flex items-start gap-3">
-                          <span className="text-xl mt-0.5">👑</span>
+                          <span className="text-xl mt-0.5">📊</span>
                           <div>
-                            <div className="font-medium text-base">Owner</div>
-                            <div className="text-xs text-muted-foreground mt-0.5">Full company control & billing</div>
+                            <div className="font-medium text-base">Manager</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              Manages operations in specific warehouses
+                            </div>
                           </div>
                         </div>
                       </SelectItem>
-                      <SelectItem value="ADMIN" className="py-3">
-                        <div className="flex items-start gap-3">
-                          <span className="text-xl mt-0.5">🛡️</span>
-                          <div>
-                            <div className="font-medium text-base">Admin</div>
-                            <div className="text-xs text-muted-foreground mt-0.5">Full access to all warehouses</div>
-                          </div>
-                        </div>
-                      </SelectItem>
-                    </>
-                  )}
-                  {(permissions.isOwner || permissions.isAdmin) && (
-                    <SelectItem value="MANAGER" className="py-3">
+                    )}
+                    <SelectItem value="STAFF" className="py-3">
                       <div className="flex items-start gap-3">
-                        <span className="text-xl mt-0.5">📊</span>
+                        <span className="text-xl mt-0.5">👤</span>
                         <div>
-                          <div className="font-medium text-base">Manager</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">Manages operations in specific warehouses</div>
+                          <div className="font-medium text-base">Staff</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            Limited access to specific warehouses
+                          </div>
                         </div>
                       </div>
                     </SelectItem>
-                  )}
-                  <SelectItem value="STAFF" className="py-3">
-                    <div className="flex items-start gap-3">
-                      <span className="text-xl mt-0.5">👤</span>
-                      <div>
-                        <div className="font-medium text-base">Staff</div>
-                        <div className="text-xs text-muted-foreground mt-0.5">Limited access to specific warehouses</div>
-                      </div>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             {/* Warehouse Assignment */}
@@ -247,8 +280,8 @@ export function InviteUserDialog({
                     {role === 'MANAGER' ? 'Managed Warehouses' : 'Warehouse Access'}
                   </Label>
                   <span className="text-xs text-muted-foreground">
-                    {role === 'MANAGER' 
-                      ? 'Select warehouses to manage' 
+                    {role === 'MANAGER'
+                      ? 'Select warehouses to manage'
                       : 'Select warehouses to access'}
                   </span>
                 </div>
@@ -261,33 +294,41 @@ export function InviteUserDialog({
                   ) : (
                     <div className="grid gap-1">
                       {availableWarehouses.map((warehouse) => {
-                        const isSelected = role === 'MANAGER' 
-                          ? managedWarehouseIds.includes(warehouse.id)
-                          : selectedWarehouses.includes(warehouse.id);
+                        const isSelected =
+                          role === 'MANAGER'
+                            ? managedWarehouseIds.includes(warehouse.id)
+                            : selectedWarehouses.includes(warehouse.id);
 
                         return (
                           <div
                             key={warehouse.id}
                             className={`
                               flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 border
-                              ${isSelected 
-                                ? 'bg-white dark:bg-slate-800 border-primary/20 shadow-sm' 
-                                : 'hover:bg-white dark:hover:bg-slate-800 border-transparent hover:shadow-sm'}
+                              ${
+                                isSelected
+                                  ? 'bg-white dark:bg-slate-800 border-primary/20 shadow-sm'
+                                  : 'hover:bg-white dark:hover:bg-slate-800 border-transparent hover:shadow-sm'
+                              }
                             `}
                           >
                             <Checkbox
                               id={`wh-${warehouse.id}`}
                               checked={isSelected}
-                              onCheckedChange={() => role === 'MANAGER' 
-                                ? handleManagerWarehouseToggle(warehouse.id)
-                                : handleWarehouseToggle(warehouse.id)
+                              onCheckedChange={() =>
+                                role === 'MANAGER'
+                                  ? handleManagerWarehouseToggle(warehouse.id)
+                                  : handleWarehouseToggle(warehouse.id)
                               }
                               className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                             />
-                            <div className="flex-1" onClick={() => role === 'MANAGER' 
-                              ? handleManagerWarehouseToggle(warehouse.id)
-                              : handleWarehouseToggle(warehouse.id)
-                            }>
+                            <div
+                              className="flex-1"
+                              onClick={() =>
+                                role === 'MANAGER'
+                                  ? handleManagerWarehouseToggle(warehouse.id)
+                                  : handleWarehouseToggle(warehouse.id)
+                              }
+                            >
                               <label
                                 htmlFor={`wh-${warehouse.id}`}
                                 className="text-sm font-medium leading-none cursor-pointer block text-foreground"
@@ -303,24 +344,19 @@ export function InviteUserDialog({
                 </div>
               </div>
             )}
-            
+
             {!needsWarehouseAssignment && (
               <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 text-xs text-primary/80 flex items-center gap-2 animate-in fade-in zoom-in-95 duration-300">
                 <span className="text-lg">ℹ️</span>
-                {role === 'OWNER' 
-                  ? 'Owners automatically have full access to all warehouses and settings.' 
+                {role === 'OWNER'
+                  ? 'Owners automatically have full access to all warehouses and settings.'
                   : 'Admins automatically have access to all warehouses.'}
               </div>
             )}
           </div>
 
           <DialogFooter className="pt-4 border-t">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setOpen(false)}
-              className="mr-2"
-            >
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="mr-2">
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading} className="bg-primary hover:bg-primary/90">

@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { UserCompany } from './user-company.entity';
 import { UpdateRoleInput } from './dto/update-role.input';
 import { ClerkService } from '../auth/clerk.service';
 import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
+import { Warehouse } from '../warehouse/warehouse.entity';
 
 @Injectable()
 export class UserCompanyService {
@@ -13,6 +14,8 @@ export class UserCompanyService {
     private userCompanyRepository: Repository<UserCompany>,
     @InjectRepository(UserWarehouse)
     private userWarehouseRepository: Repository<UserWarehouse>,
+    @InjectRepository(Warehouse)
+    private warehouseRepository: Repository<Warehouse>,
     private clerkService: ClerkService,
   ) { }
 
@@ -81,6 +84,58 @@ export class UserCompanyService {
     });
   }
 
+  async listForUser(userId: string): Promise<any[]> {
+    const userCompanies = await this.userCompanyRepository.find({
+      where: { user_id: userId },
+      relations: ['company'],
+      order: { joined_at: 'DESC' },
+    });
+
+    return Promise.all(
+      userCompanies.map(async (uc) => {
+        let warehouseCount: number;
+
+        // OWNER and ADMIN have implicit access to all warehouses
+        const role = (uc.role || '').toUpperCase();
+        if (role === 'OWNER' || role === 'ADMIN') {
+          // Count all warehouses in this company
+          warehouseCount = await this.warehouseRepository.count({
+            where: { company_id: uc.company_id },
+          });
+        } else {
+          // For MANAGER and STAFF, count only explicit assignments
+          warehouseCount = await this.userWarehouseRepository
+            .createQueryBuilder('uw')
+            .leftJoin('uw.warehouse', 'w')
+            .where('uw.user_id = :userId', { userId })
+            .andWhere('w.company_id = :companyId', { companyId: uc.company_id })
+            .getCount();
+        }
+
+        return {
+          ...uc,
+          warehouseCount,
+        };
+      }),
+    );
+  }
+
+  private async getManagedWarehouseIdsForUserInCompany(userId: string, companyId: string): Promise<string[]> {
+    const userWarehouses = await this.userWarehouseRepository.find({
+      where: { user_id: userId, is_manager_of_warehouse: true },
+    });
+
+    const candidateIds = userWarehouses.map((uw) => uw.warehouse_id);
+    if (candidateIds.length === 0) return [];
+
+    const warehousesInCompany = await this.warehouseRepository.find({
+      where: { id: In(candidateIds), company_id: companyId },
+      select: ['id'],
+    });
+
+    return warehousesInCompany.map((w) => w.id);
+  }
+
   //------------------------------------------------------------
   // NEW: Get company members with warehouse details
   //------------------------------------------------------------
@@ -144,6 +199,20 @@ export class UserCompanyService {
       throw new NotFoundException('Member not found');
     }
 
+    if (!warehouseIds || warehouseIds.length === 0) {
+      throw new BadRequestException('At least one warehouse must be selected');
+    }
+
+    const companyId = membership.company_id;
+
+    // Validate that all requested warehouses belong to the member's company
+    const warehouseCount = await this.warehouseRepository.count({
+      where: { id: In(warehouseIds), company_id: companyId },
+    });
+    if (warehouseCount !== warehouseIds.length) {
+      throw new BadRequestException('One or more warehouses are invalid for this company');
+    }
+
     // Permission validation: Check if updater can modify this member's warehouses
     // OWNER and ADMIN can modify both MANAGER and STAFF
     // MANAGER can only modify STAFF
@@ -157,30 +226,54 @@ export class UserCompanyService {
       if (membership.role !== 'STAFF') {
         throw new BadRequestException('Managers can only modify warehouse assignments for STAFF members');
       }
-      // TODO: Check if all warehouseIds are in updater's managed warehouses
-      // This requires accessing UserWarehouseService - will be added when wiring services
+
+      const managedWarehouseIds = await this.getManagedWarehouseIdsForUserInCompany(updaterId, companyId);
+      if (managedWarehouseIds.length === 0) {
+        throw new BadRequestException('You do not manage any warehouses in this company');
+      }
+
+      const invalidTargets = warehouseIds.filter((id) => !managedWarehouseIds.includes(id));
+      if (invalidTargets.length > 0) {
+        throw new BadRequestException('Managers can only assign staff to warehouses they manage');
+      }
     } else {
       throw new BadRequestException('Insufficient permissions to modify warehouse assignments');
     }
 
-    // Remove all existing warehouse assignments for this user
-    await this.userWarehouseRepository.delete({
-      user_id: membership.user_id,
-    });
+    // Apply updates with correct scope:
+    // - OWNER/ADMIN: replace all assignments for this user within this company
+    // - MANAGER: only replace assignments within the manager's managed warehouses
+    if (updaterRole === 'MANAGER') {
+      const managedWarehouseIds = await this.getManagedWarehouseIdsForUserInCompany(updaterId, companyId);
 
-    // Create new warehouse assignments
-    const assignments = warehouseIds.map(warehouseId =>
+      await this.userWarehouseRepository.delete({
+        user_id: membership.user_id,
+        warehouse_id: In(managedWarehouseIds),
+      });
+    } else {
+      // Delete assignments within this company only (avoid affecting other companies)
+      await this.userWarehouseRepository
+        .createQueryBuilder()
+        .delete()
+        .from(UserWarehouse)
+        .where('user_id = :userId', { userId: membership.user_id })
+        .andWhere(
+          'warehouse_id IN (SELECT id FROM warehouses WHERE company_id = :companyId)',
+          { companyId },
+        )
+        .execute();
+    }
+
+    const assignments = warehouseIds.map((warehouseId) =>
       this.userWarehouseRepository.create({
         user_id: membership.user_id,
         warehouse_id: warehouseId,
-        role: membership.role, // Store the user's company role (MANAGER/STAFF)
-        is_manager_of_warehouse: membership.role === 'MANAGER', // MANAGERs are managers of their assigned warehouses
-      })
+        role: membership.role,
+        is_manager_of_warehouse: membership.role === 'MANAGER',
+      }),
     );
 
-    if (assignments.length > 0) {
-      await this.userWarehouseRepository.save(assignments);
-    }
+    await this.userWarehouseRepository.save(assignments);
   }
 
   //------------------------------------------------------------
@@ -220,9 +313,40 @@ export class UserCompanyService {
       throw new BadRequestException('Managers can only remove STAFF members');
     }
 
+    // MANAGER scope: can only remove STAFF assigned to warehouses they manage
+    if (removerRole === 'MANAGER') {
+      const managedWarehouseIds = await this.getManagedWarehouseIdsForUserInCompany(removerId, membership.company_id);
+      if (managedWarehouseIds.length === 0) {
+        throw new BadRequestException('You do not manage any warehouses in this company');
+      }
+
+      const overlapCount = await this.userWarehouseRepository.count({
+        where: {
+          user_id: membership.user_id,
+          warehouse_id: In(managedWarehouseIds),
+        },
+      });
+
+      if (overlapCount === 0) {
+        throw new BadRequestException('You can only remove staff assigned to warehouses you manage');
+      }
+    }
+
     // Set status to inactive
     membership.status = 'inactive';
     await this.userCompanyRepository.save(membership);
+
+    // Remove warehouse assignments for this user within this company
+    await this.userWarehouseRepository
+      .createQueryBuilder()
+      .delete()
+      .from(UserWarehouse)
+      .where('user_id = :userId', { userId: membership.user_id })
+      .andWhere(
+        'warehouse_id IN (SELECT id FROM warehouses WHERE company_id = :companyId)',
+        { companyId: membership.company_id },
+      )
+      .execute();
 
     // CRITICAL: Clear Clerk metadata to revoke access immediately
     // If this was their active company, they'll need to switch companies on next request
@@ -297,17 +421,51 @@ export class UserCompanyService {
   // NEW: Set default warehouse for user
   //------------------------------------------------------------
   async setDefaultWarehouse(userId: string, warehouseId: string): Promise<void> {
-    // Get user's active company
+    // Get user's active company (stored in DB)
     const user = await this.clerkService.getUserByClerkId(userId);
 
     if (!user || !user.activeCompanyId) {
       throw new BadRequestException('User does not have an active company');
     }
 
-    // Update default_warehouse_id in user_companies
-    await this.userCompanyRepository.update(
-      { user_id: userId, company_id: user.activeCompanyId },
-      { default_warehouse_id: warehouseId }
+    const activeCompanyId = user.activeCompanyId;
+
+    // Ensure membership exists
+    const membership = await this.userCompanyRepository.findOne({
+      where: { user_id: userId, company_id: activeCompanyId, status: 'active' },
+    });
+    if (!membership) {
+      throw new BadRequestException('User is not a member of the active company');
+    }
+
+    // Ensure warehouse exists and belongs to active company
+    const warehouse = await this.warehouseRepository.findOne({
+      where: { id: warehouseId, company_id: activeCompanyId },
+    });
+    if (!warehouse) {
+      throw new BadRequestException('Warehouse not found in active company');
+    }
+
+    // Ensure user has access to warehouse (OWNER/ADMIN have implicit access)
+    const role = (membership.role || '').toUpperCase();
+    const isPrivileged = role === 'OWNER' || role === 'ADMIN';
+
+    if (!isPrivileged) {
+      const assignment = await this.userWarehouseRepository.findOne({
+        where: { user_id: userId, warehouse_id: warehouseId },
+      });
+      if (!assignment) {
+        throw new BadRequestException('User does not have access to this warehouse');
+      }
+    }
+
+    const result = await this.userCompanyRepository.update(
+      { user_id: userId, company_id: activeCompanyId },
+      { default_warehouse_id: warehouseId },
     );
+
+    if (!result.affected) {
+      throw new BadRequestException('Failed to update default warehouse');
+    }
   }
 }

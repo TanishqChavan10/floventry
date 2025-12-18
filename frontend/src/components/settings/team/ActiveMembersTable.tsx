@@ -23,6 +23,7 @@ import {
 import { Loader2, MoreVertical, Search, UserCog, UserMinus } from 'lucide-react';
 import { format } from 'date-fns';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useAuth } from '@/context/auth-context';
 
 // GraphQL Query
 const GET_COMPANY_MEMBERS = gql`
@@ -87,14 +88,18 @@ const roleIcons: Record<string, string> = {
   STAFF: '👤',
 };
 
-export function ActiveMembersTable({ 
-  companyId, 
-  onEditMember, 
-  onRemoveMember 
+export function ActiveMembersTable({
+  companyId,
+  onEditMember,
+  onRemoveMember,
 }: ActiveMembersTableProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const permissions = usePermissions();
+  const { user } = useAuth();
+
+  const managedWarehouseIds =
+    user?.warehouses?.filter((w) => w.isManager).map((w) => w.warehouseId) || [];
 
   const { data, loading, error } = useQuery(GET_COMPANY_MEMBERS, {
     variables: { companyId },
@@ -111,9 +116,7 @@ export function ActiveMembersTable({
 
   if (error) {
     return (
-      <div className="text-sm text-red-500 py-4">
-        Error loading team members: {error.message}
-      </div>
+      <div className="text-sm text-red-500 py-4">Error loading team members: {error.message}</div>
     );
   }
 
@@ -136,7 +139,12 @@ export function ActiveMembersTable({
   const canModify = (member: Member) => {
     if (permissions.isOwner) return member.role !== 'OWNER'; // Owner can modify all except other owners
     if (permissions.isAdmin) return ['MANAGER', 'STAFF'].includes(member.role);
-    if (permissions.isManager) return member.role === 'STAFF';
+    if (permissions.isManager) {
+      const hasOverlap = member.warehouses?.some((wh) =>
+        managedWarehouseIds.includes(wh.warehouseId),
+      );
+      return member.role === 'STAFF' && hasOverlap;
+    }
     return false;
   };
 
@@ -148,7 +156,10 @@ export function ActiveMembersTable({
     }
     // MANAGER can only transfer STAFF (within their warehouses)
     if (permissions.isManager) {
-      return member.role === 'STAFF';
+      const hasOverlap = member.warehouses?.some((wh) =>
+        managedWarehouseIds.includes(wh.warehouseId),
+      );
+      return member.role === 'STAFF' && hasOverlap;
     }
     // STAFF cannot transfer anyone
     return false;
@@ -167,7 +178,7 @@ export function ActiveMembersTable({
             className="pl-9"
           />
         </div>
-        
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm">
@@ -175,21 +186,11 @@ export function ActiveMembersTable({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setRoleFilter('ALL')}>
-              All Roles
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setRoleFilter('OWNER')}>
-              👑 Owner
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setRoleFilter('ADMIN')}>
-              🛡️ Admin
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setRoleFilter('MANAGER')}>
-              📊 Manager
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setRoleFilter('STAFF')}>
-              👤 Staff
-            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setRoleFilter('ALL')}>All Roles</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setRoleFilter('OWNER')}>👑 Owner</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setRoleFilter('ADMIN')}>🛡️ Admin</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setRoleFilter('MANAGER')}>📊 Manager</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setRoleFilter('STAFF')}>👤 Staff</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -223,9 +224,7 @@ export function ActiveMembersTable({
                         {member.user.fullName || member.user.email}
                       </span>
                       {member.user.fullName && (
-                        <span className="text-xs text-muted-foreground">
-                          {member.user.email}
-                        </span>
+                        <span className="text-xs text-muted-foreground">{member.user.email}</span>
                       )}
                     </div>
                   </TableCell>
@@ -241,9 +240,7 @@ export function ActiveMembersTable({
                   {/* Warehouses */}
                   <TableCell>
                     {member.role === 'OWNER' || member.role === 'ADMIN' ? (
-                      <span className="text-xs text-muted-foreground italic">
-                        All warehouses
-                      </span>
+                      <span className="text-xs text-muted-foreground italic">All warehouses</span>
                     ) : member.warehouses && member.warehouses.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {member.warehouses.map((wh) => (
@@ -258,9 +255,7 @@ export function ActiveMembersTable({
                         ))}
                       </div>
                     ) : (
-                      <span className="text-xs text-muted-foreground">
-                        No warehouses
-                      </span>
+                      <span className="text-xs text-muted-foreground">No warehouses</span>
                     )}
                   </TableCell>
 

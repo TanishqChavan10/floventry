@@ -95,12 +95,19 @@ export class WarehouseService {
     }
   }
 
-  async findByUser(userId: string): Promise<Warehouse[]> {
+  async findByUser(userId: string, companyId?: string): Promise<Warehouse[]> {
     const userWarehouses = await this.userWarehouseRepository.find({
       where: { user_id: userId },
       relations: ['warehouse'],
     });
-    return userWarehouses.map(uw => uw.warehouse);
+
+    const warehouses = userWarehouses
+      .map((uw) => uw.warehouse)
+      .filter((w) => !!w);
+
+    if (!companyId) return warehouses;
+
+    return warehouses.filter((w) => w.company_id === companyId);
   }
 
   async assignUser(warehouseId: string, userId: string, role?: string): Promise<UserWarehouse> {

@@ -25,10 +25,28 @@ export const SWITCH_COMPANY = gql`
 export const GET_USER_COMPANIES = gql`
   query GetUserCompanies {
     companies {
-      company_id
+      id
       name
       logo_url
       created_at
+    }
+  }
+`;
+
+export const GET_MY_COMPANIES = gql`
+  query GetMyCompanies {
+    myCompanies {
+      membership_id
+      role
+      status
+      joined_at
+      warehouseCount
+      company {
+        id
+        name
+        company_type
+        logo_url
+      }
     }
   }
 `;

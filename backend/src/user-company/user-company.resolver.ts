@@ -21,6 +21,13 @@ export class UserCompanyResolver {
     return this.userCompanyService.listUsersInCompany(companyId);
   }
 
+  @Query(() => [UserCompany], { name: 'myCompanies' })
+  @UseGuards(ClerkAuthGuard)
+  async myCompanies(@Context() context: any) {
+    const userId = context.req.user.id;
+    return this.userCompanyService.listForUser(userId);
+  }
+
   @Mutation(() => UserCompany)
   @UseGuards(ClerkAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)

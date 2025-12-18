@@ -8,6 +8,7 @@ import {
   PrimaryColumn
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
+import GraphQLJSONObject from 'graphql-type-json';
 import { UserCompany } from '../../user-company/user-company.entity';
 import { UserWarehouse } from './user-warehouse.entity';
 
@@ -33,6 +34,10 @@ export class User {
   @Field({ nullable: true })
   @Column({ type: 'text', nullable: true })
   activeCompanyId: string;
+
+  @Field(() => GraphQLJSONObject, { nullable: true })
+  @Column({ type: 'jsonb', nullable: true, default: {} })
+  preferences: any;
 
   @Field()
   @CreateDateColumn()

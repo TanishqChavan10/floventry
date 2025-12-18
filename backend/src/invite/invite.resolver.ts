@@ -86,8 +86,10 @@ export class InviteResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async companyInvites(
     @Args('companyId', { type: () => String }) companyId: string,
+    @Context() context: any,
   ) {
-    return this.inviteService.getInvites(companyId);
+    const userId = context.req.user.id;
+    return this.inviteService.getInvitesForMember(companyId, userId);
   }
 
   @Query(() => [Invite])

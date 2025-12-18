@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/usePermissions';
 
 const UPDATE_MEMBER_WAREHOUSES = gql`
   mutation UpdateMemberWarehouses($membershipId: String!, $warehouseIds: [String!]!) {
@@ -61,50 +62,44 @@ export function EditMemberDialog({
 }: EditMemberDialogProps) {
   const [selectedWarehouses, setSelectedWarehouses] = useState<string[]>([]);
   const [updateWarehouses, { loading }] = useMutation(UPDATE_MEMBER_WAREHOUSES);
+  const permissions = usePermissions();
 
   // Filter warehouses based on current user's role
   // If current user is a MANAGER, only show warehouses they manage
   const filteredWarehouses = (() => {
     if (!currentUser) return availableWarehouses;
-    
-    const currentUserCompany = currentUser.companies?.find((c: any) => 
-      availableWarehouses.some(w => w.id)
-    );
-    
-    const currentUserRole = currentUserCompany?.role;
-    
-    // OWNER and ADMIN can see all warehouses
-    if (currentUserRole === 'OWNER' || currentUserRole === 'ADMIN') {
+
+    if (permissions.isOwner || permissions.isAdmin) {
       return availableWarehouses;
     }
-    
-    // MANAGER can only see warehouses they manage
-    if (currentUserRole === 'MANAGER') {
-      // Get warehouse IDs where current user is a manager
-      const managedWarehouseIds = currentUser.warehouses
-        ?.filter((w: any) => w.isManager)
-        .map((w: any) => w.warehouseId) || [];
-      
-      return availableWarehouses.filter(w => managedWarehouseIds.includes(w.id));
+
+    if (permissions.isManager) {
+      const managedWarehouseIds =
+        currentUser.warehouses?.filter((w: any) => w.isManager).map((w: any) => w.warehouseId) ||
+        [];
+
+      return availableWarehouses.filter((w) => managedWarehouseIds.includes(w.id));
     }
-    
-    // Default: no warehouses
+
     return [];
   })();
 
   // Initialize selected warehouses when member changes
   useEffect(() => {
     if (member) {
-      const warehouseIds = member.warehouses?.map(w => w.warehouseId) || [];
-      setSelectedWarehouses(warehouseIds);
+      const warehouseIds = member.warehouses?.map((w) => w.warehouseId) || [];
+      if (permissions.isManager) {
+        const allowedIds = new Set(filteredWarehouses.map((w) => w.id));
+        setSelectedWarehouses(warehouseIds.filter((id) => allowedIds.has(id)));
+      } else {
+        setSelectedWarehouses(warehouseIds);
+      }
     }
-  }, [member]);
+  }, [member, permissions.isManager, filteredWarehouses]);
 
   const handleToggle = (warehouseId: string) => {
-    setSelectedWarehouses(prev =>
-      prev.includes(warehouseId)
-        ? prev.filter(id => id !== warehouseId)
-        : [...prev, warehouseId]
+    setSelectedWarehouses((prev) =>
+      prev.includes(warehouseId) ? prev.filter((id) => id !== warehouseId) : [...prev, warehouseId],
     );
   };
 
@@ -156,9 +151,7 @@ export function EditMemberDialog({
 
             <div className="space-y-2 max-h-[300px] overflow-y-auto">
               {filteredWarehouses.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No warehouses available
-                </p>
+                <p className="text-sm text-muted-foreground">No warehouses available</p>
               ) : (
                 filteredWarehouses.map((warehouse) => (
                   <div

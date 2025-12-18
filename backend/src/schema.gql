@@ -173,6 +173,11 @@ type Invite {
   warehouse_ids: [String!]
 }
 
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+
 """Type of stock movement"""
 enum MovementType {
   ADJUSTMENT
@@ -206,6 +211,7 @@ type Mutation {
   updateCompany(id: String!, input: UpdateCompanyInput!): Company!
   updateCompanySettings(companyId: String!, input: UpdateCompanySettingsInput!): CompanySettings!
   updateMemberWarehouses(membershipId: String!, warehouseIds: [String!]!): Boolean!
+  updatePreferences(preferences: String!): UserModel!
   updateProduct(input: UpdateProductInput!): Product!
   updateRole(input: UpdateRoleInput!): UserCompany!
   updateStockLevels(input: UpdateStockInput!): Stock!
@@ -246,6 +252,7 @@ type Query {
   companyMembers(companyId: String!): [CompanyMemberDetails!]!
   lowStockItems(warehouseId: String): [Stock!]!
   me: UserModel
+  myCompanies: [UserCompany!]!
   myPendingInvites: [Invite!]!
   product(id: String!): Product!
   products: [Product!]!
@@ -490,10 +497,12 @@ type User {
   email: String!
   fullName: String
   id: ID!
+  preferences: JSON
   updated_at: DateTime!
 }
 
 type UserCompany {
+  company: Company!
   company_id: String!
   invited_by: String
   joined_at: DateTime!
@@ -501,6 +510,7 @@ type UserCompany {
   role: Role
   status: String
   user_id: String!
+  warehouseCount: Int!
 }
 
 type UserCompanyInfo {
@@ -526,6 +536,7 @@ type UserModel {
   email: String!
   full_name: String!
   id: ID!
+  preferences: JSON
   updated_at: DateTime!
   warehouses: [UserWarehouseInfo!]
 }

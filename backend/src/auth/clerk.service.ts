@@ -92,4 +92,20 @@ export class ClerkService {
       console.error('Error updating user metadata:', error);
     }
   }
+
+  /**
+   * Update user preferences in the database
+   */
+  async updatePreferences(clerkId: string, preferences: any): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { id: clerkId },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    user.preferences = preferences;
+    return this.userRepository.save(user);
+  }
 }

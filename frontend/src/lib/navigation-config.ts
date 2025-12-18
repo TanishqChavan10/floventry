@@ -46,15 +46,21 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
         {
             items: [
                 {
-                    label: 'Overview',
-                    href: basePath,
+                    label: 'Dashboard',
+                    href: `${basePath}/dashboard`,
                     icon: IconHome,
                 },
                 {
                     label: 'Warehouses',
                     href: `${basePath}/warehouses`,
                     icon: IconBuilding,
-                    roles: ['OWNER', 'ADMIN'],
+                    roles: ['OWNER', 'ADMIN', 'MANAGER', 'STAFF'],
+                },
+                {
+                    label: 'Team',
+                    href: `${basePath}/settings/team`,
+                    icon: IconUsers,
+                    roles: ['OWNER', 'ADMIN', 'MANAGER'],
                 },
             ],
         },

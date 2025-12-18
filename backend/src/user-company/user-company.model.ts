@@ -1,5 +1,6 @@
-import { ObjectType, Field } from '@nestjs/graphql';
+import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { Role } from '../auth/enums/role.enum';
+import { Company } from '../company/company.model';
 
 @ObjectType()
 export class UserCompany {
@@ -23,4 +24,10 @@ export class UserCompany {
 
   @Field({ nullable: true })
   status?: string; // active, pending, inactive
+
+  @Field(() => Int)
+  warehouseCount: number;
+
+  @Field(() => Company)
+  company: Company;
 }

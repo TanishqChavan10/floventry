@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useMutation } from '@apollo/client';
+import { SWITCH_COMPANY, GET_CURRENT_USER } from '@/lib/graphql/auth';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -14,6 +16,11 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+
+  const autoSwitchCompanyAttemptedRef = useRef(false);
+  const [switchCompany] = useMutation(SWITCH_COMPANY, {
+    refetchQueries: [{ query: GET_CURRENT_USER }],
+  });
 
   // Define public routes that don't require authentication
   // Define public routes that don't require authentication
@@ -36,8 +43,42 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     if (isAuthenticated && user) {
       // User is authenticated, check company status
       const hasCompanies = user.companies && user.companies.length > 0;
-      const hasMultipleCompanies = user.companies && user.companies.length > 1;
       const hasActiveCompany = user.activeCompanyId;
+
+      // If user has companies but no active company selected, persist selection server-side
+      // so the backend context matches the URL (prevents "Active company required" errors).
+      if (
+        hasCompanies &&
+        !hasActiveCompany &&
+        !isOnboardingRoute &&
+        !autoSwitchCompanyAttemptedRef.current
+      ) {
+        const firstCompany = user.companies?.[0];
+        if (firstCompany?.id) {
+          autoSwitchCompanyAttemptedRef.current = true;
+          (async () => {
+            try {
+              const { data } = await switchCompany({
+                variables: { companyId: firstCompany.id },
+              });
+              if (data?.switchCompany?.success) {
+                router.refresh();
+              }
+            } catch (err: any) {
+              console.error('[AuthGuard] Failed to auto-switch company:', err);
+              toast.error('Failed to select company');
+            }
+          })();
+        }
+        return;
+      }
+
+      // Edge case: after we attempt to auto-select a company (or while metadata/user data is still syncing),
+      // avoid redirecting based on warehouses/company until activeCompanyId is present.
+      // Otherwise managers/staff can be sent to a warehouse route using stale/mixed warehouse lists.
+      if (hasCompanies && !hasActiveCompany && !isOnboardingRoute) {
+        return;
+      }
 
       if (!hasCompanies && !isOnboardingRoute && !isPublicRoute) {
         // User has no companies and is not on onboarding pages
@@ -45,26 +86,16 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         return;
       }
 
-      if (
-        hasCompanies &&
-        !hasActiveCompany &&
-        hasMultipleCompanies &&
-        !isOnboardingRoute
-      ) {
-        // User has multiple companies but no active company selected
-        // Redirect to first company's dashboard
-        const firstCompanySlug = user?.companies?.[0]?.slug;
-        if (firstCompanySlug) {
-          router.push(`/${firstCompanySlug}`);
-        }
-        return;
-      }
-
       if (hasCompanies && isOnboardingRoute && !pathname.startsWith('/onboarding/create-company')) {
         // User has companies but is on onboarding pages, redirect appropriately
         // Find the active company or default to the first one
+        const activeCompanyFromId = user.activeCompanyId
+          ? user?.companies?.find((c) => c.id === user.activeCompanyId)
+          : undefined;
         const activeSlug =
-          user?.companies?.find((c) => c.isActive)?.slug || user?.companies?.[0]?.slug;
+          activeCompanyFromId?.slug ||
+          user?.companies?.find((c) => c.isActive)?.slug ||
+          user?.companies?.[0]?.slug;
         if (activeSlug) {
           router.push(`/${activeSlug}`);
         }
@@ -74,9 +105,14 @@ export default function AuthGuard({ children }: AuthGuardProps) {
       // User has companies and appropriate active company - allow access
 
       // Redirect authenticated users away from auth pages and root route
-      if (pathname.startsWith('/auth/') || pathname === '/auth/sign-in' || pathname === '/dashboard' || pathname === '/') {
+      if (
+        pathname.startsWith('/auth/') ||
+        pathname === '/auth/sign-in' ||
+        pathname === '/dashboard' ||
+        pathname === '/'
+      ) {
         console.log('[AuthGuard] Redirecting from auth/root page, pathname:', pathname);
-        
+
         // First check if user has companies
         if (!hasCompanies) {
           // No companies - redirect to onboarding
@@ -84,9 +120,14 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           router.push('/onboarding');
           return;
         }
-        
+
         // Has companies - check user role and redirect accordingly
-        const activeCompany = user?.companies?.find((c) => c.isActive) || user?.companies?.[0];
+        const activeCompany =
+          (user.activeCompanyId
+            ? user?.companies?.find((c) => c.id === user.activeCompanyId)
+            : undefined) ||
+          user?.companies?.find((c) => c.isActive) ||
+          user?.companies?.[0];
         const activeSlug = activeCompany?.slug;
         const userRole = activeCompany?.role;
 
@@ -97,7 +138,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
         /**
          * 🎯 ROLE-BASED REDIRECT LOGIC
-         * 
+         *
          * OWNER & ADMIN → Company Dashboard
          * MANAGER → Company Dashboard (data filtered to their warehouses)
          * STAFF → Primary Warehouse Dashboard
@@ -110,29 +151,46 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           return;
         }
 
-        if (userRole === 'MANAGER' || userRole === 'STAFF') {
-          // ✅ MANAGER/STAFF: Redirect to default warehouse
+        if (userRole === 'MANAGER') {
+          // ✅ MANAGER: Redirect to company dashboard
+          router.push(`/${activeSlug}/dashboard`);
+          return;
+        }
+
+        if (userRole === 'STAFF') {
+          // ✅ STAFF: Redirect to default warehouse
           const defaultWarehouseId = user?.defaultWarehouseId;
-          
+
           if (defaultWarehouseId) {
             // Find warehouse slug from warehouses array
-            const warehouse = user?.warehouses?.find(w => w.warehouseId === defaultWarehouseId);
-            
-            if (warehouse) {
-              console.log(`[AuthGuard] ${userRole} detected, redirecting to default warehouse:`, warehouse.warehouseSlug);
+            const warehouse = user?.warehouses?.find((w) => w.warehouseId === defaultWarehouseId);
+
+            if (warehouse && warehouse.warehouseSlug) {
+              console.log(
+                `[AuthGuard] ${userRole} detected, redirecting to default warehouse:`,
+                warehouse.warehouseSlug,
+              );
               router.push(`/${activeSlug}/warehouses/${warehouse.warehouseSlug}`);
               return;
             }
           }
-          
+
           // Fallback: try to find any warehouse
           if (user?.warehouses && user.warehouses.length > 0) {
-            const firstWarehouse = user.warehouses[0];
-            console.log(`[AuthGuard] ${userRole} has no default warehouse, using first assigned:`, firstWarehouse.warehouseSlug);
-            router.push(`/${activeSlug}/warehouses/${firstWarehouse.warehouseSlug}`);
+            const firstWarehouse =
+              user.warehouses.find((w) => !!w?.warehouseSlug) || user.warehouses[0];
+            console.log(
+              `[AuthGuard] ${userRole} has no default warehouse, using first assigned:`,
+              firstWarehouse.warehouseSlug,
+            );
+            if (firstWarehouse?.warehouseSlug) {
+              router.push(`/${activeSlug}/warehouses/${firstWarehouse.warehouseSlug}`);
+            } else {
+              router.push(`/${activeSlug}/warehouses`);
+            }
             return;
           }
-          
+
           // Last fallback: warehouses list
           console.log(`[AuthGuard] ${userRole} has no warehouses, redirecting to warehouses list`);
           router.push(`/${activeSlug}/warehouses`);

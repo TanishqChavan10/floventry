@@ -11,7 +11,6 @@ export const GET_CURRENT_USER = gql`
       activeCompanyId
       companies {
         id
-        id
         name
         slug
         role
@@ -24,8 +23,18 @@ export const GET_CURRENT_USER = gql`
         isManager
       }
       defaultWarehouseId
+      preferences
       created_at
       updated_at
+    }
+  }
+`;
+
+export const UPDATE_PREFERENCES = gql`
+  mutation UpdatePreferences($preferences: String!) {
+    updatePreferences(preferences: $preferences) {
+      id
+      preferences
     }
   }
 `;
@@ -44,7 +53,7 @@ export const CREATE_COMPANY = gql`
 `;
 
 export const SWITCH_COMPANY = gql`
-  mutation SwitchCompany($companyId: ID!) {
+  mutation SwitchCompany($companyId: String!) {
     switchCompany(companyId: $companyId) {
       success
       activeCompanyId

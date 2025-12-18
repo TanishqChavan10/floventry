@@ -1,4 +1,5 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
+import GraphQLJSONObject from 'graphql-type-json';
 
 
 @ObjectType()
@@ -62,6 +63,9 @@ export class UserModel {
 
   @Field({ nullable: true })
   defaultWarehouseId?: string;
+
+  @Field(() => GraphQLJSONObject, { nullable: true })
+  preferences?: any;
 
   @Field()
   created_at: Date;

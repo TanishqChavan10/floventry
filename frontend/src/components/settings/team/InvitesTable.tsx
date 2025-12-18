@@ -16,6 +16,7 @@ import { Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { COMPANY_INVITES, CANCEL_INVITE } from '@/lib/graphql/invite';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface Invite {
   invite_id: string;
@@ -32,6 +33,7 @@ interface InvitesTableProps {
 }
 
 export function InvitesTable({ companyId, refreshTrigger }: InvitesTableProps) {
+  const permissions = usePermissions();
   const { data, loading, refetch } = useQuery(COMPANY_INVITES, {
     variables: { companyId },
     skip: !companyId,
@@ -49,6 +51,10 @@ export function InvitesTable({ companyId, refreshTrigger }: InvitesTableProps) {
   }, [refreshTrigger, refetch]);
 
   const handleRevoke = async (inviteId: string) => {
+    if (permissions.isManager) {
+      toast.error('Managers cannot cancel invites');
+      return;
+    }
     try {
       await cancelInviteMutation({
         variables: { inviteId },
@@ -66,7 +72,11 @@ export function InvitesTable({ companyId, refreshTrigger }: InvitesTableProps) {
   const invites: Invite[] = data?.companyInvites || [];
 
   if (invites.length === 0) {
-    return <div className="text-center py-8 text-slate-500 bg-slate-50 dark:bg-slate-900 rounded-lg border border-dashed border-slate-300 dark:border-slate-700">No pending invites</div>;
+    return (
+      <div className="text-center py-8 text-slate-500 bg-slate-50 dark:bg-slate-900 rounded-lg border border-dashed border-slate-300 dark:border-slate-700">
+        No pending invites
+      </div>
+    );
   }
 
   return (
@@ -97,15 +107,17 @@ export function InvitesTable({ companyId, refreshTrigger }: InvitesTableProps) {
                 {formatDistanceToNow(new Date(invite.created_at), { addSuffix: true })}
               </TableCell>
               <TableCell className="text-right">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  onClick={() => handleRevoke(invite.invite_id)}
-                  title="Cancel Invite"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                {!permissions.isManager && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    onClick={() => handleRevoke(invite.invite_id)}
+                    title="Cancel Invite"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
               </TableCell>
             </TableRow>
           ))}
