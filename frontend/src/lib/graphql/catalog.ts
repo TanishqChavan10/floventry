@@ -112,6 +112,9 @@ export const GET_CATEGORIES = gql`
       name
       description
       isActive
+      products {
+        id
+      }
       created_at
       updated_at
     }
@@ -296,11 +299,17 @@ export const GET_CATALOG_STATS = gql`
   query GetCatalogStats {
     products {
       id
+      is_active
     }
     categories {
       id
+      isActive
     }
     suppliers {
+      id
+      isActive
+    }
+    units {
       id
     }
   }

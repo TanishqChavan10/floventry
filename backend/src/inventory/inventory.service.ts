@@ -57,15 +57,25 @@ export class InventoryService {
     async updateCategory(input: UpdateCategoryInput, companyId: string): Promise<Category> {
         const category = await this.findOneCategory(input.id, companyId);
         Object.assign(category, input);
+        // Restoring category when updating
+        category.isActive = true;
         return this.categoryRepository.save(category);
     }
 
     async removeCategory(id: string, companyId: string): Promise<boolean> {
-        // Check if products exist? For now, let's allow delete (products will set category_id null via DB constraint)
-        const result = await this.categoryRepository.delete({ id, company_id: companyId });
-        if (result.affected === 0) {
+        // Soft delete: set isActive = false instead of hard delete
+        const category = await this.categoryRepository.findOne({
+            where: { id, company_id: companyId },
+        });
+
+        if (!category) {
             throw new NotFoundException(`Category with ID ${id} not found`);
         }
+
+        // Update to inactive instead of deleting
+        category.isActive = false;
+        await this.categoryRepository.save(category);
+
         return true;
     }
 
@@ -102,14 +112,25 @@ export class InventoryService {
     async updateProduct(input: UpdateProductInput, companyId: string): Promise<Product> {
         const product = await this.findOneProduct(input.id, companyId);
         Object.assign(product, input);
+        // Restoring product when updating
+        product.is_active = true;
         return this.productRepository.save(product);
     }
 
     async removeProduct(id: string, companyId: string): Promise<boolean> {
-        const result = await this.productRepository.delete({ id, company_id: companyId });
-        if (result.affected === 0) {
+        // Soft delete: set is_active = false instead of hard delete
+        const product = await this.productRepository.findOne({
+            where: { id, company_id: companyId },
+        });
+
+        if (!product) {
             throw new NotFoundException(`Product with ID ${id} not found`);
         }
+
+        // Update to inactive instead of deleting
+        product.is_active = false;
+        await this.productRepository.save(product);
+
         return true;
     }
 

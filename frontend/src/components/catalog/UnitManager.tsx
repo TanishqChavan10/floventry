@@ -22,6 +22,16 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Trash2, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -33,6 +43,7 @@ export default function UnitManager() {
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState('');
   const [shortCode, setShortCode] = useState('');
+  const [unitToDelete, setUnitToDelete] = useState<{id: string, name: string} | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,14 +63,20 @@ export default function UnitManager() {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+  const handleDelete = (id: string, name: string) => {
+    setUnitToDelete({ id, name });
+  };
+
+  const confirmDelete = async () => {
+    if (!unitToDelete) return;
     try {
-      await removeUnit({ variables: { id } });
+      await removeUnit({ variables: { id: unitToDelete.id } });
       toast.success('Unit deleted');
       refetch();
+      setUnitToDelete(null);
     } catch (err: any) {
       toast.error('Failed to delete unit');
+      setUnitToDelete(null);
     }
   };
 
@@ -136,6 +153,25 @@ export default function UnitManager() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!unitToDelete} onOpenChange={() => setUnitToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Unit?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{unitToDelete?.name}</strong>? 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete Unit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

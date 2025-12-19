@@ -18,6 +18,7 @@ import {
     IconHistory,
     IconTruckDelivery,
     IconInfoCircle,
+    IconRuler,
 } from '@tabler/icons-react';
 
 export type UserRole = 'OWNER' | 'ADMIN' | 'MANAGER' | 'STAFF';
@@ -56,12 +57,6 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
                     icon: IconBuilding,
                     roles: ['OWNER', 'ADMIN', 'MANAGER', 'STAFF'],
                 },
-                {
-                    label: 'Team',
-                    href: `${basePath}/settings/team`,
-                    icon: IconUsers,
-                    roles: ['OWNER', 'ADMIN', 'MANAGER'],
-                },
             ],
         },
         {
@@ -75,6 +70,12 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
                     label: 'Categories',
                     href: `${basePath}/catalog/categories`,
                     icon: IconCategory,
+                },
+                {
+                    label: 'Units',
+                    href: `${basePath}/catalog/units`,
+                    icon: IconRuler,
+                    roles: ['OWNER', 'ADMIN'], // Only Owner/Admin can access Units
                 },
             ],
         },

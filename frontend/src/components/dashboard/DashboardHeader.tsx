@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Settings, Bell, Search, Menu, Package, Tags, Truck } from 'lucide-react';
+import { Settings, Bell, Search, Menu, Package, Tags, Truck, Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -90,6 +90,18 @@ export default function DashboardHeader() {
                 <span>Suppliers</span>
               </a>
             </DropdownMenuItem>
+            {(() => {
+              const isOwnerOrAdmin = role?.toLowerCase() === 'owner' || role?.toLowerCase() === 'admin';
+              console.log('🔍 Units visibility check:', { role, isOwnerOrAdmin });
+              return isOwnerOrAdmin;
+            })() && (
+              <DropdownMenuItem asChild>
+                <a href={`/${companySlug}/catalog/units`}>
+                  <Ruler className="mr-2 h-4 w-4" />
+                  <span>Units</span>
+                </a>
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 
