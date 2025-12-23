@@ -37,6 +37,45 @@ export class CreateStockInput {
 }
 
 @InputType()
+export class CreateOpeningStockInput {
+    @Field(() => ID)
+    @IsUUID()
+    product_id: string;
+
+    @Field(() => ID)
+    @IsUUID()
+    warehouse_id: string;
+
+    @Field(() => Float)
+    @IsNumber()
+    @Min(0)
+    quantity: number;
+
+    @Field(() => Float, { nullable: true })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    min_stock_level?: number;
+
+    @Field(() => Float, { nullable: true })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    max_stock_level?: number;
+
+    @Field(() => Float, { nullable: true })
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    reorder_point?: number;
+
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsString()
+    note?: string;
+}
+
+@InputType()
 export class UpdateStockInput {
     @Field(() => ID)
     @IsUUID()

@@ -7,6 +7,12 @@ import { Company } from '../../company/company.entity';
 import { User } from '../../auth/entities/user.entity';
 
 export enum MovementType {
+    // Phase 1: Stock & Stock Movements
+    OPENING = 'OPENING',              // Initial stock entry
+    ADJUSTMENT_IN = 'ADJUSTMENT_IN',   // Manual increase (found, correction)
+    ADJUSTMENT_OUT = 'ADJUSTMENT_OUT', // Manual decrease (damage, loss)
+
+    // Legacy/Future types (backward compatible)
     IN = 'IN',
     OUT = 'OUT',
     ADJUSTMENT = 'ADJUSTMENT',
@@ -113,12 +119,16 @@ export class StockMovement {
     })
     reference_type: ReferenceType;
 
-    @Field()
-    @Column('uuid')
+    @Field({ nullable: true })
+    @Column('uuid', { nullable: true })
     performed_by: string;
 
-    @Field(() => User)
-    @ManyToOne(() => User, { nullable: false })
+    @Field({ nullable: true })
+    @Column({ type: 'varchar', nullable: true })
+    user_role: string;
+
+    @Field(() => User, { nullable: true })
+    @ManyToOne(() => User, { nullable: true })
     @JoinColumn({ name: 'performed_by' })
     user: User;
 

@@ -108,6 +108,16 @@ input CreateCompanyInput {
   slug: String!
 }
 
+input CreateOpeningStockInput {
+  max_stock_level: Float
+  min_stock_level: Float
+  note: String
+  product_id: ID!
+  quantity: Float!
+  reorder_point: Float
+  warehouse_id: ID!
+}
+
 input CreateProductInput {
   barcode: String
   category_id: String
@@ -181,7 +191,10 @@ scalar JSON
 """Type of stock movement"""
 enum MovementType {
   ADJUSTMENT
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
   IN
+  OPENING
   OUT
   TRANSFER_IN
   TRANSFER_OUT
@@ -190,9 +203,11 @@ enum MovementType {
 type Mutation {
   acceptInvite(input: AcceptInviteInput!): UserCompany!
   adjustStock(input: AdjustStockInput!): Stock!
+  archiveSupplier(id: String!): Supplier!
   cancelInvite(inviteId: String!): Boolean!
   createCategory(input: CreateCategoryInput!): Category!
   createCompany(input: CreateCompanyInput!): Company!
+  createOpeningStock(input: CreateOpeningStockInput!): Stock!
   createProduct(input: CreateProductInput!): Product!
   createStock(input: CreateStockInput!): Stock!
   createSupplier(input: CreateSupplierInput!): Supplier!
@@ -201,12 +216,12 @@ type Mutation {
   removeCategory(id: String!): Boolean!
   removeMemberValidated(membershipId: String!): Boolean!
   removeProduct(id: String!): Boolean!
-  removeSupplier(id: String!): Boolean!
   removeUnit(id: String!): Boolean!
   removeUser(membershipId: String!): Boolean!
   sendInvite(input: SendInviteInput!): Invite!
   switchCompany(companyId: String!): SwitchCompanyResponse!
   switchWarehouse(warehouseId: String!): Boolean!
+  unarchiveSupplier(id: String!): Supplier!
   updateCategory(input: UpdateCategoryInput!): Category!
   updateCompany(id: String!, input: UpdateCompanyInput!): Company!
   updateCompanySettings(companyId: String!, input: UpdateCompanySettingsInput!): CompanySettings!
@@ -261,7 +276,7 @@ type Query {
   stockByWarehouse(warehouseId: String!): [Stock!]!
   stockMovements(filters: StockMovementFilterInput!): [StockMovement!]!
   supplier(id: String!): Supplier!
-  suppliers: [Supplier!]!
+  suppliers(includeArchived: Boolean = false): [Supplier!]!
   units: [Unit!]!
   usersInCompany: [UserCompany!]!
   validateInvite(token: String!): ValidateInviteResponse!
@@ -315,7 +330,7 @@ type StockMovement {
   id: ID!
   new_quantity: Float!
   notes: String
-  performed_by: String!
+  performed_by: String
   previous_quantity: Float!
   product: Product!
   product_id: String!
@@ -326,7 +341,8 @@ type StockMovement {
   stock: Stock!
   stock_id: String!
   type: MovementType!
-  user: User!
+  user: User
+  user_role: String
   warehouse: Warehouse!
   warehouse_id: String!
 }
@@ -351,6 +367,7 @@ type Supplier {
   isActive: Boolean!
   name: String!
   phone: String
+  productsCount: Int!
   updated_at: DateTime!
 }
 

@@ -161,13 +161,13 @@ export function getWarehouseNavigation(
         {
             items: [
                 {
-                    label: 'Products',
-                    href: `${basePath}/products`, // Scoped products?
-                    icon: IconBoxSeam,
+                    label: 'Inventory',
+                    href: `${basePath}/inventory`,
+                    icon: IconClipboardList,
                 },
                 {
                     label: 'Stock',
-                    href: `${basePath}/stock`,
+                    href: `${basePath}/inventory/stock`,
                     icon: IconPackage,
                 },
                 {

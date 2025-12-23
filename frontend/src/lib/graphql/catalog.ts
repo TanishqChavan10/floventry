@@ -172,14 +172,15 @@ export const DELETE_CATEGORY = gql`
 // ============================================
 
 export const GET_SUPPLIERS = gql`
-  query GetSuppliers {
-    suppliers {
+  query GetSuppliers($includeArchived: Boolean) {
+    suppliers(includeArchived: $includeArchived) {
       id
       name
       email
       phone
       address
       isActive
+      productsCount
       created_at
       updated_at
     }
@@ -195,6 +196,7 @@ export const GET_SUPPLIER = gql`
       phone
       address
       isActive
+      productsCount
       created_at
       updated_at
     }
@@ -222,6 +224,24 @@ export const UPDATE_SUPPLIER = gql`
       email
       phone
       address
+      isActive
+    }
+  }
+`;
+
+export const ARCHIVE_SUPPLIER = gql`
+  mutation ArchiveSupplier($id: String!) {
+    archiveSupplier(id: $id) {
+      id
+      isActive
+    }
+  }
+`;
+
+export const UNARCHIVE_SUPPLIER = gql`
+  mutation UnarchiveSupplier($id: String!) {
+    unarchiveSupplier(id: $id) {
+      id
       isActive
     }
   }

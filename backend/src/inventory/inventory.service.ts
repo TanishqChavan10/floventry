@@ -8,7 +8,7 @@ import { Stock } from './entities/stock.entity';
 import { StockMovement, MovementType } from './entities/stock-movement.entity';
 import { CreateCategoryInput, UpdateCategoryInput } from './dto/category.input';
 import { CreateProductInput, UpdateProductInput } from './dto/product.input';
-import { CreateStockInput, UpdateStockInput, AdjustStockInput, StockMovementFilterInput } from './dto/stock.input';
+import { CreateStockInput, UpdateStockInput, AdjustStockInput, StockMovementFilterInput, CreateOpeningStockInput } from './dto/stock.input';
 
 @Injectable()
 export class InventoryService {
@@ -168,6 +168,77 @@ export class InventoryService {
 
     // --- Stock Management ---
 
+    /**
+     * Phase 1: Create opening stock for a product in a warehouse
+     * This is the entry point for initial stock setup
+     */
+    async createOpeningStock(input: CreateOpeningStockInput, companyId: string, userId: string, userRole?: string): Promise<Stock> {
+        // Check if stock already exists for this product in this warehouse
+        const existing = await this.stockRepository.findOne({
+            where: {
+                product_id: input.product_id,
+                warehouse_id: input.warehouse_id,
+                company_id: companyId,
+            },
+        });
+
+        if (existing) {
+            throw new BadRequestException(
+                'Opening stock already exists for this product in this warehouse. Use adjust stock instead.'
+            );
+        }
+
+        // Verify product belongs to the company and is active
+        const product = await this.productRepository.findOne({
+            where: { id: input.product_id, company_id: companyId, is_active: true },
+        });
+
+        if (!product) {
+            throw new NotFoundException('Product not found or inactive');
+        }
+
+        // Create stock record
+        const stock = this.stockRepository.create({
+            product_id: input.product_id,
+            warehouse_id: input.warehouse_id,
+            company_id: companyId,
+            quantity: input.quantity,
+            min_stock_level: input.min_stock_level,
+            max_stock_level: input.max_stock_level,
+            reorder_point: input.reorder_point,
+        });
+
+        const savedStock = await this.stockRepository.save(stock);
+
+        // Create opening stock movement
+        await this.stockMovementRepository.save({
+            stock_id: savedStock.id,
+            product_id: input.product_id,
+            warehouse_id: input.warehouse_id,
+            company_id: companyId,
+            type: MovementType.OPENING,
+            quantity: input.quantity,
+            previous_quantity: 0,
+            new_quantity: input.quantity,
+            reason: 'Opening stock',
+            notes: input.note || 'Initial stock entry',
+            performed_by: userId,
+            user_role: userRole,
+        });
+
+        // Return stock with relations loaded
+        const stockWithRelations = await this.stockRepository.findOne({
+            where: { id: savedStock.id },
+            relations: ['product', 'warehouse'],
+        });
+
+        if (!stockWithRelations) {
+            throw new BadRequestException('Failed to load stock after creation');
+        }
+
+        return stockWithRelations;
+    }
+
     async createStock(input: CreateStockInput, companyId: string, userId: string): Promise<Stock> {
         // Check if stock already exists for this product in this warehouse
         const existing = await this.stockRepository.findOne({
@@ -279,7 +350,7 @@ export class InventoryService {
         return this.stockRepository.save(stock);
     }
 
-    async adjustStock(input: AdjustStockInput, companyId: string, userId: string): Promise<Stock> {
+    async adjustStock(input: AdjustStockInput, companyId: string, userId: string, userRole?: string): Promise<Stock> {
         // Find or create stock record
         let stock = await this.stockRepository.findOne({
             where: {
@@ -290,15 +361,9 @@ export class InventoryService {
         });
 
         if (!stock) {
-            // Auto-create stock if it doesn't exist
-            stock = await this.createStock(
-                {
-                    product_id: input.product_id,
-                    warehouse_id: input.warehouse_id,
-                    quantity: 0,
-                },
-                companyId,
-                userId,
+            // For Phase 1, require opening stock to exist first
+            throw new BadRequestException(
+                'Stock record not found. Please create opening stock first.'
             );
         }
 
@@ -307,6 +372,14 @@ export class InventoryService {
 
         if (newQuantity < 0) {
             throw new BadRequestException('Insufficient stock. Cannot reduce below zero.');
+        }
+
+        // Determine movement type based on quantity direction
+        let movementType = input.type;
+        if (input.quantity > 0 && input.type === MovementType.ADJUSTMENT) {
+            movementType = MovementType.ADJUSTMENT_IN;
+        } else if (input.quantity < 0 && input.type === MovementType.ADJUSTMENT) {
+            movementType = MovementType.ADJUSTMENT_OUT;
         }
 
         // Update stock quantity
@@ -319,18 +392,29 @@ export class InventoryService {
             product_id: input.product_id,
             warehouse_id: input.warehouse_id,
             company_id: companyId,
-            type: input.type,
+            type: movementType,
             quantity: input.quantity,
             previous_quantity: previousQuantity,
             new_quantity: newQuantity,
-            reason: input.reason,
-            reference_id: input.reference_id,
+            reason: input.reason || (input.quantity > 0 ? 'Stock adjustment (increase)' : 'Stock adjustment (decrease)'),
+            reference_id: input.reference_id || undefined,
             reference_type: input.reference_type,
             performed_by: userId,
-            notes: input.notes,
+            user_role: userRole,
+            notes: input.notes || undefined,
         });
 
-        return updatedStock;
+        // Return stock with relations loaded
+        const stockWithRelations = await this.stockRepository.findOne({
+            where: { id: updatedStock.id },
+            relations: ['product', 'warehouse'],
+        });
+
+        if (!stockWithRelations) {
+            throw new BadRequestException('Failed to load stock after adjustment');
+        }
+
+        return stockWithRelations;
     }
 
     async getStockMovements(filters: StockMovementFilterInput, companyId: string): Promise<StockMovement[]> {

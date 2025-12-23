@@ -8,10 +8,13 @@ import { StockMovement } from './entities/stock-movement.entity';
 import { CreateCategoryInput, UpdateCategoryInput } from './dto/category.input';
 import { CreateProductInput, UpdateProductInput } from './dto/product.input';
 import { CreateUnitInput, UpdateUnitInput } from './dto/unit.input';
-import { CreateStockInput, UpdateStockInput, AdjustStockInput, StockMovementFilterInput } from './dto/stock.input';
+import { CreateStockInput, UpdateStockInput, AdjustStockInput, StockMovementFilterInput, CreateOpeningStockInput } from './dto/stock.input';
 import { Unit } from './entities/unit.entity';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../auth/enums/role.enum';
 import { Supplier } from '../supplier/supplier.entity';
 
 @Resolver(() => Category)
@@ -131,11 +134,26 @@ export class UnitResolver {
 }
 
 @Resolver(() => Stock)
-@UseGuards(ClerkAuthGuard)
+@UseGuards(ClerkAuthGuard, RolesGuard)
 export class StockResolver {
     constructor(private readonly inventoryService: InventoryService) { }
 
+    /**
+     * Phase 1: Create opening stock for a product in a warehouse
+     * Only OWNER, ADMIN, and MANAGER roles can create opening stock
+     */
     @Mutation(() => Stock)
+    @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+    async createOpeningStock(
+        @Args('input') input: CreateOpeningStockInput,
+        @ClerkUser() user: any,
+    ) {
+        if (!user.activeCompanyId) throw new BadRequestException('Active company required');
+        return this.inventoryService.createOpeningStock(input, user.activeCompanyId, user.userId, user.role);
+    }
+
+    @Mutation(() => Stock)
+    @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
     async createStock(
         @Args('input') input: CreateStockInput,
         @ClerkUser() user: any,
@@ -145,6 +163,7 @@ export class StockResolver {
     }
 
     @Query(() => Stock, { name: 'stock' })
+    @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
     async getStock(
         @Args('productId') productId: string,
         @Args('warehouseId') warehouseId: string,
@@ -155,6 +174,7 @@ export class StockResolver {
     }
 
     @Query(() => [Stock], { name: 'stockByWarehouse' })
+    @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
     async getStockByWarehouse(
         @Args('warehouseId') warehouseId: string,
         @ClerkUser() user: any,
@@ -164,6 +184,7 @@ export class StockResolver {
     }
 
     @Query(() => [Stock], { name: 'stockByProduct' })
+    @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
     async getStockByProduct(
         @Args('productId') productId: string,
         @ClerkUser() user: any,
@@ -173,12 +194,14 @@ export class StockResolver {
     }
 
     @Query(() => [Stock], { name: 'allStock' })
+    @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
     async getAllStock(@ClerkUser() user: any) {
         if (!user.activeCompanyId) throw new BadRequestException('Active company required');
         return this.inventoryService.getAllStock(user.activeCompanyId);
     }
 
     @Mutation(() => Stock)
+    @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
     async updateStockLevels(
         @Args('input') input: UpdateStockInput,
         @ClerkUser() user: any,
@@ -187,16 +210,22 @@ export class StockResolver {
         return this.inventoryService.updateStockLevels(input, user.activeCompanyId);
     }
 
+    /**
+     * Phase 1: Adjust stock quantities (increase or decrease)
+     * Only OWNER, ADMIN, and MANAGER roles can adjust stock
+     */
     @Mutation(() => Stock)
+    @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
     async adjustStock(
         @Args('input') input: AdjustStockInput,
         @ClerkUser() user: any,
     ) {
         if (!user.activeCompanyId) throw new BadRequestException('Active company required');
-        return this.inventoryService.adjustStock(input, user.activeCompanyId, user.userId);
+        return this.inventoryService.adjustStock(input, user.activeCompanyId, user.userId, user.role);
     }
 
     @Query(() => [StockMovement], { name: 'stockMovements' })
+    @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
     async getStockMovements(
         @Args('filters') filters: StockMovementFilterInput,
         @ClerkUser() user: any,
@@ -206,6 +235,7 @@ export class StockResolver {
     }
 
     @Query(() => [Stock], { name: 'lowStockItems' })
+    @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
     async getLowStockItems(
         @Args('warehouseId', { nullable: true }) warehouseId: string,
         @ClerkUser() user: any,

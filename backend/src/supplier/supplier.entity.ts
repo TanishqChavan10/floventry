@@ -5,6 +5,7 @@ import { Company as CompanyModel } from '../company/company.model';
 
 @ObjectType()
 @Entity('suppliers')
+@Index(['company_id', 'name'], { unique: true }) // Ensure supplier name is unique per company
 @Index(['company_id']) // Optimize company-scoped queries
 export class Supplier {
     @Field(() => ID)
