@@ -5,11 +5,38 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, TrendingUp, AlertTriangle, FileText } from 'lucide-react';
 import CompanyGuard from '@/components/CompanyGuard';
+import { useQuery } from '@apollo/client';
+import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
+import { useAuth } from '@/context/auth-context';
 
 function InventoryOverviewContent() {
   const params = useParams();
+  const { user } = useAuth();
   const companySlug = params.slug as string;
   const warehouseSlug = params.warehouseSlug as string;
+
+  // Get warehouse ID
+  const activeWarehouse = user?.warehouses?.find(
+    (w: any) => w.warehouseSlug === warehouseSlug
+  );
+  const warehouseId = activeWarehouse?.warehouseId;
+
+  // Fetch stock data
+  const { data: stockData, loading } = useQuery(GET_WAREHOUSE_STOCK, {
+    variables: { warehouseId: warehouseId || '' },
+    skip: !warehouseId,
+  });
+
+  const stock = stockData?.stockByWarehouse || [];
+
+  // Calculate statistics
+  const totalProducts = stock.length;
+  const totalStockValue = stock.reduce((sum: number, item: any) => {
+    return sum + (item.quantity * (item.product?.cost_price || 0));
+  }, 0);
+  const lowStockItems = stock.filter((item: any) => {
+    return item.reorder_point && item.quantity <= item.reorder_point;
+  }).length;
 
   const navItems = [
     {
@@ -99,7 +126,9 @@ function InventoryOverviewContent() {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">—</div>
+              <div className="text-2xl font-bold">
+                {loading ? '...' : totalProducts.toLocaleString()}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 In this warehouse
               </p>
@@ -111,7 +140,9 @@ function InventoryOverviewContent() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">—</div>
+              <div className="text-2xl font-bold">
+                {loading ? '...' : `₹${totalStockValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Based on cost price
               </p>
@@ -123,7 +154,9 @@ function InventoryOverviewContent() {
               <AlertTriangle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">—</div>
+              <div className={`text-2xl font-bold ${lowStockItems > 0 ? 'text-orange-600' : ''}`}>
+                {loading ? '...' : lowStockItems}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Below reorder point
               </p>

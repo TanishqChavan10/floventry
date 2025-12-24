@@ -33,8 +33,8 @@ export const GET_WAREHOUSE_STOCK = gql`
 
 // Mutation to create opening stock
 export const CREATE_OPENING_STOCK = gql`
-  mutation CreateOpeningStock($input: CreateStockInput!) {
-    createStock(input: $input) {
+  mutation CreateOpeningStock($input: CreateOpeningStockInput!) {
+    createOpeningStock(input: $input) {
       id
       product {
         id
@@ -78,8 +78,7 @@ export const GET_STOCK_MOVEMENTS = gql`
       }
       user {
         id
-        firstName
-        lastName
+        fullName
       }
       user_role
       created_at

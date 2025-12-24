@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useMutation } from '@apollo/client';
+import { useState, useEffect } from 'react';
+import { useMutation, useQuery } from '@apollo/client';
 import {
   Sheet,
   SheetContent,
@@ -32,8 +32,11 @@ import {
   Save,
   X,
   AlertTriangle,
+  History,
+  ArrowUpRight,
+  ArrowDownRight,
 } from 'lucide-react';
-import { ADJUST_STOCK, UPDATE_STOCK_LEVELS } from '@/lib/graphql/inventory';
+import { ADJUST_STOCK, UPDATE_STOCK_LEVELS, GET_STOCK_MOVEMENTS, GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
 
 interface StockDrawerProps {
   stock: any;
@@ -53,9 +56,9 @@ export default function StockDrawer({
   const [isAdjusting, setIsAdjusting] = useState(false);
 
   const [levelForm, setLevelForm] = useState({
-    min_stock_level: stock?.min_stock_level || '',
-    max_stock_level: stock?.max_stock_level || '',
-    reorder_point: stock?.reorder_point || '',
+    min_stock_level: stock?.min_stock_level ? stock.min_stock_level.toString() : '',
+    max_stock_level: stock?.max_stock_level ? stock.max_stock_level.toString() : '',
+    reorder_point: stock?.reorder_point ? stock.reorder_point.toString() : '',
   });
 
   const [adjustForm, setAdjustForm] = useState({
@@ -65,7 +68,27 @@ export default function StockDrawer({
     notes: '',
   });
 
+  // Reset form states when stock changes (e.g., opening drawer for a different item)
+  useEffect(() => {
+    if (stock) {
+      setLevelForm({
+        min_stock_level: stock.min_stock_level ? stock.min_stock_level.toString() : '',
+        max_stock_level: stock.max_stock_level ? stock.max_stock_level.toString() : '',
+        reorder_point: stock.reorder_point ? stock.reorder_point.toString() : '',
+      });
+      setAdjustForm({
+        quantity: '',
+        type: 'ADJUSTMENT',
+        reason: '',
+        notes: '',
+      });
+      setIsEditingLevels(false);
+      setIsAdjusting(false);
+    }
+  }, [stock]);
+
   const [updateLevels, { loading: updatingLevels }] = useMutation(UPDATE_STOCK_LEVELS, {
+    refetchQueries: [GET_STOCK_MOVEMENTS, GET_WAREHOUSE_STOCK],
     onCompleted: () => {
       toast({
         title: 'Stock levels updated',
@@ -84,6 +107,7 @@ export default function StockDrawer({
   });
 
   const [adjustStock, { loading: adjustingStock }] = useMutation(ADJUST_STOCK, {
+    refetchQueries: [GET_STOCK_MOVEMENTS, GET_WAREHOUSE_STOCK],
     onCompleted: () => {
       toast({
         title: 'Stock adjusted',
@@ -91,7 +115,6 @@ export default function StockDrawer({
       });
       setIsAdjusting(false);
       setAdjustForm({ quantity: '', type: 'ADJUSTMENT', reason: '', notes: '' });
-      onClose();
     },
     onError: (error) => {
       toast({
@@ -102,6 +125,21 @@ export default function StockDrawer({
     },
   });
 
+  // Fetch recent stock movements for this product in this warehouse
+  const { data: movementsData } = useQuery(GET_STOCK_MOVEMENTS, {
+    variables: {
+      filters: {
+        product_id: stock?.product?.id,
+        warehouse_id: stock?.warehouse?.id,
+        limit: 5,
+        offset: 0,
+      },
+    },
+    skip: !stock?.product?.id || !stock?.warehouse?.id,
+  });
+
+  const recentMovements = movementsData?.stockMovements || [];
+
   if (!stock) return null;
 
   const handleUpdateLevels = async () => {
@@ -110,12 +148,12 @@ export default function StockDrawer({
         input: {
           id: stock.id,
           min_stock_level: levelForm.min_stock_level
-            ? parseFloat(levelForm.min_stock_level)
+            ? parseInt(levelForm.min_stock_level)
             : null,
           max_stock_level: levelForm.max_stock_level
-            ? parseFloat(levelForm.max_stock_level)
+            ? parseInt(levelForm.max_stock_level)
             : null,
-          reorder_point: levelForm.reorder_point ? parseFloat(levelForm.reorder_point) : null,
+          reorder_point: levelForm.reorder_point ? parseInt(levelForm.reorder_point) : null,
         },
       },
     });
@@ -136,7 +174,7 @@ export default function StockDrawer({
         input: {
           product_id: stock.product.id,
           warehouse_id: stock.warehouse.id,
-          quantity: parseFloat(adjustForm.quantity),
+          quantity: parseInt(adjustForm.quantity),
           type: adjustForm.type,
           reason: adjustForm.reason || null,
           notes: adjustForm.notes || null,
@@ -235,7 +273,7 @@ export default function StockDrawer({
                   <Input
                     id="min_stock"
                     type="number"
-                    step="0.01"
+                    step="1"
                     value={levelForm.min_stock_level}
                     onChange={(e) =>
                       setLevelForm({ ...levelForm, min_stock_level: e.target.value })
@@ -248,7 +286,7 @@ export default function StockDrawer({
                   <Input
                     id="max_stock"
                     type="number"
-                    step="0.01"
+                    step="1"
                     value={levelForm.max_stock_level}
                     onChange={(e) =>
                       setLevelForm({ ...levelForm, max_stock_level: e.target.value })
@@ -261,7 +299,7 @@ export default function StockDrawer({
                   <Input
                     id="reorder"
                     type="number"
-                    step="0.01"
+                    step="1"
                     value={levelForm.reorder_point}
                     onChange={(e) =>
                       setLevelForm({ ...levelForm, reorder_point: e.target.value })
@@ -338,7 +376,7 @@ export default function StockDrawer({
                       <Input
                         id="adjust_quantity"
                         type="number"
-                        step="0.01"
+                        step="1"
                         value={adjustForm.quantity}
                         onChange={(e) =>
                           setAdjustForm({ ...adjustForm, quantity: e.target.value })
@@ -424,6 +462,87 @@ export default function StockDrawer({
               </div>
             </>
           )}
+
+          {/* Recent Movements */}
+          <Separator />
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <History className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-semibold text-sm text-muted-foreground">
+                Recent Movements
+              </h3>
+            </div>
+            {recentMovements.length === 0 ? (
+              <div className="text-center py-6 text-sm text-muted-foreground">
+                No movements yet
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {recentMovements.map((movement: any) => {
+                  const isIncrease = movement.quantity > 0;
+                  return (
+                    <div
+                      key={movement.id}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-slate-50 dark:bg-slate-900"
+                    >
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className={`mt-0.5 ${isIncrease ? 'text-green-600' : 'text-red-600'}`}>
+                          {isIncrease ? (
+                            <ArrowUpRight className="h-4 w-4" />
+                          ) : (
+                            <ArrowDownRight className="h-4 w-4" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium">
+                              {movement.type.replace(/_/g, ' ')}
+                            </p>
+                            <span className={`text-sm font-bold ${isIncrease ? 'text-green-600' : 'text-red-600'}`}>
+                              {isIncrease ? '+' : ''}{movement.quantity}
+                            </span>
+                          </div>
+                          {movement.reason && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {movement.reason}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(movement.created_at).toLocaleDateString()}{' '}
+                              {new Date(movement.created_at).toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </p>
+                            {movement.user && (
+                              <>
+                                <span className="text-xs text-muted-foreground">•</span>
+                                <p className="text-xs text-muted-foreground">
+                                  {movement.user.fullName}
+                                </p>
+                              </>
+                            )}
+                            {movement.user_role && (
+                              <>
+                                <span className="text-xs text-muted-foreground">by</span>
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
+                                  {movement.user_role}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {movement.previous_quantity} → {movement.new_quantity}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Metadata */}
           <Separator />

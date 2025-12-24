@@ -124,6 +124,16 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
         {
             items: [
                 {
+                    label: 'Team',
+                    href: `${basePath}/settings/team`,
+                    icon: IconUsers,
+                    roles: ['MANAGER'], // Only for MANAGER; OWNER/ADMIN access via Settings menu
+                },
+            ],
+        },
+        {
+            items: [
+                {
                     label: 'Settings',
                     href: `${basePath}/settings`,
                     icon: IconSettings,

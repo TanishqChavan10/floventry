@@ -28,6 +28,7 @@ import { Plus, Search, Package, PackagePlus, TrendingDown, TrendingUp } from 'lu
 import { useAuth } from '@/context/auth-context';
 import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
 import { GET_CATEGORIES } from '@/lib/graphql/catalog';
+import { GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
 import OpeningStockModal from '@/components/inventory/OpeningStockModal';
 import StockDrawer from '@/components/inventory/StockDrawer';
 
@@ -48,7 +49,23 @@ function StockPageContent() {
   const activeWarehouse = user?.warehouses?.find(
     (w: any) => w.warehouseSlug === warehouseSlug
   );
-  const warehouseId = activeWarehouse?.warehouseId;
+  
+  // Get role from active company
+  const activeCompany = user?.companies?.find(c => c.id === user.activeCompanyId);
+  const userRole = activeCompany?.role;
+  
+  // For OWNER/ADMIN, fetch all company warehouses as fallback
+  const { data: companyData } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
+    variables: { slug: companySlug },
+    skip: !companySlug || !!activeWarehouse || !['OWNER', 'ADMIN'].includes(userRole || ''),
+  });
+
+  // Try to get warehouse from company data if not in user.warehouses
+  const warehouseFromCompany = companyData?.companyBySlug?.warehouses?.find(
+    (w: any) => w.slug === warehouseSlug
+  );
+  
+  const warehouseId = activeWarehouse?.warehouseId || warehouseFromCompany?.id;
 
   const { data: stockData, loading, error, refetch } = useQuery(GET_WAREHOUSE_STOCK, {
     variables: { warehouseId: warehouseId || '' },
@@ -56,10 +73,6 @@ function StockPageContent() {
   });
 
   const { data: categoriesData } = useQuery(GET_CATEGORIES);
-
-  // Get role from active company
-  const activeCompany = user?.companies?.find(c => c.id === user.activeCompanyId);
-  const userRole = activeCompany?.role;
 
   const canModifyStock = userRole ? ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole) : false;
 

@@ -1,5 +1,5 @@
-import { InputType, Field, ID, Float } from '@nestjs/graphql';
-import { IsUUID, IsNumber, IsOptional, IsString, IsEnum, Min } from 'class-validator';
+import { InputType, Field, ID, Float, Int } from '@nestjs/graphql';
+import { IsUUID, IsNumber, IsOptional, IsString, IsEnum, Min, IsInt } from 'class-validator';
 import { MovementType, ReferenceType } from '../entities/stock-movement.entity';
 
 @InputType()
@@ -12,26 +12,26 @@ export class CreateStockInput {
     @IsUUID()
     warehouse_id: string;
 
-    @Field(() => Float, { defaultValue: 0 })
-    @IsNumber()
+    @Field(() => Int, { defaultValue: 0 })
+    @IsInt()
     @Min(0)
     quantity: number;
 
-    @Field(() => Float, { nullable: true })
+    @Field(() => Int, { nullable: true })
     @IsOptional()
-    @IsNumber()
+    @IsInt()
     @Min(0)
     min_stock_level?: number;
 
-    @Field(() => Float, { nullable: true })
+    @Field(() => Int, { nullable: true })
     @IsOptional()
-    @IsNumber()
+    @IsInt()
     @Min(0)
     max_stock_level?: number;
 
-    @Field(() => Float, { nullable: true })
+    @Field(() => Int, { nullable: true })
     @IsOptional()
-    @IsNumber()
+    @IsInt()
     @Min(0)
     reorder_point?: number;
 }
@@ -46,26 +46,26 @@ export class CreateOpeningStockInput {
     @IsUUID()
     warehouse_id: string;
 
-    @Field(() => Float)
-    @IsNumber()
+    @Field(() => Int)
+    @IsInt()
     @Min(0)
     quantity: number;
 
-    @Field(() => Float, { nullable: true })
+    @Field(() => Int, { nullable: true })
     @IsOptional()
-    @IsNumber()
+    @IsInt()
     @Min(0)
     min_stock_level?: number;
 
-    @Field(() => Float, { nullable: true })
+    @Field(() => Int, { nullable: true })
     @IsOptional()
-    @IsNumber()
+    @IsInt()
     @Min(0)
     max_stock_level?: number;
 
-    @Field(() => Float, { nullable: true })
+    @Field(() => Int, { nullable: true })
     @IsOptional()
-    @IsNumber()
+    @IsInt()
     @Min(0)
     reorder_point?: number;
 
@@ -81,21 +81,21 @@ export class UpdateStockInput {
     @IsUUID()
     id: string;
 
-    @Field(() => Float, { nullable: true })
+    @Field(() => Int, { nullable: true })
     @IsOptional()
-    @IsNumber()
+    @IsInt()
     @Min(0)
     min_stock_level?: number;
 
-    @Field(() => Float, { nullable: true })
+    @Field(() => Int, { nullable: true })
     @IsOptional()
-    @IsNumber()
+    @IsInt()
     @Min(0)
     max_stock_level?: number;
 
-    @Field(() => Float, { nullable: true })
+    @Field(() => Int, { nullable: true })
     @IsOptional()
-    @IsNumber()
+    @IsInt()
     @Min(0)
     reorder_point?: number;
 }
@@ -110,8 +110,8 @@ export class AdjustStockInput {
     @IsUUID()
     warehouse_id: string;
 
-    @Field(() => Float)
-    @IsNumber()
+    @Field(() => Int)
+    @IsInt()
     quantity: number; // Can be positive or negative
 
     @Field(() => MovementType)

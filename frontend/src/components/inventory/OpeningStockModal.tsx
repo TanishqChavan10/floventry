@@ -90,10 +90,10 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
         input: {
           product_id: formData.product_id,
           warehouse_id: warehouseId,
-          quantity: parseFloat(formData.quantity),
-          min_stock_level: formData.min_stock_level ? parseFloat(formData.min_stock_level) : undefined,
-          max_stock_level: formData.max_stock_level ? parseFloat(formData.max_stock_level) : undefined,
-          reorder_point: formData.reorder_point ? parseFloat(formData.reorder_point) : undefined,
+          quantity: parseInt(formData.quantity),
+          min_stock_level: formData.min_stock_level ? parseInt(formData.min_stock_level) : undefined,
+          max_stock_level: formData.max_stock_level ? parseInt(formData.max_stock_level) : undefined,
+          reorder_point: formData.reorder_point ? parseInt(formData.reorder_point) : undefined,
           note: formData.note || null,
         },
       },
@@ -144,11 +144,11 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
             <Input
               id="quantity"
               type="number"
-              step="0.01"
+              step="1"
               min="0"
               value={formData.quantity}
               onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-              placeholder="0.00"
+              placeholder="0"
               required
             />
           </div>
@@ -163,7 +163,7 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
               <Input
                 id="min_stock_level"
                 type="number"
-                step="0.01"
+                step="1"
                 min="0"
                 value={formData.min_stock_level}
                 onChange={(e) => setFormData({ ...formData, min_stock_level: e.target.value })}
@@ -178,7 +178,7 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
               <Input
                 id="max_stock_level"
                 type="number"
-                step="0.01"
+                step="1"
                 min="0"
                 value={formData.max_stock_level}
                 onChange={(e) => setFormData({ ...formData, max_stock_level: e.target.value })}
@@ -193,7 +193,7 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
               <Input
                 id="reorder_point"
                 type="number"
-                step="0.01"
+                step="1"
                 min="0"
                 value={formData.reorder_point}
                 onChange={(e) => setFormData({ ...formData, reorder_point: e.target.value })}

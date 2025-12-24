@@ -9,7 +9,7 @@ input AcceptInviteInput {
 input AdjustStockInput {
   notes: String
   product_id: ID!
-  quantity: Float!
+  quantity: Int!
   reason: String
   reference_id: String
   reference_type: ReferenceType
@@ -109,12 +109,12 @@ input CreateCompanyInput {
 }
 
 input CreateOpeningStockInput {
-  max_stock_level: Float
-  min_stock_level: Float
+  max_stock_level: Int
+  min_stock_level: Int
   note: String
   product_id: ID!
-  quantity: Float!
-  reorder_point: Float
+  quantity: Int!
+  reorder_point: Int
   warehouse_id: ID!
 }
 
@@ -132,11 +132,11 @@ input CreateProductInput {
 }
 
 input CreateStockInput {
-  max_stock_level: Float
-  min_stock_level: Float
+  max_stock_level: Int
+  min_stock_level: Int
   product_id: ID!
-  quantity: Float! = 0
-  reorder_point: Float
+  quantity: Int! = 0
+  reorder_point: Int
   warehouse_id: ID!
 }
 
@@ -313,12 +313,12 @@ type Stock {
   company_id: String!
   created_at: DateTime!
   id: ID!
-  max_stock_level: Float
-  min_stock_level: Float
+  max_stock_level: Int
+  min_stock_level: Int
   product: Product!
   product_id: String!
-  quantity: Float!
-  reorder_point: Float
+  quantity: Int!
+  reorder_point: Int
   updated_at: DateTime!
   warehouse: Warehouse!
   warehouse_id: String!
@@ -328,13 +328,13 @@ type StockMovement {
   company_id: String!
   created_at: DateTime!
   id: ID!
-  new_quantity: Float!
+  new_quantity: Int!
   notes: String
   performed_by: String
-  previous_quantity: Float!
+  previous_quantity: Int!
   product: Product!
   product_id: String!
-  quantity: Float!
+  quantity: Int!
   reason: String
   reference_id: String
   reference_type: ReferenceType
@@ -461,9 +461,9 @@ input UpdateRoleInput {
 
 input UpdateStockInput {
   id: ID!
-  max_stock_level: Float
-  min_stock_level: Float
-  reorder_point: Float
+  max_stock_level: Int
+  min_stock_level: Int
+  reorder_point: Int
 }
 
 input UpdateSupplierInput {

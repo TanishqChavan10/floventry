@@ -60,8 +60,7 @@ export interface StockMovement {
     };
     user: {
         id: string;
-        firstName?: string;
-        lastName?: string;
+        fullName?: string;
     };
     created_at: string;
 }

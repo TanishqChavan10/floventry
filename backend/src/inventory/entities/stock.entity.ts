@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID, Float } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Float, Int } from '@nestjs/graphql';
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Product } from './product.entity';
 import { Warehouse } from '../../warehouse/warehouse.entity';
@@ -40,20 +40,20 @@ export class Stock {
     @JoinColumn({ name: 'company_id' })
     company: Company;
 
-    @Field(() => Float)
-    @Column('decimal', { precision: 10, scale: 2, default: 0 })
+    @Field(() => Int)
+    @Column('integer', { default: 0 })
     quantity: number;
 
-    @Field(() => Float, { nullable: true })
-    @Column('decimal', { precision: 10, scale: 2, nullable: true })
+    @Field(() => Int, { nullable: true })
+    @Column('integer', { nullable: true })
     min_stock_level: number;
 
-    @Field(() => Float, { nullable: true })
-    @Column('decimal', { precision: 10, scale: 2, nullable: true })
+    @Field(() => Int, { nullable: true })
+    @Column('integer', { nullable: true })
     max_stock_level: number;
 
-    @Field(() => Float, { nullable: true })
-    @Column('decimal', { precision: 10, scale: 2, nullable: true })
+    @Field(() => Int, { nullable: true })
+    @Column('integer', { nullable: true })
     reorder_point: number;
 
     @Field()

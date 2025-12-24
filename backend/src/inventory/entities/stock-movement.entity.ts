@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID, Float, registerEnumType } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Float, Int, registerEnumType } from '@nestjs/graphql';
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Stock } from './stock.entity';
 import { Product } from './product.entity';
@@ -91,16 +91,16 @@ export class StockMovement {
     })
     type: MovementType;
 
-    @Field(() => Float)
-    @Column('decimal', { precision: 10, scale: 2 })
+    @Field(() => Int)
+    @Column('integer')
     quantity: number; // Positive for IN, negative for OUT/ADJUSTMENT
 
-    @Field(() => Float)
-    @Column('decimal', { precision: 10, scale: 2 })
+    @Field(() => Int)
+    @Column('integer')
     previous_quantity: number;
 
-    @Field(() => Float)
-    @Column('decimal', { precision: 10, scale: 2 })
+    @Field(() => Int)
+    @Column('integer')
     new_quantity: number;
 
     @Field({ nullable: true })
