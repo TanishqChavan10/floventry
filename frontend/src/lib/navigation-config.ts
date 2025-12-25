@@ -101,20 +101,6 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
         {
             items: [
                 {
-                    label: 'Expiry',
-                    href: `${basePath}/inventory/expiry`,
-                    icon: IconCalendarTime,
-                },
-            ],
-        },
-        {
-            items: [
-                {
-                    label: 'Purchase', // User listed "Purchase" separately from "Purchase Orders"
-                    href: `${basePath}/purchase`,
-                    icon: IconCreditCard,
-                },
-                {
                     label: 'Audit Log',
                     href: `${basePath}/audit-log`,
                     icon: IconHistory,
@@ -181,6 +167,11 @@ export function getWarehouseNavigation(
                     icon: IconPackage,
                 },
                 {
+                    label: 'Stock Movements',
+                    href: `${basePath}/stock-movements`,
+                    icon: IconArrowsExchange,
+                },
+                {
                     label: 'Expiry',
                     href: `${basePath}/expiry`,
                     icon: IconCalendarTime,
@@ -190,20 +181,10 @@ export function getWarehouseNavigation(
                     href: `${basePath}/damaged`,
                     icon: IconAlertTriangle,
                 },
-                {
-                    label: 'Stock Movements',
-                    href: `${basePath}/stock-movements`,
-                    icon: IconArrowsExchange,
-                },
             ]
         },
         {
             items: [
-                {
-                    label: 'Purchase Orders',
-                    href: `${basePath}/purchase-orders`,
-                    icon: IconShoppingCart,
-                },
                 {
                     label: 'Transfers',
                     href: `${basePath}/transfers`,

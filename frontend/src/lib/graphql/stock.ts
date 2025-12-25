@@ -2,7 +2,7 @@ import { gql } from '@apollo/client';
 
 // Query to get all stock for a specific warehouse
 export const GET_STOCK_BY_WAREHOUSE = gql`
-  query GetStockByWarehouse($warehouseId: ID!) {
+  query GetStockByWarehouse($warehouseId: String!) {
     stockByWarehouse(warehouseId: $warehouseId) {
       id
       product {
@@ -54,8 +54,7 @@ export const GET_STOCK_MOVEMENTS = gql`
       }
       user {
         id
-        firstName
-        lastName
+        fullName
       }
       created_at
     }

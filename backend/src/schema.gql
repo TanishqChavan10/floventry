@@ -131,6 +131,13 @@ input CreateProductInput {
   unit: String!
 }
 
+input CreatePurchaseOrderInput {
+  items: [PurchaseOrderItemInput!]!
+  notes: String
+  supplier_id: ID!
+  warehouse_id: ID!
+}
+
 input CreateStockInput {
   max_stock_level: Int
   min_stock_level: Int
@@ -205,14 +212,17 @@ type Mutation {
   adjustStock(input: AdjustStockInput!): Stock!
   archiveSupplier(id: String!): Supplier!
   cancelInvite(inviteId: String!): Boolean!
+  cancelPurchaseOrder(id: String!): PurchaseOrder!
   createCategory(input: CreateCategoryInput!): Category!
   createCompany(input: CreateCompanyInput!): Company!
   createOpeningStock(input: CreateOpeningStockInput!): Stock!
   createProduct(input: CreateProductInput!): Product!
+  createPurchaseOrder(input: CreatePurchaseOrderInput!): PurchaseOrder!
   createStock(input: CreateStockInput!): Stock!
   createSupplier(input: CreateSupplierInput!): Supplier!
   createUnit(input: CreateUnitInput!): Unit!
   createWarehouse(input: CreateWarehouseInput!): Warehouse!
+  markPurchaseOrderOrdered(id: String!): PurchaseOrder!
   removeCategory(id: String!): Boolean!
   removeMemberValidated(membershipId: String!): Boolean!
   removeProduct(id: String!): Boolean!
@@ -228,6 +238,7 @@ type Mutation {
   updateMemberWarehouses(membershipId: String!, warehouseIds: [String!]!): Boolean!
   updatePreferences(preferences: String!): UserModel!
   updateProduct(input: UpdateProductInput!): Product!
+  updatePurchaseOrder(id: String!, input: UpdatePurchaseOrderInput!): PurchaseOrder!
   updateRole(input: UpdateRoleInput!): UserCompany!
   updateStockLevels(input: UpdateStockInput!): Stock!
   updateSupplier(input: UpdateSupplierInput!): Supplier!
@@ -257,6 +268,52 @@ type Product {
   updated_at: DateTime!
 }
 
+type PurchaseOrder {
+  created_at: DateTime!
+  id: ID!
+  items: [PurchaseOrderItem!]!
+  notes: String
+  po_number: String!
+  status: PurchaseOrderStatus!
+  supplier: Supplier!
+  updated_at: DateTime!
+  user: User
+  warehouse: Warehouse!
+}
+
+input PurchaseOrderFilterInput {
+  from_date: DateTime
+  limit: Float = 50
+  offset: Float = 0
+  status: PurchaseOrderStatus
+  supplier_id: ID
+  to_date: DateTime
+  warehouse_id: ID
+}
+
+type PurchaseOrderItem {
+  created_at: DateTime!
+  id: ID!
+  ordered_quantity: Float!
+  product: Product!
+  product_id: String!
+  purchase_order: PurchaseOrder!
+  purchase_order_id: String!
+  received_quantity: Float!
+}
+
+input PurchaseOrderItemInput {
+  ordered_quantity: Float!
+  product_id: ID!
+}
+
+enum PurchaseOrderStatus {
+  CANCELLED
+  CLOSED
+  DRAFT
+  ORDERED
+}
+
 type Query {
   allStock: [Stock!]!
   categories: [Category!]!
@@ -271,6 +328,8 @@ type Query {
   myPendingInvites: [Invite!]!
   product(id: String!): Product!
   products: [Product!]!
+  purchaseOrder(id: String!): PurchaseOrder
+  purchaseOrders(filters: PurchaseOrderFilterInput!): [PurchaseOrder!]!
   stock(productId: String!, warehouseId: String!): Stock!
   stockByProduct(productId: String!): [Stock!]!
   stockByWarehouse(warehouseId: String!): [Stock!]!
@@ -452,6 +511,12 @@ input UpdateProductInput {
   sku: String
   supplier_id: String
   unit: String
+}
+
+input UpdatePurchaseOrderInput {
+  items: [PurchaseOrderItemInput!]
+  notes: String
+  supplier_id: ID
 }
 
 input UpdateRoleInput {

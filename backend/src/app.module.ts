@@ -23,6 +23,7 @@ import { CompanyContextMiddleware } from './common/middleware/company-context.mi
 // import { IntegrationModule } from './integration/integration.module';
 import { WarehouseModule } from './warehouse/warehouse.module';
 import { EmailModule } from './email/email.module';
+import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { EmailModule } from './email/email.module';
     // NotificationModule,
     // IntegrationModule,
     WarehouseModule,
+    PurchaseOrdersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
