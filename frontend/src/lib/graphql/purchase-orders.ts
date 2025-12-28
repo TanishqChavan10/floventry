@@ -39,7 +39,7 @@ export const GET_PURCHASE_ORDERS = gql`
 
 // Query to get single purchase order by ID
 export const GET_PURCHASE_ORDER = gql`
-  query GetPurchaseOrder($id: ID!) {
+  query GetPurchaseOrder($id: String!) {
     purchaseOrder(id: $id) {
       id
       po_number
@@ -61,6 +61,7 @@ export const GET_PURCHASE_ORDER = gql`
         id
         fullName
       }
+      user_role
       items {
         id
         ordered_quantity
@@ -69,11 +70,7 @@ export const GET_PURCHASE_ORDER = gql`
           id
           name
           sku
-          unit {
-            id
-            name
-            abbreviation
-          }
+          unit
         }
         created_at
       }
@@ -113,7 +110,7 @@ export const CREATE_PURCHASE_ORDER = gql`
 
 // Mutation to update purchase order (DRAFT only)
 export const UPDATE_PURCHASE_ORDER = gql`
-  mutation UpdatePurchaseOrder($id: ID!, $input: UpdatePurchaseOrderInput!) {
+  mutation UpdatePurchaseOrder($id: String!, $input: UpdatePurchaseOrderInput!) {
     updatePurchaseOrder(id: $id, input: $input) {
       id
       po_number
@@ -138,7 +135,7 @@ export const UPDATE_PURCHASE_ORDER = gql`
 
 // Mutation to mark purchase order as ORDERED
 export const MARK_PURCHASE_ORDER_ORDERED = gql`
-  mutation MarkPurchaseOrderOrdered($id: ID!) {
+  mutation MarkPurchaseOrderOrdered($id: String!) {
     markPurchaseOrderOrdered(id: $id) {
       id
       po_number
@@ -150,7 +147,7 @@ export const MARK_PURCHASE_ORDER_ORDERED = gql`
 
 // Mutation to cancel purchase order
 export const CANCEL_PURCHASE_ORDER = gql`
-  mutation CancelPurchaseOrder($id: ID!) {
+  mutation CancelPurchaseOrder($id: String!) {
     cancelPurchaseOrder(id: $id) {
       id
       po_number

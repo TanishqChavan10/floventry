@@ -11,24 +11,23 @@ import {
 import { ObjectType, Field, ID, registerEnumType } from '@nestjs/graphql';
 import { Company } from '../../company/company.entity';
 import { Warehouse } from '../../warehouse/warehouse.entity';
-import { Supplier } from '../../supplier/supplier.entity';
+import { PurchaseOrder } from '../../purchase-orders/entities/purchase-order.entity';
 import { User } from '../../auth/entities/user.entity';
-import { PurchaseOrderItem } from './purchase-order-item.entity';
+import { GRNItem } from './grn-item.entity';
 
-export enum PurchaseOrderStatus {
+export enum GRNStatus {
     DRAFT = 'DRAFT',
-    ORDERED = 'ORDERED',
-    CLOSED = 'CLOSED',
+    POSTED = 'POSTED',
     CANCELLED = 'CANCELLED',
 }
 
-registerEnumType(PurchaseOrderStatus, {
-    name: 'PurchaseOrderStatus',
+registerEnumType(GRNStatus, {
+    name: 'GRNStatus',
 });
 
 @ObjectType()
-@Entity('purchase_orders')
-export class PurchaseOrder {
+@Entity('goods_receipt_notes')
+export class GoodsReceiptNote {
     @Field(() => ID)
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -49,24 +48,28 @@ export class PurchaseOrder {
     warehouse: Warehouse;
 
     @Column('uuid')
-    supplier_id: string;
+    purchase_order_id: string;
 
-    @Field(() => Supplier)
-    @ManyToOne(() => Supplier, { nullable: false })
-    @JoinColumn({ name: 'supplier_id' })
-    supplier: Supplier;
+    @Field(() => PurchaseOrder)
+    @ManyToOne(() => PurchaseOrder, { nullable: false })
+    @JoinColumn({ name: 'purchase_order_id' })
+    purchase_order: PurchaseOrder;
 
     @Field()
-    @Column({ type: 'varchar', length: 50 })
-    po_number: string;
+    @Column({ type: 'varchar', length: 50, unique: true })
+    grn_number: string;
 
-    @Field(() => PurchaseOrderStatus)
+    @Field(() => GRNStatus)
     @Column({
         type: 'enum',
-        enum: PurchaseOrderStatus,
-        default: PurchaseOrderStatus.DRAFT,
+        enum: GRNStatus,
+        default: GRNStatus.DRAFT,
     })
-    status: PurchaseOrderStatus;
+    status: GRNStatus;
+
+    @Field()
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    received_at: Date;
 
     @Field({ nullable: true })
     @Column({ type: 'text', nullable: true })
@@ -84,11 +87,23 @@ export class PurchaseOrder {
     @Column({ type: 'varchar', length: 50, nullable: true })
     user_role: string;
 
-    @Field(() => [PurchaseOrderItem])
-    @OneToMany(() => PurchaseOrderItem, (item) => item.purchase_order, {
+    @Column({ type: 'uuid', nullable: true })
+    posted_by: string;
+
+    @Field(() => User, { nullable: true })
+    @ManyToOne(() => User, { nullable: true })
+    @JoinColumn({ name: 'posted_by' })
+    posted_by_user: User;
+
+    @Field({ nullable: true })
+    @Column({ type: 'timestamp', nullable: true })
+    posted_at: Date;
+
+    @Field(() => [GRNItem])
+    @OneToMany(() => GRNItem, (item) => item.goods_receipt_note, {
         cascade: true,
     })
-    items: PurchaseOrderItem[];
+    items: GRNItem[];
 
     @Field()
     @CreateDateColumn()

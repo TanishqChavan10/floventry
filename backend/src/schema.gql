@@ -108,6 +108,14 @@ input CreateCompanyInput {
   slug: String!
 }
 
+input CreateGRNInput {
+  items: [GRNItemInput!]!
+  notes: String
+  purchase_order_id: String!
+  received_at: DateTime
+  warehouse_id: String!
+}
+
 input CreateOpeningStockInput {
   max_stock_level: Int
   min_stock_level: Int
@@ -175,6 +183,52 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+input GRNFilterInput {
+  from_date: DateTime
+  limit: Float = 50
+  offset: Float = 0
+  purchase_order_id: String
+  status: GRNStatus
+  to_date: DateTime
+  warehouse_id: String
+}
+
+type GRNItem {
+  created_at: DateTime!
+  id: ID!
+  product: Product!
+  purchase_order_item: PurchaseOrderItem!
+  received_quantity: Float!
+}
+
+input GRNItemInput {
+  purchase_order_item_id: String!
+  received_quantity: Float!
+}
+
+enum GRNStatus {
+  CANCELLED
+  DRAFT
+  POSTED
+}
+
+type GoodsReceiptNote {
+  created_at: DateTime!
+  grn_number: String!
+  id: ID!
+  items: [GRNItem!]!
+  notes: String
+  posted_at: DateTime
+  posted_by_user: User
+  purchase_order: PurchaseOrder!
+  received_at: DateTime!
+  status: GRNStatus!
+  updated_at: DateTime!
+  user: User
+  user_role: String
+  warehouse: Warehouse!
+}
+
 type Invite {
   accepted_at: DateTime
   company_id: String!
@@ -211,10 +265,12 @@ type Mutation {
   acceptInvite(input: AcceptInviteInput!): UserCompany!
   adjustStock(input: AdjustStockInput!): Stock!
   archiveSupplier(id: String!): Supplier!
+  cancelGRN(id: String!): GoodsReceiptNote!
   cancelInvite(inviteId: String!): Boolean!
   cancelPurchaseOrder(id: String!): PurchaseOrder!
   createCategory(input: CreateCategoryInput!): Category!
   createCompany(input: CreateCompanyInput!): Company!
+  createGRN(input: CreateGRNInput!): GoodsReceiptNote!
   createOpeningStock(input: CreateOpeningStockInput!): Stock!
   createProduct(input: CreateProductInput!): Product!
   createPurchaseOrder(input: CreatePurchaseOrderInput!): PurchaseOrder!
@@ -223,6 +279,7 @@ type Mutation {
   createUnit(input: CreateUnitInput!): Unit!
   createWarehouse(input: CreateWarehouseInput!): Warehouse!
   markPurchaseOrderOrdered(id: String!): PurchaseOrder!
+  postGRN(id: String!): GoodsReceiptNote!
   removeCategory(id: String!): Boolean!
   removeMemberValidated(membershipId: String!): Boolean!
   removeProduct(id: String!): Boolean!
@@ -235,6 +292,7 @@ type Mutation {
   updateCategory(input: UpdateCategoryInput!): Category!
   updateCompany(id: String!, input: UpdateCompanyInput!): Company!
   updateCompanySettings(companyId: String!, input: UpdateCompanySettingsInput!): CompanySettings!
+  updateGRN(id: String!, input: UpdateGRNInput!): GoodsReceiptNote!
   updateMemberWarehouses(membershipId: String!, warehouseIds: [String!]!): Boolean!
   updatePreferences(preferences: String!): UserModel!
   updateProduct(input: UpdateProductInput!): Product!
@@ -278,6 +336,7 @@ type PurchaseOrder {
   supplier: Supplier!
   updated_at: DateTime!
   user: User
+  user_role: String
   warehouse: Warehouse!
 }
 
@@ -322,6 +381,8 @@ type Query {
   companyBySlug(slug: String!): Company!
   companyInvites(companyId: String!): [Invite!]!
   companyMembers(companyId: String!): [CompanyMemberDetails!]!
+  grn(id: String!): GoodsReceiptNote
+  grns(filters: GRNFilterInput!): [GoodsReceiptNote!]!
   lowStockItems(warehouseId: String): [Stock!]!
   me: UserModel
   myCompanies: [UserCompany!]!
@@ -347,6 +408,7 @@ type Query {
 """Reference type for stock movement"""
 enum ReferenceType {
   ADJUSTMENT
+  GRN
   MANUAL
   PURCHASE_ORDER
   SALES_ORDER
@@ -496,6 +558,12 @@ input UpdateCompanySettingsInput {
   theme: String
   timezone: String
   track_stock_adjustments: Boolean
+}
+
+input UpdateGRNInput {
+  items: [GRNItemInput!]
+  notes: String
+  received_at: DateTime
 }
 
 input UpdateProductInput {

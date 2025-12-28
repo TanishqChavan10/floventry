@@ -90,6 +90,7 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
                     label: 'Purchase Orders',
                     href: `${basePath}/purchase-orders`,
                     icon: IconShoppingCart,
+                    roles: ['OWNER', 'ADMIN', 'MANAGER'], // Only OWNER, ADMIN, and MANAGER can access
                 },
                 {
                     label: 'Reports',
@@ -165,6 +166,12 @@ export function getWarehouseNavigation(
                     label: 'Stock',
                     href: `${basePath}/inventory/stock`,
                     icon: IconPackage,
+                },
+                {
+                    label: 'GRN',
+                    href: `${basePath}/inventory/grn`,
+                    icon: IconBoxSeam,
+                    roles: ['OWNER', 'ADMIN', 'MANAGER', 'STAFF'],
                 },
                 {
                     label: 'Stock Movements',

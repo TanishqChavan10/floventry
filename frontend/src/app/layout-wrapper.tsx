@@ -118,6 +118,7 @@ function AppSidebarContent() {
     const allowedHrefs = new Set([
       `/${companySlug}/dashboard`,
       `/${companySlug}/warehouses`,
+      `/${companySlug}/purchase-orders`,
       `/${companySlug}/settings/team`,
     ]);
 

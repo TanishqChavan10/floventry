@@ -30,7 +30,9 @@ export function ManagerGuard({ children }: { children: React.ReactNode }) {
 
     // Managers are allowed on a small set of company-level routes
     const isManagerAllowedCompanyRoute =
-      pathname?.includes('/dashboard') || pathname?.includes('/settings/team');
+      pathname?.includes('/dashboard') || 
+      pathname?.includes('/settings/team') ||
+      pathname?.includes('/purchase-orders');
 
     // If not on an allowed route, redirect.
     if (warehouses.length > 0 && companySlug) {

@@ -9,6 +9,7 @@ export const GET_STOCK_BY_WAREHOUSE = gql`
         id
         name
         sku
+        unit
         category {
           id
           name
@@ -63,7 +64,7 @@ export const GET_STOCK_MOVEMENTS = gql`
 
 // Query to get low stock items
 export const GET_LOW_STOCK_ITEMS = gql`
-  query GetLowStockItems($warehouseId: ID) {
+  query GetLowStockItems($warehouseId: String) {
     lowStockItems(warehouseId: $warehouseId) {
       id
       product {
@@ -136,7 +137,7 @@ export const UPDATE_STOCK_LEVELS = gql`
 
 // Query to get a specific stock
 export const GET_STOCK = gql`
-  query GetStock($productId: ID!, $warehouseId: ID!) {
+  query GetStock($productId: String!, $warehouseId: String!) {
     stock(productId: $productId, warehouseId: $warehouseId) {
       id
       product {

@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, In } from 'typeorm';
 import { PurchaseOrder, PurchaseOrderStatus } from './entities/purchase-order.entity';
 import { PurchaseOrderItem } from './entities/purchase-order-item.entity';
+import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
 import {
     CreatePurchaseOrderInput,
     UpdatePurchaseOrderInput,
@@ -21,6 +22,8 @@ export class PurchaseOrdersService {
         private purchaseOrderRepository: Repository<PurchaseOrder>,
         @InjectRepository(PurchaseOrderItem)
         private purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
+        @InjectRepository(UserWarehouse)
+        private userWarehouseRepository: Repository<UserWarehouse>,
     ) { }
 
     /**
@@ -94,12 +97,27 @@ export class PurchaseOrdersService {
         input: CreatePurchaseOrderInput,
         companyId: string,
         userId: string,
+        userRole?: string,
     ): Promise<PurchaseOrder> {
         // Validate no duplicate products
         const productIds = input.items.map((item) => item.product_id);
         const uniqueProductIds = new Set(productIds);
         if (productIds.length !== uniqueProductIds.size) {
             throw new BadRequestException('Duplicate products in purchase order');
+        }
+
+        // Validate warehouse access for MANAGER role
+        if (userRole === 'MANAGER') {
+            const hasAccess = await this.userWarehouseRepository.findOne({
+                where: {
+                    user_id: userId,
+                    warehouse_id: input.warehouse_id,
+                },
+            });
+
+            if (!hasAccess) {
+                throw new ForbiddenException('You do not have access to this warehouse');
+            }
         }
 
         // Generate PO number
@@ -114,6 +132,7 @@ export class PurchaseOrdersService {
             status: PurchaseOrderStatus.DRAFT,
             notes: input.notes,
             created_by: userId,
+            user_role: userRole, // Store the user's role
         });
 
         await this.purchaseOrderRepository.save(po);

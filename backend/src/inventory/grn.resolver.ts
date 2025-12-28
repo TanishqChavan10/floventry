@@ -1,42 +1,39 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { UseGuards, BadRequestException } from '@nestjs/common';
-import { PurchaseOrder } from './entities/purchase-order.entity';
-import { PurchaseOrdersService } from './purchase-orders.service';
+import { GoodsReceiptNote } from './entities/goods-receipt-note.entity';
+import { GRNService } from './grn.service';
 import {
-    CreatePurchaseOrderInput,
-    UpdatePurchaseOrderInput,
-    PurchaseOrderFilterInput,
-} from './dto/purchase-order.input';
+    CreateGRNInput,
+    UpdateGRNInput,
+    GRNFilterInput,
+} from './dto/grn.input';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
 import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
 
-@Resolver(() => PurchaseOrder)
+@Resolver(() => GoodsReceiptNote)
 @UseGuards(ClerkAuthGuard, RolesGuard)
-export class PurchaseOrdersResolver {
-    constructor(private purchaseOrdersService: PurchaseOrdersService) { }
+export class GRNResolver {
+    constructor(private grnService: GRNService) { }
 
-    @Query(() => [PurchaseOrder], { name: 'purchaseOrders' })
+    @Query(() => [GoodsReceiptNote], { name: 'grns' })
     @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
-    async getPurchaseOrders(
-        @Args('filters') filters: PurchaseOrderFilterInput,
+    async getGRNs(
+        @Args('filters') filters: GRNFilterInput,
         @ClerkUser() user: any,
     ) {
         if (!user.activeCompanyId) {
             throw new BadRequestException('Active company required');
         }
 
-        return this.purchaseOrdersService.getPurchaseOrders(
-            filters,
-            user.activeCompanyId,
-        );
+        return this.grnService.getGRNs(filters, user.activeCompanyId);
     }
 
-    @Query(() => PurchaseOrder, { name: 'purchaseOrder', nullable: true })
+    @Query(() => GoodsReceiptNote, { name: 'grn', nullable: true })
     @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
-    async getPurchaseOrder(
+    async getGRN(
         @Args('id') id: string,
         @ClerkUser() user: any,
     ) {
@@ -44,51 +41,44 @@ export class PurchaseOrdersResolver {
             throw new BadRequestException('Active company required');
         }
 
-        return this.purchaseOrdersService.getPurchaseOrder(
-            id,
-            user.activeCompanyId,
-        );
+        return this.grnService.getGRN(id, user.activeCompanyId);
     }
 
-    @Mutation(() => PurchaseOrder)
+    @Mutation(() => GoodsReceiptNote)
     @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
-    async createPurchaseOrder(
-        @Args('input') input: CreatePurchaseOrderInput,
+    async createGRN(
+        @Args('input') input: CreateGRNInput,
         @ClerkUser() user: any,
     ) {
         if (!user.activeCompanyId) {
             throw new BadRequestException('Active company required');
         }
 
-        return this.purchaseOrdersService.createPurchaseOrder(
+        return this.grnService.createGRN(
             input,
             user.activeCompanyId,
             user.userId,
-            user.role, // Pass the user's role for validation
+            user.role,
         );
     }
 
-    @Mutation(() => PurchaseOrder)
+    @Mutation(() => GoodsReceiptNote)
     @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
-    async updatePurchaseOrder(
+    async updateGRN(
         @Args('id') id: string,
-        @Args('input') input: UpdatePurchaseOrderInput,
+        @Args('input') input: UpdateGRNInput,
         @ClerkUser() user: any,
     ) {
         if (!user.activeCompanyId) {
             throw new BadRequestException('Active company required');
         }
 
-        return this.purchaseOrdersService.updatePurchaseOrder(
-            id,
-            input,
-            user.activeCompanyId,
-        );
+        return this.grnService.updateGRN(id, input, user.activeCompanyId);
     }
 
-    @Mutation(() => PurchaseOrder)
+    @Mutation(() => GoodsReceiptNote)
     @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
-    async markPurchaseOrderOrdered(
+    async postGRN(
         @Args('id') id: string,
         @ClerkUser() user: any,
     ) {
@@ -96,15 +86,12 @@ export class PurchaseOrdersResolver {
             throw new BadRequestException('Active company required');
         }
 
-        return this.purchaseOrdersService.markPurchaseOrderOrdered(
-            id,
-            user.activeCompanyId,
-        );
+        return this.grnService.postGRN(id, user.activeCompanyId, user.userId);
     }
 
-    @Mutation(() => PurchaseOrder)
+    @Mutation(() => GoodsReceiptNote)
     @Roles(Role.OWNER, Role.ADMIN)
-    async cancelPurchaseOrder(
+    async cancelGRN(
         @Args('id') id: string,
         @ClerkUser() user: any,
     ) {
@@ -112,9 +99,6 @@ export class PurchaseOrdersResolver {
             throw new BadRequestException('Active company required');
         }
 
-        return this.purchaseOrdersService.cancelPurchaseOrder(
-            id,
-            user.activeCompanyId,
-        );
+        return this.grnService.cancelGRN(id, user.activeCompanyId);
     }
 }

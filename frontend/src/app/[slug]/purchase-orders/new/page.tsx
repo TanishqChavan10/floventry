@@ -24,6 +24,7 @@ import { GET_SUPPLIERS } from '@/lib/graphql/catalog';
 import { GET_STOCK_BY_WAREHOUSE } from '@/lib/graphql/stock';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { useAuth } from '@/context/auth-context';
 
 interface POItem {
   product_id: string;
@@ -35,6 +36,7 @@ function CreatePurchaseOrderContent() {
   const router = useRouter();
   const params = useParams();
   const companySlug = params?.slug as string;
+  const { user } = useAuth();
 
   const [selectedWarehouse, setSelectedWarehouse] = useState('');
   const [selectedSupplier, setSelectedSupplier] = useState('');
@@ -43,12 +45,13 @@ function CreatePurchaseOrderContent() {
 
   // Fetch warehouses
   const { data: warehousesData } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
+    variables: { slug: companySlug },
     fetchPolicy: 'cache-and-network',
   });
 
   // Fetch suppliers  
   const { data: suppliersData } = useQuery(GET_SUPPLIERS, {
-    variables: { searchTerm: '' },
+    variables: { includeArchived: false },
     fetchPolicy: 'cache-and-network',
   });
 
@@ -63,7 +66,17 @@ function CreatePurchaseOrderContent() {
     refetchQueries: [{ query: GET_PURCHASE_ORDERS, variables: { filters: { limit: 100 } } }],
   });
 
-  const warehouses = warehousesData?.warehousesByCompany || [];
+  // Get user role and assigned warehouses
+  const userRole = user?.companies?.find((c: any) => c.slug === companySlug)?.role;
+  const userWarehouseIds = user?.warehouses?.map((w: any) => w.warehouseId) || [];
+  
+  // Filter warehouses based on role
+  let warehouses = warehousesData?.companyBySlug?.warehouses || [];
+  if (userRole === 'MANAGER') {
+    // Managers can only see their assigned warehouses
+    warehouses = warehouses.filter((wh: any) => userWarehouseIds.includes(wh.id));
+  }
+  
   const suppliers = suppliersData?.suppliers || [];
   const products = productsData?.stockByWarehouse || [];
 

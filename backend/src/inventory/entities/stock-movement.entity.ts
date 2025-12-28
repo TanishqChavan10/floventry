@@ -26,6 +26,7 @@ export enum ReferenceType {
     ADJUSTMENT = 'ADJUSTMENT',
     TRANSFER = 'TRANSFER',
     MANUAL = 'MANUAL',
+    GRN = 'GRN', // Goods Receipt Note
 }
 
 // Register enums for GraphQL
