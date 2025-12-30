@@ -4,6 +4,9 @@ import { InventoryService } from './inventory.service';
 import { CategoryResolver, ProductResolver, UnitResolver, StockResolver } from './inventory.resolver';
 import { GRNService } from './grn.service';
 import { GRNResolver } from './grn.resolver';
+import { TransferService } from './transfer.service';
+import { TransferResolver } from './transfer.resolver';
+import { LowStockResolver } from './low-stock.resolver';
 import { Category } from './entities/category.entity';
 import { Product } from './entities/product.entity';
 import { Unit } from './entities/unit.entity';
@@ -11,6 +14,8 @@ import { Stock } from './entities/stock.entity';
 import { StockMovement } from './entities/stock-movement.entity';
 import { GoodsReceiptNote } from './entities/goods-receipt-note.entity';
 import { GRNItem } from './entities/grn-item.entity';
+import { WarehouseTransfer } from './entities/warehouse-transfer.entity';
+import { WarehouseTransferItem } from './entities/warehouse-transfer-item.entity';
 import { PurchaseOrder } from '../purchase-orders/entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../purchase-orders/entities/purchase-order-item.entity';
 import { AuthModule } from '../auth/auth.module';
@@ -27,6 +32,8 @@ import { WarehouseModule } from '../warehouse/warehouse.module';
             StockMovement,
             GoodsReceiptNote,
             GRNItem,
+            WarehouseTransfer,
+            WarehouseTransferItem,
             PurchaseOrder,
             PurchaseOrderItem,
         ]),
@@ -42,7 +49,10 @@ import { WarehouseModule } from '../warehouse/warehouse.module';
         StockResolver,
         GRNService,
         GRNResolver,
+        TransferService,
+        TransferResolver,
+        LowStockResolver,
     ],
-    exports: [InventoryService, GRNService],
+    exports: [InventoryService, GRNService, TransferService],
 })
 export class InventoryModule { }

@@ -316,21 +316,21 @@ export class GRNService {
                     },
                 });
 
-                const previousQty = stock ? stock.quantity : 0;
+                const previousQty = stock ? Number(stock.quantity) : 0;
 
                 if (!stock) {
                     // Create new stock entry
                     stock = queryRunner.manager.create(Stock, {
                         warehouse_id: grn.warehouse_id,
                         product_id: item.product_id,
-                        quantity: Math.floor(item.received_quantity),
+                        quantity: Math.floor(Number(item.received_quantity)),
                         min_stock_level: 0,
                         max_stock_level: 1000,
                         reorder_point: 10,
                     });
                 } else {
                     // Update existing stock
-                    stock.quantity = Math.floor(stock.quantity + item.received_quantity);
+                    stock.quantity = Math.floor(Number(stock.quantity) + Number(item.received_quantity));
                 }
 
                 await queryRunner.manager.save(Stock, stock);
@@ -360,8 +360,8 @@ export class GRNService {
                 });
 
                 if (poItem) {
-                    const currentReceived = Math.floor(poItem.received_quantity || 0);
-                    const newReceived = Math.floor(item.received_quantity);
+                    const currentReceived = Math.floor(Number(poItem.received_quantity) || 0);
+                    const newReceived = Math.floor(Number(item.received_quantity));
                     poItem.received_quantity = currentReceived + newReceived;
                     await queryRunner.manager.save(PurchaseOrderItem, poItem);
                 }

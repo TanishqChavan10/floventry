@@ -162,6 +162,13 @@ input CreateSupplierInput {
   phone: String
 }
 
+input CreateTransferInput {
+  destination_warehouse_id: String!
+  items: [TransferItemInput!]!
+  notes: String
+  source_warehouse_id: String!
+}
+
 input CreateUnitInput {
   isDefault: Boolean
   name: String!
@@ -268,6 +275,7 @@ type Mutation {
   cancelGRN(id: String!): GoodsReceiptNote!
   cancelInvite(inviteId: String!): Boolean!
   cancelPurchaseOrder(id: String!): PurchaseOrder!
+  cancelWarehouseTransfer(id: String!): WarehouseTransfer!
   createCategory(input: CreateCategoryInput!): Category!
   createCompany(input: CreateCompanyInput!): Company!
   createGRN(input: CreateGRNInput!): GoodsReceiptNote!
@@ -278,8 +286,10 @@ type Mutation {
   createSupplier(input: CreateSupplierInput!): Supplier!
   createUnit(input: CreateUnitInput!): Unit!
   createWarehouse(input: CreateWarehouseInput!): Warehouse!
+  createWarehouseTransfer(input: CreateTransferInput!): WarehouseTransfer!
   markPurchaseOrderOrdered(id: String!): PurchaseOrder!
   postGRN(id: String!): GoodsReceiptNote!
+  postWarehouseTransfer(id: String!): WarehouseTransfer!
   removeCategory(id: String!): Boolean!
   removeMemberValidated(membershipId: String!): Boolean!
   removeProduct(id: String!): Boolean!
@@ -299,10 +309,12 @@ type Mutation {
   updatePurchaseOrder(id: String!, input: UpdatePurchaseOrderInput!): PurchaseOrder!
   updateRole(input: UpdateRoleInput!): UserCompany!
   updateStockLevels(input: UpdateStockInput!): Stock!
+  updateStockThresholds(input: UpdateStockThresholdsInput!, stockId: String!): Stock!
   updateSupplier(input: UpdateSupplierInput!): Supplier!
   updateUnit(input: UpdateUnitInput!): Unit!
   updateWarehouse(id: String!, input: UpdateWarehouseInput!): Warehouse!
   updateWarehouseSettings(input: UpdateWarehouseSettingsInput!, warehouseId: String!): WarehouseSettings!
+  updateWarehouseTransfer(id: String!, input: UpdateTransferInput!): WarehouseTransfer!
 }
 
 type Product {
@@ -383,7 +395,7 @@ type Query {
   companyMembers(companyId: String!): [CompanyMemberDetails!]!
   grn(id: String!): GoodsReceiptNote
   grns(filters: GRNFilterInput!): [GoodsReceiptNote!]!
-  lowStockItems(warehouseId: String): [Stock!]!
+  lowStockItems(warehouseId: String!): [StockHealthItem!]!
   me: UserModel
   myCompanies: [UserCompany!]!
   myPendingInvites: [Invite!]!
@@ -402,6 +414,8 @@ type Query {
   validateInvite(token: String!): ValidateInviteResponse!
   warehouse(id: String!): Warehouse!
   warehouseMembers(warehouseId: String!): [WarehouseMember!]!
+  warehouseTransfer(id: String!): WarehouseTransfer
+  warehouseTransfers(filters: TransferFilterInput!): [WarehouseTransfer!]!
   warehouses: [Warehouse!]!
 }
 
@@ -443,6 +457,23 @@ type Stock {
   updated_at: DateTime!
   warehouse: Warehouse!
   warehouse_id: String!
+}
+
+type StockHealthItem {
+  maxStockLevel: Int
+  minStockLevel: Int
+  product: Product!
+  quantity: Int!
+  reorderPoint: Int
+  status: StockHealthStatus!
+  stockId: ID!
+}
+
+"""Health status of stock based on quantity vs thresholds"""
+enum StockHealthStatus {
+  CRITICAL
+  OK
+  WARNING
 }
 
 type StockMovement {
@@ -495,6 +526,28 @@ type Supplier {
 type SwitchCompanyResponse {
   activeCompanyId: String
   success: Boolean!
+}
+
+input TransferFilterInput {
+  destination_warehouse_id: String
+  from_date: DateTime
+  limit: Int
+  offset: Int
+  source_warehouse_id: String
+  status: TransferStatus
+  to_date: DateTime
+}
+
+input TransferItemInput {
+  product_id: String!
+  quantity: Int!
+}
+
+"""The status of a warehouse transfer"""
+enum TransferStatus {
+  CANCELLED
+  DRAFT
+  POSTED
 }
 
 type Unit {
@@ -599,12 +652,24 @@ input UpdateStockInput {
   reorder_point: Int
 }
 
+input UpdateStockThresholdsInput {
+  max_stock_level: Int
+  min_stock_level: Int
+  reorder_point: Int
+}
+
 input UpdateSupplierInput {
   address: String
   email: String
   id: String!
   name: String!
   phone: String
+}
+
+input UpdateTransferInput {
+  id: String!
+  items: [TransferItemInput!]
+  notes: String
 }
 
 input UpdateUnitInput {
@@ -751,4 +816,31 @@ type WarehouseSettings {
   low_stock_threshold: Float
   require_transfer_approval: Boolean!
   warehouse_id: String!
+}
+
+type WarehouseTransfer {
+  company_id: String!
+  created_at: DateTime!
+  created_by: String
+  destination_warehouse: Warehouse!
+  destination_warehouse_id: String!
+  id: ID!
+  items: [WarehouseTransferItem!]!
+  notes: String
+  source_warehouse: Warehouse!
+  source_warehouse_id: String!
+  status: TransferStatus!
+  transfer_number: String!
+  updated_at: DateTime!
+  user: User
+  user_role: String
+}
+
+type WarehouseTransferItem {
+  created_at: DateTime!
+  id: ID!
+  product: Product!
+  product_id: String!
+  quantity: Int!
+  warehouse_transfer_id: String!
 }

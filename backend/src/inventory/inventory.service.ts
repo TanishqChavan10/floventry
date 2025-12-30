@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, LessThan } from 'typeorm';
 import { Category } from './entities/category.entity';
@@ -9,6 +9,8 @@ import { StockMovement, MovementType } from './entities/stock-movement.entity';
 import { CreateCategoryInput, UpdateCategoryInput } from './dto/category.input';
 import { CreateProductInput, UpdateProductInput } from './dto/product.input';
 import { CreateStockInput, UpdateStockInput, AdjustStockInput, StockMovementFilterInput, CreateOpeningStockInput } from './dto/stock.input';
+import { UpdateStockThresholdsInput } from './dto/stock-health.input';
+import { StockHealthItem, StockHealthStatus, calculateStockHealthStatus } from './types/stock-health.types';
 
 @Injectable()
 export class InventoryService {
@@ -367,8 +369,8 @@ export class InventoryService {
             );
         }
 
-        const previousQuantity = stock.quantity;
-        const newQuantity = previousQuantity + input.quantity;
+        const previousQuantity = Number(stock.quantity);
+        const newQuantity = previousQuantity + Number(input.quantity);
 
         if (newQuantity < 0) {
             throw new BadRequestException('Insufficient stock. Cannot reduce below zero.');
@@ -447,20 +449,50 @@ export class InventoryService {
         });
     }
 
-    async getLowStockItems(warehouseId: string | null, companyId: string): Promise<Stock[]> {
-        const queryBuilder = this.stockRepository
+    // --- Low Stock & Stock Health ---
+
+    /**
+     * Get low stock items for a warehouse
+     * Returns only WARNING & CRITICAL items
+     */
+    async getLowStockItems(
+        warehouseId: string,
+        companyId: string,
+        userRole?: string,
+        userId?: string,
+    ): Promise<StockHealthItem[]> {
+        // Build query to find stock items that need attention
+        const query = this.stockRepository
             .createQueryBuilder('stock')
             .leftJoinAndSelect('stock.product', 'product')
-            .leftJoinAndSelect('stock.warehouse', 'warehouse')
             .where('stock.company_id = :companyId', { companyId })
-            .andWhere('stock.reorder_point IS NOT NULL')
-            .andWhere('stock.quantity <= stock.reorder_point');
+            .andWhere('stock.warehouse_id = :warehouseId', { warehouseId })
+            .andWhere(
+                '(stock.quantity <= stock.reorder_point OR stock.quantity <= stock.min_stock_level)',
+            )
+            .andWhere('stock.reorder_point IS NOT NULL OR stock.min_stock_level IS NOT NULL')
+            .orderBy('stock.quantity', 'ASC');
 
-        if (warehouseId) {
-            queryBuilder.andWhere('stock.warehouse_id = :warehouseId', { warehouseId });
-        }
+        const stocks = await query.getMany();
 
-        return queryBuilder.getMany();
+        // Map to StockHealthItem with computed status
+        return stocks.map((stock) => {
+            const status = calculateStockHealthStatus(
+                stock.quantity,
+                stock.min_stock_level,
+                stock.reorder_point,
+            );
+
+            return {
+                stockId: stock.id,
+                product: stock.product,
+                quantity: stock.quantity,
+                minStockLevel: stock.min_stock_level,
+                reorderPoint: stock.reorder_point,
+                maxStockLevel: stock.max_stock_level,
+                status,
+            };
+        });
     }
 
     async getStockValue(warehouseId: string | null, companyId: string): Promise<number> {
@@ -476,5 +508,74 @@ export class InventoryService {
 
         const result = await queryBuilder.getRawOne();
         return parseFloat(result.total_value || 0);
+    }
+
+    /**
+     * Update stock thresholds
+     * Validates min <= reorder <= max
+     */
+    async updateStockThresholds(
+        stockId: string,
+        input: UpdateStockThresholdsInput,
+        companyId: string,
+        userId?: string,
+        userRole?: string,
+    ): Promise<Stock> {
+        // Find stock with warehouse for RBAC check
+        const stock = await this.stockRepository.findOne({
+            where: { id: stockId, company_id: companyId },
+            relations: ['warehouse', 'product'],
+        });
+
+        if (!stock) {
+            throw new NotFoundException('Stock not found');
+        }
+
+        // RBAC: For MANAGER, verify warehouse assignment
+        // This would require checking against user's managed warehouses
+        // For now, we rely on the resolver to handle this check
+
+        // Prepare new values (use existing if not provided)
+        const newMin = input.min_stock_level !== undefined
+            ? input.min_stock_level
+            : stock.min_stock_level;
+        const newReorder = input.reorder_point !== undefined
+            ? input.reorder_point
+            : stock.reorder_point;
+        const newMax = input.max_stock_level !== undefined
+            ? input.max_stock_level
+            : stock.max_stock_level;
+
+        // Validation: min <= reorder <= max
+        if (newMin !== null && newReorder !== null && newMin > newReorder) {
+            throw new BadRequestException(
+                'Min stock level must be less than or equal to reorder point',
+            );
+        }
+
+        if (newReorder !== null && newMax !== null && newReorder > newMax) {
+            throw new BadRequestException(
+                'Reorder point must be less than or equal to max stock level',
+            );
+        }
+
+        if (newMin !== null && newMax !== null && newMin > newMax) {
+            throw new BadRequestException(
+                'Min stock level must be less than or equal to max stock level',
+            );
+        }
+
+        // Update thresholds
+        if (input.min_stock_level !== undefined) {
+            stock.min_stock_level = input.min_stock_level;
+        }
+        if (input.reorder_point !== undefined) {
+            stock.reorder_point = input.reorder_point;
+        }
+        if (input.max_stock_level !== undefined) {
+            stock.max_stock_level = input.max_stock_level;
+        }
+
+        return this.stockRepository.save(stock);
     }
 }

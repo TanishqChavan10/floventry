@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useQuery } from '@apollo/client';
-import { useParams, useRouter } from 'next/navigation';
-import RoleGuard from '@/components/guards/RoleGuard';
+import { useParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { useWarehouse } from '@/context/warehouse-context';
+import RoleGuard from '@/components/guards/RoleGuard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,8 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, Eye, FileText, CheckCircle, XCircle, PackageCheck } from 'lucide-react';
-import { GET_GRNS } from '@/lib/graphql/grn';
+import { Plus, Search, Eye, ArrowRightLeft, FileText, CheckCircle, XCircle } from 'lucide-react';
+import { GET_WAREHOUSE_TRANSFERS } from '@/lib/graphql/transfers';
 import Link from 'next/link';
 
 // Status badge helper
@@ -46,9 +46,8 @@ const getStatusBadge = (status: string) => {
   );
 };
 
-function GRNListContent() {
+function TransferListContent() {
   const params = useParams();
-  const router = useRouter();
   const { user } = useAuth();
   const companySlug = params?.slug as string;
   const warehouseSlug = params?.warehouseSlug as string;
@@ -57,16 +56,20 @@ function GRNListContent() {
   // Get user role for RBAC
   const activeCompany = user?.companies?.find(c => c.id === user.activeCompanyId);
   const userRole = activeCompany?.role;
-  const canCreateGRN = userRole ? ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole) : false;
+  const canCreateTransfer = userRole ? ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole) : false;
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [directionFilter, setDirectionFilter] = useState<string>('all'); // outgoing, incoming, all
 
-  // Fetch GRNs
-  const { data, loading, error } = useQuery(GET_GRNS, {
+  // Fetch transfers
+  console.log('[TRANSFERS] Active warehouse:', activeWarehouse);
+  console.log('[TRANSFERS] Fetching transfers for warehouse:', activeWarehouse?.id);
+  
+  const { data, loading, error } = useQuery(GET_WAREHOUSE_TRANSFERS, {
     variables: {
       filters: {
-        warehouse_id: activeWarehouse?.id,
+        // Don't filter by source - we want to see ALL transfers involving this warehouse
         ...(statusFilter !== 'all' && { status: statusFilter }),
         limit: 100,
         offset: 0,
@@ -76,23 +79,42 @@ function GRNListContent() {
     fetchPolicy: 'cache-and-network',
   });
 
-  const grns = data?.grns || [];
+  console.log('[TRANSFERS] Query result:', { data, loading, error });
+  
+  const allTransfers = data?.warehouseTransfers || [];
+  
+  // Filter to show only transfers involving the current warehouse (source OR destination)
+  const warehouseTransfers = allTransfers.filter((transfer: any) => 
+    transfer.source_warehouse?.id === activeWarehouse?.id || 
+    transfer.destination_warehouse?.id === activeWarehouse?.id
+  );
 
-  // Filter GRNs by search query (client-side)
-  const filteredGRNs = grns.filter((grn: any) => {
+  // Further filter by direction
+  const transfers = warehouseTransfers.filter((transfer: any) => {
+    if (directionFilter === 'outgoing') {
+      return transfer.source_warehouse?.id === activeWarehouse?.id;
+    }
+    if (directionFilter === 'incoming') {
+      return transfer.destination_warehouse?.id === activeWarehouse?.id;
+    }
+    return true; // 'all'
+  });
+
+  // Filter transfers by search query (client-side)
+  const filteredTransfers = transfers.filter((transfer: any) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      grn.grn_number.toLowerCase().includes(query) ||
-      grn.purchase_order?.po_number?.toLowerCase().includes(query) ||
-      grn.purchase_order?.supplier?.name?.toLowerCase().includes(query)
+      transfer.transfer_number.toLowerCase().includes(query) ||
+      transfer.source_warehouse?.name?.toLowerCase().includes(query) ||
+      transfer.destination_warehouse?.name?.toLowerCase().includes(query)
     );
   });
 
   // Calculate stats
-  const totalGRNs = grns.length;
-  const draftCount = grns.filter((grn: any) => grn.status === 'DRAFT').length;
-  const postedCount = grns.filter((grn: any) => grn.status === 'POSTED').length;
+  const totalTransfers = transfers.length;
+  const draftCount = transfers.filter((t: any) => t.status === 'DRAFT').length;
+  const postedCount = transfers.filter((t: any) => t.status === 'POSTED').length;
 
   // Format date
   const formatDate = (dateStr: string) => {
@@ -109,21 +131,23 @@ function GRNListContent() {
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto" />
-          <p className="text-slate-600 dark:text-slate-400">Loading GRNs...</p>
+          <p className="text-slate-600 dark:text-slate-400">Loading transfers...</p>
         </div>
       </div>
     );
   }
 
   if (error) {
+    console.error('[TRANSFERS] GraphQL Error:', error);
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
               <XCircle className="h-12 w-12 text-red-500 mx-auto" />
-              <h3 className="text-lg font-semibold">Failed to load GRNs</h3>
+              <h3 className="text-lg font-semibold">Failed to load transfers</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400">{error.message}</p>
+              <p className="text-xs text-slate-500 font-mono">{JSON.stringify(error.graphQLErrors, null, 2)}</p>
               <Button onClick={() => window.location.reload()}>Retry</Button>
             </div>
           </CardContent>
@@ -140,17 +164,17 @@ function GRNListContent() {
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Goods Receipt Notes
+                Warehouse Transfers
               </h1>
               <p className="text-slate-600 dark:text-slate-400">
-                Record and manage goods received from purchase orders
+                Move stock between warehouses within your company
               </p>
             </div>
-            {canCreateGRN && (
-              <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn/new`}>
+            {canCreateTransfer && (
+              <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/transfers/new`}>
                 <Button className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Create GRN
+                  Create Transfer
                 </Button>
               </Link>
             )}
@@ -164,11 +188,11 @@ function GRNListContent() {
         <div className="grid gap-6 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total GRNs</CardTitle>
-              <PackageCheck className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Total Transfers</CardTitle>
+              <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalGRNs}</div>
+              <div className="text-2xl font-bold">{totalTransfers}</div>
             </CardContent>
           </Card>
           <Card>
@@ -194,20 +218,30 @@ function GRNListContent() {
         {/* Filters */}
         <Card>
           <CardContent className="pt-6">
-            <div className="flex gap-4">
-              <div className="flex-1">
+            <div className="flex gap-4 flex-wrap">
+              <div className="flex-1 min-w-[200px]">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
-                    placeholder="Search by GRN number, PO number, supplier..."
+                    placeholder="Search by transfer number, warehouse..."
                     className="pl-9"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
               </div>
+              <Select value={directionFilter} onValueChange={setDirectionFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Direction" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Transfers</SelectItem>
+                  <SelectItem value="outgoing">Outgoing</SelectItem>
+                  <SelectItem value="incoming">Incoming</SelectItem>
+                </SelectContent>
+              </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Filter by Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -221,26 +255,26 @@ function GRNListContent() {
           </CardContent>
         </Card>
 
-        {/* GRNs Table */}
+        {/* Transfers Table */}
         <Card>
           <CardHeader>
-            <CardTitle>GRNs ({filteredGRNs.length})</CardTitle>
+            <CardTitle>Transfers ({filteredTransfers.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            {filteredGRNs.length === 0 ? (
+            {filteredTransfers.length === 0 ? (
               <div className="text-center py-12">
-                <PackageCheck className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No GRNs found</h3>
+                <ArrowRightLeft className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No transfers found</h3>
                 <p className="text-slate-600 dark:text-slate-400 mb-4">
                   {searchQuery || statusFilter !== 'all'
                     ? 'Try adjusting your filters'
-                    : 'Create your first GRN to receive goods from purchase orders'}
+                    : 'Create your first transfer to move stock between warehouses'}
                 </p>
-                {!searchQuery && statusFilter === 'all' && canCreateGRN && (
-                  <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn/new`}>
+                {!searchQuery && statusFilter === 'all' && canCreateTransfer && (
+                  <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/transfers/new`}>
                     <Button>
                       <Plus className="h-4 w-4 mr-2" />
-                      Create First GRN
+                      Create First Transfer
                     </Button>
                   </Link>
                 )}
@@ -249,39 +283,63 @@ function GRNListContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>GRN Number</TableHead>
-                    <TableHead>PO Number</TableHead>
-                    <TableHead>Supplier</TableHead>
-                    <TableHead>Received Date</TableHead>
+                    <TableHead>Transfer Number</TableHead>
+                    <TableHead>Direction</TableHead>
+                    <TableHead>From</TableHead>
+                    <TableHead>To</TableHead>
+                    <TableHead>Items</TableHead>
+                    <TableHead>Created Date</TableHead>
                     <TableHead>Created By</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredGRNs.map((grn: any) => (
-                    <TableRow key={grn.id}>
-                      <TableCell className="font-mono text-sm font-medium">
-                        {grn.grn_number}
-                      </TableCell>
-                      <TableCell>{grn.purchase_order?.po_number || 'N/A'}</TableCell>
-                      <TableCell>{grn.purchase_order?.supplier?.name || 'N/A'}</TableCell>
-                      <TableCell>{formatDate(grn.received_at)}</TableCell>
-                      <TableCell className="text-slate-600 dark:text-slate-400">
-                        {grn.user?.fullName || grn.user_role || 'System'}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(grn.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <Link
-                          href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn/${grn.id}`}
-                        >
-                          <Button variant="ghost" size="icon">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {filteredTransfers.map((transfer: any) => {
+                    const isOutgoing = transfer.source_warehouse?.id === activeWarehouse?.id;
+                    const isIncoming = transfer.destination_warehouse?.id === activeWarehouse?.id;
+                    
+                    return (
+                      <TableRow key={transfer.id}>
+                        <TableCell className="font-mono text-sm font-medium">
+                          {transfer.transfer_number}
+                        </TableCell>
+                        <TableCell>
+                          {isOutgoing && (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                              OUTGOING
+                            </Badge>
+                          )}
+                          {isIncoming && (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                              INCOMING
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className={isOutgoing ? 'font-semibold' : ''}>
+                          {transfer.source_warehouse?.name || 'N/A'}
+                        </TableCell>
+                        <TableCell className={isIncoming ? 'font-semibold' : ''}>
+                          {transfer.destination_warehouse?.name || 'N/A'}
+                        </TableCell>
+                        <TableCell>{transfer.items?.length || 0}</TableCell>
+                        <TableCell>{formatDate(transfer.created_at)}</TableCell>
+                        <TableCell className="text-slate-600 dark:text-slate-400">
+                          {transfer.user?.fullName || transfer.user_role || 'System'}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(transfer.status)}</TableCell>
+                        <TableCell className="text-right">
+                          <Link
+                            href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/transfers/${transfer.id}`}
+                          >
+                            <Button variant="ghost" size="icon">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}
@@ -292,10 +350,10 @@ function GRNListContent() {
   );
 }
 
-export default function GRNListPage() {
+export default function TransferListPage() {
   return (
     <RoleGuard allowedRoles={['OWNER', 'ADMIN', 'MANAGER', 'STAFF']}>
-      <GRNListContent />
+      <TransferListContent />
     </RoleGuard>
   );
 }
