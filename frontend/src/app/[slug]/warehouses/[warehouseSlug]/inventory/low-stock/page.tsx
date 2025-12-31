@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { useWarehouse } from '@/context/warehouse-context';
 import RoleGuard from '@/components/guards/RoleGuard';
@@ -11,6 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Table,
   TableBody,
   TableCell,
@@ -18,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { AlertTriangle, CheckCircle2, XCircle, Package } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, XCircle, Package, Eye, ArrowRightLeft, ShoppingCart, MoreVertical } from 'lucide-react';
 import { GET_LOW_STOCK_ITEMS, UPDATE_STOCK_THRESHOLDS } from '@/lib/graphql/low-stock';
 import { toast } from 'sonner';
 
@@ -41,6 +50,7 @@ const getStatusBadge = (status: string) => {
 
 function LowStockContent() {
   const params = useParams();
+  const router = useRouter();
   const { user } = useAuth();
   const { activeWarehouse } = useWarehouse();
   const companySlug = params?.slug as string;
@@ -52,6 +62,7 @@ function LowStockContent() {
   const activeCompany = user?.companies?.find(c => c.id === user.activeCompanyId);
   const userRole = activeCompany?.role;
   const canEdit = userRole ? ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole) : false;
+  const canTakeAction = canEdit; // Transfer Stock and Create PO require same permissions as editing
 
   const { data, loading, error, refetch } = useQuery(GET_LOW_STOCK_ITEMS, {
     variables: { warehouseId: activeWarehouse?.id || '' },
@@ -216,7 +227,7 @@ function LowStockContent() {
                       <TableHead className="text-right">Reorder Point</TableHead>
                       <TableHead className="text-right">Max Level</TableHead>
                       <TableHead>Status</TableHead>
-                      {canEdit && <TableHead className="text-right">Actions</TableHead>}
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -272,9 +283,10 @@ function LowStockContent() {
                             )}
                           </TableCell>
                           <TableCell>{getStatusBadge(item.status)}</TableCell>
-                          {canEdit && (
-                            <TableCell className="text-right">
-                              {isEditing && (
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              {/* Save button for inline threshold editing */}
+                              {canEdit && isEditing && (
                                 <Button
                                   size="sm"
                                   onClick={() => handleSaveThresholds(item.stockId)}
@@ -283,8 +295,60 @@ function LowStockContent() {
                                   Save
                                 </Button>
                               )}
-                            </TableCell>
-                          )}
+                              
+                              {/* Row Actions Menu */}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreVertical className="h-4 w-4" />
+                                    <span className="sr-only">Open menu</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                  <DropdownMenuSeparator />
+                                  
+                                  {/* View Stock Details - All roles */}
+                                  <DropdownMenuItem asChild>
+                                    <Link
+                                      href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/stock?productId=${item.product.id}`}
+                                      className="cursor-pointer flex items-center"
+                                    >
+                                      <Eye className="mr-2 h-4 w-4" />
+                                      View Stock Details
+                                    </Link>
+                                  </DropdownMenuItem>
+                                  
+                                  {/* Transfer Stock - Owner/Admin/Manager only */}
+                                  {canTakeAction && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem asChild>
+                                        <Link
+                                          href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/transfers/new?productId=${item.product.id}&fromWarehouse=${activeWarehouse?.id}`}
+                                          className="cursor-pointer flex items-center"
+                                        >
+                                          <ArrowRightLeft className="mr-2 h-4 w-4" />
+                                          Transfer Stock
+                                        </Link>
+                                      </DropdownMenuItem>
+                                      
+                                      {/* Create Purchase Order - Owner/Admin/Manager only */}
+                                      <DropdownMenuItem asChild>
+                                        <Link
+                                          href={`/${companySlug}/warehouses/${warehouseSlug}/purchase-orders/new?productId=${item.product.id}&warehouseId=${activeWarehouse?.id}`}
+                                          className="cursor-pointer flex items-center"
+                                        >
+                                          <ShoppingCart className="mr-2 h-4 w-4" />
+                                          Create Purchase Order
+                                        </Link>
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       );
                     })}
