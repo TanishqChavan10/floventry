@@ -311,7 +311,7 @@ function LowStockContent() {
                                   {/* View Stock Details - All roles */}
                                   <DropdownMenuItem asChild>
                                     <Link
-                                      href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/stock?productId=${item.product.id}`}
+                                      href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/stock?stockId=${item.stockId}`}
                                       className="cursor-pointer flex items-center"
                                     >
                                       <Eye className="mr-2 h-4 w-4" />
@@ -325,7 +325,7 @@ function LowStockContent() {
                                       <DropdownMenuSeparator />
                                       <DropdownMenuItem asChild>
                                         <Link
-                                          href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/transfers/new?productId=${item.product.id}&fromWarehouse=${activeWarehouse?.id}`}
+                                          href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/transfers/new?stockId=${item.stockId}&productId=${item.product.id}`}
                                           className="cursor-pointer flex items-center"
                                         >
                                           <ArrowRightLeft className="mr-2 h-4 w-4" />
@@ -336,7 +336,7 @@ function LowStockContent() {
                                       {/* Create Purchase Order - Owner/Admin/Manager only */}
                                       <DropdownMenuItem asChild>
                                         <Link
-                                          href={`/${companySlug}/warehouses/${warehouseSlug}/purchase-orders/new?productId=${item.product.id}&warehouseId=${activeWarehouse?.id}`}
+                                          href={`/${companySlug}/purchase-orders/new?warehouseId=${activeWarehouse?.id}&productId=${item.product.id}${item.product.supplier?.id ? `&supplierId=${item.product.supplier.id}` : ''}`}
                                           className="cursor-pointer flex items-center"
                                         >
                                           <ShoppingCart className="mr-2 h-4 w-4" />

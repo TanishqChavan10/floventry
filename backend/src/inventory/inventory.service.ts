@@ -1,15 +1,24 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, LessThan } from 'typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { Repository, Between, LessThan, DataSource, In } from 'typeorm';
 import { Category } from './entities/category.entity';
 import { Product } from './entities/product.entity';
 import { Unit } from './entities/unit.entity';
 import { Stock } from './entities/stock.entity';
-import { StockMovement, MovementType } from './entities/stock-movement.entity';
+import { StockMovement, MovementType, ReferenceType } from './entities/stock-movement.entity';
 import { CreateCategoryInput, UpdateCategoryInput } from './dto/category.input';
 import { CreateProductInput, UpdateProductInput } from './dto/product.input';
-import { CreateStockInput, UpdateStockInput, AdjustStockInput, StockMovementFilterInput, CreateOpeningStockInput } from './dto/stock.input';
+import { CreateUnitInput, UpdateUnitInput } from './dto/unit.input';
+import {
+    CreateStockInput,
+    UpdateStockInput,
+    AdjustStockInput,
+    StockMovementFilterInput,
+    CreateOpeningStockInput,
+} from './dto/stock.input';
 import { UpdateStockThresholdsInput } from './dto/stock-health.input';
+import { CreateInventoryAdjustmentInput, AdjustmentType } from './dto/adjustment.input';
+import { Warehouse } from '../warehouse/warehouse.entity';
 import { StockHealthItem, StockHealthStatus, calculateStockHealthStatus } from './types/stock-health.types';
 
 @Injectable()
@@ -25,6 +34,8 @@ export class InventoryService {
         private stockRepository: Repository<Stock>,
         @InjectRepository(StockMovement)
         private stockMovementRepository: Repository<StockMovement>,
+        @InjectDataSource()
+        private dataSource: DataSource,
     ) { }
 
     // --- Categories ---
@@ -419,6 +430,144 @@ export class InventoryService {
         return stockWithRelations;
     }
 
+    /**
+     * Create inventory adjustment for stock correction
+     * Uses atomic operations and strict validation
+     * ADJUSTMENT_OUT requires existing stock
+     */
+    async createInventoryAdjustment(
+        input: CreateInventoryAdjustmentInput,
+        companyId: string,
+        userId: string,
+        userRole?: string,
+    ): Promise<{ success: boolean; stockMovement: StockMovement; stock: Stock }> {
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            // Step 1: Validate warehouse belongs to company
+            const warehouse = await queryRunner.manager.findOne(Warehouse, {
+                where: { id: input.warehouse_id, company_id: companyId },
+            });
+
+            if (!warehouse) {
+                throw new BadRequestException('Warehouse not found or does not belong to your company');
+            }
+
+            // Step 2: Find stock record
+            let stock = await queryRunner.manager.findOne(Stock, {
+                where: {
+                    product_id: input.product_id,
+                    warehouse_id: input.warehouse_id,
+                    company_id: companyId,
+                },
+            });
+
+            const adjustmentQty = Math.floor(Number(input.quantity));
+            const previousQty = stock ? Math.floor(Number(stock.quantity)) : 0;
+
+            // Step 3: Strict validation for ADJUSTMENT_OUT
+            if (input.adjustment_type === AdjustmentType.OUT) {
+                if (!stock) {
+                    throw new BadRequestException('Stock record not found. Cannot reduce stock that doesn\'t exist.');
+                }
+                if (previousQty < adjustmentQty) {
+                    throw new BadRequestException(
+                        `Insufficient stock.Available: ${previousQty}, Requested: ${adjustmentQty} `
+                    );
+                }
+            }
+
+            // Step 4: Create stock record if needed (ADJUSTMENT_IN only)
+            if (!stock && input.adjustment_type === AdjustmentType.IN) {
+                stock = queryRunner.manager.create(Stock, {
+                    product_id: input.product_id,
+                    warehouse_id: input.warehouse_id,
+                    company_id: companyId,
+                    quantity: 0,
+                    min_stock_level: 0,
+                    max_stock_level: 1000,
+                    reorder_point: 10,
+                });
+                await queryRunner.manager.save(Stock, stock);
+            }
+
+            // Step 5: Calculate new quantity
+            const newQty = input.adjustment_type === AdjustmentType.IN
+                ? previousQty + adjustmentQty
+                : previousQty - adjustmentQty;
+
+            // Step 6: Create stock movement (immutable audit record)
+            const movementType = input.adjustment_type === AdjustmentType.IN
+                ? MovementType.ADJUSTMENT_IN
+                : MovementType.ADJUSTMENT_OUT;
+
+            const movement = queryRunner.manager.create(StockMovement, {
+                stock_id: stock!.id,  // We know stock exists at this point
+                product_id: input.product_id,
+                warehouse_id: input.warehouse_id,
+                company_id: companyId,
+                type: movementType,
+                quantity: adjustmentQty,
+                previous_quantity: previousQty,
+                new_quantity: newQty,
+                reason: input.reason,
+                reference_id: input.reference || undefined,
+                reference_type: ReferenceType.ADJUSTMENT,
+                performed_by: userId,
+                user_role: userRole,
+            });
+
+            await queryRunner.manager.save(StockMovement, movement);
+
+            // Step 7: Update stock with ATOMIC operation (no .save())
+            if (input.adjustment_type === AdjustmentType.IN) {
+                await queryRunner.manager
+                    .createQueryBuilder()
+                    .update(Stock)
+                    .set({ quantity: newQty })
+                    .where('id = :id', { id: stock!.id })
+                    .execute();
+            } else {
+                // ADJUSTMENT_OUT with safety check
+                await queryRunner.manager
+                    .createQueryBuilder()
+                    .update(Stock)
+                    .set({ quantity: newQty })
+                    .where('id = :id', { id: stock!.id })
+                    .andWhere('quantity >= :adjustmentQty', { adjustmentQty })
+                    .execute();
+            }
+
+            // Reload stock to get updated quantity
+            stock!.quantity = newQty;
+
+            await queryRunner.commitTransaction();
+
+            // Return result with relations
+            const stockWithRelations = await this.stockRepository.findOne({
+                where: { id: stock!.id },
+                relations: ['product', 'warehouse'],
+            });
+
+            if (!stockWithRelations) {
+                throw new BadRequestException('Failed to reload stock after adjustment');
+            }
+
+            return {
+                success: true,
+                stockMovement: movement,
+                stock: stockWithRelations,
+            };
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw error;
+        } finally {
+            await queryRunner.release();
+        }
+    }
+
     async getStockMovements(filters: StockMovementFilterInput, companyId: string): Promise<StockMovement[]> {
         const where: any = { company_id: companyId };
 
@@ -432,6 +581,11 @@ export class InventoryService {
 
         if (filters.type) {
             where.type = filters.type;
+        }
+
+        // Support filtering by multiple types
+        if (filters.types && filters.types.length > 0) {
+            where.type = filters.type ? filters.type : filters.types.length === 1 ? filters.types[0] : In(filters.types);
         }
 
         if (filters.from_date && filters.to_date) {
@@ -470,7 +624,7 @@ export class InventoryService {
             .andWhere(
                 '(stock.quantity <= stock.reorder_point OR stock.quantity <= stock.min_stock_level)',
             )
-            .andWhere('stock.reorder_point IS NOT NULL OR stock.min_stock_level IS NOT NULL')
+            .andWhere('(stock.reorder_point IS NOT NULL OR stock.min_stock_level IS NOT NULL)') // FIX: Wrapped in parentheses
             .orderBy('stock.quantity', 'ASC');
 
         const stocks = await query.getMany();

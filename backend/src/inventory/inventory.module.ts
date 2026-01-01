@@ -7,6 +7,7 @@ import { GRNResolver } from './grn.resolver';
 import { TransferService } from './transfer.service';
 import { TransferResolver } from './transfer.resolver';
 import { LowStockResolver } from './low-stock.resolver';
+import { AdjustmentResolver } from './adjustment.resolver';
 import { Category } from './entities/category.entity';
 import { Product } from './entities/product.entity';
 import { Unit } from './entities/unit.entity';
@@ -52,6 +53,7 @@ import { WarehouseModule } from '../warehouse/warehouse.module';
         TransferService,
         TransferResolver,
         LowStockResolver,
+        AdjustmentResolver,
     ],
     exports: [InventoryService, GRNService, TransferService],
 })

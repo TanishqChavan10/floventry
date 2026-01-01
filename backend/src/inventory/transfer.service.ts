@@ -259,7 +259,7 @@ export class TransferService {
         try {
             // For each transfer item, update stock in both warehouses and create movements
             for (const item of transfer.items) {
-                // 1. Deduct from source warehouse
+                // 1. Deduct from source warehouse - ATOMIC UPDATE
                 const sourceStock = await queryRunner.manager.findOne(Stock, {
                     where: {
                         warehouse_id: transfer.source_warehouse_id,
@@ -280,8 +280,17 @@ export class TransferService {
                 }
 
                 const sourcePreviousQty = Math.floor(Number(sourceStock.quantity));
-                sourceStock.quantity = Math.floor(Number(sourceStock.quantity) - Number(item.quantity));
-                await queryRunner.manager.save(Stock, sourceStock);
+                const transferQty = Math.floor(Number(item.quantity));
+                const sourceNewQty = sourcePreviousQty - transferQty;
+
+                // ATOMIC UPDATE: Prevents race conditions
+                await queryRunner.manager
+                    .createQueryBuilder()
+                    .update(Stock)
+                    .set({ quantity: sourceNewQty })
+                    .where('id = :id', { id: sourceStock.id })
+                    .andWhere('quantity >= :quantity', { quantity: transferQty }) // Safety check
+                    .execute();
 
                 // Create stock movement for source (OUT)
                 const sourceMovement = queryRunner.manager.create(StockMovement, {
@@ -290,9 +299,9 @@ export class TransferService {
                     warehouse_id: transfer.source_warehouse_id,
                     product_id: item.product_id,
                     type: MovementType.OUT,
-                    quantity: Math.floor(item.quantity),
+                    quantity: transferQty,
                     previous_quantity: sourcePreviousQty,
-                    new_quantity: Math.floor(sourceStock.quantity),
+                    new_quantity: sourceNewQty,
                     reference_type: ReferenceType.TRANSFER,
                     reference_id: transfer.id,
                     performed_by: userId,
@@ -302,7 +311,8 @@ export class TransferService {
 
                 await queryRunner.manager.save(StockMovement, sourceMovement);
 
-                // 2. Add to destination warehouse
+                // 2. Add to destination warehouse - SAFE UPSERT
+                // Try to find existing stock
                 let destStock = await queryRunner.manager.findOne(Stock, {
                     where: {
                         warehouse_id: transfer.destination_warehouse_id,
@@ -311,24 +321,32 @@ export class TransferService {
                 });
 
                 const destPreviousQty = destStock ? Math.floor(Number(destStock.quantity)) : 0;
+                const destNewQty = destPreviousQty + transferQty;
 
                 if (!destStock) {
-                    // Create new stock entry in destination warehouse
+                    // INSERT new stock record (will fail if duplicate due to UNIQUE constraint)
                     destStock = queryRunner.manager.create(Stock, {
-                        company_id: transfer.company_id, // FIX: Add company_id
+                        company_id: transfer.company_id,
                         warehouse_id: transfer.destination_warehouse_id,
                         product_id: item.product_id,
-                        quantity: Math.floor(Number(item.quantity)),
+                        quantity: transferQty,
                         min_stock_level: 0,
                         max_stock_level: 1000,
                         reorder_point: 10,
                     });
+                    await queryRunner.manager.save(Stock, destStock);
                 } else {
-                    // Update existing stock
-                    destStock.quantity = Math.floor(Number(destStock.quantity) + Number(item.quantity));
-                }
+                    // ATOMIC UPDATE existing stock (increment quantity)
+                    await queryRunner.manager
+                        .createQueryBuilder()
+                        .update(Stock)
+                        .set({ quantity: destNewQty })
+                        .where('id = :id', { id: destStock.id })
+                        .execute();
 
-                await queryRunner.manager.save(Stock, destStock);
+                    // Reload to get updated quantity
+                    destStock.quantity = destNewQty;
+                }
 
                 // Create stock movement for destination (IN)
                 const destMovement = queryRunner.manager.create(StockMovement, {
@@ -337,9 +355,9 @@ export class TransferService {
                     warehouse_id: transfer.destination_warehouse_id,
                     product_id: item.product_id,
                     type: MovementType.IN,
-                    quantity: Math.floor(item.quantity),
+                    quantity: transferQty,
                     previous_quantity: destPreviousQty,
-                    new_quantity: Math.floor(destStock.quantity),
+                    new_quantity: destNewQty,
                     reference_type: ReferenceType.TRANSFER,
                     reference_id: transfer.id,
                     performed_by: userId,

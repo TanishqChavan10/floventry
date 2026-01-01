@@ -9,6 +9,10 @@ export const GET_LOW_STOCK_ITEMS = gql`
         name
         sku
         unit
+        supplier {
+          id
+          name
+        }
       }
       quantity
       minStockLevel

@@ -116,6 +116,15 @@ input CreateGRNInput {
   warehouse_id: String!
 }
 
+input CreateInventoryAdjustmentInput {
+  adjustment_type: String!
+  product_id: String!
+  quantity: Float!
+  reason: String!
+  reference: String
+  warehouse_id: String!
+}
+
 input CreateOpeningStockInput {
   max_stock_level: Int
   min_stock_level: Int
@@ -236,6 +245,12 @@ type GoodsReceiptNote {
   warehouse: Warehouse!
 }
 
+type InventoryAdjustmentResult {
+  stock: Stock!
+  stockMovement: StockMovement!
+  success: Boolean!
+}
+
 type Invite {
   accepted_at: DateTime
   company_id: String!
@@ -279,6 +294,7 @@ type Mutation {
   createCategory(input: CreateCategoryInput!): Category!
   createCompany(input: CreateCompanyInput!): Company!
   createGRN(input: CreateGRNInput!): GoodsReceiptNote!
+  createInventoryAdjustment(input: CreateInventoryAdjustmentInput!): InventoryAdjustmentResult!
   createOpeningStock(input: CreateOpeningStockInput!): Stock!
   createProduct(input: CreateProductInput!): Product!
   createPurchaseOrder(input: CreatePurchaseOrderInput!): PurchaseOrder!
@@ -506,6 +522,7 @@ input StockMovementFilterInput {
   product_id: ID
   to_date: DateTime
   type: MovementType
+  types: [MovementType!]
   warehouse_id: ID
 }
 

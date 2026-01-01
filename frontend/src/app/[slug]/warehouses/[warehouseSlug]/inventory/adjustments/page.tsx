@@ -1,0 +1,277 @@
+'use client';
+
+import { useState } from 'react';
+import { useQuery } from '@apollo/client';
+import { useParams } from 'next/navigation';
+import { useWarehouse } from '@/context/warehouse-context';
+import { useAuth } from '@/context/auth-context';
+import CompanyGuard from '@/components/CompanyGuard';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Plus, TrendingUp, TrendingDown, Clock } from 'lucide-react';
+import { GET_STOCK_MOVEMENTS_BY_WAREHOUSE } from '@/lib/graphql/adjustments';
+import { formatDistanceToNow } from 'date-fns';
+import NewAdjustmentModal from '@/components/inventory/NewAdjustmentModal';
+
+function AdjustmentsPageContent() {
+  const params = useParams();
+  const { user } = useAuth();
+  const { activeWarehouse } = useWarehouse();
+  const companySlug = params.slug as string;
+  const warehouseSlug = params.warehouseSlug as string;
+
+  const [isNewAdjustmentOpen, setIsNewAdjustmentOpen] = useState(false);
+
+  // Get user role
+  const activeCompany = user?.companies?.find(c => c.id === user.activeCompanyId);
+  const userRole = activeCompany?.role;
+  
+  // Can create adjustments: OWNER, ADMIN, MANAGER only
+  const canCreate = userRole ? ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole) : false;
+
+  // Fetch adjustments (ADJUSTMENT_IN and ADJUSTMENT_OUT only)
+  const { data, loading, error, refetch } = useQuery(GET_STOCK_MOVEMENTS_BY_WAREHOUSE, {
+    variables: {
+      filters: {
+        warehouse_id: activeWarehouse?.id || '',
+        types: ['ADJUSTMENT_IN', 'ADJUSTMENT_OUT'],
+        limit: 100,
+      },
+    },
+    skip: !activeWarehouse?.id,
+    fetchPolicy: 'cache-and-network',
+  });
+
+  const adjustments = data?.stockMovements || [];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading adjustments...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-3">
+          <p className="text-sm text-red-600">Failed to load adjustments</p>
+          <Button onClick={() => refetch()} variant="outline">Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const totalIn = adjustments
+    .filter((a: any) => a.type === 'ADJUSTMENT_IN')
+    .reduce((sum: number, a: any) => sum + a.quantity, 0);
+
+  const totalOut = adjustments
+    .filter((a: any) => a.type === 'ADJUSTMENT_OUT')
+    .reduce((sum: number, a: any) => sum + a.quantity, 0);
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* Header */}
+      <header className="border-b bg-white dark:bg-slate-900">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                Inventory Adjustments
+              </h1>
+              <p className="text-slate-600 dark:text-slate-400">
+                Stock corrections and audit trail for {activeWarehouse?.name}
+              </p>
+            </div>
+            {canCreate && (
+              <Button onClick={() => setIsNewAdjustmentOpen(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                New Adjustment
+              </Button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-6 py-8 space-y-6">
+        {/* Stats */}
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Adjustments</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{adjustments.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Stock Added</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">+{totalIn}</div>
+              <p className="text-xs text-muted-foreground mt-1">Units added via adjustments</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Stock Removed</CardTitle>
+              <TrendingDown className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">-{totalOut}</div>
+              <p className="text-xs text-muted-foreground mt-1">Units removed via adjustments</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Adjustments Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Adjustment History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {adjustments.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="rounded-full bg-slate-100 dark:bg-slate-800 p-6 w-fit mx-auto mb-4">
+                  <Clock className="h-12 w-12 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No adjustments yet</h3>
+                <p className="text-slate-600 dark:text-slate-400 mb-4">
+                  {canCreate
+                    ? 'Create your first adjustment to correct stock levels'
+                    : 'Adjustments will appear here when created'}
+                </p>
+                {canCreate && (
+                  <Button onClick={() => setIsNewAdjustmentOpen(true)} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Create Adjustment
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date & Time</TableHead>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead className="text-right">Quantity</TableHead>
+                      <TableHead className="text-right">Before</TableHead>
+                      <TableHead className="text-right">After</TableHead>
+                      <TableHead>Reason</TableHead>
+                      <TableHead>Performed By</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {adjustments.map((adjustment: any) => (
+                      <TableRow key={adjustment.id}>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {new Date(adjustment.created_at).toLocaleDateString()}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(adjustment.created_at), { addSuffix: true })}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{adjustment.product.name}</span>
+                            <span className="text-xs text-muted-foreground font-mono">
+                              {adjustment.product.sku}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {adjustment.type === 'ADJUSTMENT_IN' ? (
+                            <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                              <TrendingUp className="h-3 w-3 mr-1" />
+                              IN
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive">
+                              <TrendingDown className="h-3 w-3 mr-1" />
+                              OUT
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-bold">
+                          <span className={adjustment.type === 'ADJUSTMENT_IN' ? 'text-green-600' : 'text-red-600'}>
+                            {adjustment.type === 'ADJUSTMENT_IN' ? '+' : '-'}{adjustment.quantity}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right text-muted-foreground">
+                          {adjustment.previous_quantity}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {adjustment.new_quantity}
+                        </TableCell>
+                        <TableCell className="max-w-xs">
+                          <p className="text-sm truncate" title={adjustment.reason}>
+                            {adjustment.reason}
+                          </p>
+                          {adjustment.reference_id && (
+                            <p className="text-xs text-muted-foreground">
+                              Ref: {adjustment.reference_id}
+                            </p>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="text-sm">{adjustment.user?.fullName || 'Unknown'}</span>
+                            <span className="text-xs text-muted-foreground">{adjustment.user_role}</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+
+      {/* New Adjustment Modal */}
+      {isNewAdjustmentOpen && activeWarehouse && (
+        <NewAdjustmentModal
+          warehouseId={activeWarehouse.id}
+          warehouseName={activeWarehouse.name}
+          open={isNewAdjustmentOpen}
+          onClose={() => {
+            setIsNewAdjustmentOpen(false);
+            refetch();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+export default function AdjustmentsPage() {
+  return (
+    <CompanyGuard>
+      <AdjustmentsPageContent />
+    </CompanyGuard>
+  );
+}

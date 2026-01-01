@@ -233,15 +233,5 @@ export class StockResolver {
         if (!user.activeCompanyId) throw new BadRequestException('Active company required');
         return this.inventoryService.getStockMovements(filters, user.activeCompanyId);
     }
-
-    @Query(() => [Stock], { name: 'lowStockItems' })
-    @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
-    async getLowStockItems(
-        @Args('warehouseId', { nullable: true }) warehouseId: string,
-        @ClerkUser() user: any,
-    ) {
-        if (!user.activeCompanyId) throw new BadRequestException('Active company required');
-        return this.inventoryService.getLowStockItems(warehouseId, user.activeCompanyId);
-    }
 }
 

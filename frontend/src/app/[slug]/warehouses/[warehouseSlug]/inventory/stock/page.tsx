@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
 import CompanyGuard from '@/components/CompanyGuard';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,7 @@ import StockDrawer from '@/components/inventory/StockDrawer';
 
 function StockPageContent() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
   const companySlug = params.slug as string;
@@ -78,6 +79,18 @@ function StockPageContent() {
 
   const stock = stockData?.stockByWarehouse || [];
   const categories = categoriesData?.categories || [];
+
+  // Auto-open drawer if stockId is in URL query params
+  useEffect(() => {
+    const stockIdParam = searchParams.get('stockId');
+    if (stockIdParam && stock.length > 0) {
+      const stockItem = stock.find((item: any) => item.id === stockIdParam);
+      if (stockItem) {
+        setSelectedStock(stockItem);
+        setIsDrawerOpen(true);
+      }
+    }
+  }, [searchParams, stock]);
 
   // Filter stock
   const filteredStock = stock.filter((item: any) => {

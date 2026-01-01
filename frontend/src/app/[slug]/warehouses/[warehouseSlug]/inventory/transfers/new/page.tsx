@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@apollo/client';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { useWarehouse } from '@/context/warehouse-context';
@@ -54,6 +54,7 @@ interface TransferItemInput {
 function CreateTransferContent() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const companySlug = params?.slug as string;
   const warehouseSlug = params?.warehouseSlug as string;
@@ -64,6 +65,7 @@ function CreateTransferContent() {
   const [items, setItems] = useState<TransferItemInput[]>([]);
   const [showPostDialog, setShowPostDialog] = useState(false);
   const [draftTransferId, setDraftTransferId] = useState<string | null>(null);
+  const [hasPrefilledItem, setHasPrefilledItem] = useState(false);
 
   // Fetch all company warehouses (excluding current one for destination)
   const { data: warehousesData, loading: loadingWarehouses } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
@@ -90,6 +92,33 @@ function CreateTransferContent() {
   );
 
   const stock = stockData?.stockByWarehouse || [];
+
+  // Auto-prefill item from URL query params (from Low Stock page)
+  useEffect(() => {
+    if (hasPrefilledItem || !stock.length) return;
+
+    const productIdParam = searchParams.get('productId');
+    const stockIdParam = searchParams.get('stockId');
+
+    if (productIdParam || stockIdParam) {
+      // Find the stock item by productId or stockId
+      const stockItem = stock.find((s: any) => 
+        s.product.id === productIdParam || s.id === stockIdParam
+      );
+
+      if (stockItem) {
+        // Auto-add this item to the transfer
+        setItems([{
+          product_id: stockItem.product.id,
+          quantity: 0, // User needs to specify quantity
+          product_name: stockItem.product.name,
+          available_stock: Number(stockItem.quantity),
+          sku: stockItem.product.sku,
+        }]);
+        setHasPrefilledItem(true);
+      }
+    }
+  }, [searchParams, stock, hasPrefilledItem]);
 
   const addItem = () => {
     setItems([...items, { product_id: '', quantity: 0 }]);

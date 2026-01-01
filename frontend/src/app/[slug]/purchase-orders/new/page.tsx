@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@apollo/client';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
@@ -35,6 +35,7 @@ interface POItem {
 function CreatePurchaseOrderContent() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const companySlug = params?.slug as string;
   const { user } = useAuth();
 
@@ -42,6 +43,7 @@ function CreatePurchaseOrderContent() {
   const [selectedSupplier, setSelectedSupplier] = useState('');
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<POItem[]>([{ product_id: '', ordered_quantity: 1 }]);
+  const [hasPrefilledData, setHasPrefilledData] = useState(false);
 
   // Fetch warehouses
   const { data: warehousesData } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
@@ -79,6 +81,40 @@ function CreatePurchaseOrderContent() {
   
   const suppliers = suppliersData?.suppliers || [];
   const products = productsData?.stockByWarehouse || [];
+
+  // Auto-prefill from URL query params (from Low Stock page)
+  useEffect(() => {
+    if (hasPrefilledData) return;
+
+    const warehouseIdParam = searchParams.get('warehouseId');
+    const supplierIdParam = searchParams.get('supplierId');
+    const productIdParam = searchParams.get('productId');
+
+    if (warehouseIdParam || supplierIdParam || productIdParam) {
+      // Auto-select warehouse
+      if (warehouseIdParam && warehouses.some((w: any) => w.id === warehouseIdParam)) {
+        setSelectedWarehouse(warehouseIdParam);
+      }
+
+      // Auto-select supplier
+      if (supplierIdParam && suppliers.some((s: any) => s.id === supplierIdParam)) {
+        setSelectedSupplier(supplierIdParam);
+      }
+
+      // Auto-add product (after warehouse and products are loaded)
+      if (productIdParam && products.length > 0) {
+        const product = products.find((p: any) => p.product.id === productIdParam);
+        if (product) {
+          setItems([{
+            product_id: product.product.id,
+            product_name: product.product.name,
+            ordered_quantity: 1, // User needs to specify quantity
+          }]);
+        }
+        setHasPrefilledData(true);
+      }
+    }
+  }, [searchParams, warehouses, suppliers, products, hasPrefilledData]);
 
   const addItem = () => {
     setItems([...items, { product_id: '', ordered_quantity: 1 }]);

@@ -156,6 +156,10 @@ export class StockMovementFilterInput {
     @IsEnum(MovementType)
     type?: MovementType;
 
+    @Field(() => [MovementType], { nullable: true })
+    @IsOptional()
+    types?: MovementType[];
+
     @Field({ nullable: true })
     @IsOptional()
     from_date?: Date;

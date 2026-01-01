@@ -19,6 +19,7 @@ import {
     IconTruckDelivery,
     IconInfoCircle,
     IconRuler,
+    IconAdjustments,
 } from '@tabler/icons-react';
 
 export type UserRole = 'OWNER' | 'ADMIN' | 'MANAGER' | 'STAFF';
@@ -166,6 +167,17 @@ export function getWarehouseNavigation(
                     label: 'Stock',
                     href: `${basePath}/inventory/stock`,
                     icon: IconPackage,
+                },
+                {
+                    label: 'Low Stock',
+                    href: `${basePath}/inventory/low-stock`,
+                    icon: IconAlertTriangle,
+                },
+                {
+                    label: 'Adjustments',
+                    href: `${basePath}/inventory/adjustments`,
+                    icon: IconAdjustments,
+                    roles: ['OWNER', 'ADMIN', 'MANAGER', 'STAFF'],
                 },
                 {
                     label: 'GRN',
