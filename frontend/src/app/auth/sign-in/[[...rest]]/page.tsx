@@ -1,0 +1,23 @@
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
+import CustomSignIn from '@/components/auth/CustomSignIn';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Sign In - Flowventory',
+  description: 'Sign in to your Flowventory account',
+};
+
+export default async function SignInPage() {
+  const { userId } = await auth();
+
+  if (userId) {
+    redirect('/');
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
+      <CustomSignIn />
+    </div>
+  );
+}

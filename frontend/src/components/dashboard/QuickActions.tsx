@@ -1,0 +1,107 @@
+'use client';
+
+import React from 'react';
+import { useParams } from 'next/navigation';
+import {
+  Plus,
+  ShoppingCart,
+  FileText,
+  Users,
+  Truck,
+  ArrowRightLeft,
+  Download,
+  Settings,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useWarehouse } from '@/context/warehouse-context';
+
+interface QuickActionsProps {
+  role: string;
+}
+
+export default function QuickActions({ role }: QuickActionsProps) {
+  const params = useParams();
+  const companySlug = params?.slug as string;
+  const { activeWarehouse } = useWarehouse();
+  
+  // Use active warehouse slug or fallback (though it should exist if we are here)
+  const warehouseSlug = activeWarehouse?.slug || 'all';
+
+  const actions = [
+    {
+      label: 'Add Item',
+      icon: Plus,
+      href: `/${companySlug}/${warehouseSlug}/inventory/add`,
+      roles: ['admin', 'manager'],
+      variant: 'default' as const,
+    },
+    {
+      label: 'Create PO',
+      icon: ShoppingCart,
+      href: `/${companySlug}/${warehouseSlug}/purchase-orders/new`,
+      roles: ['admin', 'manager'],
+      variant: 'outline' as const,
+    },
+    {
+      label: 'Receive Stock',
+      icon: Truck,
+      href: `/${companySlug}/${warehouseSlug}/inventory/receive`,
+      roles: ['admin', 'manager', 'employee'],
+      variant: 'outline' as const,
+    },
+    {
+      label: 'Transfer Stock',
+      icon: ArrowRightLeft,
+      href: `/${companySlug}/${warehouseSlug}/inventory/transfer`,
+      roles: ['admin', 'manager'],
+      variant: 'outline' as const,
+    },
+    {
+      label: 'Invite Team',
+      icon: Users,
+      href: `/${companySlug}/${warehouseSlug}/settings/team`,
+      roles: ['admin'],
+      variant: 'outline' as const,
+    },
+    {
+      label: 'Reports',
+      icon: FileText,
+      href: `/${companySlug}/${warehouseSlug}/reports`,
+      roles: ['admin', 'manager'],
+      variant: 'outline' as const,
+    },
+  ];
+
+  const filteredActions = actions.filter((action) => action.roles.includes(role));
+
+  return (
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle>Quick Actions</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-4">
+          {filteredActions.map((action, index) => (
+            <Button
+              key={index}
+              variant={action.variant}
+              className="w-full justify-start h-auto py-4 flex-col items-start gap-2"
+              asChild
+            >
+              <a href={action.href}>
+                <action.icon className="h-5 w-5 mb-1" />
+                <span>{action.label}</span>
+              </a>
+            </Button>
+          ))}
+          {role === 'viewer' && (
+            <div className="col-span-2 text-center text-sm text-slate-500 py-4">
+              Read-only access. No actions available.
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

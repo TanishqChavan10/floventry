@@ -1,0 +1,863 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input AcceptInviteInput {
+  token: String!
+}
+
+input AdjustStockInput {
+  notes: String
+  product_id: ID!
+  quantity: Int!
+  reason: String
+  reference_id: String
+  reference_type: ReferenceType
+  type: MovementType!
+  warehouse_id: ID!
+}
+
+type Category {
+  company: Company!
+  company_id: String!
+  created_at: DateTime!
+  description: String
+  id: ID!
+  isActive: Boolean!
+  name: String!
+  products: [Product!]
+  updated_at: DateTime!
+}
+
+type Company {
+  address_line1: String
+  address_line2: String
+  city: String
+  company_type: String
+  country: String
+  created_at: DateTime!
+  created_by: String
+  description: String
+  email: String
+  gst_number: String
+  id: ID!
+  industry: String
+  legal_name: String
+  logo_url: String
+  name: String!
+  phone: String
+  settings: CompanySettings
+  slug: String!
+  state: String
+  updated_at: DateTime
+  warehouses: [Warehouse!]
+  website: String
+}
+
+type CompanyMemberDetails {
+  invited_by: String
+  joined_at: DateTime!
+  membership_id: String!
+  role: Role!
+  status: String!
+  user: UserDetails!
+  user_id: String!
+  warehouses: [WarehouseAssignment!]!
+}
+
+type CompanySettings {
+  allow_negative_stock: Boolean
+  audit_retention_days: Int
+  company_id: ID!
+  created_at: DateTime!
+  currency: String
+  default_user_role: String
+  enable_audit_logs: Boolean
+  enable_expiry_tracking: Boolean
+  expiry_warning_days: Int
+  id: ID!
+  language: String
+  low_stock_threshold: Int
+  notify_expiry: Boolean
+  notify_low_stock: Boolean
+  notify_po_status: Boolean
+  notify_transfers: Boolean
+  po_approval_threshold: Float
+  po_auto_receive: Boolean
+  po_default_payment_terms: String
+  po_require_approval: Boolean
+  restrict_manager_catalog: Boolean
+  restrict_staff_stock: Boolean
+  session_timeout_minutes: Int
+  stock_valuation_method: String
+  theme: String
+  timezone: String
+  track_stock_adjustments: Boolean
+  updated_at: DateTime
+}
+
+input CreateCategoryInput {
+  description: String
+  name: String!
+}
+
+input CreateCompanyInput {
+  description: String
+  logo_url: String
+  name: String!
+  slug: String!
+}
+
+input CreateGRNInput {
+  items: [GRNItemInput!]!
+  notes: String
+  purchase_order_id: String!
+  received_at: DateTime
+  warehouse_id: String!
+}
+
+input CreateInventoryAdjustmentInput {
+  adjustment_type: String!
+  product_id: String!
+  quantity: Float!
+  reason: String!
+  reference: String
+  warehouse_id: String!
+}
+
+input CreateOpeningStockInput {
+  max_stock_level: Int
+  min_stock_level: Int
+  note: String
+  product_id: ID!
+  quantity: Int!
+  reorder_point: Int
+  warehouse_id: ID!
+}
+
+input CreateProductInput {
+  barcode: String
+  category_id: String
+  cost_price: Float
+  description: String
+  image_url: String
+  name: String!
+  selling_price: Float
+  sku: String!
+  supplier_id: String
+  unit: String!
+}
+
+input CreatePurchaseOrderInput {
+  items: [PurchaseOrderItemInput!]!
+  notes: String
+  supplier_id: ID!
+  warehouse_id: ID!
+}
+
+input CreateStockInput {
+  max_stock_level: Int
+  min_stock_level: Int
+  product_id: ID!
+  quantity: Int! = 0
+  reorder_point: Int
+  warehouse_id: ID!
+}
+
+input CreateSupplierInput {
+  address: String
+  email: String
+  name: String!
+  phone: String
+}
+
+input CreateTransferInput {
+  destination_warehouse_id: String!
+  items: [TransferItemInput!]!
+  notes: String
+  source_warehouse_id: String!
+}
+
+input CreateUnitInput {
+  isDefault: Boolean
+  name: String!
+  shortCode: String!
+}
+
+input CreateWarehouseInput {
+  address: String
+  code: String
+  is_default: Boolean
+  name: String!
+  slug: String
+  timezone: String
+  type: String
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+input GRNFilterInput {
+  from_date: DateTime
+  limit: Float = 50
+  offset: Float = 0
+  purchase_order_id: String
+  status: GRNStatus
+  to_date: DateTime
+  warehouse_id: String
+}
+
+type GRNItem {
+  created_at: DateTime!
+  id: ID!
+  product: Product!
+  purchase_order_item: PurchaseOrderItem!
+  received_quantity: Float!
+}
+
+input GRNItemInput {
+  purchase_order_item_id: String!
+  received_quantity: Float!
+}
+
+enum GRNStatus {
+  CANCELLED
+  DRAFT
+  POSTED
+}
+
+type GoodsReceiptNote {
+  created_at: DateTime!
+  grn_number: String!
+  id: ID!
+  items: [GRNItem!]!
+  notes: String
+  posted_at: DateTime
+  posted_by_user: User
+  purchase_order: PurchaseOrder!
+  received_at: DateTime!
+  status: GRNStatus!
+  updated_at: DateTime!
+  user: User
+  user_role: String
+  warehouse: Warehouse!
+}
+
+type InventoryAdjustmentResult {
+  stock: Stock!
+  stockMovement: StockMovement!
+  success: Boolean!
+}
+
+type Invite {
+  accepted_at: DateTime
+  company_id: String!
+  created_at: DateTime!
+  email: String!
+  expires_at: DateTime!
+  invite_id: String!
+  invited_by: String!
+  manages_warehouse_ids: [String!]
+  role: String!
+  status: String!
+  token: String
+  warehouse_ids: [String!]
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+
+"""Type of stock movement"""
+enum MovementType {
+  ADJUSTMENT
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  IN
+  OPENING
+  OUT
+  TRANSFER_IN
+  TRANSFER_OUT
+}
+
+type Mutation {
+  acceptInvite(input: AcceptInviteInput!): UserCompany!
+  adjustStock(input: AdjustStockInput!): Stock!
+  archiveSupplier(id: String!): Supplier!
+  cancelGRN(id: String!): GoodsReceiptNote!
+  cancelInvite(inviteId: String!): Boolean!
+  cancelPurchaseOrder(id: String!): PurchaseOrder!
+  cancelWarehouseTransfer(id: String!): WarehouseTransfer!
+  createCategory(input: CreateCategoryInput!): Category!
+  createCompany(input: CreateCompanyInput!): Company!
+  createGRN(input: CreateGRNInput!): GoodsReceiptNote!
+  createInventoryAdjustment(input: CreateInventoryAdjustmentInput!): InventoryAdjustmentResult!
+  createOpeningStock(input: CreateOpeningStockInput!): Stock!
+  createProduct(input: CreateProductInput!): Product!
+  createPurchaseOrder(input: CreatePurchaseOrderInput!): PurchaseOrder!
+  createStock(input: CreateStockInput!): Stock!
+  createSupplier(input: CreateSupplierInput!): Supplier!
+  createUnit(input: CreateUnitInput!): Unit!
+  createWarehouse(input: CreateWarehouseInput!): Warehouse!
+  createWarehouseTransfer(input: CreateTransferInput!): WarehouseTransfer!
+  markPurchaseOrderOrdered(id: String!): PurchaseOrder!
+  postGRN(id: String!): GoodsReceiptNote!
+  postWarehouseTransfer(id: String!): WarehouseTransfer!
+  removeCategory(id: String!): Boolean!
+  removeMemberValidated(membershipId: String!): Boolean!
+  removeProduct(id: String!): Boolean!
+  removeUnit(id: String!): Boolean!
+  removeUser(membershipId: String!): Boolean!
+  sendInvite(input: SendInviteInput!): Invite!
+  switchCompany(companyId: String!): SwitchCompanyResponse!
+  switchWarehouse(warehouseId: String!): Boolean!
+  unarchiveSupplier(id: String!): Supplier!
+  updateCategory(input: UpdateCategoryInput!): Category!
+  updateCompany(id: String!, input: UpdateCompanyInput!): Company!
+  updateCompanySettings(companyId: String!, input: UpdateCompanySettingsInput!): CompanySettings!
+  updateGRN(id: String!, input: UpdateGRNInput!): GoodsReceiptNote!
+  updateMemberWarehouses(membershipId: String!, warehouseIds: [String!]!): Boolean!
+  updatePreferences(preferences: String!): UserModel!
+  updateProduct(input: UpdateProductInput!): Product!
+  updatePurchaseOrder(id: String!, input: UpdatePurchaseOrderInput!): PurchaseOrder!
+  updateRole(input: UpdateRoleInput!): UserCompany!
+  updateStockLevels(input: UpdateStockInput!): Stock!
+  updateStockThresholds(input: UpdateStockThresholdsInput!, stockId: String!): Stock!
+  updateSupplier(input: UpdateSupplierInput!): Supplier!
+  updateUnit(input: UpdateUnitInput!): Unit!
+  updateWarehouse(id: String!, input: UpdateWarehouseInput!): Warehouse!
+  updateWarehouseSettings(input: UpdateWarehouseSettingsInput!, warehouseId: String!): WarehouseSettings!
+  updateWarehouseTransfer(id: String!, input: UpdateTransferInput!): WarehouseTransfer!
+}
+
+type Product {
+  barcode: String
+  category: Category
+  category_id: String
+  company: Company!
+  company_id: String!
+  cost_price: Float
+  created_at: DateTime!
+  description: String
+  id: ID!
+  image_url: String
+  is_active: Boolean!
+  name: String!
+  selling_price: Float
+  sku: String!
+  supplier: Supplier
+  supplier_id: String
+  unit: String!
+  updated_at: DateTime!
+}
+
+type PurchaseOrder {
+  created_at: DateTime!
+  id: ID!
+  items: [PurchaseOrderItem!]!
+  notes: String
+  po_number: String!
+  status: PurchaseOrderStatus!
+  supplier: Supplier!
+  updated_at: DateTime!
+  user: User
+  user_role: String
+  warehouse: Warehouse!
+}
+
+input PurchaseOrderFilterInput {
+  from_date: DateTime
+  limit: Float = 50
+  offset: Float = 0
+  status: PurchaseOrderStatus
+  supplier_id: ID
+  to_date: DateTime
+  warehouse_id: ID
+}
+
+type PurchaseOrderItem {
+  created_at: DateTime!
+  id: ID!
+  ordered_quantity: Float!
+  product: Product!
+  product_id: String!
+  purchase_order: PurchaseOrder!
+  purchase_order_id: String!
+  received_quantity: Float!
+}
+
+input PurchaseOrderItemInput {
+  ordered_quantity: Float!
+  product_id: ID!
+}
+
+enum PurchaseOrderStatus {
+  CANCELLED
+  CLOSED
+  DRAFT
+  ORDERED
+}
+
+type Query {
+  allStock: [Stock!]!
+  categories: [Category!]!
+  companies: [Company!]!
+  company(id: String!): Company!
+  companyBySlug(slug: String!): Company!
+  companyInvites(companyId: String!): [Invite!]!
+  companyMembers(companyId: String!): [CompanyMemberDetails!]!
+  grn(id: String!): GoodsReceiptNote
+  grns(filters: GRNFilterInput!): [GoodsReceiptNote!]!
+  lowStockItems(warehouseId: String!): [StockHealthItem!]!
+  me: UserModel
+  myCompanies: [UserCompany!]!
+  myPendingInvites: [Invite!]!
+  product(id: String!): Product!
+  products: [Product!]!
+  purchaseOrder(id: String!): PurchaseOrder
+  purchaseOrders(filters: PurchaseOrderFilterInput!): [PurchaseOrder!]!
+  stock(productId: String!, warehouseId: String!): Stock!
+  stockByProduct(productId: String!): [Stock!]!
+  stockByWarehouse(warehouseId: String!): [Stock!]!
+  stockMovements(filters: StockMovementFilterInput!): [StockMovement!]!
+  supplier(id: String!): Supplier!
+  suppliers(includeArchived: Boolean = false): [Supplier!]!
+  units: [Unit!]!
+  usersInCompany: [UserCompany!]!
+  validateInvite(token: String!): ValidateInviteResponse!
+  warehouse(id: String!): Warehouse!
+  warehouseMembers(warehouseId: String!): [WarehouseMember!]!
+  warehouseTransfer(id: String!): WarehouseTransfer
+  warehouseTransfers(filters: TransferFilterInput!): [WarehouseTransfer!]!
+  warehouses: [Warehouse!]!
+}
+
+"""Reference type for stock movement"""
+enum ReferenceType {
+  ADJUSTMENT
+  GRN
+  MANUAL
+  PURCHASE_ORDER
+  SALES_ORDER
+  TRANSFER
+}
+
+"""User roles in the company"""
+enum Role {
+  ADMIN
+  MANAGER
+  OWNER
+  STAFF
+}
+
+input SendInviteInput {
+  email: String!
+  managesWarehouseIds: [String!]
+  role: Role!
+  warehouseIds: [String!]
+}
+
+type Stock {
+  company_id: String!
+  created_at: DateTime!
+  id: ID!
+  max_stock_level: Int
+  min_stock_level: Int
+  product: Product!
+  product_id: String!
+  quantity: Int!
+  reorder_point: Int
+  updated_at: DateTime!
+  warehouse: Warehouse!
+  warehouse_id: String!
+}
+
+type StockHealthItem {
+  maxStockLevel: Int
+  minStockLevel: Int
+  product: Product!
+  quantity: Int!
+  reorderPoint: Int
+  status: StockHealthStatus!
+  stockId: ID!
+}
+
+"""Health status of stock based on quantity vs thresholds"""
+enum StockHealthStatus {
+  CRITICAL
+  OK
+  WARNING
+}
+
+type StockMovement {
+  company_id: String!
+  created_at: DateTime!
+  id: ID!
+  new_quantity: Int!
+  notes: String
+  performed_by: String
+  previous_quantity: Int!
+  product: Product!
+  product_id: String!
+  quantity: Int!
+  reason: String
+  reference_id: String
+  reference_type: ReferenceType
+  stock: Stock!
+  stock_id: String!
+  type: MovementType!
+  user: User
+  user_role: String
+  warehouse: Warehouse!
+  warehouse_id: String!
+}
+
+input StockMovementFilterInput {
+  from_date: DateTime
+  limit: Float = 50
+  offset: Float = 0
+  product_id: ID
+  to_date: DateTime
+  type: MovementType
+  types: [MovementType!]
+  warehouse_id: ID
+}
+
+type Supplier {
+  address: String
+  company: Company!
+  company_id: String!
+  created_at: DateTime!
+  email: String
+  id: ID!
+  isActive: Boolean!
+  name: String!
+  phone: String
+  productsCount: Int!
+  updated_at: DateTime!
+}
+
+type SwitchCompanyResponse {
+  activeCompanyId: String
+  success: Boolean!
+}
+
+input TransferFilterInput {
+  destination_warehouse_id: String
+  from_date: DateTime
+  limit: Int
+  offset: Int
+  source_warehouse_id: String
+  status: TransferStatus
+  to_date: DateTime
+}
+
+input TransferItemInput {
+  product_id: String!
+  quantity: Int!
+}
+
+"""The status of a warehouse transfer"""
+enum TransferStatus {
+  CANCELLED
+  DRAFT
+  POSTED
+}
+
+type Unit {
+  company: Company!
+  company_id: String!
+  created_at: DateTime!
+  id: ID!
+  isDefault: Boolean!
+  name: String!
+  shortCode: String!
+  updated_at: DateTime!
+}
+
+input UpdateCategoryInput {
+  description: String
+  id: String!
+  name: String!
+}
+
+input UpdateCompanyInput {
+  address_line1: String
+  address_line2: String
+  city: String
+  company_type: String
+  country: String
+  description: String
+  email: String
+  gst_number: String
+  industry: String
+  legal_name: String
+  logo_url: String
+  name: String
+  phone: String
+  state: String
+  website: String
+}
+
+input UpdateCompanySettingsInput {
+  allow_negative_stock: Boolean
+  audit_retention_days: Int
+  currency: String
+  default_user_role: String
+  enable_audit_logs: Boolean
+  enable_expiry_tracking: Boolean
+  expiry_warning_days: Int
+  language: String
+  low_stock_threshold: Int
+  notifications_enabled: Boolean
+  notify_expiry: Boolean
+  notify_low_stock: Boolean
+  notify_po_status: Boolean
+  notify_transfers: Boolean
+  po_approval_threshold: Float
+  po_auto_receive: Boolean
+  po_default_payment_terms: String
+  po_require_approval: Boolean
+  restrict_manager_catalog: Boolean
+  restrict_staff_stock: Boolean
+  session_timeout_minutes: Int
+  stock_valuation_method: String
+  theme: String
+  timezone: String
+  track_stock_adjustments: Boolean
+}
+
+input UpdateGRNInput {
+  items: [GRNItemInput!]
+  notes: String
+  received_at: DateTime
+}
+
+input UpdateProductInput {
+  barcode: String
+  category_id: String
+  cost_price: Float
+  description: String
+  id: String!
+  image_url: String
+  is_active: Boolean
+  name: String
+  selling_price: Float
+  sku: String
+  supplier_id: String
+  unit: String
+}
+
+input UpdatePurchaseOrderInput {
+  items: [PurchaseOrderItemInput!]
+  notes: String
+  supplier_id: ID
+}
+
+input UpdateRoleInput {
+  membership_id: String!
+  role: Role!
+}
+
+input UpdateStockInput {
+  id: ID!
+  max_stock_level: Int
+  min_stock_level: Int
+  reorder_point: Int
+}
+
+input UpdateStockThresholdsInput {
+  max_stock_level: Int
+  min_stock_level: Int
+  reorder_point: Int
+}
+
+input UpdateSupplierInput {
+  address: String
+  email: String
+  id: String!
+  name: String!
+  phone: String
+}
+
+input UpdateTransferInput {
+  id: String!
+  items: [TransferItemInput!]
+  notes: String
+}
+
+input UpdateUnitInput {
+  id: String!
+  isDefault: Boolean
+  name: String!
+  shortCode: String!
+}
+
+input UpdateWarehouseInput {
+  address: String
+  city: String
+  code: String
+  contact_person: String
+  contact_phone: String
+  country: String
+  description: String
+  is_default: Boolean
+  name: String
+  slug: String
+  state: String
+  status: String
+  timezone: String
+  type: String
+}
+
+input UpdateWarehouseSettingsInput {
+  allow_inbound_transfers: Boolean
+  allow_negative_stock: Boolean
+  allow_outbound_transfers: Boolean
+  expiry_warning_days: Float
+  low_stock_threshold: Float
+  require_transfer_approval: Boolean
+}
+
+type User {
+  activeCompanyId: String
+  avatarUrl: String
+  created_at: DateTime!
+  email: String!
+  fullName: String
+  id: ID!
+  preferences: JSON
+  updated_at: DateTime!
+}
+
+type UserCompany {
+  company: Company!
+  company_id: String!
+  invited_by: String
+  joined_at: DateTime!
+  membership_id: String!
+  role: Role
+  status: String
+  user_id: String!
+  warehouseCount: Int!
+}
+
+type UserCompanyInfo {
+  id: ID!
+  isActive: Boolean!
+  name: String!
+  role: String!
+  slug: String!
+}
+
+type UserDetails {
+  email: String!
+  fullName: String
+}
+
+type UserModel {
+  activeCompanyId: String
+  avatar_url: String
+  clerk_id: String!
+  companies: [UserCompanyInfo!]!
+  created_at: DateTime!
+  defaultWarehouseId: String
+  email: String!
+  full_name: String!
+  id: ID!
+  preferences: JSON
+  updated_at: DateTime!
+  warehouses: [UserWarehouseInfo!]
+}
+
+type UserWarehouseInfo {
+  isManager: Boolean!
+  warehouseId: ID!
+  warehouseName: String!
+  warehouseSlug: String!
+}
+
+type ValidateInviteResponse {
+  companyId: String!
+  companyName: String!
+  companySlug: String
+  email: String!
+  role: String!
+}
+
+type Warehouse {
+  address: String
+  city: String
+  code: String
+  contact_person: String
+  contact_phone: String
+  country: String
+  created_at: DateTime!
+  description: String
+  id: ID!
+  is_default: Boolean!
+  name: String!
+  settings: WarehouseSettings
+  slug: String
+  state: String
+  status: String!
+  timezone: String
+  type: String
+  updated_at: DateTime
+}
+
+type WarehouseAssignment {
+  isManager: Boolean!
+  warehouseId: String!
+  warehouseName: String!
+}
+
+type WarehouseMember {
+  email: String!
+  fullName: String
+  isManager: Boolean!
+  role: String!
+  userId: String!
+}
+
+type WarehouseSettings {
+  allow_inbound_transfers: Boolean!
+  allow_negative_stock: Boolean
+  allow_outbound_transfers: Boolean!
+  created_at: DateTime!
+  expiry_warning_days: Float
+  id: ID!
+  low_stock_threshold: Float
+  require_transfer_approval: Boolean!
+  warehouse_id: String!
+}
+
+type WarehouseTransfer {
+  company_id: String!
+  created_at: DateTime!
+  created_by: String
+  destination_warehouse: Warehouse!
+  destination_warehouse_id: String!
+  id: ID!
+  items: [WarehouseTransferItem!]!
+  notes: String
+  source_warehouse: Warehouse!
+  source_warehouse_id: String!
+  status: TransferStatus!
+  transfer_number: String!
+  updated_at: DateTime!
+  user: User
+  user_role: String
+}
+
+type WarehouseTransferItem {
+  created_at: DateTime!
+  id: ID!
+  product: Product!
+  product_id: String!
+  quantity: Int!
+  warehouse_transfer_id: String!
+}
