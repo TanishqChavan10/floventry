@@ -33,31 +33,22 @@ export const GET_STOCK_BY_WAREHOUSE = gql`
 
 // Query to get stock movements with filters
 export const GET_STOCK_MOVEMENTS = gql`
-  query GetStockMovements($filters: StockMovementFilterInput!) {
-    stockMovements(filters: $filters) {
-      id
-      type
-      quantity
-      previous_quantity
-      new_quantity
-      reason
-      reference_id
-      reference_type
-      notes
-      product {
+  query GetStockMovements($warehouseId: ID!, $filters: StockMovementFilters!) {
+    stockMovements(warehouseId: $warehouseId, filters: $filters) {
+      items {
         id
-        name
+        type
+        quantity
+        referenceId
+        referenceType
+        reason
+        productName
         sku
+        createdAt
+        performedBy
+        userRole
       }
-      warehouse {
-        id
-        name
-      }
-      user {
-        id
-        fullName
-      }
-      created_at
+      total
     }
   }
 `;

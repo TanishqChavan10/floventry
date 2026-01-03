@@ -29,25 +29,21 @@ export const CREATE_INVENTORY_ADJUSTMENT = gql`
 `;
 
 export const GET_STOCK_MOVEMENTS_BY_WAREHOUSE = gql`
-  query GetStockMovements($filters: StockMovementFilterInput!) {
-    stockMovements(filters: $filters) {
-      id
-      type
-      quantity
-      previous_quantity
-      new_quantity
-      reason
-      reference_id
-      created_at
-      product {
+  query GetStockMovements($warehouseId: ID!, $filters: StockMovementFilters!) {
+    stockMovements(warehouseId: $warehouseId, filters: $filters) {
+      items {
         id
-        name
+        type
+        quantity
+        referenceId
+        reason
+        createdAt
+        productName
         sku
+        performedBy
+        userRole
       }
-      user {
-        fullName
-      }
-      user_role
+      total
     }
   }
 `;

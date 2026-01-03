@@ -1,10 +1,19 @@
-import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, Int, ID } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { WarehouseService } from './warehouse.service';
 import { Warehouse } from './warehouse.entity';
 import { WarehouseSettings as WarehouseSettingsModel } from './warehouse-settings.model';
 import { CreateWarehouseInput } from './dto/create-warehouse.input';
 import { UpdateWarehouseInput, UpdateWarehouseSettingsInput } from './dto/update-warehouse.input';
+import { WarehouseKPIs, LowStockPreviewItem, DashboardMovementItem } from './dto/warehouse-dashboard.types';
+import {
+    StockSnapshotResult,
+    StockSnapshotFilters,
+    StockMovementResult,
+    StockMovementFilters,
+    AdjustmentResult,
+    AdjustmentFilters
+} from './dto/warehouse-reports.types';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -62,5 +71,60 @@ export class WarehouseResolver {
             return [];
         }
         return this.warehouseService.findAll(user.activeCompanyId);
+    }
+
+    @Query(() => WarehouseKPIs)
+    @UseGuards(ClerkAuthGuard)
+    async warehouseKPIs(@Args('warehouseId', { type: () => ID }) warehouseId: string): Promise<WarehouseKPIs> {
+        return this.warehouseService.getKPIs(warehouseId);
+    }
+
+    @Query(() => [LowStockPreviewItem])
+    @UseGuards(ClerkAuthGuard)
+    async lowStockPreview(
+        @Args('warehouseId', { type: () => ID }) warehouseId: string,
+        @Args('limit', { type: () => Int, nullable: true, defaultValue: 5 }) limit: number
+    ): Promise<LowStockPreviewItem[]> {
+        return this.warehouseService.getLowStockPreviewWithStatus(warehouseId, limit);
+    }
+
+    @Query(() => [DashboardMovementItem])
+    @UseGuards(ClerkAuthGuard)
+    async recentMovements(
+        @Args('warehouseId', { type: () => ID }) warehouseId: string,
+        @Args('limit', { type: () => Int, nullable: true, defaultValue: 10 }) limit: number
+    ): Promise<DashboardMovementItem[]> {
+        return this.warehouseService.getRecentMovements(warehouseId, limit);
+    }
+
+    // ============================================
+    // Warehouse Reports
+    // ============================================
+
+    @Query(() => StockSnapshotResult)
+    @UseGuards(ClerkAuthGuard)
+    async stockSnapshot(
+        @Args('warehouseId', { type: () => ID }) warehouseId: string,
+        @Args('filters', { nullable: true }) filters?: StockSnapshotFilters
+    ): Promise<StockSnapshotResult> {
+        return this.warehouseService.getStockSnapshot(warehouseId, filters || {});
+    }
+
+    @Query(() => StockMovementResult)
+    @UseGuards(ClerkAuthGuard)
+    async stockMovements(
+        @Args('warehouseId', { type: () => ID }) warehouseId: string,
+        @Args('filters') filters: StockMovementFilters
+    ): Promise<StockMovementResult> {
+        return this.warehouseService.getStockMovements(warehouseId, filters);
+    }
+
+    @Query(() => AdjustmentResult)
+    @UseGuards(ClerkAuthGuard)
+    async adjustmentReport(
+        @Args('warehouseId', { type: () => ID }) warehouseId: string,
+        @Args('filters') filters: AdjustmentFilters
+    ): Promise<AdjustmentResult> {
+        return this.warehouseService.getAdjustmentReport(warehouseId, filters);
     }
 }

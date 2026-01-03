@@ -4,6 +4,9 @@ import { Repository, DataSource } from 'typeorm';
 import { Warehouse } from './warehouse.entity';
 import { WarehouseSettings } from './warehouse-settings.entity';
 import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
+import { Stock } from '../inventory/entities/stock.entity';
+import { StockMovement } from '../inventory/entities/stock-movement.entity';
+import { Between } from 'typeorm';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 import { UpdateWarehouseDto } from './dto/update-warehouse.dto';
 import { UpdateWarehouseSettingsInput } from './dto/update-warehouse.input';
@@ -19,8 +22,171 @@ export class WarehouseService {
     private warehouseSettingsRepository: Repository<WarehouseSettings>,
     @InjectRepository(UserWarehouse)
     private userWarehouseRepository: Repository<UserWarehouse>,
+    @InjectRepository(Stock)
+    private stockRepository: Repository<Stock>,
+    @InjectRepository(StockMovement)
+    private stockMovementRepository: Repository<StockMovement>,
     private dataSource: DataSource,
   ) { }
+
+  async getKPIs(warehouseId: string): Promise<any> {
+    const totalProducts = await this.stockRepository.count({
+      where: { warehouse_id: warehouseId }
+    });
+
+    const { totalQuantity } = await this.stockRepository
+      .createQueryBuilder('stock')
+      .select('SUM(stock.quantity)', 'totalQuantity')
+      .where('stock.warehouse_id = :warehouseId', { warehouseId })
+      .getRawOne();
+
+    // Using query builder for low stock to handle the comparison properly if needed, 
+    // but assuming simple logic: quantity <= reorder_point OR quantity <= min_stock_level
+    // The requirement says "Low Stock Items" -> Low Stock logic.
+    // Usually Low Stock means quantity <= reorder_point AND quantity > 0
+    // Out Of Stock means quantity = 0
+
+    const lowStockCount = await this.stockRepository
+      .createQueryBuilder('stock')
+      .where('stock.warehouse_id = :warehouseId', { warehouseId })
+      .andWhere('stock.quantity > 0')
+      .andWhere('(stock.quantity <= stock.reorder_point OR stock.quantity <= stock.min_stock_level)')
+      .getCount();
+
+    const outOfStockCount = await this.stockRepository.count({
+      where: {
+        warehouse_id: warehouseId,
+        quantity: 0
+      }
+    });
+
+    // Adjustments Today
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const adjustmentsToday = await this.stockMovementRepository.count({
+      where: [
+        {
+          warehouse_id: warehouseId,
+          type: 'ADJUSTMENT_IN' as any,
+          created_at: Between(todayStart, todayEnd)
+        },
+        {
+          warehouse_id: warehouseId,
+          type: 'ADJUSTMENT_OUT' as any,
+          created_at: Between(todayStart, todayEnd)
+        },
+        // Legacy support if needed
+        {
+          warehouse_id: warehouseId,
+          type: 'ADJUSTMENT' as any,
+          created_at: Between(todayStart, todayEnd)
+        }
+      ]
+    });
+
+    // Transfers Today - Assuming TRANSFER_IN or TRANSFER_OUT
+    const transfersToday = await this.stockMovementRepository.count({
+      where: [
+        {
+          warehouse_id: warehouseId,
+          type: 'TRANSFER_IN' as any,
+          created_at: Between(todayStart, todayEnd)
+        },
+        {
+          warehouse_id: warehouseId,
+          type: 'TRANSFER_OUT' as any,
+          created_at: Between(todayStart, todayEnd)
+        }
+      ]
+    });
+
+    return {
+      totalProducts,
+      totalQuantity: parseInt(totalQuantity) || 0,
+      lowStockCount,
+      outOfStockCount,
+      adjustmentsToday,
+      transfersToday,
+    };
+  }
+
+  async getLowStockPreview(warehouseId: string, limit: number): Promise<any[]> {
+    const lowStockItems = await this.stockRepository
+      .createQueryBuilder('stock')
+      .leftJoinAndSelect('stock.product', 'product')
+      .where('stock.warehouse_id = :warehouseId', { warehouseId })
+      .andWhere('stock.quantity > 0') // Exclude out of stock for this list? Or include? "Low Stock Snapshot" usually implies items running low but not empty. Let's assume low stock logic.
+      .andWhere('(stock.quantity <= stock.reorder_point OR stock.quantity <= stock.min_stock_level)')
+      .take(limit)
+      .getMany();
+
+    return lowStockItems.map(item => ({
+      product: {
+        name: item.product.name,
+        sku: item.product.sku
+      },
+      quantity: item.quantity,
+      status: 'WARNING' // Dynamic status logic can be here. simple for now. 
+      // If quantity <= min_stock_level -> CRITICAL? 
+    })).map(item => {
+      // Refine status logic if possible, reusing logic from Stock entity if it exists or doing it here
+      // For now hardcode WARNING as it's "Low Stock" list. Or check against min/reorder.
+      // We can do it better:
+      return item;
+    });
+  }
+
+  // Helper for status calculation
+  private calculateStockStatus(stock: Stock): string {
+    if (stock.quantity === 0) return 'CRITICAL'; // Out of stock
+    if (stock.min_stock_level !== null && stock.quantity <= stock.min_stock_level) return 'CRITICAL';
+    if (stock.reorder_point !== null && stock.quantity <= stock.reorder_point) return 'WARNING';
+    return 'OK';
+  }
+
+  async getLowStockPreviewWithStatus(warehouseId: string, limit: number): Promise<any[]> {
+    const lowStockItems = await this.stockRepository
+      .createQueryBuilder('stock')
+      .leftJoinAndSelect('stock.product', 'product')
+      .where('stock.warehouse_id = :warehouseId', { warehouseId })
+      //.andWhere('stock.quantity > 0') // "Low Stock Page" usually has <= reorder point.
+      .andWhere('(stock.quantity <= stock.reorder_point OR stock.quantity <= stock.min_stock_level OR stock.quantity = 0)')
+      .orderBy('stock.quantity', 'ASC')
+      .take(limit)
+      .getMany();
+
+    return lowStockItems.map(item => ({
+      product: {
+        name: item.product.name,
+        sku: item.product.sku
+      },
+      quantity: item.quantity,
+      status: this.calculateStockStatus(item)
+    }));
+  }
+
+
+  async getRecentMovements(warehouseId: string, limit: number): Promise<any[]> {
+    const movements = await this.stockMovementRepository.find({
+      where: { warehouse_id: warehouseId },
+      order: { created_at: 'DESC' },
+      take: limit,
+      relations: ['product', 'user'],
+    });
+
+    return movements.map(m => ({
+      type: m.type,
+      quantity: m.quantity,
+      product: {
+        name: m.product.name,
+      },
+      createdAt: m.created_at,
+      performedBy: m.user ? { name: m.user.fullName || 'User' } : { name: 'System' }
+    }));
+  }
 
   async create(createWarehouseDto: CreateWarehouseDto, companyId: string, userId: string): Promise<Warehouse> {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -156,5 +322,172 @@ export class WarehouseService {
     }
 
     return this.warehouseSettingsRepository.save(settings);
+  }
+
+  // ============================================
+  // Warehouse Reports
+  // ============================================
+
+  /**
+   * Stock Snapshot - CURRENT STATE ONLY (no date filters)
+   * Reuses existing low-stock logic from calculateStockStatus
+   */
+  async getStockSnapshot(warehouseId: string, filters: any): Promise<any> {
+    const queryBuilder = this.stockRepository
+      .createQueryBuilder('stock')
+      .leftJoinAndSelect('stock.product', 'product')
+      .leftJoinAndSelect('product.category', 'category')
+      .where('stock.warehouse_id = :warehouseId', { warehouseId });
+
+    // Apply filters
+    if (filters.categoryId) {
+      queryBuilder.andWhere('product.category_id = :categoryId', { categoryId: filters.categoryId });
+    }
+
+    if (filters.status) {
+      // Apply low-stock filtering based on status
+      if (filters.status === 'CRITICAL') {
+        queryBuilder.andWhere(
+          '(stock.quantity = 0 OR (stock.min_stock_level IS NOT NULL AND stock.quantity <= stock.min_stock_level))'
+        );
+      } else if (filters.status === 'WARNING') {
+        queryBuilder.andWhere(
+          'stock.quantity > 0 AND stock.reorder_point IS NOT NULL AND stock.quantity <= stock.reorder_point AND (stock.min_stock_level IS NULL OR stock.quantity > stock.min_stock_level)'
+        );
+      } else if (filters.status === 'OK') {
+        queryBuilder.andWhere(
+          '(stock.reorder_point IS NULL OR stock.quantity > stock.reorder_point) AND (stock.min_stock_level IS NULL OR stock.quantity > stock.min_stock_level) AND stock.quantity > 0'
+        );
+      }
+    }
+
+    // Pagination
+    const total = await queryBuilder.getCount();
+
+    const items = await queryBuilder
+      .orderBy('product.name', 'ASC')
+      .skip(filters.offset || 0)
+      .take(filters.limit || 50)
+      .getMany();
+
+    return {
+      items: items.map(stock => ({
+        id: stock.id,
+        productName: stock.product.name,
+        sku: stock.product.sku,
+        categoryName: stock.product.category?.name || null,
+        quantity: stock.quantity,
+        unit: stock.product.unit || null,
+        status: this.calculateStockStatus(stock),
+        lastUpdated: stock.updated_at,
+      })),
+      total,
+    };
+  }
+
+  /**
+   * Stock Movements - HISTORICAL (requires date range)
+   */
+  async getStockMovements(warehouseId: string, filters: any): Promise<any> {
+    const queryBuilder = this.stockMovementRepository
+      .createQueryBuilder('movement')
+      .leftJoinAndSelect('movement.product', 'product')
+      .leftJoinAndSelect('movement.user', 'user')
+      .where('movement.warehouse_id = :warehouseId', { warehouseId })
+      .andWhere('movement.created_at >= :fromDate', { fromDate: filters.fromDate })
+      .andWhere('movement.created_at <= :toDate', { toDate: filters.toDate });
+
+    // Apply movement type filter
+    if (filters.types && filters.types.length > 0) {
+      queryBuilder.andWhere('movement.type IN (:...types)', { types: filters.types });
+    }
+
+    // Apply product filter
+    if (filters.productId) {
+      queryBuilder.andWhere('movement.product_id = :productId', { productId: filters.productId });
+    }
+
+    // Pagination
+    const total = await queryBuilder.getCount();
+
+    const items = await queryBuilder
+      .orderBy('movement.created_at', 'DESC')
+      .skip(filters.offset || 0)
+      .take(filters.limit || 50)
+      .getMany();
+
+    return {
+      items: items.map(movement => ({
+        id: movement.id,
+        createdAt: movement.created_at,
+        productName: movement.product.name,
+        sku: movement.product.sku,
+        type: movement.type,
+        quantity: movement.quantity,
+        referenceId: movement.reference_id,
+        referenceType: movement.reference_type,
+        reason: movement.reason,
+        performedBy: movement.user?.fullName || 'System',
+        userRole: movement.user_role,
+      })),
+      total,
+    };
+  }
+
+  /**
+   * Adjustment Report - HISTORICAL (adjustments only, requires date range)
+   */
+  async getAdjustmentReport(warehouseId: string, filters: any): Promise<any> {
+    const queryBuilder = this.stockMovementRepository
+      .createQueryBuilder('movement')
+      .leftJoinAndSelect('movement.product', 'product')
+      .leftJoinAndSelect('movement.user', 'user')
+      .where('movement.warehouse_id = :warehouseId', { warehouseId })
+      .andWhere('movement.created_at >= :fromDate', { fromDate: filters.fromDate })
+      .andWhere('movement.created_at <= :toDate', { toDate: filters.toDate });
+
+    // Filter by adjustment types only
+    if (filters.adjustmentType) {
+      queryBuilder.andWhere('movement.type = :type', { type: filters.adjustmentType });
+    } else {
+      queryBuilder.andWhere('movement.type IN (:...types)', {
+        types: ['ADJUSTMENT_IN', 'ADJUSTMENT_OUT', 'ADJUSTMENT'],
+      });
+    }
+
+    // Apply product filter
+    if (filters.productId) {
+      queryBuilder.andWhere('movement.product_id = :productId', { productId: filters.productId });
+    }
+
+    // Apply user filter
+    if (filters.userId) {
+      queryBuilder.andWhere('movement.performed_by = :userId', { userId: filters.userId });
+    }
+
+    // Pagination
+    const total = await queryBuilder.getCount();
+
+    const items = await queryBuilder
+      .orderBy('movement.created_at', 'DESC')
+      .skip(filters.offset || 0)
+      .take(filters.limit || 50)
+      .getMany();
+
+    return {
+      items: items.map(movement => ({
+        id: movement.id,
+        createdAt: movement.created_at,
+        productName: movement.product.name,
+        sku: movement.product.sku,
+        adjustmentType: movement.type,
+        quantity: movement.quantity,
+        reason: movement.reason || null,
+        referenceId: movement.reference_id,
+        performedBy: movement.user?.fullName || 'System',
+        userRole: movement.user_role,
+      })),
+      total,
+    };
   }
 }

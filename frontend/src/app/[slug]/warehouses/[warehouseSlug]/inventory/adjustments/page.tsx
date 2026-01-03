@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@apollo/client';
 import { useParams } from 'next/navigation';
 import { useWarehouse } from '@/context/warehouse-context';
@@ -38,11 +38,24 @@ function AdjustmentsPageContent() {
   // Can create adjustments: OWNER, ADMIN, MANAGER only
   const canCreate = userRole ? ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole) : false;
 
+  // Memoize date range to prevent infinite re-renders
+  const dateRange = useMemo(() => {
+    const toDate = new Date();
+    const fromDate = new Date();
+    fromDate.setDate(toDate.getDate() - 90);
+    return {
+      fromDate: fromDate.toISOString(),
+      toDate: toDate.toISOString(),
+    };
+  }, []);
+
   // Fetch adjustments (ADJUSTMENT_IN and ADJUSTMENT_OUT only)
   const { data, loading, error, refetch } = useQuery(GET_STOCK_MOVEMENTS_BY_WAREHOUSE, {
     variables: {
+      warehouseId: activeWarehouse?.id || '',
       filters: {
-        warehouse_id: activeWarehouse?.id || '',
+        fromDate: dateRange.fromDate,
+        toDate: dateRange.toDate,
         types: ['ADJUSTMENT_IN', 'ADJUSTMENT_OUT'],
         limit: 100,
       },
@@ -51,7 +64,7 @@ function AdjustmentsPageContent() {
     fetchPolicy: 'cache-and-network',
   });
 
-  const adjustments = data?.stockMovements || [];
+  const adjustments = data?.stockMovements?.items || [];
 
   if (loading) {
     return (
@@ -187,18 +200,18 @@ function AdjustmentsPageContent() {
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">
-                              {new Date(adjustment.created_at).toLocaleDateString()}
+                              {new Date(adjustment.createdAt).toLocaleDateString()}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(adjustment.created_at), { addSuffix: true })}
+                              {formatDistanceToNow(new Date(adjustment.createdAt), { addSuffix: true })}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col">
-                            <span className="font-medium">{adjustment.product.name}</span>
+                            <span className="font-medium">{adjustment.productName}</span>
                             <span className="text-xs text-muted-foreground font-mono">
-                              {adjustment.product.sku}
+                              {adjustment.sku}
                             </span>
                           </div>
                         </TableCell>
@@ -221,25 +234,25 @@ function AdjustmentsPageContent() {
                           </span>
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">
-                          {adjustment.previous_quantity}
+                          N/A
                         </TableCell>
                         <TableCell className="text-right font-semibold">
-                          {adjustment.new_quantity}
+                          N/A
                         </TableCell>
                         <TableCell className="max-w-xs">
                           <p className="text-sm truncate" title={adjustment.reason}>
-                            {adjustment.reason}
+                            {adjustment.reason || 'N/A'}
                           </p>
-                          {adjustment.reference_id && (
+                          {adjustment.referenceId && (
                             <p className="text-xs text-muted-foreground">
-                              Ref: {adjustment.reference_id}
+                              Ref: {adjustment.referenceId}
                             </p>
                           )}
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col">
-                            <span className="text-sm">{adjustment.user?.fullName || 'Unknown'}</span>
-                            <span className="text-xs text-muted-foreground">{adjustment.user_role}</span>
+                            <span className="text-sm">{adjustment.performedBy || 'Unknown'}</span>
+                            <span className="text-xs text-muted-foreground">{adjustment.userRole}</span>
                           </div>
                         </TableCell>
                       </TableRow>

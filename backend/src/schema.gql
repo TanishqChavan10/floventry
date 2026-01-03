@@ -17,6 +17,34 @@ input AdjustStockInput {
   warehouse_id: ID!
 }
 
+input AdjustmentFilters {
+  adjustmentType: MovementType
+  fromDate: DateTime!
+  limit: Int = 50
+  offset: Int = 0
+  productId: String
+  toDate: DateTime!
+  userId: String
+}
+
+type AdjustmentReportItem {
+  adjustmentType: MovementType!
+  createdAt: DateTime!
+  id: ID!
+  performedBy: String
+  productName: String!
+  quantity: Int!
+  reason: String
+  referenceId: String
+  sku: String!
+  userRole: String
+}
+
+type AdjustmentResult {
+  items: [AdjustmentReportItem!]!
+  total: Int!
+}
+
 type Category {
   company: Company!
   company_id: String!
@@ -194,6 +222,14 @@ input CreateWarehouseInput {
   type: String
 }
 
+type DashboardMovementItem {
+  createdAt: DateTime!
+  performedBy: MovementPerformer
+  product: ProductPreview!
+  quantity: Int!
+  type: String!
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
@@ -270,6 +306,16 @@ type Invite {
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
 scalar JSON
+
+type LowStockPreviewItem {
+  product: ProductPreview!
+  quantity: Int!
+  status: StockHealthStatus!
+}
+
+type MovementPerformer {
+  name: String
+}
 
 """Type of stock movement"""
 enum MovementType {
@@ -354,6 +400,11 @@ type Product {
   updated_at: DateTime!
 }
 
+type ProductPreview {
+  name: String!
+  sku: String!
+}
+
 type PurchaseOrder {
   created_at: DateTime!
   id: ID!
@@ -402,6 +453,7 @@ enum PurchaseOrderStatus {
 }
 
 type Query {
+  adjustmentReport(filters: AdjustmentFilters!, warehouseId: ID!): AdjustmentResult!
   allStock: [Stock!]!
   categories: [Category!]!
   companies: [Company!]!
@@ -412,6 +464,7 @@ type Query {
   grn(id: String!): GoodsReceiptNote
   grns(filters: GRNFilterInput!): [GoodsReceiptNote!]!
   lowStockItems(warehouseId: String!): [StockHealthItem!]!
+  lowStockPreview(limit: Int = 5, warehouseId: ID!): [LowStockPreviewItem!]!
   me: UserModel
   myCompanies: [UserCompany!]!
   myPendingInvites: [Invite!]!
@@ -419,16 +472,19 @@ type Query {
   products: [Product!]!
   purchaseOrder(id: String!): PurchaseOrder
   purchaseOrders(filters: PurchaseOrderFilterInput!): [PurchaseOrder!]!
+  recentMovements(limit: Int = 10, warehouseId: ID!): [DashboardMovementItem!]!
   stock(productId: String!, warehouseId: String!): Stock!
   stockByProduct(productId: String!): [Stock!]!
   stockByWarehouse(warehouseId: String!): [Stock!]!
-  stockMovements(filters: StockMovementFilterInput!): [StockMovement!]!
+  stockMovements(filters: StockMovementFilters!, warehouseId: ID!): StockMovementResult!
+  stockSnapshot(filters: StockSnapshotFilters, warehouseId: ID!): StockSnapshotResult!
   supplier(id: String!): Supplier!
   suppliers(includeArchived: Boolean = false): [Supplier!]!
   units: [Unit!]!
   usersInCompany: [UserCompany!]!
   validateInvite(token: String!): ValidateInviteResponse!
   warehouse(id: String!): Warehouse!
+  warehouseKPIs(warehouseId: ID!): WarehouseKPIs!
   warehouseMembers(warehouseId: String!): [WarehouseMember!]!
   warehouseTransfer(id: String!): WarehouseTransfer
   warehouseTransfers(filters: TransferFilterInput!): [WarehouseTransfer!]!
@@ -515,15 +571,55 @@ type StockMovement {
   warehouse_id: String!
 }
 
-input StockMovementFilterInput {
-  from_date: DateTime
-  limit: Float = 50
-  offset: Float = 0
-  product_id: ID
-  to_date: DateTime
-  type: MovementType
+input StockMovementFilters {
+  fromDate: DateTime!
+  limit: Int = 50
+  offset: Int = 0
+  productId: String
+  toDate: DateTime!
   types: [MovementType!]
-  warehouse_id: ID
+}
+
+type StockMovementReportItem {
+  createdAt: DateTime!
+  id: ID!
+  performedBy: String
+  productName: String!
+  quantity: Int!
+  reason: String
+  referenceId: String
+  referenceType: String
+  sku: String!
+  type: MovementType!
+  userRole: String
+}
+
+type StockMovementResult {
+  items: [StockMovementReportItem!]!
+  total: Int!
+}
+
+input StockSnapshotFilters {
+  categoryId: String
+  limit: Int = 50
+  offset: Int = 0
+  status: StockHealthStatus
+}
+
+type StockSnapshotItem {
+  categoryName: String
+  id: ID!
+  lastUpdated: DateTime!
+  productName: String!
+  quantity: Int!
+  sku: String!
+  status: StockHealthStatus!
+  unit: String
+}
+
+type StockSnapshotResult {
+  items: [StockSnapshotItem!]!
+  total: Int!
 }
 
 type Supplier {
@@ -813,6 +909,15 @@ type WarehouseAssignment {
   isManager: Boolean!
   warehouseId: String!
   warehouseName: String!
+}
+
+type WarehouseKPIs {
+  adjustmentsToday: Int!
+  lowStockCount: Int!
+  outOfStockCount: Int!
+  totalProducts: Int!
+  totalQuantity: Int!
+  transfersToday: Int!
 }
 
 type WarehouseMember {
