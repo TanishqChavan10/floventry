@@ -94,9 +94,10 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
                     roles: ['OWNER', 'ADMIN', 'MANAGER'], // Only OWNER, ADMIN, and MANAGER can access
                 },
                 {
-                    label: 'Reports',
-                    href: `${basePath}/reports`,
-                    icon: IconFileText,
+                    label: 'Inventory Reports',
+                    href: `${basePath}/inventory/reports`,
+                    icon: IconClipboardList,
+                    roles: ['OWNER', 'ADMIN'],
                 },
             ],
         },
@@ -194,11 +195,6 @@ export function getWarehouseNavigation(
                     label: 'Expiry',
                     href: `${basePath}/expiry`,
                     icon: IconCalendarTime,
-                },
-                {
-                    label: 'Damaged',
-                    href: `${basePath}/damaged`,
-                    icon: IconAlertTriangle,
                 },
             ]
         },

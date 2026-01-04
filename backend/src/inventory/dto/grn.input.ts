@@ -8,6 +8,9 @@ export class GRNItemInput {
 
     @Field()
     received_quantity: number;
+
+    @Field({ nullable: true })
+    expiry_date?: Date;
 }
 
 @InputType()

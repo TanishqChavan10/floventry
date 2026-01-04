@@ -8,8 +8,21 @@ import { StockMovement } from './entities/stock-movement.entity';
 import { CreateCategoryInput, UpdateCategoryInput } from './dto/category.input';
 import { CreateProductInput, UpdateProductInput } from './dto/product.input';
 import { CreateUnitInput, UpdateUnitInput } from './dto/unit.input';
-import { CreateStockInput, UpdateStockInput, AdjustStockInput, StockMovementFilterInput, CreateOpeningStockInput } from './dto/stock.input';
+import { CreateStockInput, UpdateStockInput, AdjustStockInput, StockMovementFilterInput, CreateOpeningStockInput, CompanyInventorySummaryFilterInput } from './dto/stock.input';
 import { Unit } from './entities/unit.entity';
+import {
+    CompanyInventorySummaryItem,
+    InventoryHealthStats,
+    TopStockProduct,
+    CriticalStockProduct,
+    WarehouseStockDistribution,
+    WarehouseHealthScore,
+    MovementTrendData,
+    MovementTypeBreakdown,
+    AdjustmentTrendData,
+    AdjustmentByWarehouse,
+    AdjustmentByUser,
+} from './types/company-inventory.types';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
@@ -224,14 +237,123 @@ export class StockResolver {
         return this.inventoryService.adjustStock(input, user.activeCompanyId, user.userId, user.role);
     }
 
-    @Query(() => [StockMovement], { name: 'stockMovements' })
+    @Query(() => [StockMovement], { name: 'companyStockMovements' })
     @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
-    async getStockMovements(
+    async getCompanyStockMovements(
         @Args('filters') filters: StockMovementFilterInput,
         @ClerkUser() user: any,
     ) {
         if (!user.activeCompanyId) throw new BadRequestException('Active company required');
         return this.inventoryService.getStockMovements(filters, user.activeCompanyId);
+    }
+
+    @Query(() => [CompanyInventorySummaryItem], { name: 'companyInventorySummary' })
+    @Roles(Role.OWNER, Role.ADMIN)
+    async getCompanyInventorySummary(
+        @Args('filters') filters: CompanyInventorySummaryFilterInput,
+        @ClerkUser() user: any,
+    ) {
+        if (!user.activeCompanyId) throw new BadRequestException('Active company required');
+        return this.inventoryService.getCompanyInventorySummary(filters, user.activeCompanyId);
+    }
+
+    // ===========================
+    // VISUALIZATION QUERIES
+    // ===========================
+
+    @Query(() => InventoryHealthStats, { name: 'inventoryHealthStats' })
+    @Roles(Role.OWNER, Role.ADMIN)
+    async getInventoryHealthStats(@ClerkUser() user: any) {
+        if (!user.activeCompanyId) throw new BadRequestException('Active company required');
+        return this.inventoryService.getInventoryHealthStats(user.activeCompanyId);
+    }
+
+    @Query(() => [TopStockProduct], { name: 'topStockProducts' })
+    @Roles(Role.OWNER, Role.ADMIN)
+    async getTopStockProducts(
+        @Args('limit', { type: () => Number, nullable: true, defaultValue: 10 }) limit: number,
+        @ClerkUser() user: any,
+    ) {
+        if (!user.activeCompanyId) throw new BadRequestException('Active company required');
+        return this.inventoryService.getTopStockProducts(user.activeCompanyId, limit);
+    }
+
+    @Query(() => [CriticalStockProduct], { name: 'criticalStockProducts' })
+    @Roles(Role.OWNER, Role.ADMIN)
+    async getCriticalStockProducts(
+        @Args('limit', { type: () => Number, nullable: true, defaultValue: 10 }) limit: number,
+        @ClerkUser() user: any,
+    ) {
+        if (!user.activeCompanyId) throw new BadRequestException('Active company required');
+        return this.inventoryService.getCriticalStockProducts(user.activeCompanyId, limit);
+    }
+
+    @Query(() => [WarehouseStockDistribution], { name: 'warehouseStockDistribution' })
+    @Roles(Role.OWNER, Role.ADMIN)
+    async getWarehouseStockDistribution(
+        @Args('productId') productId: string,
+        @ClerkUser() user: any,
+    ) {
+        if (!user.activeCompanyId) throw new BadRequestException('Active company required');
+        return this.inventoryService.getWarehouseStockDistribution(productId, user.activeCompanyId);
+    }
+
+    @Query(() => [WarehouseHealthScore], { name: 'warehouseHealthScorecard' })
+    @Roles(Role.OWNER, Role.ADMIN)
+    async getWarehouseHealthScorecard(@ClerkUser() user: any) {
+        if (!user.activeCompanyId) throw new BadRequestException('Active company required');
+        return this.inventoryService.getWarehouseHealthScorecard(user.activeCompanyId);
+    }
+
+    @Query(() => [MovementTrendData], { name: 'movementTrends' })
+    @Roles(Role.OWNER, Role.ADMIN)
+    async getMovementTrends(
+        @Args('days', { type: () => Number, nullable: true, defaultValue: 30 }) days: number,
+        @ClerkUser() user: any,
+    ) {
+        if (!user.activeCompanyId) throw new BadRequestException('Active company required');
+        return this.inventoryService.getMovementTrends(user.activeCompanyId, days);
+    }
+
+    @Query(() => [MovementTypeBreakdown], { name: 'movementTypeBreakdown' })
+    @Roles(Role.OWNER, Role.ADMIN)
+    async getMovementTypeBreakdown(
+        @Args('days', { type: () => Number, nullable: true, defaultValue: 30 }) days: number,
+        @ClerkUser() user: any,
+    ) {
+        if (!user.activeCompanyId) throw new BadRequestException('Active company required');
+        return this.inventoryService.getMovementTypeBreakdown(user.activeCompanyId, days);
+    }
+
+    @Query(() => [AdjustmentTrendData], { name: 'adjustmentTrends' })
+    @Roles(Role.OWNER, Role.ADMIN)
+    async getAdjustmentTrends(
+        @Args('days', { type: () => Number, nullable: true, defaultValue: 30 }) days: number,
+        @ClerkUser() user: any,
+    ) {
+        if (!user.activeCompanyId) throw new BadRequestException('Active company required');
+        return this.inventoryService.getAdjustmentTrends(user.activeCompanyId, days);
+    }
+
+    @Query(() => [AdjustmentByWarehouse], { name: 'adjustmentsByWarehouse' })
+    @Roles(Role.OWNER, Role.ADMIN)
+    async getAdjustmentsByWarehouse(
+        @Args('days', { type: () => Number, nullable: true, defaultValue: 30 }) days: number,
+        @ClerkUser() user: any,
+    ) {
+        if (!user.activeCompanyId) throw new BadRequestException('Active company required');
+        return this.inventoryService.getAdjustmentsByWarehouse(user.activeCompanyId, days);
+    }
+
+    @Query(() => [AdjustmentByUser], { name: 'adjustmentsByUser' })
+    @Roles(Role.OWNER, Role.ADMIN)
+    async getAdjustmentsByUser(
+        @Args('days', { type: () => Number, nullable: true, defaultValue: 30 }) days: number,
+        @Args('limit', { type: () => Number, nullable: true, defaultValue: 10 }) limit: number,
+        @ClerkUser() user: any,
+    ) {
+        if (!user.activeCompanyId) throw new BadRequestException('Active company required');
+        return this.inventoryService.getAdjustmentsByUser(user.activeCompanyId, days, limit);
     }
 }
 

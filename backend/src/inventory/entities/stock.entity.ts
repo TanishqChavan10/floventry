@@ -1,8 +1,9 @@
 import { ObjectType, Field, ID, Float, Int } from '@nestjs/graphql';
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn, Index } from 'typeorm';
 import { Product } from './product.entity';
 import { Warehouse } from '../../warehouse/warehouse.entity';
 import { Company } from '../../company/company.entity';
+import { StockLot } from './stock-lot.entity';
 
 @ObjectType()
 @Entity('stock')
@@ -63,4 +64,9 @@ export class Stock {
     @Field()
     @UpdateDateColumn()
     updated_at: Date;
+
+    // Virtual relation to stock lots (aggregated view)
+    @Field(() => [StockLot], { nullable: true })
+    @OneToMany(() => StockLot, lot => lot.product_id && lot.warehouse_id, { lazy: true })
+    lots: StockLot[];
 }

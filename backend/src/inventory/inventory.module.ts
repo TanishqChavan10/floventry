@@ -17,6 +17,7 @@ import { GoodsReceiptNote } from './entities/goods-receipt-note.entity';
 import { GRNItem } from './entities/grn-item.entity';
 import { WarehouseTransfer } from './entities/warehouse-transfer.entity';
 import { WarehouseTransferItem } from './entities/warehouse-transfer-item.entity';
+import { StockLot } from './entities/stock-lot.entity';
 import { PurchaseOrder } from '../purchase-orders/entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../purchase-orders/entities/purchase-order-item.entity';
 import { AuthModule } from '../auth/auth.module';
@@ -30,6 +31,7 @@ import { WarehouseModule } from '../warehouse/warehouse.module';
             Product,
             Unit,
             Stock,
+            StockLot,
             StockMovement,
             GoodsReceiptNote,
             GRNItem,

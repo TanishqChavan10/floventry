@@ -45,6 +45,10 @@ export class GRNItem {
     @Column({ type: 'decimal', precision: 10, scale: 2 })
     received_quantity: number;
 
+    @Field({ nullable: true })
+    @Column('timestamp', { nullable: true })
+    expiry_date: Date;
+
     @Field()
     @CreateDateColumn()
     created_at: Date;

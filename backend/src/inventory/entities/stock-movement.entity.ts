@@ -5,6 +5,7 @@ import { Product } from './product.entity';
 import { Warehouse } from '../../warehouse/warehouse.entity';
 import { Company } from '../../company/company.entity';
 import { User } from '../../auth/entities/user.entity';
+import { StockLot } from './stock-lot.entity';
 
 export enum MovementType {
     // Phase 1: Stock & Stock Movements
@@ -84,6 +85,16 @@ export class StockMovement {
     @ManyToOne(() => Company, { nullable: false })
     @JoinColumn({ name: 'company_id' })
     company: Company;
+
+    // Lot tracking for expiry handling
+    @Field({ nullable: true })
+    @Column('uuid', { nullable: true })
+    lot_id: string;
+
+    @Field(() => StockLot, { nullable: true })
+    @ManyToOne(() => StockLot, { nullable: true })
+    @JoinColumn({ name: 'lot_id' })
+    lot: StockLot;
 
     @Field(() => MovementType)
     @Column({

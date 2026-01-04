@@ -31,6 +31,11 @@ export class CreateInventoryAdjustmentInput {
 
     @Field({ nullable: true })
     @IsOptional()
+    @IsUUID()
+    lot_id?: string; // Optional: for lot-specific adjustments (e.g. expired stock)
+
+    @Field({ nullable: true })
+    @IsOptional()
     @IsString()
     reference?: string;
 }

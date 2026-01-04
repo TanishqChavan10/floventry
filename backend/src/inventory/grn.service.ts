@@ -9,6 +9,7 @@ import { Repository, Between, DataSource } from 'typeorm';
 import { GoodsReceiptNote, GRNStatus } from './entities/goods-receipt-note.entity';
 import { GRNItem } from './entities/grn-item.entity';
 import { Stock } from './entities/stock.entity';
+import { StockLot, LotSourceType } from './entities/stock-lot.entity';
 import { StockMovement, MovementType, ReferenceType } from './entities/stock-movement.entity';
 import { PurchaseOrder, PurchaseOrderStatus } from '../purchase-orders/entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../purchase-orders/entities/purchase-order-item.entity';
@@ -27,6 +28,8 @@ export class GRNService {
         private grnItemRepository: Repository<GRNItem>,
         @InjectRepository(Stock)
         private stockRepository: Repository<Stock>,
+        @InjectRepository(StockLot)
+        private stockLotRepository: Repository<StockLot>,
         @InjectRepository(StockMovement)
         private stockMovementRepository: Repository<StockMovement>,
         @InjectRepository(PurchaseOrder)
@@ -193,11 +196,18 @@ export class GRNService {
             if (!poItem) {
                 throw new BadRequestException(`Invalid purchase order item: ${itemInput.purchase_order_item_id}`);
             }
+
+            // Validate expiry date if provided
+            if (itemInput.expiry_date && itemInput.expiry_date < new Date()) {
+                throw new BadRequestException('Expiry date cannot be in the past');
+            }
+
             return this.grnItemRepository.create({
                 goods_receipt_note_id: grn.id,
                 purchase_order_item_id: itemInput.purchase_order_item_id,
                 product_id: poItem.product_id,
                 received_quantity: itemInput.received_quantity,
+                expiry_date: itemInput.expiry_date || undefined,
             });
         });
 
@@ -272,11 +282,18 @@ export class GRNService {
                 if (!poItem) {
                     throw new BadRequestException(`Invalid purchase order item: ${itemInput.purchase_order_item_id}`);
                 }
+
+                // Validate expiry date if provided
+                if (itemInput.expiry_date && itemInput.expiry_date < new Date()) {
+                    throw new BadRequestException('Expiry date cannot be in the past');
+                }
+
                 return this.grnItemRepository.create({
                     goods_receipt_note_id: grn.id,
                     purchase_order_item_id: itemInput.purchase_order_item_id,
                     product_id: poItem.product_id,
                     received_quantity: itemInput.received_quantity,
+                    expiry_date: itemInput.expiry_date || undefined,
                 });
             });
 
@@ -306,9 +323,28 @@ export class GRNService {
         await queryRunner.startTransaction();
 
         try {
-            // For each GRN item, update stock and create movement
+            // For each GRN item, create stock lot, update stock, and create movement
             for (const item of grn.items) {
-                // Find or create stock entry
+                // Validate expiry date if provided
+                if (item.expiry_date && item.expiry_date < new Date()) {
+                    throw new BadRequestException(`Expiry date for ${item.product.name} cannot be in the past`);
+                }
+
+                // Create stock lot
+                const lot = queryRunner.manager.create(StockLot, {
+                    company_id: grn.company_id,
+                    warehouse_id: grn.warehouse_id,
+                    product_id: item.product_id,
+                    quantity: Math.floor(Number(item.received_quantity)),
+                    expiry_date: item.expiry_date || null,
+                    received_at: grn.received_at,
+                    source_type: LotSourceType.GRN,
+                    source_id: grn.id,
+                });
+
+                await queryRunner.manager.save(StockLot, lot);
+
+                // Find or create stock entry (aggregated view)
                 let stock = await queryRunner.manager.findOne(Stock, {
                     where: {
                         warehouse_id: grn.warehouse_id,
@@ -323,21 +359,23 @@ export class GRNService {
                     stock = queryRunner.manager.create(Stock, {
                         warehouse_id: grn.warehouse_id,
                         product_id: item.product_id,
+                        company_id: grn.company_id,
                         quantity: Math.floor(Number(item.received_quantity)),
                         min_stock_level: 0,
                         max_stock_level: 1000,
                         reorder_point: 10,
                     });
                 } else {
-                    // Update existing stock
+                    // Update existing stock (aggregate from lots)
                     stock.quantity = Math.floor(Number(stock.quantity) + Number(item.received_quantity));
                 }
 
                 await queryRunner.manager.save(Stock, stock);
 
-                // Create stock movement
+                // Create stock movement linked to lot
                 const movement = queryRunner.manager.create(StockMovement, {
                     stock_id: stock.id,
+                    lot_id: lot.id, // Link to lot
                     company_id: grn.company_id,
                     warehouse_id: grn.warehouse_id,
                     product_id: item.product_id,
@@ -349,7 +387,7 @@ export class GRNService {
                     reference_id: grn.id,
                     performed_by: userId,
                     user_role: grn.user_role,
-                    notes: `Goods received via ${grn.grn_number}`,
+                    notes: `Goods received via ${grn.grn_number}${item.expiry_date ? ` (Expires: ${item.expiry_date.toISOString().split('T')[0]})` : ''}`,
                 });
 
                 await queryRunner.manager.save(StockMovement, movement);

@@ -1,6 +1,7 @@
 import { InputType, Field, ID, Float, Int } from '@nestjs/graphql';
 import { IsUUID, IsNumber, IsOptional, IsString, IsEnum, Min, IsInt } from 'class-validator';
 import { MovementType, ReferenceType } from '../entities/stock-movement.entity';
+import { StockHealthStatus } from '../types/stock-health.types';
 
 @InputType()
 export class CreateStockInput {
@@ -167,6 +168,39 @@ export class StockMovementFilterInput {
     @Field({ nullable: true })
     @IsOptional()
     to_date?: Date;
+
+    @Field({ nullable: true, defaultValue: 50 })
+    @IsOptional()
+    @IsNumber()
+    limit?: number;
+
+    @Field({ nullable: true, defaultValue: 0 })
+    @IsOptional()
+    @IsNumber()
+    offset?: number;
+}
+
+@InputType()
+export class CompanyInventorySummaryFilterInput {
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsString()
+    search?: string;
+
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsUUID()
+    categoryId?: string;
+
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsUUID()
+    warehouseId?: string; // Optional filtering by warehouse
+
+    @Field(() => StockHealthStatus, { nullable: true })
+    @IsOptional()
+    @IsEnum(StockHealthStatus)
+    status?: StockHealthStatus;
 
     @Field({ nullable: true, defaultValue: 50 })
     @IsOptional()

@@ -44,6 +44,7 @@ import Link from 'next/link';
 interface GRNItemInput {
   purchase_order_item_id: string;
   received_quantity: number;
+  expiry_date?: string; // ISO date string
   product_name?: string;
   ordered_quantity?: number;
   already_received?: number;
@@ -100,6 +101,7 @@ function CreateGRNContent() {
         const poItems = po.items.map((item: any) => ({
           purchase_order_item_id: item.id,
           received_quantity: 0,
+          expiry_date: '', // Initially empty
           product_name: item.product.name,
           ordered_quantity: item.ordered_quantity,
           already_received: item.received_quantity || 0,
@@ -115,6 +117,12 @@ function CreateGRNContent() {
   const updateItemQuantity = (index: number, quantity: number) => {
     const updated = [...items];
     updated[index].received_quantity = quantity;
+    setItems(updated);
+  };
+
+  const updateItemExpiryDate = (index: number, date: string) => {
+    const updated = [...items];
+    updated[index].expiry_date = date;
     setItems(updated);
   };
 
@@ -152,6 +160,7 @@ function CreateGRNContent() {
         items: items.map((item) => ({
           purchase_order_item_id: item.purchase_order_item_id,
           received_quantity: Math.floor(Number(item.received_quantity)),
+          expiry_date: item.expiry_date || undefined, // Send only if provided
         })),
         notes: notes || undefined,
       };
@@ -281,6 +290,7 @@ function CreateGRNContent() {
                     <TableHead className="text-right">Already Received</TableHead>
                     <TableHead className="text-right">Remaining</TableHead>
                     <TableHead className="text-right">Receiving Now *</TableHead>
+                    <TableHead>Expiry Date (Optional)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -302,6 +312,16 @@ function CreateGRNContent() {
                             updateItemQuantity(index, parseFloat(e.target.value) || 0)
                           }
                           className="w-24 text-right"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="date"
+                          value={item.expiry_date || ''}
+                          onChange={(e) => updateItemExpiryDate(index, e.target.value)}
+                          min={new Date().toISOString().split('T')[0]} // Prevent past dates
+                          className="w-40"
+                          placeholder="Optional"
                         />
                       </TableCell>
                     </TableRow>
