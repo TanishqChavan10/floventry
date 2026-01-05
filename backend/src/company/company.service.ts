@@ -3,10 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Company } from './company.entity';
 import { CompanySettings } from './company-settings.entity';
+import { CompanyStats } from './company-stats.model';
 import { CreateCompanyInput } from './dto/create-company.input';
 import { UpdateCompanySettingsInput } from './dto/update-company-settings.input';
 import { User } from '../auth/entities/user.entity';
 import { UserCompany } from '../user-company/user-company.entity';
+import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
+import { Warehouse } from '../warehouse/warehouse.entity';
+import { Stock } from '../inventory/entities/stock.entity';
+import { Product } from '../inventory/entities/product.entity';
 import { Role } from '../auth/enums/role.enum';
 import { ClerkService } from '../auth/clerk.service';
 
@@ -21,6 +26,12 @@ export class CompanyService {
     private userRepository: Repository<User>,
     @InjectRepository(UserCompany)
     private userCompanyRepository: Repository<UserCompany>,
+    @InjectRepository(UserWarehouse)
+    private userWarehouseRepository: Repository<UserWarehouse>,
+    @InjectRepository(Warehouse)
+    private warehouseRepository: Repository<Warehouse>,
+    @InjectRepository(Stock)
+    private stockRepository: Repository<Stock>,
     private clerkService: ClerkService,
   ) { }
 
@@ -171,5 +182,44 @@ export class CompanyService {
     }
     Object.assign(company, input);
     return this.companyRepository.save(company);
+  }
+
+  async getCompanyStats(companyId: string): Promise<CompanyStats> {
+    // Get all warehouses for this company
+    const warehouses = await this.warehouseRepository.find({
+      where: { company_id: companyId },
+      select: ['id'],
+    });
+
+    const warehouseIds = warehouses.map(w => w.id);
+
+    // Count total staff (distinct users assigned to any warehouse in this company)
+    let totalStaff = 0;
+    if (warehouseIds.length > 0) {
+      const result = await this.userWarehouseRepository
+        .createQueryBuilder('uw')
+        .select('COUNT(DISTINCT uw.user_id)', 'count')
+        .where('uw.warehouse_id IN (:...warehouseIds)', { warehouseIds })
+        .getRawOne();
+      totalStaff = parseInt(result?.count || '0', 10);
+    }
+
+    // Calculate total inventory value (sum of cost_price * quantity across all warehouses)
+    let totalInventoryValue = 0;
+    if (warehouseIds.length > 0) {
+      const result = await this.stockRepository
+        .createQueryBuilder('stock')
+        .innerJoin('stock.product', 'product')
+        .select('SUM(product.cost_price * stock.quantity)', 'totalValue')
+        .where('stock.warehouse_id IN (:...warehouseIds)', { warehouseIds })
+        .andWhere('product.cost_price IS NOT NULL')
+        .getRawOne();
+      totalInventoryValue = parseFloat(result?.totalValue || '0');
+    }
+
+    return {
+      totalStaff,
+      totalInventoryValue,
+    };
   }
 }

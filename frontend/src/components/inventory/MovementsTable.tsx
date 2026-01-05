@@ -47,10 +47,10 @@ export default function MovementsTable({ movements, type }: MovementsTableProps)
   };
 
   const getUserName = (user: StockMovement['user']) => {
-    if (user.firstName || user.lastName) {
-      return `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    if (user?.fullName) {
+      return user.fullName;
     }
-    return user.id;
+    return user?.id || 'Unknown';
   };
 
   return (

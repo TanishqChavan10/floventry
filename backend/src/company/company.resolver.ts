@@ -2,6 +2,7 @@ import { Resolver, Query, Mutation, Args, Context } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { Company, SwitchCompanyResponse } from './company.model';
+import { CompanyStats } from './company-stats.model';
 import { CompanySettings } from './company-settings.model';
 import { CreateCompanyInput } from './dto/create-company.input';
 import { UpdateCompanyInput } from './dto/update-company.input';
@@ -46,6 +47,12 @@ export class CompanyResolver {
   @UseGuards(ClerkAuthGuard)
   async companyBySlug(@Args('slug') slug: string) {
     return this.companyService.getCompanyBySlug(slug);
+  }
+
+  @Query(() => CompanyStats)
+  @UseGuards(ClerkAuthGuard)
+  async companyStats(@Args('companyId') companyId: string) {
+    return this.companyService.getCompanyStats(companyId);
   }
 
   @Mutation(() => Company)

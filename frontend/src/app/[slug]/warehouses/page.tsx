@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery } from '@apollo/client';
-import { GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
+import { GET_WAREHOUSES_BY_COMPANY, GET_COMPANY_STATS } from '@/lib/graphql/company';
 import { Loader2 } from 'lucide-react';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
@@ -29,6 +29,12 @@ function WarehousesContent() {
   });
 
   const warehouses = data?.companyBySlug?.warehouses || [];
+  const companyId = data?.companyBySlug?.id;
+
+  const { data: statsData, loading: statsLoading } = useQuery(GET_COMPANY_STATS, {
+    variables: { companyId },
+    skip: !companyId,
+  });
 
   console.log('[Warehouses Page] Component rendering - Loading:', loading, 'User:', !!user, 'Warehouses:', warehouses.length);
 
@@ -121,8 +127,11 @@ function WarehousesContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                 --
-                {/* {mockWarehouses.reduce((sum, w) => sum + w.staffCount, 0)} */}
+                {statsLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  statsData?.companyStats?.totalStaff ?? 0
+                )}
               </div>
               <p className="text-xs text-muted-foreground">Across all locations</p>
             </CardContent>
@@ -134,7 +143,13 @@ function WarehousesContent() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">--</div>
+              <div className="text-2xl font-bold">
+                {statsLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  `₹${(statsData?.companyStats?.totalInventoryValue ?? 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">Combined value</p>
             </CardContent>
           </Card>

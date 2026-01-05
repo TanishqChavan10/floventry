@@ -83,6 +83,16 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
         {
             items: [
                 {
+                    label: 'Sales Orders',
+                    href: `${basePath}/sales/orders`,
+                    icon: IconFileInvoice,
+                    roles: ['OWNER', 'ADMIN', 'MANAGER', 'STAFF'],
+                },
+            ],
+        },
+        {
+            items: [
+                {
                     label: 'Suppliers',
                     href: `${basePath}/suppliers`,
                     icon: IconTruck,
@@ -192,9 +202,10 @@ export function getWarehouseNavigation(
                     icon: IconArrowsExchange,
                 },
                 {
-                    label: 'Expiry',
-                    href: `${basePath}/expiry`,
-                    icon: IconCalendarTime,
+                    label: 'Issues',
+                    href: `${basePath}/issues`,
+                    icon: IconTruckDelivery,
+                    roles: ['OWNER', 'ADMIN', 'MANAGER', 'STAFF'],
                 },
             ]
         },

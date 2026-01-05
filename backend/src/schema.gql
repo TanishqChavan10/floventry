@@ -162,6 +162,11 @@ type CompanySettings {
   updated_at: DateTime
 }
 
+type CompanyStats {
+  totalInventoryValue: Float!
+  totalStaff: Int!
+}
+
 input CreateCategoryInput {
   description: String
   name: String!
@@ -189,6 +194,12 @@ input CreateInventoryAdjustmentInput {
   quantity: Float!
   reason: String!
   reference: String
+  warehouse_id: String!
+}
+
+input CreateIssueNoteInput {
+  items: [IssueNoteItemInput!]!
+  sales_order_id: String
   warehouse_id: String!
 }
 
@@ -220,6 +231,12 @@ input CreatePurchaseOrderInput {
   notes: String
   supplier_id: ID!
   warehouse_id: ID!
+}
+
+input CreateSalesOrderInput {
+  customer_name: String!
+  expected_dispatch_date: String
+  items: [SalesOrderItemInput!]!
 }
 
 input CreateStockInput {
@@ -357,6 +374,45 @@ type Invite {
   warehouse_ids: [String!]
 }
 
+type IssueNote {
+  company_id: String!
+  created_at: DateTime!
+  id: ID!
+  issued_at: DateTime
+  issued_by: String
+  issuer: User
+  items: [IssueNoteItem!]
+  sales_order: SalesOrder
+  sales_order_id: String
+  status: IssueNoteStatus!
+  warehouse: Warehouse!
+  warehouse_id: String!
+}
+
+type IssueNoteItem {
+  id: ID!
+  issue_note: IssueNote!
+  issue_note_id: String!
+  product: Product!
+  product_id: String!
+  quantity: Float!
+  stock_lot: StockLot
+  stock_lot_id: String
+}
+
+input IssueNoteItemInput {
+  product_id: String!
+  quantity: Float!
+  stock_lot_id: String
+}
+
+"""Status of an issue note"""
+enum IssueNoteStatus {
+  CANCELLED
+  DRAFT
+  POSTED
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
@@ -409,15 +465,20 @@ type Mutation {
   archiveSupplier(id: String!): Supplier!
   cancelGRN(id: String!): GoodsReceiptNote!
   cancelInvite(inviteId: String!): Boolean!
+  cancelIssueNote(id: ID!): IssueNote!
   cancelPurchaseOrder(id: String!): PurchaseOrder!
+  cancelSalesOrder(id: ID!): SalesOrder!
   cancelWarehouseTransfer(id: String!): WarehouseTransfer!
+  confirmSalesOrder(id: ID!): SalesOrder!
   createCategory(input: CreateCategoryInput!): Category!
   createCompany(input: CreateCompanyInput!): Company!
   createGRN(input: CreateGRNInput!): GoodsReceiptNote!
   createInventoryAdjustment(input: CreateInventoryAdjustmentInput!): InventoryAdjustmentResult!
+  createIssueNote(input: CreateIssueNoteInput!): IssueNote!
   createOpeningStock(input: CreateOpeningStockInput!): Stock!
   createProduct(input: CreateProductInput!): Product!
   createPurchaseOrder(input: CreatePurchaseOrderInput!): PurchaseOrder!
+  createSalesOrder(input: CreateSalesOrderInput!): SalesOrder!
   createStock(input: CreateStockInput!): Stock!
   createSupplier(input: CreateSupplierInput!): Supplier!
   createUnit(input: CreateUnitInput!): Unit!
@@ -425,6 +486,7 @@ type Mutation {
   createWarehouseTransfer(input: CreateTransferInput!): WarehouseTransfer!
   markPurchaseOrderOrdered(id: String!): PurchaseOrder!
   postGRN(id: String!): GoodsReceiptNote!
+  postIssueNote(id: ID!): IssueNote!
   postWarehouseTransfer(id: String!): WarehouseTransfer!
   removeCategory(id: String!): Boolean!
   removeMemberValidated(membershipId: String!): Boolean!
@@ -439,11 +501,13 @@ type Mutation {
   updateCompany(id: String!, input: UpdateCompanyInput!): Company!
   updateCompanySettings(companyId: String!, input: UpdateCompanySettingsInput!): CompanySettings!
   updateGRN(id: String!, input: UpdateGRNInput!): GoodsReceiptNote!
+  updateIssueNote(id: ID!, input: UpdateIssueNoteInput!): IssueNote!
   updateMemberWarehouses(membershipId: String!, warehouseIds: [String!]!): Boolean!
   updatePreferences(preferences: String!): UserModel!
   updateProduct(input: UpdateProductInput!): Product!
   updatePurchaseOrder(id: String!, input: UpdatePurchaseOrderInput!): PurchaseOrder!
   updateRole(input: UpdateRoleInput!): UserCompany!
+  updateSalesOrder(id: ID!, input: UpdateSalesOrderInput!): SalesOrder!
   updateStockLevels(input: UpdateStockInput!): Stock!
   updateStockThresholds(input: UpdateStockThresholdsInput!, stockId: String!): Stock!
   updateSupplier(input: UpdateSupplierInput!): Supplier!
@@ -539,11 +603,15 @@ type Query {
   companyInventorySummary(filters: CompanyInventorySummaryFilterInput!): [CompanyInventorySummaryItem!]!
   companyInvites(companyId: String!): [Invite!]!
   companyMembers(companyId: String!): [CompanyMemberDetails!]!
+  companyStats(companyId: String!): CompanyStats!
   companyStockMovements(filters: StockMovementFilterInput!): [StockMovement!]!
   criticalStockProducts(limit: Float = 10): [CriticalStockProduct!]!
   grn(id: String!): GoodsReceiptNote
   grns(filters: GRNFilterInput!): [GoodsReceiptNote!]!
   inventoryHealthStats: InventoryHealthStats!
+  issueNote(id: ID!): IssueNote!
+  issueNotesByCompany: [IssueNote!]!
+  issueNotesByWarehouse(warehouseId: ID!): [IssueNote!]!
   lowStockItems(warehouseId: String!): [StockHealthItem!]!
   lowStockPreview(limit: Int = 5, warehouseId: ID!): [LowStockPreviewItem!]!
   me: UserModel
@@ -556,6 +624,8 @@ type Query {
   purchaseOrder(id: String!): PurchaseOrder
   purchaseOrders(filters: PurchaseOrderFilterInput!): [PurchaseOrder!]!
   recentMovements(limit: Int = 10, warehouseId: ID!): [DashboardMovementItem!]!
+  salesOrder(id: ID!): SalesOrder!
+  salesOrders: [SalesOrder!]!
   stock(productId: String!, warehouseId: String!): Stock!
   stockByProduct(productId: String!): [Stock!]!
   stockByWarehouse(warehouseId: String!): [Stock!]!
@@ -593,6 +663,43 @@ enum Role {
   MANAGER
   OWNER
   STAFF
+}
+
+type SalesOrder {
+  company_id: String!
+  created_at: DateTime!
+  created_by: String!
+  creator: User!
+  customer_name: String!
+  expected_dispatch_date: DateTime
+  id: ID!
+  items: [SalesOrderItem!]
+  status: SalesOrderStatus!
+  updated_at: DateTime!
+}
+
+type SalesOrderItem {
+  id: ID!
+  issued_quantity: Float!
+  ordered_quantity: Float!
+  pending_quantity: Float!
+  product: Product!
+  product_id: String!
+  sales_order: SalesOrder!
+  sales_order_id: String!
+}
+
+input SalesOrderItemInput {
+  ordered_quantity: Float!
+  product_id: String!
+}
+
+"""Status of a sales order"""
+enum SalesOrderStatus {
+  CANCELLED
+  CLOSED
+  CONFIRMED
+  DRAFT
 }
 
 input SendInviteInput {
@@ -854,6 +961,11 @@ input UpdateGRNInput {
   received_at: DateTime
 }
 
+input UpdateIssueNoteInput {
+  items: [IssueNoteItemInput!]
+  sales_order_id: String
+}
+
 input UpdateProductInput {
   barcode: String
   category_id: String
@@ -878,6 +990,12 @@ input UpdatePurchaseOrderInput {
 input UpdateRoleInput {
   membership_id: String!
   role: Role!
+}
+
+input UpdateSalesOrderInput {
+  customer_name: String
+  expected_dispatch_date: String
+  items: [SalesOrderItemInput!]
 }
 
 input UpdateStockInput {

@@ -236,3 +236,11 @@ export const UPDATE_WAREHOUSE_SETTINGS = gql`
   }
 `;
 
+export const GET_COMPANY_STATS = gql`
+  query GetCompanyStats($companyId: String!) {
+    companyStats(companyId: $companyId) {
+      totalStaff
+      totalInventoryValue
+    }
+  }
+`;

@@ -24,6 +24,8 @@ import { CompanyContextMiddleware } from './common/middleware/company-context.mi
 import { WarehouseModule } from './warehouse/warehouse.module';
 import { EmailModule } from './email/email.module';
 import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
+import { SalesModule } from './sales/sales.module';
+import { IssuesModule } from './issues/issues.module';
 
 @Module({
   imports: [
@@ -77,6 +79,8 @@ import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
     // IntegrationModule,
     WarehouseModule,
     PurchaseOrdersModule,
+    SalesModule,
+    IssuesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
