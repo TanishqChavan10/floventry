@@ -158,8 +158,8 @@ function SalesOrdersContent() {
                 ) : (
                   filteredOrders.map((order: any) => (
                     <TableRow key={order.id} className="hover:bg-slate-50 dark:hover:bg-slate-900">
-                      <TableCell className="font-mono text-sm">
-                        {order.id.slice(0, 8)}...
+                      <TableCell className="font-mono text-sm font-semibold">
+                        {order.order_number}
                       </TableCell>
                       <TableCell className="font-medium">{order.customer_name}</TableCell>
                       <TableCell>

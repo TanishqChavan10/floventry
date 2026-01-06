@@ -3,6 +3,7 @@ import { gql } from '@apollo/client';
 export const SALES_ORDER_FRAGMENT = gql`
   fragment SalesOrderFields on SalesOrder {
     id
+    order_number
     customer_name
     status
     expected_dispatch_date

@@ -3,6 +3,7 @@ import { gql } from '@apollo/client';
 export const ISSUE_NOTE_FRAGMENT = gql`
   fragment IssueNoteFields on IssueNote {
     id
+    issue_number
     status
     issued_at
     created_at
@@ -14,6 +15,7 @@ export const ISSUE_NOTE_FRAGMENT = gql`
     sales_order {
       id
       customer_name
+      order_number
     }
     issuer {
       id
@@ -59,6 +61,15 @@ export const CREATE_ISSUE_NOTE = gql`
   ${ISSUE_NOTE_FRAGMENT}
   mutation CreateIssueNote($input: CreateIssueNoteInput!) {
     createIssueNote(input: $input) {
+      ...IssueNoteFields
+    }
+  }
+`;
+
+export const CREATE_ISSUE_NOTE_WITH_FEFO = gql`
+  ${ISSUE_NOTE_FRAGMENT}
+  mutation CreateIssueNoteWithFEFO($input: CreateFEFOIssueNoteInput!) {
+    createIssueNoteWithFEFO(input: $input) {
       ...IssueNoteFields
     }
   }

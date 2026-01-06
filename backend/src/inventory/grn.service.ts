@@ -18,6 +18,7 @@ import {
     UpdateGRNInput,
     GRNFilterInput,
 } from './dto/grn.input';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class GRNService {
@@ -36,6 +37,7 @@ export class GRNService {
         private purchaseOrderRepository: Repository<PurchaseOrder>,
         @InjectRepository(PurchaseOrderItem)
         private purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
+        private notificationsService: NotificationsService,
         private dataSource: DataSource,
     ) { }
 
@@ -431,7 +433,18 @@ export class GRNService {
             // Commit transaction
             await queryRunner.commitTransaction();
 
-            return this.getGRN(grn.id, companyId);
+            // Notify users about posted GRN (async, don't block)
+            const result = await this.getGRN(id, companyId);
+            this.notificationsService
+                .notifyGRNPosted(
+                    grn.company_id,
+                    [userId], // Add more users as needed
+                    result.id,
+                    result.grn_number,
+                )
+                .catch((err) => console.error('Failed to send notification:', err));
+
+            return result;
         } catch (error) {
             // Rollback on error
             await queryRunner.rollbackTransaction();

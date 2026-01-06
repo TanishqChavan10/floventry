@@ -52,3 +52,35 @@ export class UpdateIssueNoteInput {
     @Type(() => IssueNoteItemInput)
     items?: IssueNoteItemInput[];
 }
+
+// New: For FEFO-based issue creation (no manual lot selection)
+@InputType()
+export class FEFOIssueNoteItemInput {
+    @Field()
+    @IsUUID()
+    @IsNotEmpty()
+    product_id: string;
+
+    @Field(() => Float)
+    @Min(0.01)
+    quantity: number;
+}
+
+@InputType()
+export class CreateFEFOIssueNoteInput {
+    @Field()
+    @IsUUID()
+    @IsNotEmpty()
+    warehouse_id: string;
+
+    @Field({ nullable: true })
+    @IsOptional()
+    @IsUUID()
+    sales_order_id?: string;
+
+    @Field(() => [FEFOIssueNoteItemInput])
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => FEFOIssueNoteItemInput)
+    items: FEFOIssueNoteItemInput[];
+}

@@ -26,6 +26,9 @@ import { EmailModule } from './email/email.module';
 import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { SalesModule } from './sales/sales.module';
 import { IssuesModule } from './issues/issues.module';
+import { ExportModule } from './export/export.module';
+import { ImportModule } from './import/import.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -81,6 +84,9 @@ import { IssuesModule } from './issues/issues.module';
     PurchaseOrdersModule,
     SalesModule,
     IssuesModule,
+    ExportModule,
+    ImportModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -4,10 +4,10 @@ import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useMutation, useQuery } from '@apollo/client';
-import { CREATE_ISSUE_NOTE } from '@/lib/graphql/issues';
+import { CREATE_ISSUE_NOTE_WITH_FEFO } from '@/lib/graphql/issues';
 import { GET_SALES_ORDERS } from '@/lib/graphql/sales';
 import { GET_PRODUCTS } from '@/lib/graphql/product';
-import { Loader2, Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { Loader2, Plus, Trash2, ArrowLeft, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,13 +20,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { LotPickerModal } from '@/components/issues/LotPickerModal';
 import { useToast } from '@/components/ui/use-toast';
 import { useWarehouse } from '@/context/warehouse-context';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface IssueItem {
   product_id: string;
-  stock_lot_id?: string;
   quantity: number;
 }
 
@@ -41,8 +40,6 @@ export default function NewIssueNotePage() {
 
   const [salesOrderId, setSalesOrderId] = useState<string>('');
   const [items, setItems] = useState<IssueItem[]>([]);
-  const [lotPickerOpen, setLotPickerOpen] = useState(false);
-  const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
 
   const { data: salesOrdersData } = useQuery(GET_SALES_ORDERS);
   const { data: productsData } = useQuery(GET_PRODUCTS);
@@ -50,13 +47,13 @@ export default function NewIssueNotePage() {
   const salesOrders = salesOrdersData?.salesOrders || [];
   const products = productsData?.products || [];
 
-  const [createIssue, { loading }] = useMutation(CREATE_ISSUE_NOTE, {
+  const [createIssue, { loading }] = useMutation(CREATE_ISSUE_NOTE_WITH_FEFO, {
     onCompleted: (data) => {
       toast({
         title: 'Success',
-        description: 'Issue note created successfully',
+        description: 'Issue note created successfully with FEFO lot selection',
       });
-      router.push(`/${companySlug}/warehouses/${warehouseSlug}/issues/${data.createIssueNote.id}`);
+      router.push(`/${companySlug}/warehouses/${warehouseSlug}/issues/${data.createIssueNoteWithFEFO.id}`);
     },
     onError: (error) => {
       toast({
@@ -79,38 +76,6 @@ export default function NewIssueNotePage() {
     const updated = [...items];
     updated[index] = { ...updated[index], [field]: value };
     setItems(updated);
-  };
-
-  const openLotPicker = (index: number) => {
-    if (!items[index].product_id) {
-      toast({
-        title: 'Select Product First',
-        description: 'Please select a product before choosing lots',
-        variant: 'destructive',
-      });
-      return;
-    }
-    setSelectedItemIndex(index);
-    setLotPickerOpen(true);
-  };
-
-  const handleLotsSelected = (selectedLots: Array<{ lot_id: string; quantity: number }>) => {
-    if (selectedItemIndex === null) return;
-
-    // Remove the current item and add multiple items for each lot
-    const currentItem = items[selectedItemIndex];
-    const newItems = [...items];
-    newItems.splice(selectedItemIndex, 1);
-
-    // Add an item for each selected lot
-    const lotItems = selectedLots.map((lot) => ({
-      product_id: currentItem.product_id,
-      stock_lot_id: lot.lot_id,
-      quantity: lot.quantity,
-    }));
-
-    setItems([...newItems, ...lotItems]);
-    setSelectedItemIndex(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -146,10 +111,6 @@ export default function NewIssueNotePage() {
       },
     });
   };
-
-  const selectedProduct = products.find((p: any) =>
-    selectedItemIndex !== null ? p.id === items[selectedItemIndex]?.product_id : false
-  );
 
   return (
     <div className="space-y-8 p-6">
@@ -196,6 +157,14 @@ export default function NewIssueNotePage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* FEFO Info Alert */}
+        <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/30">
+          <Info className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800 dark:text-blue-200">
+            <strong>Automatic Lot Selection (FEFO):</strong> Lots will be automatically selected based on earliest expiry date. No manual lot selection needed!
+          </AlertDescription>
+        </Alert>
 
         <Card>
           <CardHeader>
@@ -246,34 +215,16 @@ export default function NewIssueNotePage() {
                         onChange={(e) =>
                           updateItem(index, 'quantity', parseFloat(e.target.value) || 0)
                         }
-                        disabled={!!item.stock_lot_id}
                       />
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => openLotPicker(index)}
-                        disabled={!item.product_id}
-                      >
-                        Select Lot
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeItem(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {item.stock_lot_id && (
-                      <div className="w-full col-span-full mt-2">
-                        <Badge variant="secondary" className="gap-1">
-                          📦 Lot: {item.stock_lot_id.slice(0, 8)}... ({item.quantity} {product?.unit})
-                        </Badge>
-                      </div>
-                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeItem(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 );
               })
@@ -293,19 +244,6 @@ export default function NewIssueNotePage() {
           </Button>
         </div>
       </form>
-
-      {/* Lot Picker Modal */}
-      {selectedItemIndex !== null && selectedProduct && (
-        <LotPickerModal
-          open={lotPickerOpen}
-          onOpenChange={setLotPickerOpen}
-          productId={selectedProduct.id}
-          productName={selectedProduct.name}
-          warehouseId={activeWarehouse?.id || ''}
-          requiredQuantity={items[selectedItemIndex]?.quantity}
-          onConfirm={handleLotsSelected}
-        />
-      )}
     </div>
   );
 }

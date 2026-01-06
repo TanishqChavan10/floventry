@@ -179,6 +179,12 @@ input CreateCompanyInput {
   slug: String!
 }
 
+input CreateFEFOIssueNoteInput {
+  items: [FEFOIssueNoteItemInput!]!
+  sales_order_id: String
+  warehouse_id: String!
+}
+
 input CreateGRNInput {
   items: [GRNItemInput!]!
   notes: String
@@ -299,6 +305,18 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 """
 scalar DateTime
 
+input ExportFiltersInput {
+  dateFrom: String
+  dateTo: String
+  productIds: [String!]
+  warehouseIds: [String!]
+}
+
+input FEFOIssueNoteItemInput {
+  product_id: String!
+  quantity: Float!
+}
+
 input GRNFilterInput {
   from_date: DateTime
   limit: Float = 50
@@ -378,6 +396,7 @@ type IssueNote {
   company_id: String!
   created_at: DateTime!
   id: ID!
+  issue_number: String!
   issued_at: DateTime
   issued_by: String
   issuer: User
@@ -475,6 +494,7 @@ type Mutation {
   createGRN(input: CreateGRNInput!): GoodsReceiptNote!
   createInventoryAdjustment(input: CreateInventoryAdjustmentInput!): InventoryAdjustmentResult!
   createIssueNote(input: CreateIssueNoteInput!): IssueNote!
+  createIssueNoteWithFEFO(input: CreateFEFOIssueNoteInput!): IssueNote!
   createOpeningStock(input: CreateOpeningStockInput!): Stock!
   createProduct(input: CreateProductInput!): Product!
   createPurchaseOrder(input: CreatePurchaseOrderInput!): PurchaseOrder!
@@ -484,6 +504,21 @@ type Mutation {
   createUnit(input: CreateUnitInput!): Unit!
   createWarehouse(input: CreateWarehouseInput!): Warehouse!
   createWarehouseTransfer(input: CreateTransferInput!): WarehouseTransfer!
+  downloadCategoryTemplate: String!
+  downloadOpeningStockTemplate: String!
+  downloadProductTemplate: String!
+  downloadSupplierTemplate: String!
+  executeCategoryImport(validatedData: String!): String!
+  executeOpeningStockImport(validatedData: String!, warehouseId: String!): String!
+  executeProductImport(validatedData: String!): String!
+  executeSupplierImport(validatedData: String!): String!
+  exportAdjustments(filters: ExportFiltersInput, warehouseId: String!): String!
+  exportCompanyMovements(filters: ExportFiltersInput): String!
+  exportExpiryLots(filters: ExportFiltersInput, warehouseId: String!): String!
+  exportExpiryRisk(filters: ExportFiltersInput): String!
+  exportInventorySummary(filters: ExportFiltersInput): String!
+  exportStockMovements(filters: ExportFiltersInput, warehouseId: String!): String!
+  exportStockSnapshot(filters: ExportFiltersInput, warehouseId: String!): String!
   markPurchaseOrderOrdered(id: String!): PurchaseOrder!
   postGRN(id: String!): GoodsReceiptNote!
   postIssueNote(id: ID!): IssueNote!
@@ -515,6 +550,10 @@ type Mutation {
   updateWarehouse(id: String!, input: UpdateWarehouseInput!): Warehouse!
   updateWarehouseSettings(input: UpdateWarehouseSettingsInput!, warehouseId: String!): WarehouseSettings!
   updateWarehouseTransfer(id: String!, input: UpdateTransferInput!): WarehouseTransfer!
+  validateCategoryImport(csvContent: String!): String!
+  validateOpeningStockImport(csvContent: String!, warehouseId: String!): String!
+  validateProductImport(csvContent: String!): String!
+  validateSupplierImport(csvContent: String!): String!
 }
 
 type Product {
@@ -674,6 +713,7 @@ type SalesOrder {
   expected_dispatch_date: DateTime
   id: ID!
   items: [SalesOrderItem!]
+  order_number: String!
   status: SalesOrderStatus!
   updated_at: DateTime!
 }

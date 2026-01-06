@@ -23,6 +23,8 @@ import { PurchaseOrderItem } from '../purchase-orders/entities/purchase-order-it
 import { AuthModule } from '../auth/auth.module';
 import { SupplierModule } from '../supplier/supplier.module';
 import { WarehouseModule } from '../warehouse/warehouse.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { PurchaseOrdersModule } from '../purchase-orders/purchase-orders.module';
 
 @Module({
     imports: [
@@ -43,6 +45,8 @@ import { WarehouseModule } from '../warehouse/warehouse.module';
         AuthModule,
         SupplierModule,
         WarehouseModule,
+        NotificationsModule,
+        PurchaseOrdersModule,
     ],
     providers: [
         InventoryService,

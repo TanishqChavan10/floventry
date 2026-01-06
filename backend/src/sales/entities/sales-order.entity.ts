@@ -33,6 +33,10 @@ export class SalesOrder {
     company: Company;
 
     @Field()
+    @Column({ type: 'varchar', length: 50, unique: true })
+    order_number: string;
+
+    @Field()
     @Column({ type: 'varchar', length: 255 })
     customer_name: string;
 

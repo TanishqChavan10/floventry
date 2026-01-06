@@ -2,7 +2,7 @@ import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { IssuesService } from './issues.service';
 import { IssueNote } from './entities/issue-note.entity';
-import { CreateIssueNoteInput, UpdateIssueNoteInput } from './dto/issue-note.input';
+import { CreateIssueNoteInput, UpdateIssueNoteInput, CreateFEFOIssueNoteInput } from './dto/issue-note.input';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -47,6 +47,19 @@ export class IssuesResolver {
             throw new Error('No active company');
         }
         return this.issuesService.create(input, user.activeCompanyId);
+    }
+
+    @Mutation(() => IssueNote)
+    @UseGuards(ClerkAuthGuard, RolesGuard)
+    @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
+    async createIssueNoteWithFEFO(
+        @Args('input') input: CreateFEFOIssueNoteInput,
+        @ClerkUser() user: any,
+    ): Promise<IssueNote> {
+        if (!user.activeCompanyId) {
+            throw new Error('No active company');
+        }
+        return this.issuesService.createWithFEFO(input, user.activeCompanyId);
     }
 
     @Mutation(() => IssueNote)

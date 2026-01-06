@@ -7,7 +7,8 @@ import { StockLot } from '../inventory/entities/stock-lot.entity';
 import { Stock } from '../inventory/entities/stock.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
 import { SalesService } from '../sales/sales.service';
-import { CreateIssueNoteInput, UpdateIssueNoteInput } from './dto/issue-note.input';
+import { NotificationsService } from '../notifications/notifications.service';
+import { CreateIssueNoteInput, UpdateIssueNoteInput, CreateFEFOIssueNoteInput } from './dto/issue-note.input';
 
 @Injectable()
 export class IssuesService {
@@ -23,6 +24,7 @@ export class IssuesService {
         @InjectRepository(StockMovement)
         private stockMovementRepository: Repository<StockMovement>,
         private salesService: SalesService,
+        private notificationsService: NotificationsService,
         private dataSource: DataSource,
     ) { }
 
@@ -39,9 +41,16 @@ export class IssuesService {
         await queryRunner.startTransaction();
 
         try {
+            // Generate issue_number
+            const count = await queryRunner.manager.count(IssueNote, {
+                where: { warehouse_id: input.warehouse_id },
+            });
+            const issueNumber = `ISS-${String(count + 1).padStart(5, '0')}`;
+
             const issueNote = queryRunner.manager.create(IssueNote, {
                 company_id: companyId,
                 warehouse_id: input.warehouse_id,
+                issue_number: issueNumber,
                 sales_order_id: input.sales_order_id || (null as any),
                 status: IssueNoteStatus.DRAFT,
             } as any);
@@ -58,6 +67,75 @@ export class IssuesService {
             );
 
             await queryRunner.manager.save(items);
+
+            await queryRunner.commitTransaction();
+
+            return this.findOne(savedNote.id);
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw error;
+        } finally {
+            await queryRunner.release();
+        }
+    }
+
+    /**
+     * Create Issue Note with FEFO auto-selection
+     * This is the recommended way to create issues - lots are selected automatically
+     */
+    async createWithFEFO(
+        input: any, // CreateFEFOIssueNoteInput
+        companyId: string,
+    ): Promise<IssueNote> {
+        if (!input.items || input.items.length === 0) {
+            throw new BadRequestException('Issue Note must have at least one item');
+        }
+
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            // Generate issue_number
+            const count = await queryRunner.manager.count(IssueNote, {
+                where: { warehouse_id: input.warehouse_id },
+            });
+            const issueNumber = `ISS-${String(count + 1).padStart(5, '0')}`;
+
+            const issueNote = queryRunner.manager.create(IssueNote, {
+                company_id: companyId,
+                warehouse_id: input.warehouse_id,
+                issue_number: issueNumber,
+                sales_order_id: input.sales_order_id || (null as any),
+                status: IssueNoteStatus.DRAFT,
+            } as any);
+
+            const savedNote = await queryRunner.manager.save(issueNote);
+
+            // For each product, use FEFO to select lots
+            const issueItems: IssueNoteItem[] = [];
+
+            for (const inputItem of input.items) {
+                const selectedLots = await this.selectLotsWithFEFO(
+                    queryRunner,
+                    input.warehouse_id,
+                    inputItem.product_id,
+                    inputItem.quantity,
+                );
+
+                // Create an issue item for each selected lot
+                for (const { lot, quantity } of selectedLots) {
+                    const item = queryRunner.manager.create(IssueNoteItem, {
+                        issue_note_id: savedNote.id,
+                        product_id: inputItem.product_id,
+                        stock_lot_id: lot.id,
+                        quantity,
+                    } as any);
+                    issueItems.push(item);
+                }
+            }
+
+            await queryRunner.manager.save(issueItems);
 
             await queryRunner.commitTransaction();
 
@@ -157,6 +235,76 @@ export class IssuesService {
         } finally {
             await queryRunner.release();
         }
+    }
+
+    /**
+     * FEFO: First-Expiry-First-Out lot selection algorithm
+     * Selects lots by earliest expiry date, skips expired lots
+     */
+    private async selectLotsWithFEFO(
+        queryRunner: any,
+        warehouseId: string,
+        productId: string,
+        requiredQuantity: number,
+    ): Promise<Array<{ lot: StockLot; quantity: number; expiryStatus: string }>> {
+        // Get all available lots for this product in this warehouse
+        // Order by: expiry_date ASC (nulls last), received_at ASC
+        const lots = await queryRunner.manager
+            .createQueryBuilder(StockLot, 'lot')
+            .where('lot.warehouse_id = :warehouseId', { warehouseId })
+            .andWhere('lot.product_id = :productId', { productId })
+            .andWhere('lot.quantity > 0')
+            .orderBy('lot.expiry_date', 'ASC', 'NULLS LAST')
+            .addOrderBy('lot.received_at', 'ASC')
+            .getMany();
+
+        const selectedLots: Array<{ lot: StockLot; quantity: number; expiryStatus: string }> = [];
+        let remaining = requiredQuantity;
+        const now = new Date();
+
+        for (const lot of lots) {
+            // HARD BLOCK: Skip expired lots
+            if (lot.expiry_date && new Date(lot.expiry_date) < now) {
+                continue; // Cannot use expired lots
+            }
+
+            // Skip if no quantity
+            if (lot.quantity <= 0) continue;
+
+            // Calculate how much to consume from this lot
+            const consumeQty = Math.min(lot.quantity, remaining);
+
+            // Determine expiry status
+            let expiryStatus = 'OK';
+            if (lot.expiry_date) {
+                const daysUntilExpiry = Math.ceil(
+                    (new Date(lot.expiry_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+                );
+                if (daysUntilExpiry <= 30) {
+                    expiryStatus = 'EXPIRING_SOON';
+                } else if (daysUntilExpiry < 0) {
+                    expiryStatus = 'EXPIRED';
+                }
+            }
+
+            selectedLots.push({
+                lot,
+                quantity: consumeQty,
+                expiryStatus,
+            });
+
+            remaining -= consumeQty;
+            if (remaining <= 0) break;
+        }
+
+        // If we couldn't fulfill the quantity, throw error
+        if (remaining > 0) {
+            throw new BadRequestException(
+                `Insufficient stock for product. Required: ${requiredQuantity}, Available: ${requiredQuantity - remaining}`,
+            );
+        }
+
+        return selectedLots;
     }
 
     /**
@@ -265,7 +413,18 @@ export class IssuesService {
 
             await queryRunner.commitTransaction();
 
-            return this.findOne(id);
+            // Notify users about issued note (async, don't block)
+            const result = await this.findOne(id);
+            this.notificationsService
+                .notifyIssuePosted(
+                    issueNote.company_id,
+                    [userId], // Add more users as needed (OWNER, ADMIN, MANAGER)
+                    result.id,
+                    result.issue_number,
+                )
+                .catch((err) => console.error('Failed to send notification:', err));
+
+            return result;
         } catch (error) {
             await queryRunner.rollbackTransaction();
             throw error;

@@ -30,9 +30,16 @@ export class SalesService {
         await queryRunner.startTransaction();
 
         try {
+            // Generate order_number
+            const count = await queryRunner.manager.count(SalesOrder, {
+                where: { company_id: companyId },
+            });
+            const orderNumber = `SO-${String(count + 1).padStart(5, '0')}`;
+
             // Create Sales Order
             const salesOrder = queryRunner.manager.create(SalesOrder, {
                 company_id: companyId,
+                order_number: orderNumber,
                 customer_name: input.customer_name,
                 expected_dispatch_date: input.expected_dispatch_date
                     ? new Date(input.expected_dispatch_date)

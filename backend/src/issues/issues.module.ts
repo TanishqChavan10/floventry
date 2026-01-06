@@ -8,6 +8,7 @@ import { StockMovement } from '../inventory/entities/stock-movement.entity';
 import { IssuesService } from './issues.service';
 import { IssuesResolver } from './issues.resolver';
 import { SalesModule } from '../sales/sales.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
@@ -20,6 +21,7 @@ import { AuthModule } from '../auth/auth.module';
             StockMovement,
         ]),
         SalesModule, // Import for SalesService
+        NotificationsModule,
         AuthModule,
     ],
     providers: [IssuesService, IssuesResolver],

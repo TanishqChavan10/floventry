@@ -44,6 +44,10 @@ export class IssueNote {
     @JoinColumn({ name: 'warehouse_id' })
     warehouse: Warehouse;
 
+    @Field()
+    @Column({ type: 'varchar', length: 50, unique: true })
+    issue_number: string;
+
     @Field({ nullable: true })
     @Column('uuid', { nullable: true })
     sales_order_id: string;

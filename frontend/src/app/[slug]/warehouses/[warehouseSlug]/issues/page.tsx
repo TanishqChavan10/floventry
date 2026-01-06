@@ -192,8 +192,8 @@ export default function IssueNotesPage() {
               ) : (
                 filteredNotes.map((note: any) => (
                   <TableRow key={note.id} className="hover:bg-slate-50 dark:hover:bg-slate-900">
-                    <TableCell className="font-mono text-sm pl-6">
-                      {note.id.slice(0, 8)}...
+                    <TableCell className="font-mono text-sm font-semibold pl-6">
+                      {note.issue_number}
                     </TableCell>
                     <TableCell>
                       {note.sales_order ? (
@@ -201,7 +201,7 @@ export default function IssueNotesPage() {
                           href={`/${companySlug}/sales/orders/${note.sales_order.id}`}
                           className="text-blue-600 hover:underline font-medium"
                         >
-                          {note.sales_order.customer_name}
+                          {note.sales_order.order_number || note.sales_order.customer_name}
                         </Link>
                       ) : (
                         <Badge variant="outline" className="gap-1">

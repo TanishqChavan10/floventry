@@ -26,6 +26,7 @@ import {
 import { Input } from '@/components/ui/input'; // Assuming Input component exists
 import { useClerk } from '@clerk/nextjs';
 import Link from 'next/link';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 export function Navbar() {
   const { user } = useAuth();
@@ -174,10 +175,7 @@ export function Navbar() {
         </div>
 
         {/* Alerts */}
-        <button className="relative p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
-            <IconBell className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
-             <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border border-white dark:border-neutral-900" />
-        </button>
+        <NotificationBell />
 
         {/* User Role Badge */}
         <div className="hidden md:flex items-center px-2 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-md border border-neutral-200 dark:border-neutral-700">

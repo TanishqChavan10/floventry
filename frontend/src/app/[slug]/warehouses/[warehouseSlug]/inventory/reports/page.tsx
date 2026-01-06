@@ -23,6 +23,7 @@ import { FileText, Activity, AlertTriangle, Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { ExportButton } from '@/components/export/ExportButton';
 
 function WarehouseReportsContent() {
   const { activeWarehouse } = useWarehouse();
@@ -137,10 +138,19 @@ function WarehouseReportsContent() {
         <TabsContent value="snapshot" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Current Inventory Snapshot</CardTitle>
-              <CardDescription>
-                Real-time view of all products in this warehouse. No historical data.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Current Inventory Snapshot</CardTitle>
+                  <CardDescription>
+                    Real-time view of all products in this warehouse. No historical data.
+                  </CardDescription>
+                </div>
+                <ExportButton
+                  type="stock_snapshot"
+                  warehouseId={activeWarehouse?.id}
+                  disabled={!snapshotData?.stockSnapshot?.items?.length}
+                />
+              </div>
             </CardHeader>
             <CardContent>
               {snapshotLoading ? (
@@ -183,10 +193,23 @@ function WarehouseReportsContent() {
         <TabsContent value="movements" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Stock Movement Ledger</CardTitle>
-              <CardDescription>
-                Historical record of all stock changes within the selected date range.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Stock Movement Ledger</CardTitle>
+                  <CardDescription>
+                    Historical record of all stock changes within the selected date range.
+                  </CardDescription>
+                </div>
+                <ExportButton
+                  type="stock_movements"
+                  warehouseId={activeWarehouse?.id}
+                  filters={{
+                    dateFrom: movementsDateRange.fromDate,
+                    dateTo: movementsDateRange.toDate,
+                  }}
+                  disabled={!movementsData?.stockMovements?.items?.length}
+                />
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Date Range Filter */}
@@ -267,10 +290,23 @@ function WarehouseReportsContent() {
         <TabsContent value="adjustments" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Adjustments Report</CardTitle>
-              <CardDescription>
-                Stock corrections and manual adjustments within the selected date range.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Adjustments Report</CardTitle>
+                  <CardDescription>
+                    Stock corrections and manual adjustments within the selected date range.
+                  </CardDescription>
+                </div>
+                <ExportButton
+                  type="adjustments"
+                  warehouseId={activeWarehouse?.id}
+                  filters={{
+                    dateFrom: adjustmentsDateRange.fromDate,
+                    dateTo: adjustmentsDateRange.toDate,
+                  }}
+                  disabled={!adjustmentsData?.adjustmentReport?.items?.length}
+                />
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Date Range Filter */}
