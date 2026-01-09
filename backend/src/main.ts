@@ -7,18 +7,9 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   app.setGlobalPrefix('api');
-  const corsOrigins = (configService.get<string>('CORS_ORIGIN') || 'http://localhost:3000')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
 
   app.enableCors({
-    origin: (origin, callback) => {
-      // Allow same-origin requests, server-to-server, curl/postman, etc.
-      if (!origin) return callback(null, true);
-      if (corsOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error(`CORS blocked for origin: ${origin}`), false);
-    },
+    origin: process.env.CORS_ORIGIN!.split(','),
     credentials: true,
   });
 
