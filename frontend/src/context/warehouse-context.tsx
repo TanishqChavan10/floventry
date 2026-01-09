@@ -54,8 +54,7 @@ import { useAuth as useClerkAuth } from '@clerk/nextjs';
 import { useAuth } from '@/context/auth-context';
 import { toast } from 'sonner';
 import { useParams } from 'next/navigation';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+import { API_URL } from '@/config/env';
 
 export function WarehouseProvider({ children }: { children: React.ReactNode }) {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -82,12 +81,11 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
 
         setWarehouses(data);
         if (data.length > 0 && activeWarehouseId === 'ALL') {
-             // Optionally set default if 'ALL' is not desired as initial state, but 'ALL' is fine.
-             // If we want to mimic the logic of "select first if exists", we can do it here.
-             // For now, let's keep 'ALL' or user preference.
+          // Optionally set default if 'ALL' is not desired as initial state, but 'ALL' is fine.
+          // If we want to mimic the logic of "select first if exists", we can do it here.
+          // For now, let's keep 'ALL' or user preference.
         }
       } else {
-
       }
     } catch (error) {
       console.error('[WarehouseContext] Failed to fetch warehouses', error);
@@ -99,20 +97,19 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isSignedIn && user && !authLoading) {
-        fetchWarehouses();
+      fetchWarehouses();
     } else {
-        if (!authLoading) {
-          setIsLoading(false);
-        }
+      if (!authLoading) {
+        setIsLoading(false);
+      }
     }
   }, [isSignedIn, user, authLoading, params?.slug]); // Added user and authLoading dependencies
-
 
   // Detect active warehouse from URL
   useEffect(() => {
     const warehouseSlug = params?.warehouseSlug as string;
     if (warehouseSlug && warehouses.length > 0) {
-      const currentWarehouse = warehouses.find(w => w.slug === warehouseSlug);
+      const currentWarehouse = warehouses.find((w) => w.slug === warehouseSlug);
       if (currentWarehouse && currentWarehouse.id !== activeWarehouseId) {
         setActiveWarehouseId(currentWarehouse.id);
       }
@@ -138,7 +135,7 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
       const createdWarehouse = await res.json();
       setWarehouses((prev) => [...prev, createdWarehouse]);
       toast.success('Warehouse created successfully');
-      
+
       // If it's the first warehouse, select it
       if (warehouses.length === 0) {
         setActiveWarehouseId(createdWarehouse.id);
@@ -189,7 +186,7 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
     addWarehouse,
     deleteWarehouse,
     isLoading,
-    refreshWarehouses: fetchWarehouses, 
+    refreshWarehouses: fetchWarehouses,
   };
 
   return <WarehouseContext.Provider value={value}>{children}</WarehouseContext.Provider>;

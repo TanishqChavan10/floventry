@@ -3,6 +3,7 @@
 import { ApolloClient, InMemoryCache, ApolloLink, from } from "@apollo/client";
 import { onError } from "@apollo/client/link/error";
 import { HttpLink } from "@apollo/client/link/http";
+import { GRAPHQL_URL } from "@/config/env";
 
 // Auth link that gets fresh token from window (updated by ApolloAppProvider)
 const authLink = new ApolloLink((operation, forward) => {
@@ -41,7 +42,7 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
 
 // HTTP link
 const httpLink = new HttpLink({
-  uri: process.env.NEXT_PUBLIC_GRAPHQL_URL || "http://localhost:5000/api/graphql",
+  uri: GRAPHQL_URL,
 });
 
 // Final Apollo client

@@ -6,8 +6,7 @@ import { Bell } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+import { API_URL } from '@/config/env';
 
 export default function NotificationBell() {
   const { getToken } = useAuth();

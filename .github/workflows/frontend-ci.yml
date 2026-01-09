@@ -17,6 +17,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      NEXT_PUBLIC_GRAPHQL_URL: https://example.com/api/graphql
+
     strategy:
       fail-fast: false
       matrix:

@@ -8,8 +8,7 @@ import { DateRange } from 'react-day-picker';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 import { useAuth } from '@clerk/nextjs';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+import { API_URL } from '@/config/env';
 
 export function SalesReports() {
   const { getToken } = useAuth();
