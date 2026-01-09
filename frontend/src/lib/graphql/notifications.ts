@@ -5,13 +5,13 @@ export const NOTIFICATION_FRAGMENT = gql`
     id
     type
     severity
-    entityType
-    entityId
+    entityType: entity_type
+    entityId: entity_id
     title
     message
     metadata
-    readAt
-    createdAt
+    readAt: read_at
+    createdAt: created_at
   }
 `;
 

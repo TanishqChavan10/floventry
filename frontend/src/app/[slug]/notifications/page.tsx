@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
+import { useParams, useRouter } from 'next/navigation';
 import CompanyGuard from '@/components/CompanyGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bell, AlertCircle, Info, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { GET_NOTIFICATIONS, GET_UNREAD_COUNT, MARK_AS_READ, MARK_ALL_AS_READ } from '@/lib/graphql/notifications';
+import {
+  GET_NOTIFICATIONS,
+  GET_UNREAD_COUNT,
+  MARK_AS_READ,
+  MARK_ALL_AS_READ,
+} from '@/lib/graphql/notifications';
 
 interface Notification {
   id: string;
@@ -91,12 +97,12 @@ function NotificationsPageContent() {
     if (!notification.readAt) {
       markAsRead({ variables: { id: notification.id } });
     }
-    
+
     // Deep-link navigation based on entity type
     const { entityType, entityId, metadata } = notification;
-    
+
     if (!companySlug) return;
-    
+
     switch (entityType) {
       case 'GRN':
         router.push(`/${companySlug}/purchase/grn/${entityId}`);
@@ -180,12 +186,12 @@ function NotificationsPageContent() {
               }`}
             >
               <div className="flex gap-4 items-start">
-                <div className="flex-shrink-0 mt-1">
-                  {getSeverityIcon(notification.severity)}
-                </div>
+                <div className="flex-shrink-0 mt-1">{getSeverityIcon(notification.severity)}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <h4 className={`text-sm ${!notification.readAt ? 'font-semibold' : 'font-medium'}`}>
+                    <h4
+                      className={`text-sm ${!notification.readAt ? 'font-semibold' : 'font-medium'}`}
+                    >
                       {notification.title}
                     </h4>
                     {getSeverityBadge(notification.severity)}
@@ -194,9 +200,13 @@ function NotificationsPageContent() {
                     {notification.message}
                   </p>
                   <div className="flex items-center gap-3 text-xs text-slate-500">
-                    <span>{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</span>
+                    <span>
+                      {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                    </span>
                     <span>•</span>
-                    <span className="capitalize">{notification.type.replace(/_/g, ' ').toLowerCase()}</span>
+                    <span className="capitalize">
+                      {notification.type.replace(/_/g, ' ').toLowerCase()}
+                    </span>
                   </div>
                 </div>
                 {!notification.readAt && (
@@ -263,7 +273,7 @@ function NotificationsPageContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">
-                {notifications.filter(n => n.severity === 'CRITICAL').length}
+                {notifications.filter((n) => n.severity === 'CRITICAL').length}
               </div>
             </CardContent>
           </Card>
@@ -274,7 +284,12 @@ function NotificationsPageContent() {
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="unread">
-              Unread {unreadCount > 0 && <Badge variant="secondary" className="ml-2">{unreadCount}</Badge>}
+              Unread{' '}
+              {unreadCount > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {unreadCount}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="critical">Critical</TabsTrigger>
           </TabsList>
@@ -288,7 +303,11 @@ function NotificationsPageContent() {
                   <div className="p-12 text-center">
                     <Bell className="h-12 w-12 mx-auto mb-4 opacity-50 text-slate-400" />
                     <p className="text-slate-600 dark:text-slate-400">
-                      {filter === 'unread' ? 'No unread notifications' : filter === 'critical' ? 'No critical notifications' : 'No notifications yet'}
+                      {filter === 'unread'
+                        ? 'No unread notifications'
+                        : filter === 'critical'
+                          ? 'No critical notifications'
+                          : 'No notifications yet'}
                     </p>
                   </div>
                 ) : (

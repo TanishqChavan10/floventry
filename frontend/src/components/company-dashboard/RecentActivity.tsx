@@ -2,73 +2,32 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, ArrowUpRight, ArrowDownRight, Package, Users } from 'lucide-react';
+import { Activity, ArrowUpRight, ArrowDownRight, Package, ArrowLeftRight } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { formatDistanceToNow } from 'date-fns';
+import type { CompanyDashboardData } from '@/lib/graphql/company-dashboard';
 
-interface ActivityItem {
-  id: string;
-  type: 'stock_in' | 'stock_out' | 'user_added' | 'po_created';
-  message: string;
-  user: string;
-  warehouse?: string;
-  timestamp: string;
+interface RecentActivityProps {
+  data?: CompanyDashboardData;
 }
 
-// Mock data
-const MOCK_ACTIVITIES: ActivityItem[] = [
-  {
-    id: '1',
-    type: 'stock_in',
-    message: 'Received 50 units of Premium LED Bulbs',
-    user: 'Sarah Staff',
-    warehouse: 'Main Warehouse',
-    timestamp: '5 minutes ago',
-  },
-  {
-    id: '2',
-    type: 'po_created',
-    message: 'Created Purchase Order PO-1236',
-    user: 'John Manager',
-    warehouse: 'Downtown Store',
-    timestamp: '1 hour ago',
-  },
-  {
-    id: '3',
-    type: 'stock_out',
-    message: 'Dispatched 25 units of Wireless Mouse',
-    user: 'Mike Warehouse',
-    warehouse: 'East Warehouse',
-    timestamp: '2 hours ago',
-  },
-  {
-    id: '4',
-    type: 'user_added',
-    message: 'New user invited: emma@example.com',
-    user: 'Admin',
-    timestamp: '3 hours ago',
-  },
-  {
-    id: '5',
-    type: 'stock_in',
-    message: 'Received 100 units of Office Chairs',
-    user: 'Sarah Staff',
-    warehouse: 'Main Warehouse',
-    timestamp: '5 hours ago',
-  },
-];
+export function RecentActivity({ data }: RecentActivityProps) {
+  const events = data?.recentActivity ?? [];
 
-export function RecentActivity() {
-  const getActivityIcon = (type: ActivityItem['type']) => {
-    switch (type) {
-      case 'stock_in':
-        return <ArrowDownRight className="h-4 w-4 text-green-600" />;
-      case 'stock_out':
-        return <ArrowUpRight className="h-4 w-4 text-red-600" />;
-      case 'po_created':
-        return <Package className="h-4 w-4 text-blue-600" />;
-      case 'user_added':
-        return <Users className="h-4 w-4 text-purple-600" />;
-    }
+  const getEventIcon = (eventType: string) => {
+    if (eventType === 'GRN_POSTED') return <ArrowDownRight className="h-4 w-4 text-green-600" />;
+    if (eventType === 'ISSUE_POSTED') return <ArrowUpRight className="h-4 w-4 text-red-600" />;
+    if (eventType === 'TRANSFER_POSTED')
+      return <ArrowLeftRight className="h-4 w-4 text-blue-600" />;
+    return <Package className="h-4 w-4 text-slate-500" />;
+  };
+
+  const getEventLabel = (eventType: string) => {
+    if (eventType === 'GRN_POSTED') return 'Goods received';
+    if (eventType === 'ISSUE_POSTED') return 'Stock issued';
+    if (eventType === 'TRANSFER_POSTED') return 'Transfer posted';
+    if (eventType === 'ADJUSTMENT') return 'Stock adjusted';
+    return eventType;
   };
 
   const getInitials = (name: string) => {
@@ -90,38 +49,45 @@ export function RecentActivity() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {MOCK_ACTIVITIES.map((activity) => (
+          {events.map((event, idx) => (
             <div
-              key={activity.id}
+              key={`${event.eventType}-${event.referenceNumber ?? 'na'}-${event.occurredAt}-${idx}`}
               className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0"
             >
               <Avatar className="h-9 w-9">
                 <AvatarFallback className="text-xs">
-                  {getInitials(activity.user)}
+                  {getInitials(event.performedBy || 'System')}
                 </AvatarFallback>
               </Avatar>
-              
+
               <div className="flex-1 space-y-1">
                 <div className="flex items-center gap-2">
-                  {getActivityIcon(activity.type)}
+                  {getEventIcon(event.eventType)}
                   <p className="text-sm font-medium leading-none">
-                    {activity.message}
+                    {getEventLabel(event.eventType)}
+                    {event.referenceNumber ? ` • ${event.referenceNumber}` : ''}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{activity.user}</span>
-                  {activity.warehouse && (
+                  <span>{event.performedBy || 'System'}</span>
+                  {event.warehouseName && (
                     <>
                       <span>•</span>
-                      <span>{activity.warehouse}</span>
+                      <span>{event.warehouseName}</span>
                     </>
                   )}
                   <span>•</span>
-                  <span>{activity.timestamp}</span>
+                  <span>
+                    {formatDistanceToNow(new Date(event.occurredAt), { addSuffix: true })}
+                  </span>
                 </div>
               </div>
             </div>
           ))}
+
+          {events.length === 0 && (
+            <div className="text-sm text-muted-foreground">No recent activity yet.</div>
+          )}
         </div>
       </CardContent>
     </Card>

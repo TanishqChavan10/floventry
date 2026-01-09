@@ -1,13 +1,20 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 import { Notification, NotificationType, NotificationSeverity } from './entities/notification.entity';
+import { UserCompany } from '../user-company/user-company.entity';
+import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
+import { Role } from '../auth/enums/role.enum';
 
 @Injectable()
 export class NotificationsService {
     constructor(
         @InjectRepository(Notification)
         private notificationRepository: Repository<Notification>,
+        @InjectRepository(UserCompany)
+        private userCompanyRepository: Repository<UserCompany>,
+        @InjectRepository(UserWarehouse)
+        private userWarehouseRepository: Repository<UserWarehouse>,
     ) { }
 
     /**
@@ -24,6 +31,10 @@ export class NotificationsService {
         message: string,
         metadata?: any,
     ): Promise<Notification[]> {
+        if (!userIds || userIds.length === 0) {
+            return [];
+        }
+
         // For continuous state notifications, check deduplication
         const continuousTypes = [
             NotificationType.STOCK_LOW,
@@ -42,7 +53,8 @@ export class NotificationsService {
                 .andWhere('n.entity_id = :entityId', { entityId })
                 .andWhere('n.type = :type', { type })
                 .andWhere('n.read_at IS NULL')
-                .andWhere(warehouseId ? `n.metadata->>'warehouseId' = :warehouseId` : '1=1', { warehouseId })
+                .andWhere('n.user_id IN (:...userIds)', { userIds })
+                .andWhere(warehouseId ? `n.warehouse_id = :warehouseId` : 'n.warehouse_id IS NULL', { warehouseId })
                 .getMany();
 
             const existingUserIds = new Set(existing.map((n) => n.user_id));
@@ -66,6 +78,7 @@ export class NotificationsService {
                 title,
                 message,
                 metadata,
+                warehouse_id: metadata?.warehouseId ?? null,
                 read_at: null,
             }),
         );
@@ -114,6 +127,26 @@ export class NotificationsService {
     }
 
     /**
+     * Mark notification as read (ownership enforced)
+     */
+    async markAsReadForUser(id: string, userId: string): Promise<Notification> {
+        const notification = await this.notificationRepository.findOne({
+            where: { id, user_id: userId },
+        });
+
+        if (!notification) {
+            throw new NotFoundException('Notification not found');
+        }
+
+        if (notification.read_at) {
+            return notification;
+        }
+
+        notification.read_at = new Date();
+        return this.notificationRepository.save(notification);
+    }
+
+    /**
      * Mark all notifications as read for a user
      */
     async markAllAsRead(userId: string): Promise<number> {
@@ -147,7 +180,7 @@ export class NotificationsService {
             .andWhere('read_at IS NULL');
 
         if (warehouseId) {
-            query.andWhere(`metadata->>'warehouseId' = :warehouseId`, { warehouseId });
+            query.andWhere('warehouse_id = :warehouseId', { warehouseId });
         }
 
         await query.execute();
@@ -163,18 +196,56 @@ export class NotificationsService {
         companyId: string,
         warehouseId?: string,
     ): Promise<string[]> {
-        // For now, simplified implementation - get OWNER and ADMIN for all notifications
-        // In production, you would query UserCompany and UserWarehouse tables
+        const ownerAdminMemberships = await this.userCompanyRepository.find({
+            where: {
+                company_id: companyId,
+                status: 'active',
+                role: In([Role.OWNER, Role.ADMIN]),
+            },
+            select: ['user_id'],
+        });
 
-        // TODO: Full implementation would be:
-        // 1. Query UserCompany for OWNER/ADMIN roles
-        // 2. If warehouseId provided: Query UserWarehouse for MANAGER assignments
-        // 3. Filter active users only
-        // 4. Return user IDs
+        const recipients = new Set(ownerAdminMemberships.map((m) => m.user_id));
 
-        // Placeholder: Return empty array for now
-        // This will be fully implemented in next phase when we have user management ready
-        return [];
+        if (!warehouseId) {
+            return Array.from(recipients);
+        }
+
+        const managerMemberships = await this.userCompanyRepository.find({
+            where: {
+                company_id: companyId,
+                status: 'active',
+                role: Role.MANAGER,
+            },
+            select: ['user_id'],
+        });
+
+        const managerIds = managerMemberships.map((m) => m.user_id);
+        if (managerIds.length === 0) {
+            return Array.from(recipients);
+        }
+
+        const managerAssignments = await this.userWarehouseRepository.find({
+            where: {
+                warehouse_id: warehouseId,
+                is_manager_of_warehouse: true,
+                user_id: In(managerIds),
+            },
+            select: ['user_id'],
+        });
+
+        for (const assignment of managerAssignments) {
+            recipients.add(assignment.user_id);
+        }
+
+        return Array.from(recipients);
+    }
+
+    /**
+     * Public wrapper to reuse RBAC recipient resolution from other modules.
+     */
+    async getRecipients(companyId: string, warehouseId?: string): Promise<string[]> {
+        return this.resolveRecipients(companyId, warehouseId);
     }
 
     // ========== Notification Type Helpers ==========

@@ -6,6 +6,14 @@ input AcceptInviteInput {
   token: String!
 }
 
+type ActiveAlertsSummary {
+  critical: Int!
+  expiry: Int!
+  import_issues: Int!
+  low_stock: Int!
+  warning: Int!
+}
+
 input AdjustStockInput {
   notes: String
   product_id: ID!
@@ -99,6 +107,30 @@ type Company {
   updated_at: DateTime
   warehouses: [Warehouse!]
   website: String
+}
+
+type CompanyDashboardData {
+  active_alerts_summary: ActiveAlertsSummary!
+  expiry_risk_distribution: ExpiryRiskDistribution!
+  kpis: CompanyDashboardKPIs!
+  recent_activity: [RecentInventoryEvent!]!
+  stock_status_distribution: StockStatusDistribution!
+  warehouse_health_snapshot: [WarehouseHealthSnapshotItem!]!
+}
+
+type CompanyDashboardKPIs {
+  expired_stock_units: Int!
+  movements_7d: CompanyDashboardMovementsWindow!
+  movements_30d: CompanyDashboardMovementsWindow!
+  stock_at_risk: Int!
+  total_skus: Int!
+  total_stock_units: Int!
+  warehouses: Int!
+}
+
+type CompanyDashboardMovementsWindow {
+  in_units: Int!
+  out_units: Int!
 }
 
 input CompanyInventorySummaryFilterInput {
@@ -304,6 +336,12 @@ type DashboardMovementItem {
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
 scalar DateTime
+
+type ExpiryRiskDistribution {
+  expired: Int!
+  expiring_soon: Int!
+  ok: Int!
+}
 
 input ExportFiltersInput {
   dateFrom: String
@@ -519,6 +557,8 @@ type Mutation {
   exportInventorySummary(filters: ExportFiltersInput): String!
   exportStockMovements(filters: ExportFiltersInput, warehouseId: String!): String!
   exportStockSnapshot(filters: ExportFiltersInput, warehouseId: String!): String!
+  markAllNotificationsAsRead: Int!
+  markNotificationAsRead(id: String!): Notification!
   markPurchaseOrderOrdered(id: String!): PurchaseOrder!
   postGRN(id: String!): GoodsReceiptNote!
   postIssueNote(id: ID!): IssueNote!
@@ -554,6 +594,40 @@ type Mutation {
   validateOpeningStockImport(csvContent: String!, warehouseId: String!): String!
   validateProductImport(csvContent: String!): String!
   validateSupplierImport(csvContent: String!): String!
+}
+
+type Notification {
+  company_id: ID!
+  created_at: DateTime!
+  entity_id: ID!
+  entity_type: String!
+  id: ID!
+  message: String!
+  metadata: String
+  read_at: DateTime
+  severity: NotificationSeverity!
+  title: String!
+  type: NotificationType!
+  user_id: ID!
+  warehouse_id: ID
+}
+
+enum NotificationSeverity {
+  CRITICAL
+  INFO
+  WARNING
+}
+
+enum NotificationType {
+  GRN_POSTED
+  IMPORT_COMPLETED
+  IMPORT_PARTIAL_FAILURE
+  ISSUE_POSTED
+  STOCK_CRITICAL
+  STOCK_EXPIRED
+  STOCK_EXPIRING_SOON
+  STOCK_LOW
+  TRANSFER_COMPLETED
 }
 
 type Product {
@@ -639,6 +713,7 @@ type Query {
   companies: [Company!]!
   company(id: String!): Company!
   companyBySlug(slug: String!): Company!
+  companyDashboard: CompanyDashboardData!
   companyInventorySummary(filters: CompanyInventorySummaryFilterInput!): [CompanyInventorySummaryItem!]!
   companyInvites(companyId: String!): [Invite!]!
   companyMembers(companyId: String!): [CompanyMemberDetails!]!
@@ -658,6 +733,7 @@ type Query {
   movementTypeBreakdown(days: Float = 30): [MovementTypeBreakdown!]!
   myCompanies: [UserCompany!]!
   myPendingInvites: [Invite!]!
+  notifications(limit: Int = 50, offset: Int = 0): [Notification!]!
   product(id: String!): Product!
   products: [Product!]!
   purchaseOrder(id: String!): PurchaseOrder
@@ -674,6 +750,7 @@ type Query {
   suppliers(includeArchived: Boolean = false): [Supplier!]!
   topStockProducts(limit: Float = 10): [TopStockProduct!]!
   units: [Unit!]!
+  unreadNotificationCount: Int!
   usersInCompany: [UserCompany!]!
   validateInvite(token: String!): ValidateInviteResponse!
   warehouse(id: String!): Warehouse!
@@ -684,6 +761,14 @@ type Query {
   warehouseTransfer(id: String!): WarehouseTransfer
   warehouseTransfers(filters: TransferFilterInput!): [WarehouseTransfer!]!
   warehouses: [Warehouse!]!
+}
+
+type RecentInventoryEvent {
+  event_type: String!
+  occurred_at: DateTime!
+  performed_by: String
+  reference_number: String
+  warehouse_name: String
 }
 
 """Reference type for stock movement"""
@@ -882,6 +967,12 @@ type StockSnapshotItem {
 type StockSnapshotResult {
   items: [StockSnapshotItem!]!
   total: Int!
+}
+
+type StockStatusDistribution {
+  critical: Int!
+  low: Int!
+  ok: Int!
 }
 
 type Supplier {
@@ -1197,6 +1288,14 @@ type WarehouseHealthScore {
   warehouseId: ID!
   warehouseName: String!
   warningCount: Int!
+}
+
+type WarehouseHealthSnapshotItem {
+  ok_percent: Int!
+  risk_badge: String!
+  warehouse_id: ID!
+  warehouse_name: String!
+  warehouse_slug: String
 }
 
 type WarehouseKPIs {

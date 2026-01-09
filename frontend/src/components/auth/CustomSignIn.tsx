@@ -15,6 +15,8 @@ export default function CustomSignIn() {
   const { isLoaded, signIn, setActive } = useSignIn();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [pendingEmailCode, setPendingEmailCode] = React.useState(false);
+  const [code, setCode] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -69,6 +71,175 @@ export default function CustomSignIn() {
       setIsLoading(false);
     }
   };
+
+  const startEmailCodeSignIn = async () => {
+    if (!isLoaded) return;
+
+    if (!email.trim()) {
+      setError('Enter your email address first.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const result = await signIn.create({
+        identifier: email.trim(),
+      });
+
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId });
+        router.push('/');
+        return;
+      }
+
+      // Most common path for email code sign-in
+      if (result.status === 'needs_first_factor') {
+        const emailCodeFactor = (result as any).supportedFirstFactors?.find(
+          (factor: any) => factor.strategy === 'email_code',
+        );
+
+        if (!emailCodeFactor?.emailAddressId) {
+          setError(
+            'Email-code sign-in is not enabled for this Clerk instance. Enable Email code (or Password) in the Clerk dashboard sign-in methods.',
+          );
+          return;
+        }
+
+        await signIn.prepareFirstFactor({
+          strategy: 'email_code',
+          emailAddressId: emailCodeFactor.emailAddressId,
+        });
+
+        setPendingEmailCode(true);
+        return;
+      }
+
+      console.log(result);
+      setError('Unable to start email-code sign-in. Please try again.');
+    } catch (err: any) {
+      console.error('Email code sign-in error:', err);
+      setError(err.errors?.[0]?.longMessage || err.message || 'Unable to send code.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyEmailCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isLoaded) return;
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const result = await signIn.attemptFirstFactor({
+        strategy: 'email_code',
+        code: code.trim(),
+      });
+
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId });
+        router.push('/');
+      } else {
+        console.log(result);
+        setError('Verification failed. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('Email code verification error:', err);
+      setError(err.errors?.[0]?.longMessage || err.message || 'Invalid code.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (pendingEmailCode) {
+    return (
+      <div className="w-full max-w-md mx-auto">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setPendingEmailCode(false);
+              setCode('');
+              setError('');
+            }}
+            className="flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            type="button"
+          >
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+            Back
+          </Button>
+        </div>
+
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+            Check your email
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400">We sent a sign-in code to {email}</p>
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-xl shadow-indigo-100/50 dark:shadow-none">
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <form onSubmit={verifyEmailCode} className="space-y-6">
+            {/* CAPTCHA element for Clerk bot protection */}
+            <div id="clerk-captcha" className="flex justify-center mb-4"></div>
+
+            <div className="space-y-2">
+              <Label htmlFor="code">Sign-in code</Label>
+              <Input
+                id="code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Enter 6-digit code"
+                required
+                className="h-11 text-center text-lg tracking-widest"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                'Verify & sign in'
+              )}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-11"
+              onClick={startEmailCodeSignIn}
+              disabled={isLoading}
+            >
+              Resend code
+            </Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-md mx-auto">
@@ -203,6 +374,16 @@ export default function CustomSignIn() {
             ) : (
               'Sign in'
             )}
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-11"
+            onClick={startEmailCodeSignIn}
+            disabled={isLoading}
+          >
+            Send a sign-in code to email
           </Button>
         </form>
 

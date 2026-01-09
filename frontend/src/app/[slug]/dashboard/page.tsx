@@ -5,19 +5,20 @@ import { useParams } from 'next/navigation';
 import { usePermissions } from '@/hooks/usePermissions';
 import { WarehouseOverview } from '@/components/company-dashboard/WarehouseOverview';
 import { InventorySnapshot } from '@/components/company-dashboard/InventorySnapshot';
-import { PurchaseOrdersSummary } from '@/components/company-dashboard/PurchaseOrdersSummary';
 import { RecentActivity } from '@/components/company-dashboard/RecentActivity';
 import { QuickActions } from '@/components/company-dashboard/QuickActions';
 import CompanyGuard from '@/components/CompanyGuard';
 import { AlertCircle } from 'lucide-react';
+import { useQuery } from '@apollo/client';
+import { GET_COMPANY_DASHBOARD } from '@/lib/graphql/company-dashboard';
 
 function CompanyDashboardContent() {
   const params = useParams();
   const companySlug = params.slug as string;
   const permissions = usePermissions();
 
-  // Only OWNER, ADMIN, and MANAGER can access company dashboard
-  if (!permissions.isOwner && !permissions.isAdmin && !permissions.isManager) {
+  // Only OWNER and ADMIN can access company dashboard
+  if (!permissions.isOwner && !permissions.isAdmin) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6">
         <div className="max-w-md mx-auto text-center space-y-4">
@@ -26,9 +27,40 @@ function CompanyDashboardContent() {
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Access Denied</h1>
           <p className="text-slate-600 dark:text-slate-400">
-            Only company owners, administrators, and managers can access the company dashboard. Please contact
+            Only company owners and administrators can access the company dashboard. Please contact
             your administrator if you believe this is an error.
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  const { data, loading, error } = useQuery(GET_COMPANY_DASHBOARD, {
+    pollInterval: 30000,
+  });
+
+  const dashboard = data?.companyDashboard;
+
+  if (loading && !dashboard) {
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-slate-200 rounded w-1/3"></div>
+          <div className="grid gap-6 md:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-32 bg-slate-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <div className="p-4 bg-red-50 text-red-500 rounded-lg">
+          Error loading dashboard: {error.message}
         </div>
       </div>
     );
@@ -50,24 +82,21 @@ function CompanyDashboardContent() {
 
         {/* Inventory Snapshot */}
         <section>
-          <InventorySnapshot />
+          <InventorySnapshot companySlug={companySlug} data={dashboard} />
         </section>
 
         {/* Warehouse Overview */}
         <section>
-          <WarehouseOverview companySlug={companySlug} />
+          <WarehouseOverview companySlug={companySlug} data={dashboard} />
         </section>
 
         {/* Two Column Layout */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Left Column */}
           <div className="space-y-6">
-            <PurchaseOrdersSummary />
+            <RecentActivity data={dashboard} />
           </div>
 
-          {/* Right Column */}
           <div className="space-y-6">
-            <RecentActivity />
             <QuickActions companySlug={companySlug} />
           </div>
         </div>

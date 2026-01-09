@@ -9,12 +9,13 @@ import { UserWarehouse } from './entities/user-warehouse.entity';
 import { Warehouse } from '../warehouse/warehouse.entity';
 import { ClerkService } from './clerk.service';
 import { ClerkAuthGuard } from './guards/clerk-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
 import { WarehouseGuard } from './guards/warehouse.guard';
 import { UserWarehouseService } from './user-warehouse.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User, UserWarehouse, Warehouse]), ConfigModule],
-  providers: [AuthResolver, ClerkService, ClerkAuthGuard, WarehouseGuard, UserWarehouseService],
-  exports: [ClerkService, ClerkAuthGuard, WarehouseGuard, UserWarehouseService, TypeOrmModule],
+  providers: [AuthResolver, ClerkService, ClerkAuthGuard, RolesGuard, WarehouseGuard, UserWarehouseService],
+  exports: [ClerkService, ClerkAuthGuard, RolesGuard, WarehouseGuard, UserWarehouseService, TypeOrmModule],
 })
 export class AuthModule { }

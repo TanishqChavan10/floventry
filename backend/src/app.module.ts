@@ -29,6 +29,7 @@ import { IssuesModule } from './issues/issues.module';
 import { ExportModule } from './export/export.module';
 import { ImportModule } from './import/import.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { CompanyDashboardModule } from './company-dashboard/company-dashboard.module';
 
 @Module({
   imports: [
@@ -87,6 +88,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     ExportModule,
     ImportModule,
     NotificationsModule,
+    CompanyDashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

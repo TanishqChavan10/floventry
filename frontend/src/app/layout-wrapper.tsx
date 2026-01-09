@@ -20,6 +20,11 @@ import { motion } from 'motion/react';
 import { useAuth } from '@/context/auth-context';
 import { useParams, usePathname } from 'next/navigation';
 import { usePermissions } from '@/hooks/usePermissions';
+import { toast } from 'sonner';
+import {
+  extractWarehouseRouteSuffix,
+  setPendingWarehouseRoute,
+} from '@/lib/warehouse-pending-route';
 
 function BottomSection() {
   const { user } = useAuth();
@@ -97,6 +102,21 @@ function AppSidebarContent() {
     navigationSections = getCompanyNavigation(companySlug);
   }
 
+  const handleWarehouseNavWithoutSelection =
+    (href: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+      // Only apply this guard on the warehouses list page (no warehouse selected)
+      if (!isWarehousesListPage) return;
+
+      const suffix = extractWarehouseRouteSuffix(companySlug, href);
+      // Only guard warehouse-scoped links that would require a selected warehouse.
+      // Allow the list page itself and root warehouse base link.
+      if (!suffix || suffix === '/' || suffix === '') return;
+
+      e.preventDefault();
+      setPendingWarehouseRoute(companySlug, suffix);
+      toast.error('No warehouse selected');
+    };
+
   const logoHref = warehouseSlug
     ? `/${companySlug}/warehouses/${warehouseSlug}`
     : `/${companySlug}/dashboard`;
@@ -153,7 +173,13 @@ function AppSidebarContent() {
           {filteredSections.map((section, index) => (
             <SidebarSection key={index} title={section.title}>
               {section.items.map((item) => (
-                <SidebarItem key={item.href} {...item} />
+                <SidebarItem
+                  key={item.href}
+                  {...item}
+                  onClick={
+                    isWarehousesListPage ? handleWarehouseNavWithoutSelection(item.href) : undefined
+                  }
+                />
               ))}
             </SidebarSection>
           ))}

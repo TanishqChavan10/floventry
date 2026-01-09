@@ -22,6 +22,10 @@ import { useMutation } from '@apollo/client';
 import { SWITCH_WAREHOUSE } from '@/lib/graphql/auth';
 import { GET_CURRENT_USER } from '@/lib/graphql/auth';
 import { toast } from 'sonner';
+import {
+  clearPendingWarehouseRoute,
+  getPendingWarehouseRoute,
+} from '@/lib/warehouse-pending-route';
 
 export default function WarehouseSwitcher() {
   const params = useParams();
@@ -40,21 +44,27 @@ export default function WarehouseSwitcher() {
 
   const handleSelect = async (warehouseId: string) => {
     setActiveWarehouseId(warehouseId);
-    
+
     if (warehouseId === 'ALL') {
       // TODO: Handle 'ALL' route if we want a consolidated view
       // For now, maybe redirect to main or keep current logic but we need a route
       router.push(`/${companySlug}/`);
     } else {
-      const wh = warehouses.find(w => w.id === warehouseId);
+      const wh = warehouses.find((w) => w.id === warehouseId);
       if (wh && wh.slug) {
         try {
           // Update default warehouse in backend
           await switchWarehouse({
             variables: { warehouseId },
           });
-          
-          router.push(`/${companySlug}/warehouses/${wh.slug}`);
+
+          const pending = getPendingWarehouseRoute(companySlug);
+          if (pending && pending !== '/' && pending !== '') {
+            clearPendingWarehouseRoute(companySlug);
+            router.push(`/${companySlug}/warehouses/${wh.slug}${pending}`);
+          } else {
+            router.push(`/${companySlug}/warehouses/${wh.slug}`);
+          }
           toast.success('Warehouse switched successfully');
         } catch (error: any) {
           console.error('Error switching warehouse:', error);
@@ -136,7 +146,7 @@ export default function WarehouseSwitcher() {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link
-            href={`/${companySlug}/${activeWarehouse?.slug || 'main'}/warehouses`} 
+            href={`/${companySlug}/${activeWarehouse?.slug || 'main'}/warehouses`}
             className="cursor-pointer font-medium text-indigo-600"
           >
             <Warehouse className="mr-2 h-4 w-4" />

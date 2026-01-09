@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, Index } from 'typeorm';
-import { ObjectType, Field, ID, registerEnumType } from '@nestjs/graphql';
+import { ObjectType, Field, ID, GraphQLISODateTime, registerEnumType } from '@nestjs/graphql';
 
 export enum NotificationType {
     STOCK_LOW = 'STOCK_LOW',
@@ -32,6 +32,7 @@ registerEnumType(NotificationSeverity, {
 @Index(['user_id', 'read_at'])
 @Index(['company_id', 'created_at'])
 @Index(['entity_id', 'type'])
+@Index(['company_id', 'type', 'entity_id', 'warehouse_id', 'user_id', 'read_at'])
 export class Notification {
     @Field(() => ID)
     @PrimaryGeneratedColumn('uuid')
@@ -42,8 +43,12 @@ export class Notification {
     company_id: string;
 
     @Field(() => ID)
-    @Column('uuid')
+    @Column({ type: 'text' })
     user_id: string;
+
+    @Field(() => ID, { nullable: true })
+    @Column('uuid', { nullable: true })
+    warehouse_id: string | null;
 
     @Field(() => NotificationType)
     @Column({
@@ -65,7 +70,7 @@ export class Notification {
     entity_type: string;
 
     @Field(() => ID)
-    @Column('uuid')
+    @Column({ type: 'text' })
     entity_id: string;
 
     @Field()
@@ -80,7 +85,7 @@ export class Notification {
     @Column('jsonb', { nullable: true })
     metadata: any;
 
-    @Field({ nullable: true })
+    @Field(() => GraphQLISODateTime, { nullable: true })
     @Column('timestamp', { nullable: true })
     read_at: Date | null;
 

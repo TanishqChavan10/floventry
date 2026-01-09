@@ -7,6 +7,9 @@ import { Supplier } from '../supplier/supplier.entity';
 import { StockLot } from '../inventory/entities/stock-lot.entity';
 import { Stock } from '../inventory/entities/stock.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
+import { Warehouse } from '../warehouse/warehouse.entity';
+import { LotSourceType } from '../inventory/entities/stock-lot.entity';
+import { MovementType, ReferenceType } from '../inventory/entities/stock-movement.entity';
 import * as Papa from 'papaparse';
 
 export interface ValidationError {
@@ -113,7 +116,6 @@ export class ImportService {
                 sku: 'PROD-001',
                 quantity: '50',
                 expiry_date: '2026-12-31',
-                batch_number: 'BATCH-001',
             },
         ];
         return Papa.unparse(template);
@@ -544,6 +546,16 @@ export class ImportService {
         warehouseId: string,
         companyId: string,
     ): Promise<ValidationResult> {
+        // Ensure warehouse belongs to company (prevents cross-company imports)
+        const warehouse = await this.dataSource.getRepository(Warehouse).findOne({
+            where: { id: warehouseId, company_id: companyId },
+            select: ['id'],
+        });
+
+        if (!warehouse) {
+            throw new BadRequestException('Warehouse not found or does not belong to your company');
+        }
+
         const parsed = Papa.parse(csvContent, { header: true, skipEmptyLines: true });
         const rows = parsed.data as any[];
 
@@ -641,6 +653,16 @@ export class ImportService {
         const errors: ValidationError[] = [];
 
         try {
+            // Ensure warehouse belongs to company
+            const warehouse = await queryRunner.manager.findOne(Warehouse, {
+                where: { id: warehouseId, company_id: companyId },
+                select: ['id'],
+            });
+
+            if (!warehouse) {
+                throw new BadRequestException('Warehouse not found or does not belong to your company');
+            }
+
             // Get products
             const products = await queryRunner.manager.find(Product, {
                 where: { company_id: companyId },
@@ -659,12 +681,13 @@ export class ImportService {
 
                     // Create stock lot
                     const lot = queryRunner.manager.create(StockLot, {
+                        company_id: companyId,
                         warehouse_id: warehouseId,
                         product_id: product.id,
                         quantity,
                         expiry_date: expiryDate,
                         received_at: new Date(),
-                        source_type: 'OPENING',
+                        source_type: LotSourceType.OPENING,
                         source_id: null,
                     } as any);
                     await queryRunner.manager.save(lot);
@@ -678,8 +701,11 @@ export class ImportService {
                         },
                     });
 
+                    const previousQuantity = stock ? Number(stock.quantity) : 0;
+                    const newQuantity = previousQuantity + quantity;
+
                     if (stock) {
-                        stock.quantity += quantity;
+                        stock.quantity = newQuantity;
                         await queryRunner.manager.save(stock);
                     } else {
                         stock = queryRunner.manager.create(Stock, {
@@ -693,13 +719,18 @@ export class ImportService {
 
                     // Create stock movement
                     const movement = queryRunner.manager.create(StockMovement, {
+                        stock_id: stock.id,
                         warehouse_id: warehouseId,
+                        company_id: companyId,
                         product_id: product.id,
                         lot_id: lot.id,
-                        type: 'OPENING',
+                        type: MovementType.OPENING,
                         quantity,
-                        reference_type: 'OPENING_STOCK_IMPORT',
-                        reference_id: null,
+                        previous_quantity: previousQuantity,
+                        new_quantity: newQuantity,
+                        reason: 'Opening stock import',
+                        reference_type: ReferenceType.MANUAL,
+                        reference_id: 'OPENING_STOCK_IMPORT',
                         performed_by: userId,
                     } as any);
                     await queryRunner.manager.save(movement);

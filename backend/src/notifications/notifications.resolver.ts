@@ -1,9 +1,12 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { Notification } from './entities/notification.entity';
 import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
+import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 
 @Resolver(() => Notification)
+@UseGuards(ClerkAuthGuard)
 export class NotificationsResolver {
     constructor(private readonly notificationsService: NotificationsService) { }
 
@@ -32,8 +35,12 @@ export class NotificationsResolver {
     @Mutation(() => Notification)
     async markNotificationAsRead(
         @Args('id') id: string,
+        @ClerkUser() user: any,
     ): Promise<Notification> {
-        return this.notificationsService.markAsRead(id);
+        if (!user || !user.id) {
+            throw new Error('Unauthorized');
+        }
+        return this.notificationsService.markAsReadForUser(id, user.id);
     }
 
     @Mutation(() => Int)

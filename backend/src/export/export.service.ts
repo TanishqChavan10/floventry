@@ -30,12 +30,17 @@ export class ExportService {
     async exportStockSnapshot(
         warehouseId: string,
         filters?: ExportFilters,
+        companyId?: string,
     ): Promise<string> {
         const query = this.stockRepository
             .createQueryBuilder('stock')
             .leftJoinAndSelect('stock.product', 'product')
             .leftJoinAndSelect('stock.warehouse', 'warehouse')
             .where('stock.warehouse_id = :warehouseId', { warehouseId });
+
+        if (companyId) {
+            query.andWhere('stock.company_id = :companyId', { companyId });
+        }
 
         if (filters?.productIds?.length) {
             query.andWhere('stock.product_id IN (:...productIds)', {
@@ -55,10 +60,10 @@ export class ExportService {
             'Reorder Point': stock.reorder_point || 0,
             'Max Stock Level': stock.max_stock_level || 0,
             'Status':
-                stock.quantity < (stock.reorder_point || 0)
-                    ? 'Low Stock'
-                    : stock.quantity < (stock.min_stock_level || 0)
-                        ? 'Critical'
+                stock.quantity < (stock.min_stock_level || 0)
+                    ? 'Critical'
+                    : stock.quantity < (stock.reorder_point || 0)
+                        ? 'Low Stock'
                         : 'OK',
         }));
 
@@ -71,6 +76,7 @@ export class ExportService {
     async exportStockMovements(
         warehouseId: string,
         filters?: ExportFilters,
+        companyId?: string,
     ): Promise<string> {
         const query = this.stockMovementRepository
             .createQueryBuilder('movement')
@@ -79,6 +85,10 @@ export class ExportService {
             .leftJoinAndSelect('movement.lot', 'lot')
             .where('movement.warehouse_id = :warehouseId', { warehouseId })
             .orderBy('movement.created_at', 'DESC');
+
+        if (companyId) {
+            query.andWhere('movement.company_id = :companyId', { companyId });
+        }
 
         if (filters?.dateFrom) {
             query.andWhere('movement.created_at >= :dateFrom', {
@@ -123,6 +133,7 @@ export class ExportService {
     async exportAdjustments(
         warehouseId: string,
         filters?: ExportFilters,
+        companyId?: string,
     ): Promise<string> {
         const query = this.stockMovementRepository
             .createQueryBuilder('movement')
@@ -133,6 +144,10 @@ export class ExportService {
                 types: ['ADJUSTMENT_IN', 'ADJUSTMENT_OUT'],
             })
             .orderBy('movement.created_at', 'DESC');
+
+        if (companyId) {
+            query.andWhere('movement.company_id = :companyId', { companyId });
+        }
 
         if (filters?.dateFrom) {
             query.andWhere('movement.created_at >= :dateFrom', {
@@ -169,6 +184,7 @@ export class ExportService {
     async exportExpiryLots(
         warehouseId: string,
         filters?: ExportFilters,
+        companyId?: string,
     ): Promise<string> {
         const query = this.stockLotRepository
             .createQueryBuilder('lot')
@@ -177,6 +193,10 @@ export class ExportService {
             .where('lot.warehouse_id = :warehouseId', { warehouseId })
             .andWhere('lot.quantity > 0')
             .orderBy('lot.expiry_date', 'ASC', 'NULLS LAST');
+
+        if (companyId) {
+            query.andWhere('lot.company_id = :companyId', { companyId });
+        }
 
         if (filters?.productIds?.length) {
             query.andWhere('lot.product_id IN (:...productIds)', {

@@ -15,41 +15,45 @@ export class ExportResolver {
     @Mutation(() => String)
     @UseGuards(ClerkAuthGuard)
     async exportStockSnapshot(
+        @ClerkUser() user: any,
         @Args('warehouseId') warehouseId: string,
         @Args('filters', { type: () => ExportFiltersInput, nullable: true })
         filters?: ExportFiltersInput,
     ): Promise<string> {
-        return this.exportService.exportStockSnapshot(warehouseId, filters);
+        return this.exportService.exportStockSnapshot(warehouseId, filters, user.activeCompanyId);
     }
 
     @Mutation(() => String)
     @UseGuards(ClerkAuthGuard)
     async exportStockMovements(
+        @ClerkUser() user: any,
         @Args('warehouseId') warehouseId: string,
         @Args('filters', { type: () => ExportFiltersInput, nullable: true })
         filters?: ExportFiltersInput,
     ): Promise<string> {
-        return this.exportService.exportStockMovements(warehouseId, filters);
+        return this.exportService.exportStockMovements(warehouseId, filters, user.activeCompanyId);
     }
 
     @Mutation(() => String)
     @UseGuards(ClerkAuthGuard)
     async exportAdjustments(
+        @ClerkUser() user: any,
         @Args('warehouseId') warehouseId: string,
         @Args('filters', { type: () => ExportFiltersInput, nullable: true })
         filters?: ExportFiltersInput,
     ): Promise<string> {
-        return this.exportService.exportAdjustments(warehouseId, filters);
+        return this.exportService.exportAdjustments(warehouseId, filters, user.activeCompanyId);
     }
 
     @Mutation(() => String)
     @UseGuards(ClerkAuthGuard)
     async exportExpiryLots(
+        @ClerkUser() user: any,
         @Args('warehouseId') warehouseId: string,
         @Args('filters', { type: () => ExportFiltersInput, nullable: true })
         filters?: ExportFiltersInput,
     ): Promise<string> {
-        return this.exportService.exportExpiryLots(warehouseId, filters);
+        return this.exportService.exportExpiryLots(warehouseId, filters, user.activeCompanyId);
     }
 
     @Mutation(() => String)

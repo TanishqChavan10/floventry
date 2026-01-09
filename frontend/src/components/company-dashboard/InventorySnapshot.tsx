@@ -2,124 +2,198 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, TrendingDown, AlertTriangle, DollarSign } from 'lucide-react';
+import { Package, Warehouse, AlertTriangle, Activity } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import type { CompanyDashboardData } from '@/lib/graphql/company-dashboard';
 
-// Mock data
-const MOCK_INVENTORY_STATS = {
-  totalValue: 405000,
-  totalItems: 4200,
-  lowStockItems: 35,
-  expiringItems: 8,
-  categories: [
-    { name: 'Electronics', value: 185000, percentage: 45.7 },
-    { name: 'Furniture', value: 120000, percentage: 29.6 },
-    { name: 'Accessories', value: 100000, percentage: 24.7 },
-  ],
-};
+interface InventorySnapshotProps {
+  companySlug: string;
+  data?: CompanyDashboardData;
+}
 
-export function InventorySnapshot() {
+function percent(part: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.round((part / total) * 100);
+}
+
+export function InventorySnapshot({ companySlug, data }: InventorySnapshotProps) {
+  const kpis = data?.kpis ?? {
+    totalSkus: 0,
+    warehouses: 0,
+    totalStockUnits: 0,
+    stockAtRisk: 0,
+    expiredStockUnits: 0,
+    movements7d: { inUnits: 0, outUnits: 0 },
+    movements30d: { inUnits: 0, outUnits: 0 },
+  };
+
+  const stockStatus = data?.stockStatusDistribution ?? { ok: 0, low: 0, critical: 0 };
+  const expiryRisk = data?.expiryRiskDistribution ?? { ok: 0, expiringSoon: 0, expired: 0 };
+  const alerts = data?.activeAlertsSummary ?? {
+    critical: 0,
+    warning: 0,
+    lowStock: 0,
+    expiry: 0,
+    importIssues: 0,
+  };
+
+  const stockTotal = stockStatus.ok + stockStatus.low + stockStatus.critical;
+  const expiryTotal = expiryRisk.ok + expiryRisk.expiringSoon + expiryRisk.expired;
+
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold tracking-tight">Inventory Snapshot</h2>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Total Stock Value */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Stock Value
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-emerald-600" />
+            <CardTitle className="text-sm font-medium">Total SKUs</CardTitle>
+            <Package className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ${MOCK_INVENTORY_STATS.totalValue.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Across all warehouses
-            </p>
+            <div className="text-2xl font-bold">{kpis.totalSkus.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">Active products</p>
           </CardContent>
         </Card>
 
-        {/* Total Items */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Items
-            </CardTitle>
-            <Package className="h-4 w-4 text-blue-600" />
+            <CardTitle className="text-sm font-medium">Warehouses</CardTitle>
+            <Warehouse className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {MOCK_INVENTORY_STATS.totalItems.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Unique SKUs in stock
-            </p>
+            <div className="text-2xl font-bold">{kpis.warehouses.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">Locations</p>
           </CardContent>
         </Card>
 
-        {/* Low Stock Alerts */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Low Stock Alerts
-            </CardTitle>
-            <TrendingDown className="h-4 w-4 text-orange-600" />
+            <CardTitle className="text-sm font-medium">Total Units</CardTitle>
+            <Activity className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {MOCK_INVENTORY_STATS.lowStockItems}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Items need reordering
-            </p>
+            <div className="text-2xl font-bold">{kpis.totalStockUnits.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground mt-1">Across all warehouses</p>
           </CardContent>
         </Card>
 
-        {/* Expiry Alerts */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Expiry Alerts
-            </CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <CardTitle className="text-sm font-medium">At Risk</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {MOCK_INVENTORY_STATS.expiringItems}
+            <div className="text-2xl font-bold text-orange-600 dark:text-orange-500">
+              {kpis.stockAtRisk.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Items expiring soon
+              Includes low/critical + expiring soon
             </p>
+            {kpis.expiredStockUnits > 0 && (
+              <p className="text-xs text-red-600 font-medium mt-1">
+                {kpis.expiredStockUnits.toLocaleString()} expired units
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Category Breakdown */}
       <Card>
         <CardHeader>
-          <CardTitle>Stock by Category</CardTitle>
-          <CardDescription>Distribution of inventory value</CardDescription>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <CardTitle>Health Distributions</CardTitle>
+              <CardDescription>Stock levels and expiry risk</CardDescription>
+            </div>
+            <Link href={`/${companySlug}/notifications`}>
+              <Button variant="outline" size="sm">
+                View Alerts
+              </Button>
+            </Link>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {MOCK_INVENTORY_STATS.categories.map((category) => (
-              <div key={category.name} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{category.name}</span>
-                  <span className="text-muted-foreground">
-                    ${category.value.toLocaleString()} ({category.percentage}%)
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="space-y-3">
+              <div className="text-sm font-semibold">Stock Status</div>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">OK</span>
+                  <span className="font-medium">
+                    {stockStatus.ok.toLocaleString()} ({percent(stockStatus.ok, stockTotal)}%)
                   </span>
                 </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all"
-                    style={{ width: `${category.percentage}%` }}
-                  />
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Low</span>
+                  <span className="font-medium">
+                    {stockStatus.low.toLocaleString()} ({percent(stockStatus.low, stockTotal)}%)
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Critical</span>
+                  <span className="font-medium">
+                    {stockStatus.critical.toLocaleString()} (
+                    {percent(stockStatus.critical, stockTotal)}%)
+                  </span>
                 </div>
               </div>
-            ))}
+            </div>
+
+            <div className="space-y-3">
+              <div className="text-sm font-semibold">Expiry Risk</div>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">OK</span>
+                  <span className="font-medium">
+                    {expiryRisk.ok.toLocaleString()} ({percent(expiryRisk.ok, expiryTotal)}%)
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Expiring soon</span>
+                  <span className="font-medium">
+                    {expiryRisk.expiringSoon.toLocaleString()} (
+                    {percent(expiryRisk.expiringSoon, expiryTotal)}%)
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Expired</span>
+                  <span className="font-medium">
+                    {expiryRisk.expired.toLocaleString()} (
+                    {percent(expiryRisk.expired, expiryTotal)}%)
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 pt-6 border-t">
+            <div className="text-sm font-semibold mb-3">Active Alerts</div>
+            <div className="grid gap-3 md:grid-cols-5">
+              <div className="text-sm">
+                <div className="font-semibold text-red-600">{alerts.critical.toLocaleString()}</div>
+                <div className="text-xs text-muted-foreground">Critical</div>
+              </div>
+              <div className="text-sm">
+                <div className="font-semibold text-orange-600">
+                  {alerts.warning.toLocaleString()}
+                </div>
+                <div className="text-xs text-muted-foreground">Warning</div>
+              </div>
+              <div className="text-sm">
+                <div className="font-semibold">{alerts.lowStock.toLocaleString()}</div>
+                <div className="text-xs text-muted-foreground">Low stock</div>
+              </div>
+              <div className="text-sm">
+                <div className="font-semibold">{alerts.expiry.toLocaleString()}</div>
+                <div className="text-xs text-muted-foreground">Expiry</div>
+              </div>
+              <div className="text-sm">
+                <div className="font-semibold">{alerts.importIssues.toLocaleString()}</div>
+                <div className="text-xs text-muted-foreground">Imports</div>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
