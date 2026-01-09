@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Bell, Check } from 'lucide-react';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 export default function NotificationsPage() {
   const { getToken } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -16,14 +18,11 @@ export default function NotificationsPage() {
     setLoading(true);
     try {
       const token = await getToken();
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/notifications`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      const res = await fetch(`${API_URL}/notifications`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
       const json = await res.json();
       setNotifications(json);
     } catch (error) {
@@ -40,19 +39,14 @@ export default function NotificationsPage() {
   const markAsRead = async (id: string) => {
     try {
       const token = await getToken();
-      await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/notifications/${id}/read`,
-        {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+      await fetch(`${API_URL}/notifications/${id}/read`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
       // Update local state
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
-      );
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     } catch (error) {
       console.error('Failed to mark as read', error);
     }
@@ -61,7 +55,7 @@ export default function NotificationsPage() {
   const markAllAsRead = async () => {
     try {
       const token = await getToken();
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/notifications/read-all`, {
+      await fetch(`${API_URL}/notifications/read-all`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -90,34 +84,21 @@ export default function NotificationsPage() {
           <div>No notifications</div>
         ) : (
           notifications.map((notification) => (
-            <Card
-              key={notification.id}
-              className={notification.isRead ? 'opacity-60' : ''}
-            >
+            <Card key={notification.id} className={notification.isRead ? 'opacity-60' : ''}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="flex items-center space-x-2">
                   <Bell className="h-4 w-4 text-muted-foreground" />
-                  <CardTitle className="text-base font-medium">
-                    {notification.title}
-                  </CardTitle>
-                  {!notification.isRead && (
-                    <Badge variant="secondary">New</Badge>
-                  )}
+                  <CardTitle className="text-base font-medium">{notification.title}</CardTitle>
+                  {!notification.isRead && <Badge variant="secondary">New</Badge>}
                 </div>
                 {!notification.isRead && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => markAsRead(notification.id)}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => markAsRead(notification.id)}>
                     Mark as read
                   </Button>
                 )}
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {notification.message}
-                </p>
+                <p className="text-sm text-muted-foreground">{notification.message}</p>
                 <p className="text-xs text-muted-foreground mt-2">
                   {new Date(notification.createdAt).toLocaleString()}
                 </p>

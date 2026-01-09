@@ -15,6 +15,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 export function PurchaseReports() {
   const { getToken } = useAuth();
   const [date, setDate] = useState<DateRange | undefined>({
@@ -31,7 +33,7 @@ export function PurchaseReports() {
       try {
         const token = await getToken();
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/reports/purchase?startDate=${date.from.toISOString()}&endDate=${date.to.toISOString()}`,
+          `${API_URL}/reports/purchase?startDate=${date.from.toISOString()}&endDate=${date.to.toISOString()}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -66,21 +68,15 @@ export function PurchaseReports() {
             <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ${data.summary.totalSpent.toFixed(2)}
-            </div>
+            <div className="text-2xl font-bold">${data.summary.totalSpent.toFixed(2)}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Shipments
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Total Shipments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {data.summary.totalShipments}
-            </div>
+            <div className="text-2xl font-bold">{data.summary.totalShipments}</div>
           </CardContent>
         </Card>
       </div>
@@ -102,9 +98,7 @@ export function PurchaseReports() {
             <TableBody>
               {data.shipments.map((shipment: any) => (
                 <TableRow key={shipment.shipment_id}>
-                  <TableCell>
-                    {new Date(shipment.received_date).toLocaleDateString()}
-                  </TableCell>
+                  <TableCell>{new Date(shipment.received_date).toLocaleDateString()}</TableCell>
                   <TableCell>{shipment.supplier?.name}</TableCell>
                   <TableCell>{shipment.ref_no}</TableCell>
                   <TableCell className="text-right">

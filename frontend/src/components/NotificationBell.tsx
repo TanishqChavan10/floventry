@@ -7,6 +7,8 @@ import { useAuth } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 export default function NotificationBell() {
   const { getToken } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -16,15 +18,12 @@ export default function NotificationBell() {
       try {
         const token = await getToken();
         if (!token) return;
-        
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/notifications`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+
+        const res = await fetch(`${API_URL}/notifications`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-        );
+        });
         const json = await res.json();
         const unread = json.filter((n: any) => !n.isRead).length;
         setUnreadCount(unread);

@@ -5,17 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 import { addDays } from 'date-fns';
 import { DateRange } from 'react-day-picker';
-import {
-  Bar,
-  BarChart,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from 'recharts';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 import { useAuth } from '@clerk/nextjs';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export function SalesReports() {
   const { getToken } = useAuth();
@@ -33,7 +27,7 @@ export function SalesReports() {
       try {
         const token = await getToken();
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/reports/sales?startDate=${date.from.toISOString()}&endDate=${date.to.toISOString()}`,
+          `${API_URL}/reports/sales?startDate=${date.from.toISOString()}&endDate=${date.to.toISOString()}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -68,9 +62,7 @@ export function SalesReports() {
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ${data.summary.totalRevenue.toFixed(2)}
-            </div>
+            <div className="text-2xl font-bold">${data.summary.totalRevenue.toFixed(2)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -121,9 +113,7 @@ export function SalesReports() {
             {data.topProducts.map((product: any) => (
               <div className="flex items-center" key={product.name}>
                 <div className="ml-4 space-y-1">
-                  <p className="text-sm font-medium leading-none">
-                    {product.name}
-                  </p>
+                  <p className="text-sm font-medium leading-none">{product.name}</p>
                 </div>
                 <div className="ml-auto font-medium">{product.qty} sold</div>
               </div>

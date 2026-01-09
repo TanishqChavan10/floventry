@@ -12,6 +12,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 export function SupplierReports() {
   const { getToken } = useAuth();
   const [data, setData] = useState<any>(null);
@@ -22,14 +24,11 @@ export function SupplierReports() {
       setLoading(true);
       try {
         const token = await getToken();
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/reports/supplier-performance`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+        const res = await fetch(`${API_URL}/reports/supplier-performance`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-        );
+        });
         const json = await res.json();
         setData(json);
       } catch (error) {

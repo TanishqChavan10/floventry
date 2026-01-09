@@ -59,8 +59,12 @@ export default function WarehouseSwitcher() {
           });
 
           const pending = getPendingWarehouseRoute(companySlug);
-          if (pending && pending !== '/' && pending !== '') {
+          if (pending) {
+            // Always clear pending once a specific warehouse is selected.
             clearPendingWarehouseRoute(companySlug);
+          }
+
+          if (pending && pending !== '/' && pending !== '') {
             router.push(`/${companySlug}/warehouses/${wh.slug}${pending}`);
           } else {
             router.push(`/${companySlug}/warehouses/${wh.slug}`);

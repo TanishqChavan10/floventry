@@ -108,9 +108,9 @@ function AppSidebarContent() {
       if (!isWarehousesListPage) return;
 
       const suffix = extractWarehouseRouteSuffix(companySlug, href);
-      // Only guard warehouse-scoped links that would require a selected warehouse.
-      // Allow the list page itself and root warehouse base link.
-      if (!suffix || suffix === '/' || suffix === '') return;
+      // Guard all warehouse-scoped links (including the warehouse Overview root)
+      // so users must select a warehouse first.
+      if (!suffix) return;
 
       e.preventDefault();
       setPendingWarehouseRoute(companySlug, suffix);
