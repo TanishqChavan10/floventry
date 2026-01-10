@@ -39,6 +39,7 @@ import { useAuth } from '@/context/auth-context';
 import { GET_SUPPLIERS, ARCHIVE_SUPPLIER, UNARCHIVE_SUPPLIER } from '@/lib/graphql/catalog';
 import { SupplierModal } from '@/components/catalog/SupplierModal';
 import SupplierDetailDrawer from '@/components/catalog/SupplierDetailDrawer';
+import { BulkEntryModal } from '@/components/catalog/BulkEntryModal';
 
 function CatalogSuppliersContent() {
   const { slug } = useParams();
@@ -46,13 +47,19 @@ function CatalogSuppliersContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('active');
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
+  const [isBulkEntryOpen, setIsBulkEntryOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
   const [supplierToArchive, setSupplierToArchive] = useState<any>(null);
   const { toast } = useToast();
 
   const includeArchived = statusFilter !== 'active';
-  const { data: suppliersData, loading, error, refetch } = useQuery(GET_SUPPLIERS, {
+  const {
+    data: suppliersData,
+    loading,
+    error,
+    refetch,
+  } = useQuery(GET_SUPPLIERS, {
     variables: { includeArchived },
   });
 
@@ -91,9 +98,9 @@ function CatalogSuppliersContent() {
   });
 
   // Get role from active company (role is company-specific)
-  const activeCompany = user?.companies?.find(c => c.id === user.activeCompanyId);
+  const activeCompany = user?.companies?.find((c) => c.id === user.activeCompanyId);
   const userRole = activeCompany?.role;
-  
+
   const isOwnerOrAdmin = userRole === 'OWNER' || userRole === 'ADMIN';
   const canEdit = isOwnerOrAdmin; // Only Owner/Admin can edit/create suppliers
   const canArchive = isOwnerOrAdmin; // Only Owner/Admin can archive suppliers
@@ -192,11 +199,25 @@ function CatalogSuppliersContent() {
                 Manage your company's supplier directory
               </p>
             </div>
-            {canEdit && !isEmpty && (
-              <Button className="gap-2" onClick={handleAddSupplier}>
-                <Plus className="h-4 w-4" />
-                Add Supplier
-              </Button>
+            {!isEmpty && (
+              <div className="flex items-center gap-2">
+                {isOwnerOrAdmin && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => setIsBulkEntryOpen(true)}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Bulk Add Suppliers
+                  </Button>
+                )}
+                {canEdit && (
+                  <Button className="gap-2" onClick={handleAddSupplier}>
+                    <Plus className="h-4 w-4" />
+                    Add Supplier
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -220,10 +241,22 @@ function CatalogSuppliersContent() {
                 </p>
               </div>
               {canEdit && (
-                <Button onClick={handleAddSupplier} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add your first supplier
-                </Button>
+                <div className="flex items-center gap-2">
+                  {isOwnerOrAdmin && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsBulkEntryOpen(true)}
+                      className="gap-2"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Bulk Add Suppliers
+                    </Button>
+                  )}
+                  <Button onClick={handleAddSupplier} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add your first supplier
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -290,9 +323,7 @@ function CatalogSuppliersContent() {
             {/* Suppliers Table */}
             <Card>
               <CardHeader>
-                <CardTitle>
-                  Suppliers ({filteredSuppliers.length})
-                </CardTitle>
+                <CardTitle>Suppliers ({filteredSuppliers.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 {filteredSuppliers.length === 0 ? (
@@ -322,9 +353,7 @@ function CatalogSuppliersContent() {
                           <TableCell>{supplier.email || '—'}</TableCell>
                           <TableCell>{supplier.phone || '—'}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">
-                              {supplier.productsCount || 0} products
-                            </Badge>
+                            <Badge variant="outline">{supplier.productsCount || 0} products</Badge>
                           </TableCell>
                           <TableCell>
                             <Badge variant={supplier.isActive ? 'default' : 'secondary'}>
@@ -375,6 +404,13 @@ function CatalogSuppliersContent() {
       </main>
 
       {/* Modals */}
+      <BulkEntryModal
+        open={isBulkEntryOpen}
+        onOpenChange={setIsBulkEntryOpen}
+        type="suppliers"
+        onCompleted={() => refetch()}
+      />
+
       {isSupplierModalOpen && (
         <SupplierModal
           supplier={selectedSupplier}
@@ -392,10 +428,14 @@ function CatalogSuppliersContent() {
             setIsDetailDrawerOpen(false);
             setSelectedSupplier(null);
           }}
-          onEdit={canEdit ? () => {
-            setIsDetailDrawerOpen(false);
-            handleEditSupplier(selectedSupplier);
-          } : undefined}
+          onEdit={
+            canEdit
+              ? () => {
+                  setIsDetailDrawerOpen(false);
+                  handleEditSupplier(selectedSupplier);
+                }
+              : undefined
+          }
         />
       )}
 
@@ -405,17 +445,15 @@ function CatalogSuppliersContent() {
           <AlertDialogHeader>
             <AlertDialogTitle>Archive Supplier?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to archive <strong>{supplierToArchive?.name}</strong>? 
-              This supplier will be moved to the archived list and won't appear in active lists.
-              Products linked to this supplier will remain unchanged.
-              You can restore it later by filtering for archived suppliers.
+              Are you sure you want to archive <strong>{supplierToArchive?.name}</strong>? This
+              supplier will be moved to the archived list and won't appear in active lists. Products
+              linked to this supplier will remain unchanged. You can restore it later by filtering
+              for archived suppliers.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmArchive}>
-              Archive Supplier
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmArchive}>Archive Supplier</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

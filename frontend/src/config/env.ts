@@ -1,13 +1,29 @@
 // Centralized runtime config.
-// In Next.js, public env vars are injected at build time, so we avoid fallbacks
-// that can accidentally ship localhost URLs to production builds.
+// IMPORTANT: For NEXT_PUBLIC_* variables, Next.js only injects values into client
+// bundles when accessed via static property access (e.g. process.env.NEXT_PUBLIC_X).
+// Avoid dynamic indexing like process.env[name] in code that can run on the client.
 
-function requiredEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+type RequiredEnvOptions = {
+  /**
+   * Development-only default (used when NODE_ENV !== 'production').
+   * This prevents hard crashes for local setup while still enforcing production config.
+   */
+  devDefault?: string;
+};
+
+function requiredEnv(
+  value: string | undefined,
+  name: string,
+  options?: RequiredEnvOptions,
+): string {
+  const normalized = value?.trim();
+  if (normalized) return normalized;
+
+  if (process.env.NODE_ENV !== 'production' && options?.devDefault) {
+    return options.devDefault;
   }
-  return value;
+
+  throw new Error(`Missing required environment variable: ${name}`);
 }
 
 function deriveApiUrlFromGraphqlUrl(graphqlUrl: string): string {
@@ -34,7 +50,11 @@ function deriveApiUrlFromGraphqlUrl(graphqlUrl: string): string {
 }
 
 // GraphQL endpoint (must end with '/graphql', usually '/api/graphql')
-export const GRAPHQL_URL = requiredEnv('NEXT_PUBLIC_GRAPHQL_URL');
+export const GRAPHQL_URL = requiredEnv(
+  process.env.NEXT_PUBLIC_GRAPHQL_URL,
+  'NEXT_PUBLIC_GRAPHQL_URL',
+  { devDefault: 'http://localhost:5000/api/graphql' },
+);
 
 // REST base URL derived from GRAPHQL_URL (usually '/api')
 export const API_URL = deriveApiUrlFromGraphqlUrl(GRAPHQL_URL);

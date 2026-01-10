@@ -63,8 +63,13 @@ export class ImportService {
             {
                 sku: 'PROD-001',
                 name: 'Example Product',
+                barcode: '1234567890123',
                 category: 'Electronics',
+                supplier: 'ABC Suppliers Ltd',
                 unit: 'pcs',
+                cost_price: '100.00',
+                selling_price: '150.00',
+                image_url: 'https://example.com/image.jpg',
                 description: 'Product description',
                 min_stock_level: '10',
                 reorder_point: '20',
@@ -179,6 +184,23 @@ export class ImportService {
                 });
             }
 
+            // Validate price fields if provided
+            if (row.cost_price && isNaN(Number(row.cost_price))) {
+                errors.push({
+                    rowNumber,
+                    field: 'cost_price',
+                    message: 'Cost price must be a number',
+                });
+            }
+
+            if (row.selling_price && isNaN(Number(row.selling_price))) {
+                errors.push({
+                    rowNumber,
+                    field: 'selling_price',
+                    message: 'Selling price must be a number',
+                });
+            }
+
             // Validate numeric fields if provided
             if (row.min_stock_level && isNaN(Number(row.min_stock_level))) {
                 errors.push({
@@ -258,13 +280,34 @@ export class ImportService {
                         }
                     }
 
+                    // Find or create supplier
+                    let supplier: Supplier | null = null;
+                    if (row.data.supplier) {
+                        supplier = await queryRunner.manager.findOne(Supplier, {
+                            where: { name: row.data.supplier, company_id: companyId },
+                        });
+
+                        if (!supplier) {
+                            supplier = queryRunner.manager.create(Supplier, {
+                                company_id: companyId,
+                                name: row.data.supplier,
+                            });
+                            supplier = await queryRunner.manager.save(supplier);
+                        }
+                    }
+
                     // Create product
                     const product = queryRunner.manager.create(Product, {
                         company_id: companyId,
                         category_id: category?.id || undefined,
+                        supplier_id: supplier?.id || undefined,
                         sku: row.data.sku,
                         name: row.data.name,
+                        barcode: row.data.barcode || null,
                         unit: row.data.unit,
+                        cost_price: row.data.cost_price ? parseFloat(row.data.cost_price) : null,
+                        selling_price: row.data.selling_price ? parseFloat(row.data.selling_price) : null,
+                        image_url: row.data.image_url || null,
                         description: row.data.description || null,
                     } as any);
 

@@ -39,6 +39,7 @@ import { useAuth } from '@/context/auth-context';
 import { GET_SUPPLIERS, ARCHIVE_SUPPLIER, UNARCHIVE_SUPPLIER } from '@/lib/graphql/catalog';
 import { SupplierModal } from '@/components/catalog/SupplierModal';
 import SupplierDetailDrawer from '@/components/catalog/SupplierDetailDrawer';
+import { BulkEntryModal } from '@/components/catalog/BulkEntryModal';
 
 function SuppliersContent() {
   const { slug } = useParams();
@@ -46,6 +47,7 @@ function SuppliersContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('active');
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
+  const [isBulkEntryOpen, setIsBulkEntryOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
   const [supplierToArchive, setSupplierToArchive] = useState<any>(null);
@@ -192,11 +194,25 @@ function SuppliersContent() {
                 Manage your company's supplier directory
               </p>
             </div>
-            {canEdit && !isEmpty && (
-              <Button className="gap-2" onClick={handleAddSupplier}>
-                <Plus className="h-4 w-4" />
-                Add Supplier
-              </Button>
+            {!isEmpty && (
+              <div className="flex items-center gap-2">
+                {isOwnerOrAdmin && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => setIsBulkEntryOpen(true)}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Bulk Add Suppliers
+                  </Button>
+                )}
+                {canEdit && (
+                  <Button className="gap-2" onClick={handleAddSupplier}>
+                    <Plus className="h-4 w-4" />
+                    Add Supplier
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -220,10 +236,22 @@ function SuppliersContent() {
                 </p>
               </div>
               {canEdit && (
-                <Button onClick={handleAddSupplier} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add your first supplier
-                </Button>
+                <div className="flex items-center gap-2">
+                  {isOwnerOrAdmin && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsBulkEntryOpen(true)}
+                      className="gap-2"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Bulk Add Suppliers
+                    </Button>
+                  )}
+                  <Button onClick={handleAddSupplier} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add your first supplier
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -375,6 +403,13 @@ function SuppliersContent() {
       </main>
 
       {/* Modals */}
+      <BulkEntryModal
+        open={isBulkEntryOpen}
+        onOpenChange={setIsBulkEntryOpen}
+        type="suppliers"
+        onCompleted={() => refetch()}
+      />
+
       {isSupplierModalOpen && (
         <SupplierModal
           supplier={selectedSupplier}

@@ -36,9 +36,16 @@ import {
 } from '@/components/ui/select';
 import { Plus, Search, Edit, Archive, Package, PackagePlus } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
-import { GET_PRODUCTS, GET_CATEGORIES, GET_SUPPLIERS, DELETE_PRODUCT, UPDATE_PRODUCT } from '@/lib/graphql/catalog';
+import {
+  GET_PRODUCTS,
+  GET_CATEGORIES,
+  GET_SUPPLIERS,
+  DELETE_PRODUCT,
+  UPDATE_PRODUCT,
+} from '@/lib/graphql/catalog';
 import ProductModal from '@/components/catalog/ProductModal';
 import ProductDetailDrawer from '@/components/catalog/ProductDetailDrawer';
+import { BulkEntryModal } from '@/components/catalog/BulkEntryModal';
 
 function CatalogProductsContent() {
   const { slug } = useParams();
@@ -48,6 +55,7 @@ function CatalogProductsContent() {
   const [supplierFilter, setSupplierFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('active');
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isBulkEntryOpen, setIsBulkEntryOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
   const [productToArchive, setProductToArchive] = useState<any>(null);
@@ -92,9 +100,9 @@ function CatalogProductsContent() {
   });
 
   // Get role from active company (role is company-specific)
-  const activeCompany = user?.companies?.find(c => c.id === user.activeCompanyId);
+  const activeCompany = user?.companies?.find((c) => c.id === user.activeCompanyId);
   const userRole = activeCompany?.role;
-  
+
   const isOwnerOrAdmin = userRole === 'OWNER' || userRole === 'ADMIN';
   const canEdit = isOwnerOrAdmin || userRole === 'MANAGER'; // TODO: Check restrict_manager_catalog setting
   const canDelete = isOwnerOrAdmin;
@@ -111,11 +119,9 @@ function CatalogProductsContent() {
       product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesCategory =
-      categoryFilter === 'all' || product.category?.id === categoryFilter;
+    const matchesCategory = categoryFilter === 'all' || product.category?.id === categoryFilter;
 
-    const matchesSupplier =
-      supplierFilter === 'all' || product.supplier?.id === supplierFilter;
+    const matchesSupplier = supplierFilter === 'all' || product.supplier?.id === supplierFilter;
 
     const matchesStatus =
       statusFilter === 'all' ||
@@ -213,11 +219,25 @@ function CatalogProductsContent() {
                 Manage company-wide product definitions and pricing
               </p>
             </div>
-            {canEdit && !isEmpty && (
-              <Button className="gap-2" onClick={handleAddProduct}>
-                <Plus className="h-4 w-4" />
-                Add Product
-              </Button>
+            {!isEmpty && (
+              <div className="flex items-center gap-2">
+                {isOwnerOrAdmin && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => setIsBulkEntryOpen(true)}
+                  >
+                    <PackagePlus className="h-4 w-4" />
+                    Bulk Add Products
+                  </Button>
+                )}
+                {canEdit && (
+                  <Button className="gap-2" onClick={handleAddProduct}>
+                    <Plus className="h-4 w-4" />
+                    Add Product
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -241,10 +261,22 @@ function CatalogProductsContent() {
                 </p>
               </div>
               {canEdit && (
-                <Button onClick={handleAddProduct} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add your first product
-                </Button>
+                <div className="flex items-center gap-2">
+                  {isOwnerOrAdmin && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsBulkEntryOpen(true)}
+                      className="gap-2"
+                    >
+                      <PackagePlus className="h-4 w-4" />
+                      Bulk Add Products
+                    </Button>
+                  )}
+                  <Button onClick={handleAddProduct} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add your first product
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -337,9 +369,7 @@ function CatalogProductsContent() {
             {/* Products Table */}
             <Card>
               <CardHeader>
-                <CardTitle>
-                  Products ({filteredProducts.length})
-                </CardTitle>
+                <CardTitle>Products ({filteredProducts.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 {filteredProducts.length === 0 ? (
@@ -432,6 +462,13 @@ function CatalogProductsContent() {
       </main>
 
       {/* Modals */}
+      <BulkEntryModal
+        open={isBulkEntryOpen}
+        onOpenChange={setIsBulkEntryOpen}
+        type="products"
+        onCompleted={() => refetch()}
+      />
+
       {isProductModalOpen && (
         <ProductModal
           product={selectedProduct}
@@ -448,10 +485,14 @@ function CatalogProductsContent() {
             setIsDetailDrawerOpen(false);
             setSelectedProduct(null);
           }}
-          onEdit={canEdit ? () => {
-            setIsDetailDrawerOpen(false);
-            handleEditProduct(selectedProduct);
-          } : undefined}
+          onEdit={
+            canEdit
+              ? () => {
+                  setIsDetailDrawerOpen(false);
+                  handleEditProduct(selectedProduct);
+                }
+              : undefined
+          }
         />
       )}
 
@@ -461,16 +502,14 @@ function CatalogProductsContent() {
           <AlertDialogHeader>
             <AlertDialogTitle>Archive Product?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to archive <strong>{productToArchive?.name}</strong>? 
-              This product will be moved to the archived list and won't appear in active searches.
-              You can restore it later by filtering for archived products.
+              Are you sure you want to archive <strong>{productToArchive?.name}</strong>? This
+              product will be moved to the archived list and won't appear in active searches. You
+              can restore it later by filtering for archived products.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmArchive}>
-              Archive Product
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmArchive}>Archive Product</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

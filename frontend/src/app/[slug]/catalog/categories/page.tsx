@@ -37,6 +37,7 @@ import { useAuth } from '@/context/auth-context';
 import { GET_CATEGORIES, DELETE_CATEGORY, UPDATE_CATEGORY } from '@/lib/graphql/catalog';
 import { CategoryModal } from '@/components/catalog/CategoryModal';
 import { useToast } from '@/components/ui/use-toast';
+import { BulkEntryModal } from '@/components/catalog/BulkEntryModal';
 
 function CatalogCategoriesContent() {
   const { user } = useAuth();
@@ -44,6 +45,7 @@ function CatalogCategoriesContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('active'); // active, archived, all
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isBulkEntryOpen, setIsBulkEntryOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [categoryToArchive, setCategoryToArchive] = useState<any>(null);
 
@@ -61,7 +63,7 @@ function CatalogCategoriesContent() {
       const message = error.message.includes('products')
         ? 'Cannot archive category: Products are still assigned to this category. Please reassign or remove products first.'
         : error.message;
-      
+
       toast({
         title: 'Cannot archive category',
         description: message,
@@ -88,9 +90,9 @@ function CatalogCategoriesContent() {
   });
 
   // Get role from active company (role is company-specific, not user-level)
-  const activeCompany = user?.companies?.find(c => c.id === user.activeCompanyId);
+  const activeCompany = user?.companies?.find((c) => c.id === user.activeCompanyId);
   const userRole = activeCompany?.role;
-  
+
   const isOwnerOrAdmin = userRole === 'OWNER' || userRole === 'ADMIN';
   const canEdit = isOwnerOrAdmin;
 
@@ -143,7 +145,7 @@ function CatalogCategoriesContent() {
   };
 
   const handleUnarchiveCategory = async (category: any) => {
-    // Backend updateCategory automatically sets isActive to true  
+    // Backend updateCategory automatically sets isActive to true
     await updateCategory({
       variables: {
         input: {
@@ -154,7 +156,6 @@ function CatalogCategoriesContent() {
       },
     });
   };
-
 
   if (loading) {
     return (
@@ -183,11 +184,25 @@ function CatalogCategoriesContent() {
                 Organize products into categories
               </p>
             </div>
-            {canEdit && !isEmpty && (
-              <Button className="gap-2" onClick={handleAddCategory}>
-                <Plus className="h-4 w-4" />
-                Add Category
-              </Button>
+            {!isEmpty && (
+              <div className="flex items-center gap-2">
+                {isOwnerOrAdmin && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => setIsBulkEntryOpen(true)}
+                  >
+                    <PackagePlus className="h-4 w-4" />
+                    Bulk Add Categories
+                  </Button>
+                )}
+                {canEdit && (
+                  <Button className="gap-2" onClick={handleAddCategory}>
+                    <Plus className="h-4 w-4" />
+                    Add Category
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -211,10 +226,22 @@ function CatalogCategoriesContent() {
                 </p>
               </div>
               {canEdit && (
-                <Button onClick={handleAddCategory} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add your first category
-                </Button>
+                <div className="flex items-center gap-2">
+                  {isOwnerOrAdmin && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsBulkEntryOpen(true)}
+                      className="gap-2"
+                    >
+                      <PackagePlus className="h-4 w-4" />
+                      Bulk Add Categories
+                    </Button>
+                  )}
+                  <Button onClick={handleAddCategory} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add your first category
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -377,6 +404,13 @@ function CatalogCategoriesContent() {
       </main>
 
       {/* Modal */}
+      <BulkEntryModal
+        open={isBulkEntryOpen}
+        onOpenChange={setIsBulkEntryOpen}
+        type="categories"
+        onCompleted={() => refetch()}
+      />
+
       {isCategoryModalOpen && (
         <CategoryModal
           category={selectedCategory}
@@ -397,9 +431,11 @@ function CatalogCategoriesContent() {
                   Are you sure you want to archive <strong>{categoryToArchive.name}</strong>?
                   {categoryToArchive.products?.length > 0 && (
                     <>
-                      <br /><br />
-                      <strong>Warning:</strong> This category has {categoryToArchive.products.length} product(s) assigned. 
-                      Archiving will not remove the products, but the category will be hidden.
+                      <br />
+                      <br />
+                      <strong>Warning:</strong> This category has{' '}
+                      {categoryToArchive.products.length} product(s) assigned. Archiving will not
+                      remove the products, but the category will be hidden.
                     </>
                   )}
                 </>
@@ -408,9 +444,7 @@ function CatalogCategoriesContent() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmArchive}>
-              Archive Category
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmArchive}>Archive Category</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

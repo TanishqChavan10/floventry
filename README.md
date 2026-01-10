@@ -19,18 +19,31 @@ This is the **Backend** for Flowventory built with:
 ### 1. **Clone the Repository**
 
 ```bash
-git clone https://github.com/<your-username>/inventory-frontend.git
-cd inventory-frontend
+git clone https://github.com/<your-org-or-username>/floventry.git
+cd floventry
 ```
 
-### 2. **Install Dependencies**
+### 2. **Frontend: Install Dependencies**
 
 ```bash
+cd frontend
 npm install
 ```
 
+### 3. **Frontend: Configure Environment Variables**
 
-### 3. **Run the Development Server**
+Create `frontend/.env.local` (or copy from the example):
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+At minimum, set:
+
+* `NEXT_PUBLIC_GRAPHQL_URL` (must end with `/graphql`, e.g. `http://localhost:5000/api/graphql`)
+
+
+### 4. **Frontend: Run the Development Server**
 
 ```bash
 npm run dev
