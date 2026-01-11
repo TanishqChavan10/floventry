@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-type BulkEntryType = 'products' | 'categories' | 'suppliers';
+type BulkEntryType = 'products' | 'categories' | 'suppliers' | 'units';
 
 const TITLES: Record<BulkEntryType, { title: string; description: string }> = {
   products: {
@@ -23,6 +23,10 @@ const TITLES: Record<BulkEntryType, { title: string; description: string }> = {
   suppliers: {
     title: 'Bulk Add Suppliers',
     description: 'Create many suppliers at once using CSV upload or paste from Sheets.',
+  },
+  units: {
+    title: 'Bulk Add Units',
+    description: 'Create many units at once using CSV upload or paste from Sheets.',
   },
 };
 

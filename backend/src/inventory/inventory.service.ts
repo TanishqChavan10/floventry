@@ -342,7 +342,7 @@ export class InventoryService {
                 warehouse_id: warehouseId,
                 company_id: companyId,
             },
-            relations: ['product', 'product.category', 'warehouse'],
+            relations: ['product', 'product.category', 'product.supplier', 'warehouse'],
             order: { updated_at: 'DESC' },
         });
     }

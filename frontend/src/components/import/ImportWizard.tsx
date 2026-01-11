@@ -32,20 +32,23 @@ import {
   DOWNLOAD_CATEGORY_TEMPLATE,
   DOWNLOAD_SUPPLIER_TEMPLATE,
   DOWNLOAD_OPENING_STOCK_TEMPLATE,
+  DOWNLOAD_UNIT_TEMPLATE,
   VALIDATE_PRODUCT_IMPORT,
   VALIDATE_CATEGORY_IMPORT,
   VALIDATE_SUPPLIER_IMPORT,
   VALIDATE_OPENING_STOCK_IMPORT,
+  VALIDATE_UNIT_IMPORT,
   EXECUTE_PRODUCT_IMPORT,
   EXECUTE_CATEGORY_IMPORT,
   EXECUTE_SUPPLIER_IMPORT,
   EXECUTE_OPENING_STOCK_IMPORT,
+  EXECUTE_UNIT_IMPORT,
 } from '@/lib/graphql/import';
-import { parsePlainTextCategories, parsePlainTextProducts, parsePlainTextSuppliers, detectInputFormat } from '@/lib/utils/plainTextParser';
+import { parsePlainTextCategories, parsePlainTextProducts, parsePlainTextSuppliers, parsePlainTextUnits, detectInputFormat } from '@/lib/utils/plainTextParser';
 import { parseCsvForPreview } from '@/lib/utils/csvParser';
 import { ImportPreview } from '@/components/import/PlainTextPreview';
 
-type ImportType = 'products' | 'categories' | 'suppliers' | 'opening_stock';
+type ImportType = 'products' | 'categories' | 'suppliers' | 'opening_stock' | 'units';
 
 interface ValidationError {
   rowNumber: number;
@@ -123,6 +126,7 @@ const IMPORT_LABELS = {
   categories: 'Categories',
   suppliers: 'Suppliers',
   opening_stock: 'Opening Stock',
+  units: 'Units',
 };
 
 export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProps) {
@@ -131,7 +135,7 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
   const [csvContent, setCsvContent] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
   const supportsPaste: boolean = type !== 'opening_stock';
-  const supportsPlainText: boolean = type === 'categories' || type === 'products' || type === 'suppliers';
+  const supportsPlainText: boolean = type === 'categories' || type === 'products' || type === 'suppliers' || type === 'units';
   const [inputMethod, setInputMethod] = useState<InputMethod>('upload');
   const [pastedText, setPastedText] = useState<string>('');
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
@@ -146,6 +150,7 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
     categories: DOWNLOAD_CATEGORY_TEMPLATE,
     suppliers: DOWNLOAD_SUPPLIER_TEMPLATE,
     opening_stock: DOWNLOAD_OPENING_STOCK_TEMPLATE,
+    units: DOWNLOAD_UNIT_TEMPLATE,
   };
 
   // Validation mutations
@@ -154,6 +159,7 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
     categories: VALIDATE_CATEGORY_IMPORT,
     suppliers: VALIDATE_SUPPLIER_IMPORT,
     opening_stock: VALIDATE_OPENING_STOCK_IMPORT,
+    units: VALIDATE_UNIT_IMPORT,
   };
 
   // Execution mutations
@@ -162,6 +168,7 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
     categories: EXECUTE_CATEGORY_IMPORT,
     suppliers: EXECUTE_SUPPLIER_IMPORT,
     opening_stock: EXECUTE_OPENING_STOCK_IMPORT,
+    units: EXECUTE_UNIT_IMPORT,
   };
 
   const [downloadTemplate] = useMutation(templateMutations[type]);
@@ -218,7 +225,9 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
         ? parsePlainTextCategories(trimmed)
         : type === 'products'
         ? parsePlainTextProducts(trimmed)
-        : parsePlainTextSuppliers(trimmed);
+        : type === 'suppliers'
+        ? parsePlainTextSuppliers(trimmed)
+        : parsePlainTextUnits(trimmed);
       return { content: parsed.csvContent, name: 'plaintext.csv' };
     }
     if (supportsPaste && inputMethod === 'paste') {
@@ -360,7 +369,11 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
         ? parsePlainTextCategories(pastedText)
         : type === 'products'
         ? parsePlainTextProducts(pastedText)
-        : parsePlainTextSuppliers(pastedText);
+        : type === 'suppliers'
+        ? parsePlainTextSuppliers(pastedText)
+        : type === 'units'
+        ? parsePlainTextUnits(pastedText)
+        : { categories: [], csvContent: '', hasErrors: true };
       setPlainTextPreview(parsed);
       setCsvPreview(null);
     }
@@ -535,7 +548,9 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
                       ? 'Paste categories (one per line)' 
                       : type === 'products'
                       ? 'Paste products (one per line)'
-                      : 'Paste suppliers (one per line)'}
+                      : type === 'suppliers'
+                      ? 'Paste suppliers (one per line)'
+                      : 'Paste units (one per line)'}
                   </Label>
                   <Textarea
                     value={pastedText}
@@ -545,7 +560,9 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
                         ? `Fruits & Vegetables - Fresh produce items\nDairy & Bakery - Milk and baked goods\nSnacks & Confectionery\nBeverages - Drinks and refreshments`
                         : type === 'products'
                         ? `PROD-001 | Laptop | pcs | High-performance laptop\nPROD-002 | Mouse | pcs | Wireless mouse\nPROD-003 | Keyboard | pcs`
-                        : `ABC Suppliers Ltd | sales@abc.com | +91-9876543210 | 123 Business Street\nXYZ Corp - contact@xyz.com - +91-9876543211 - 456 Trade Park\nGlobal Traders`
+                        : type === 'suppliers'
+                        ? `ABC Suppliers Ltd | sales@abc.com | +91-9876543210 | 123 Business Street\nXYZ Corp - contact@xyz.com - +91-9876543211 - 456 Trade Park\nGlobal Traders`
+                        : `Piece | pcs\nKilogram | kg\nLiter | L | default\nMeter | m`
                     }
                     className="min-h-[180px]"
                   />
@@ -562,11 +579,17 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
                         <br />
                         <strong>Extended:</strong> <code className="bg-muted px-1 py-0.5 rounded text-xs">SKU | Name | Unit | Barcode | Category | Supplier | Cost | Selling | Description</code>
                       </>
-                    ) : (
+                    ) : type === 'suppliers' ? (
                       <>
                         Format: <code className="bg-muted px-1 py-0.5 rounded">Name | Email | Phone | Address</code> or <code className="bg-muted px-1 py-0.5 rounded">Name - Email - Phone - Address</code>
                         <br />
                         Example: <code className="bg-muted px-1 py-0.5 rounded text-xs">ABC Suppliers Ltd | sales@abc.com | +91-9876543210 | 123 Business Street</code>
+                      </>
+                    ) : (
+                      <>
+                        Format: <code className="bg-muted px-1 py-0.5 rounded">Name | Short Code | Default (optional)</code>
+                        <br />
+                        Example: <code className="bg-muted px-1 py-0.5 rounded text-xs">Piece | pcs</code> or <code className="bg-muted px-1 py-0.5 rounded text-xs">Kilogram | kg | default</code>
                       </>
                     )}
                   </p>
@@ -601,7 +624,7 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
                     <FileText className="h-5 w-5 text-blue-600" />
                     <span className="font-medium">
                       {inputMethod === 'plaintext'
-                        ? `${plainTextPreview?.categories.length || 0} ${type === 'categories' ? 'categories' : type === 'products' ? 'products' : 'suppliers'} ready`
+                        ? `${plainTextPreview?.categories.length || 0} ${type === 'categories' ? 'categories' : type === 'products' ? 'products' : type === 'suppliers' ? 'suppliers' : 'units'} ready`
                         : supportsPaste && inputMethod === 'paste'
                         ? 'Pasted data'
                         : fileName}

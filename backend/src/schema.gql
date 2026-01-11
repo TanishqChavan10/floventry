@@ -546,10 +546,12 @@ type Mutation {
   downloadOpeningStockTemplate: String!
   downloadProductTemplate: String!
   downloadSupplierTemplate: String!
+  downloadUnitTemplate: String!
   executeCategoryImport(validatedData: String!): String!
   executeOpeningStockImport(validatedData: String!, warehouseId: String!): String!
   executeProductImport(validatedData: String!): String!
   executeSupplierImport(validatedData: String!): String!
+  executeUnitImport(validatedData: String!): String!
   exportAdjustments(filters: ExportFiltersInput, warehouseId: String!): String!
   exportCompanyMovements(filters: ExportFiltersInput): String!
   exportExpiryLots(filters: ExportFiltersInput, warehouseId: String!): String!
@@ -594,6 +596,7 @@ type Mutation {
   validateOpeningStockImport(csvContent: String!, warehouseId: String!): String!
   validateProductImport(csvContent: String!): String!
   validateSupplierImport(csvContent: String!): String!
+  validateUnitImport(csvContent: String!): String!
 }
 
 type Notification {

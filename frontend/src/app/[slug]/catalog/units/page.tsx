@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { BulkEntryModal } from '@/components/catalog/BulkEntryModal';
 
 function UnitsContent() {
   const { toast } = useToast();
@@ -51,6 +52,7 @@ function UnitsContent() {
     isDefault: false,
   });
   const [unitToDelete, setUnitToDelete] = useState<any>(null);
+  const [isBulkEntryOpen, setIsBulkEntryOpen] = useState(false);
 
   const { data, loading, error, refetch } = useQuery(GET_UNITS);
 
@@ -188,10 +190,20 @@ function UnitsContent() {
               </p>
             </div>
             {!isEmpty && (
-              <Button className="gap-2" onClick={handleAddUnit}>
-                <Plus className="h-4 w-4" />
-                Add Unit
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => setIsBulkEntryOpen(true)}
+                >
+                  <PackagePlus className="h-4 w-4" />
+                  Bulk Add Units
+                </Button>
+                <Button className="gap-2" onClick={handleAddUnit}>
+                  <Plus className="h-4 w-4" />
+                  Add Unit
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -212,10 +224,20 @@ function UnitsContent() {
                   Create measurement units like pieces, kilograms, liters, etc.
                 </p>
               </div>
-              <Button onClick={handleAddUnit} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add your first unit
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsBulkEntryOpen(true)}
+                  className="gap-2"
+                >
+                  <PackagePlus className="h-4 w-4" />
+                  Bulk Add Units
+                </Button>
+                <Button onClick={handleAddUnit} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add your first unit
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : (
@@ -320,6 +342,14 @@ function UnitsContent() {
           </>
         )}
       </main>
+
+      {/* Bulk Entry Modal */}
+      <BulkEntryModal
+        open={isBulkEntryOpen}
+        onOpenChange={setIsBulkEntryOpen}
+        type="units"
+        onCompleted={() => refetch()}
+      />
 
       {/* Unit Modal */}
       <Dialog open={isUnitModalOpen} onOpenChange={(open) => !open && handleCloseModal()}>

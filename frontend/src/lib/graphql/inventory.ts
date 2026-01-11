@@ -14,6 +14,10 @@ export const GET_WAREHOUSE_STOCK = gql`
           id
           name
         }
+        supplier {
+          id
+          name
+        }
         cost_price
         selling_price
       }

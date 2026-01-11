@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-type ImportType = 'categories' | 'products' | 'suppliers';
+type ImportType = 'categories' | 'products' | 'suppliers' | 'units';
 
 interface PreviewRow {
   data: Record<string, string>;
@@ -36,6 +36,7 @@ export function ImportPreview({ type, rows, existingKeys = new Set() }: ImportPr
       case 'categories': return 'name';
       case 'products': return 'sku';
       case 'suppliers': return 'name';
+      case 'units': return 'name';
       default: return 'name';
     }
   };
@@ -59,6 +60,12 @@ export function ImportPreview({ type, rows, existingKeys = new Set() }: ImportPr
           { key: 'name', label: 'Supplier Name' },
           { key: 'email', label: 'Email' },
           { key: 'phone', label: 'Phone' },
+        ];
+      case 'units':
+        return [
+          { key: 'name', label: 'Unit Name' },
+          { key: 'shortCode', label: 'Short Code' },
+          { key: 'isDefault', label: 'Default' },
         ];
       default:
         return [];
@@ -84,7 +91,7 @@ export function ImportPreview({ type, rows, existingKeys = new Set() }: ImportPr
 
   const errorCount = rows.length - validCount;
 
-  const entityLabel = type === 'categories' ? 'categories' : type === 'products' ? 'products' : 'suppliers';
+  const entityLabel = type === 'categories' ? 'categories' : type === 'products' ? 'products' : type === 'suppliers' ? 'suppliers' : 'units';
 
   return (
     <div className="space-y-3">
@@ -148,14 +155,29 @@ export function ImportPreview({ type, rows, existingKeys = new Set() }: ImportPr
                       {statusIcon}
                     </div>
                   </TableCell>
-                  {columns.map(col => (
-                    <TableCell 
-                      key={col.key}
-                      className={col.key === keyField && isEmpty ? 'text-red-600 font-medium' : col.key === keyField ? 'font-medium' : 'text-muted-foreground'}
-                    >
-                      {row.data[col.key] || '—'}
-                    </TableCell>
-                  ))}
+                  {columns.map(col => {
+                    const value = row.data[col.key];
+                    // Handle different value types
+                    let displayValue;
+                    if (typeof value === 'boolean') {
+                      displayValue = value ? 'Yes' : 'No';
+                    } else if (value === null || value === undefined) {
+                      displayValue = '—';
+                    } else if (value === '') {
+                      displayValue = '—';
+                    } else {
+                      displayValue = String(value);
+                    }
+                    
+                    return (
+                      <TableCell 
+                        key={col.key}
+                        className={col.key === keyField && isEmpty ? 'text-red-600 font-medium' : col.key === keyField ? 'font-medium' : 'text-muted-foreground'}
+                      >
+                        {displayValue}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               );
             })}

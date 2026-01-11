@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
 import {
   Sheet,
@@ -88,7 +88,7 @@ export default function StockDrawer({
   }, [stock]);
 
   const [updateLevels, { loading: updatingLevels }] = useMutation(UPDATE_STOCK_LEVELS, {
-    refetchQueries: [GET_STOCK_MOVEMENTS, GET_WAREHOUSE_STOCK],
+    refetchQueries: [GET_WAREHOUSE_STOCK],
     onCompleted: () => {
       toast({
         title: 'Stock levels updated',
@@ -107,7 +107,7 @@ export default function StockDrawer({
   });
 
   const [adjustStock, { loading: adjustingStock }] = useMutation(ADJUST_STOCK, {
-    refetchQueries: [GET_STOCK_MOVEMENTS, GET_WAREHOUSE_STOCK],
+    refetchQueries: [GET_WAREHOUSE_STOCK],
     onCompleted: () => {
       toast({
         title: 'Stock adjusted',
@@ -126,19 +126,26 @@ export default function StockDrawer({
   });
 
   // Fetch recent stock movements for this product in this warehouse
+  // Memoize the filters to prevent query re-execution on every render
+  const movementFilters = useMemo(() => ({
+    productId: stock?.product?.id,
+    fromDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    toDate: new Date().toISOString(),
+    limit: 5,
+    offset: 0,
+  }), [stock?.product?.id]);
+
   const { data: movementsData } = useQuery(GET_STOCK_MOVEMENTS, {
     variables: {
-      filters: {
-        product_id: stock?.product?.id,
-        warehouse_id: stock?.warehouse?.id,
-        limit: 5,
-        offset: 0,
-      },
+      warehouseId: stock?.warehouse?.id,
+      filters: movementFilters,
     },
-    skip: !stock?.product?.id || !stock?.warehouse?.id,
+    skip: !stock?.product?.id || !stock?.warehouse?.id || !open,
+    fetchPolicy: 'cache-and-network',
+    notifyOnNetworkStatusChange: false,
   });
 
-  const recentMovements = movementsData?.stockMovements || [];
+  const recentMovements = movementsData?.stockMovements?.items || [];
 
   if (!stock) return null;
 
@@ -236,12 +243,23 @@ export default function StockDrawer({
           {/* Warehouse Info */}
           <div className="space-y-4">
             <h3 className="font-semibold text-sm text-muted-foreground">Location</h3>
-            <div className="flex items-center gap-3">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Warehouse</p>
-                <p className="text-sm text-muted-foreground">{stock.warehouse.name}</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">Warehouse</p>
+                  <p className="text-sm text-muted-foreground">{stock.warehouse.name}</p>
+                </div>
               </div>
+              {stock.product.supplier && (
+                <div className="flex items-center gap-3">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">Supplier</p>
+                    <p className="text-sm text-muted-foreground">{stock.product.supplier.name}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

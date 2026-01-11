@@ -47,6 +47,7 @@ import {
   Plus,
   X,
   AlertCircle,
+  Eye,
 } from 'lucide-react';
 import {
   GET_PURCHASE_ORDER,
@@ -55,6 +56,7 @@ import {
   UPDATE_PURCHASE_ORDER,
   GET_PURCHASE_ORDERS,
 } from '@/lib/graphql/purchase-orders';
+import { GET_GRNS } from '@/lib/graphql/grn';
 import { GET_SUPPLIERS } from '@/lib/graphql/catalog';
 import { GET_STOCK_BY_WAREHOUSE } from '@/lib/graphql/stock';
 import { toast } from 'sonner';
@@ -85,7 +87,113 @@ interface POItem {
   received_quantity?: number;
 }
 
-// Status badge helper
+// GRN Section Component
+function GRNSection({ poId, companySlug, warehouseSlug }: { poId: string; companySlug: string; warehouseSlug: string }) {
+  const router = useRouter();
+  
+  // Fetch GRNs for this PO
+  const { data: grnsData, loading: grnsLoading } = useQuery(GET_GRNS, {
+    variables: {
+      filters: {
+        purchase_order_id: poId,
+        limit: 50,
+      },
+    },
+    fetchPolicy: 'cache-and-network',
+  });
+
+  const grns = grnsData?.grns || [];
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  // Helper to get status badge
+  const getGRNStatusBadge = (status: string) => {
+    const config: Record<string, { variant: any; label: string }> = {
+      DRAFT: { variant: 'secondary', label: 'Draft' },
+      POSTED: { variant: 'default', label: 'Posted' },
+      CANCELLED: { variant: 'destructive', label: 'Cancelled' },
+    };
+    const item = config[status] || config.DRAFT;
+    return <Badge variant={item.variant}>{item.label}</Badge>;
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="flex items-center gap-2">
+          <PackageCheck className="h-5 w-5" />
+          Goods Receipt Notes ({grns.length})
+        </CardTitle>
+        <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn/new`}>
+          <Button size="sm" className="gap-2">
+            <Plus className="h-4 w-4" />
+            Create GRN
+          </Button>
+        </Link>
+      </CardHeader>
+      <CardContent>
+        {grnsLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2" />
+            <p className="text-sm text-slate-600 dark:text-slate-400">Loading GRNs...</p>
+          </div>
+        ) : grns.length === 0 ? (
+          <div className="text-center py-12">
+            <PackageCheck className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Goods Receipts Yet</h3>
+            <p className="text-slate-600 dark:text-slate-400 mb-4">
+              Start receiving goods from this purchase order
+            </p>
+            <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn/new`}>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Create First GRN
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>GRN Number</TableHead>
+                <TableHead>Received Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Items Count</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {grns.map((grn: any) => (
+                <TableRow key={grn.id}>
+                  <TableCell className="font-mono text-sm font-medium">{grn.grn_number}</TableCell>
+                  <TableCell>{formatDate(grn.received_at)}</TableCell>
+                  <TableCell>{getGRNStatusBadge(grn.status)}</TableCell>
+                  <TableCell className="text-right">{grn.items?.length || 0}</TableCell>
+                  <TableCell className="text-right">
+                    <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn/${grn.id}`}>
+                      <Button variant="ghost" size="icon">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Status badge helper for PO status
 const getStatusBadge = (status: string) => {
   const config: Record<string, { variant: any; label: string; icon: any; color: string }> = {
     DRAFT: { variant: 'secondary', label: 'Draft', icon: FileText, color: 'text-amber-600' },
@@ -649,28 +757,9 @@ function PurchaseOrderDetailContent() {
             </CardContent>
           </Card>
 
-          {/* GRN Placeholder */}
-          {!isEditing && (
-            <Card className="border-dashed border-2 border-slate-300 bg-slate-50/50 dark:bg-slate-900/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-slate-500">
-                  <PackageCheck className="h-5 w-5" />
-                  Goods Receipt (Coming Soon)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Once this PO is ordered, goods will be received against it through the Goods Receipt Note (GRN) process.
-                  This section will show:
-                </p>
-                <ul className="mt-3 space-y-1 text-sm text-slate-600 dark:text-slate-400 list-disc list-inside">
-                  <li>GRNs linked to this PO</li>
-                  <li>Quantities received per product</li>
-                  <li>Remaining quantities to receive</li>
-                  <li>Stock impact from each receipt</li>
-                </ul>
-              </CardContent>
-            </Card>
+          {/* Goods Receipt Notes */}
+          {!isEditing && po.status === 'ORDERED' && (
+            <GRNSection poId={poId} companySlug={companySlug} warehouseSlug={po.warehouse.id} />
           )}
 
           {/* Metadata */}

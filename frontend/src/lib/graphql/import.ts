@@ -74,3 +74,22 @@ export const EXECUTE_OPENING_STOCK_IMPORT = gql`
     executeOpeningStockImport(validatedData: $validatedData, warehouseId: $warehouseId)
   }
 `;
+
+// Units Import
+export const DOWNLOAD_UNIT_TEMPLATE = gql`
+  mutation DownloadUnitTemplate {
+    downloadUnitTemplate
+  }
+`;
+
+export const VALIDATE_UNIT_IMPORT = gql`
+  mutation ValidateUnitImport($csvContent: String!) {
+    validateUnitImport(csvContent: $csvContent)
+  }
+`;
+
+export const EXECUTE_UNIT_IMPORT = gql`
+  mutation ExecuteUnitImport($validatedData: String!) {
+    executeUnitImport(validatedData: $validatedData)
+  }
+`;

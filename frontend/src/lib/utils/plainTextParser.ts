@@ -372,3 +372,112 @@ export function detectInputFormat(text: string): 'plain' | 'csv' | 'tsv' {
     // Default to plain text
     return 'plain';
 }
+
+/**
+ * Parsed unit interface
+ */
+export interface ParsedUnit {
+    name: string;
+    shortCode: string;
+    isDefault: boolean;
+    lineNumber: number;
+    isEmpty: boolean;
+}
+
+/**
+ * Parses plain text input into structured unit data
+ * Format: "Name | Short Code" or "Name | Short Code | Default"
+ * @param text - Plain text input with one unit per line
+ * @returns Parsed units and CSV content
+ */
+export function parsePlainTextUnits(text: string): PlainTextParseResult {
+    const lines = text.split(/\r?\n/);
+    const units: ParsedUnit[] = [];
+
+    lines.forEach((line, index) => {
+        const trimmed = line.trim();
+
+        // Skip empty lines
+        if (trimmed === '') {
+            return;
+        }
+
+        let name = '';
+        let shortCode = '';
+        let isDefault = false;
+
+        // Check if line contains pipe separator or dash separator
+        if (trimmed.includes('|')) {
+            const parts = trimmed.split('|').map(p => p.trim());
+
+            if (parts.length >= 2) {
+                name = parts[0];
+                shortCode = parts[1];
+                if (parts.length >= 3) {
+                    const defaultFlag = parts[2].toLowerCase();
+                    isDefault = defaultFlag === 'true' || defaultFlag === 'yes' || defaultFlag === '1' || defaultFlag === 'default';
+                }
+            } else if (parts.length === 1) {
+                name = parts[0];
+            }
+        } else if (trimmed.includes(' - ')) {
+            // Support dash separator as well
+            const parts = trimmed.split(' - ').map(p => p.trim());
+
+            if (parts.length >= 2) {
+                name = parts[0];
+                shortCode = parts[1];
+                if (parts.length >= 3) {
+                    const defaultFlag = parts[2].toLowerCase();
+                    isDefault = defaultFlag === 'true' || defaultFlag === 'yes' || defaultFlag === '1' || defaultFlag === 'default';
+                }
+            } else if (parts.length === 1) {
+                name = parts[0];
+            }
+        } else {
+            name = trimmed;
+        }
+
+        units.push({
+            name,
+            shortCode,
+            isDefault,
+            lineNumber: index + 1,
+            isEmpty: !name || !shortCode,
+        });
+    });
+
+    // Convert to CSV format for backend
+    const csvContent = convertUnitsToCSV(units);
+
+    return {
+        categories: units as any,
+        csvContent,
+        hasErrors: units.some(u => u.isEmpty),
+    };
+}
+
+/**
+ * Converts parsed units to CSV format
+ */
+function convertUnitsToCSV(units: ParsedUnit[]): string {
+    if (units.length === 0) {
+        return '';
+    }
+
+    // Create CSV header matching backend template
+    const header = 'name,shortCode,isDefault';
+
+    // Create CSV rows
+    const rows = units
+        .filter(u => !u.isEmpty)
+        .map(u => {
+            const name = escapeCsvField(u.name);
+            const shortCode = escapeCsvField(u.shortCode);
+            const isDefault = u.isDefault ? 'true' : 'false';
+
+            return `${name},${shortCode},${isDefault}`;
+        });
+
+    return [header, ...rows].join('\n');
+}

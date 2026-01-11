@@ -162,4 +162,41 @@ export class ImportResolver {
         );
         return JSON.stringify(result);
     }
+
+    // Units Import
+    @Mutation(() => String)
+    @UseGuards(ClerkAuthGuard, RolesGuard)
+    @Roles(Role.OWNER, Role.ADMIN)
+    async downloadUnitTemplate(): Promise<string> {
+        return this.importService.generateUnitTemplate();
+    }
+
+    @Mutation(() => String)
+    @UseGuards(ClerkAuthGuard, RolesGuard)
+    @Roles(Role.OWNER, Role.ADMIN)
+    async validateUnitImport(
+        @Args('csvContent') csvContent: string,
+        @ClerkUser() user: any,
+    ): Promise<string> {
+        const result = await this.importService.validateUnitImport(
+            csvContent,
+            user.activeCompanyId,
+        );
+        return JSON.stringify(result);
+    }
+
+    @Mutation(() => String)
+    @UseGuards(ClerkAuthGuard, RolesGuard)
+    @Roles(Role.OWNER, Role.ADMIN)
+    async executeUnitImport(
+        @Args('validatedData') validatedData: string,
+        @ClerkUser() user: any,
+    ): Promise<string> {
+        const data = JSON.parse(validatedData);
+        const result = await this.importService.executeUnitImport(
+            data,
+            user.activeCompanyId,
+        );
+        return JSON.stringify(result);
+    }
 }

@@ -4,6 +4,7 @@ import { Repository, DataSource } from 'typeorm';
 import { Product } from '../inventory/entities/product.entity';
 import { Category } from '../inventory/entities/category.entity';
 import { Supplier } from '../supplier/supplier.entity';
+import { Unit } from '../inventory/entities/unit.entity';
 import { StockLot } from '../inventory/entities/stock-lot.entity';
 import { Stock } from '../inventory/entities/stock.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
@@ -46,6 +47,8 @@ export class ImportService {
         private categoryRepository: Repository<Category>,
         @InjectRepository(Supplier)
         private supplierRepository: Repository<Supplier>,
+        @InjectRepository(Unit)
+        private unitRepository: Repository<Unit>,
         @InjectRepository(StockLot)
         private stockLotRepository: Repository<StockLot>,
         @InjectRepository(Stock)
@@ -146,6 +149,32 @@ export class ImportService {
         });
         const existingSKUs = new Set(existingProducts.map((p) => p.sku));
 
+        // Get existing units to validate references
+        const existingUnits = await this.unitRepository.find({
+            where: { company_id: companyId },
+            select: ['shortCode', 'name'],
+        });
+        // Create a set that includes both short codes and names for flexible matching
+        const validUnitIdentifiers = new Set<string>();
+        existingUnits.forEach(u => {
+            validUnitIdentifiers.add(u.shortCode.toLowerCase());
+            validUnitIdentifiers.add(u.name.toLowerCase());
+        });
+
+        // Get existing suppliers to validate references (optional field)
+        const existingSuppliers = await this.supplierRepository.find({
+            where: { company_id: companyId },
+            select: ['name'],
+        });
+        const supplierNames = new Set(existingSuppliers.map(s => s.name.toLowerCase()));
+
+        // Get existing categories to validate references (optional field)
+        const existingCategories = await this.categoryRepository.find({
+            where: { company_id: companyId },
+            select: ['name'],
+        });
+        const categoryNames = new Set(existingCategories.map(c => c.name.toLowerCase()));
+
         for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
             const rowNumber = i + 2; // +2 because of header row and 0-based index
@@ -175,13 +204,41 @@ export class ImportService {
                 });
             }
 
-            // Validate unit
+            // Validate unit (required)
             if (!row.unit || row.unit.trim() === '') {
                 errors.push({
                     rowNumber,
                     field: 'unit',
                     message: 'Unit is required',
                 });
+            } else if (!validUnitIdentifiers.has(row.unit.toLowerCase())) {
+                errors.push({
+                    rowNumber,
+                    field: 'unit',
+                    message: `Unit "${row.unit}" does not exist. Please create it first.`,
+                });
+            }
+
+            // Validate supplier exists (if provided)
+            if (row.supplier && row.supplier.trim() !== '') {
+                if (!supplierNames.has(row.supplier.toLowerCase())) {
+                    errors.push({
+                        rowNumber,
+                        field: 'supplier',
+                        message: `Supplier "${row.supplier}" does not exist. Please create it first.`,
+                    });
+                }
+            }
+
+            // Validate category exists (if provided)
+            if (row.category && row.category.trim() !== '') {
+                if (!categoryNames.has(row.category.toLowerCase())) {
+                    errors.push({
+                        rowNumber,
+                        field: 'category',
+                        message: `Category "${row.category}" does not exist. Please create it first.`,
+                    });
+                }
             }
 
             // Validate price fields if provided
@@ -264,36 +321,34 @@ export class ImportService {
         try {
             for (const row of validatedRows) {
                 try {
-                    // Find or create category
+                    // Find category (validation ensures it exists if provided)
                     let category: Category | null = null;
                     if (row.data.category) {
                         category = await queryRunner.manager.findOne(Category, {
                             where: { name: row.data.category, company_id: companyId },
                         });
-
-                        if (!category) {
-                            category = queryRunner.manager.create(Category, {
-                                company_id: companyId,
-                                name: row.data.category,
-                            });
-                            category = await queryRunner.manager.save(category);
-                        }
                     }
 
-                    // Find or create supplier
+                    // Find supplier (validation ensures it exists if provided)
                     let supplier: Supplier | null = null;
                     if (row.data.supplier) {
                         supplier = await queryRunner.manager.findOne(Supplier, {
                             where: { name: row.data.supplier, company_id: companyId },
                         });
+                    }
 
-                        if (!supplier) {
-                            supplier = queryRunner.manager.create(Supplier, {
-                                company_id: companyId,
-                                name: row.data.supplier,
-                            });
-                            supplier = await queryRunner.manager.save(supplier);
-                        }
+                    // Find unit by either shortCode or name (validation ensures it exists)
+                    let unitValue = row.data.unit;
+                    const unit = await queryRunner.manager.findOne(this.unitRepository.target as any, {
+                        where: [
+                            { shortCode: row.data.unit, company_id: companyId },
+                            { name: row.data.unit, company_id: companyId },
+                        ],
+                    });
+
+                    // Use the shortCode for storage (consistent format)
+                    if (unit && (unit as any).shortCode) {
+                        unitValue = (unit as any).shortCode;
                     }
 
                     // Create product
@@ -304,7 +359,7 @@ export class ImportService {
                         sku: row.data.sku,
                         name: row.data.name,
                         barcode: row.data.barcode || null,
-                        unit: row.data.unit,
+                        unit: unitValue,
                         cost_price: row.data.cost_price ? parseFloat(row.data.cost_price) : null,
                         selling_price: row.data.selling_price ? parseFloat(row.data.selling_price) : null,
                         image_url: row.data.image_url || null,
@@ -802,4 +857,182 @@ export class ImportService {
             errors,
         };
     }
+
+    /**
+     * Generate CSV template for units
+     */
+    generateUnitTemplate(): string {
+        const template = [
+            {
+                name: 'Piece',
+                shortCode: 'pcs',
+                isDefault: 'false',
+            },
+            {
+                name: 'Kilogram',
+                shortCode: 'kg',
+                isDefault: 'false',
+            },
+        ];
+        return Papa.unparse(template);
+    }
+
+    /**
+     * Validate unit import
+     */
+    async validateUnitImport(
+        csvContent: string,
+        companyId: string,
+    ): Promise<ValidationResult> {
+        const parsed = Papa.parse(csvContent, { header: true, skipEmptyLines: true });
+        const rows = parsed.data as any[];
+
+        const validRows: ValidatedRow[] = [];
+        const errorRows: ValidatedRow[] = [];
+
+        // Get existing units
+        const existingUnits = await this.unitRepository.find({
+            where: { company_id: companyId },
+            select: ['name', 'shortCode'],
+        });
+        const existingNames = new Set(existingUnits.map((u) => u.name.toLowerCase()));
+        const existingShortCodes = new Set(existingUnits.map((u) => u.shortCode.toLowerCase()));
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const rowNumber = i + 2;
+            const errors: ValidationError[] = [];
+
+            // Validate name
+            if (!row.name || row.name.trim() === '') {
+                errors.push({
+                    rowNumber,
+                    field: 'name',
+                    message: 'Unit name is required',
+                });
+            } else if (existingNames.has(row.name.toLowerCase())) {
+                errors.push({
+                    rowNumber,
+                    field: 'name',
+                    message: `Duplicate unit: ${row.name} already exists`,
+                });
+            }
+
+            // Validate shortCode
+            if (!row.shortCode || row.shortCode.trim() === '') {
+                errors.push({
+                    rowNumber,
+                    field: 'shortCode',
+                    message: 'Short code is required',
+                });
+            } else if (existingShortCodes.has(row.shortCode.toLowerCase())) {
+                errors.push({
+                    rowNumber,
+                    field: 'shortCode',
+                    message: `Duplicate short code: ${row.shortCode} already exists`,
+                });
+            }
+
+            // Validate isDefault if provided
+            if (row.isDefault && row.isDefault !== '') {
+                const normalizedValue = row.isDefault.toLowerCase();
+                if (!['true', 'false', 'yes', 'no', '1', '0'].includes(normalizedValue)) {
+                    errors.push({
+                        rowNumber,
+                        field: 'isDefault',
+                        message: 'isDefault must be true, false, yes, no, 1, or 0',
+                    });
+                }
+            }
+
+            const validatedRow: ValidatedRow = {
+                rowNumber,
+                data: row,
+                isValid: errors.length === 0,
+                errors,
+            };
+
+            if (validatedRow.isValid) {
+                validRows.push(validatedRow);
+            } else {
+                errorRows.push(validatedRow);
+            }
+        }
+
+        return {
+            validRows,
+            errorRows,
+            totalRows: rows.length,
+        };
+    }
+
+    /**
+     * Execute unit import
+     */
+    async executeUnitImport(
+        validatedRows: ValidatedRow[],
+        companyId: string,
+    ): Promise<ImportResult> {
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        let successCount = 0;
+        const errors: ValidationError[] = [];
+
+        try {
+            // Check if any of the rows being imported should be set as default
+            const hasDefaultInImport = validatedRows.some(row => {
+                const normalizedValue = (row.data.isDefault || '').toLowerCase();
+                return ['true', 'yes', '1'].includes(normalizedValue);
+            });
+
+            // If we're importing a default unit, unset any existing default
+            if (hasDefaultInImport) {
+                await queryRunner.manager.update(
+                    Unit,
+                    { company_id: companyId, isDefault: true },
+                    { isDefault: false }
+                );
+            }
+
+            for (const row of validatedRows) {
+                try {
+                    // Parse isDefault value
+                    const normalizedValue = (row.data.isDefault || 'false').toLowerCase();
+                    const isDefault = ['true', 'yes', '1'].includes(normalizedValue);
+
+                    const unit = queryRunner.manager.create(Unit, {
+                        company_id: companyId,
+                        name: row.data.name,
+                        shortCode: row.data.shortCode,
+                        isDefault,
+                    });
+
+                    await queryRunner.manager.save(unit);
+                    successCount++;
+                } catch (error: any) {
+                    errors.push({
+                        rowNumber: row.rowNumber,
+                        field: 'general',
+                        message: error.message,
+                    });
+                }
+            }
+
+            await queryRunner.commitTransaction();
+        } catch (error: any) {
+            await queryRunner.rollbackTransaction();
+            throw new BadRequestException('Import failed: ' + error.message);
+        } finally {
+            await queryRunner.release();
+        }
+
+        return {
+            successCount,
+            failureCount: validatedRows.length - successCount,
+            errors,
+        };
+    }
 }
+
