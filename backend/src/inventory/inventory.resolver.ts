@@ -5,6 +5,7 @@ import { Category } from './entities/category.entity';
 import { Product } from './entities/product.entity';
 import { Stock } from './entities/stock.entity';
 import { StockMovement } from './entities/stock-movement.entity';
+import { StockLot } from './entities/stock-lot.entity';
 import { CreateCategoryInput, UpdateCategoryInput } from './dto/category.input';
 import { CreateProductInput, UpdateProductInput } from './dto/product.input';
 import { CreateUnitInput, UpdateUnitInput } from './dto/unit.input';
@@ -150,6 +151,15 @@ export class UnitResolver {
 @UseGuards(ClerkAuthGuard, RolesGuard)
 export class StockResolver {
     constructor(private readonly inventoryService: InventoryService) { }
+
+    @ResolveField(() => [StockLot], { name: 'lots', nullable: true })
+    async resolveLots(@Parent() stock: Stock) {
+        return this.inventoryService.getLotsForStock({
+            company_id: stock.company_id,
+            product_id: stock.product_id,
+            warehouse_id: stock.warehouse_id,
+        });
+    }
 
     /**
      * Phase 1: Create opening stock for a product in a warehouse

@@ -347,6 +347,20 @@ export class InventoryService {
         });
     }
 
+    async getLotsForStock(stock: Pick<Stock, 'company_id' | 'product_id' | 'warehouse_id'>): Promise<StockLot[]> {
+        return this.stockLotRepository.find({
+            where: {
+                company_id: stock.company_id,
+                product_id: stock.product_id,
+                warehouse_id: stock.warehouse_id,
+            },
+            order: {
+                expiry_date: 'ASC',
+                received_at: 'ASC',
+            },
+        });
+    }
+
     async getStockByProduct(productId: string, companyId: string): Promise<Stock[]> {
         return this.stockRepository.find({
             where: {
