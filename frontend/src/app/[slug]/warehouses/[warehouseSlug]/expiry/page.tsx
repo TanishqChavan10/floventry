@@ -20,7 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
-import { ExpiryStatusBadge } from '@/components/inventory/ExpiryStatus Badge';
+import { ExpiryStatusBadge } from '@/components/inventory/ExpiryStatusBadge';
 import { LotBreakdownModal } from '@/components/inventory/LotBreakdownModal';
 import {
   getExpiryStatus,
