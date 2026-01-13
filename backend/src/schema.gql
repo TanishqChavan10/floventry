@@ -328,7 +328,7 @@ type DashboardMovementItem {
   createdAt: DateTime!
   performedBy: MovementPerformer
   product: ProductPreview!
-  quantity: Int!
+  quantity: Int
   type: String!
 }
 
@@ -842,12 +842,12 @@ type Stock {
   created_at: DateTime!
   id: ID!
   lots: [StockLot!]
-  max_stock_level: Int
-  min_stock_level: Int
+  max_stock_level: Float
+  min_stock_level: Float
   product: Product!
   product_id: String!
-  quantity: Int!
-  reorder_point: Int
+  quantity: Float!
+  reorder_point: Float
   updated_at: DateTime!
   warehouse: Warehouse!
   warehouse_id: String!
@@ -877,7 +877,7 @@ type StockLot {
   id: ID!
   product: Product!
   product_id: ID!
-  quantity: Float!
+  quantity: Float
   received_at: DateTime!
   source_id: String
   source_type: LotSourceType!
@@ -891,13 +891,13 @@ type StockMovement {
   id: ID!
   lot: StockLot
   lot_id: String
-  new_quantity: Int!
+  new_quantity: Float
   notes: String
   performed_by: String
-  previous_quantity: Int!
+  previous_quantity: Float
   product: Product!
   product_id: String!
-  quantity: Int!
+  quantity: Float
   reason: String
   reference_id: String
   reference_type: ReferenceType

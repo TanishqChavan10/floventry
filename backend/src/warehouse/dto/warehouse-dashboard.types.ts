@@ -55,7 +55,7 @@ export class DashboardMovementItem {
     @Field()
     type: string;
 
-    @Field(() => Int)
+    @Field(() => Int, { nullable: true })
     quantity: number;
 
     @Field(() => ProductPreview)

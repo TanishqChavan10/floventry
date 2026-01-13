@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useMutation, useQuery } from '@apollo/client';
@@ -19,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { useWarehouse } from '@/context/warehouse-context';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -29,23 +28,83 @@ interface IssueItem {
   quantity: number;
 }
 
+interface SalesOrderItem {
+  product: {
+    id: string;
+  };
+  pending_quantity: number;
+}
+
+interface SalesOrder {
+  id: string;
+  status: string;
+  customer_name: string;
+  items?: SalesOrderItem[];
+}
+
+interface Product {
+  id: string;
+  name: string;
+  sku: string;
+}
+
 export default function NewIssueNotePage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
   const { activeWarehouse } = useWarehouse();
-  
+
   const companySlug = params.slug as string;
   const warehouseSlug = params.warehouseSlug as string;
 
   const [salesOrderId, setSalesOrderId] = useState<string>('');
   const [items, setItems] = useState<IssueItem[]>([]);
+  const [prefilledFromSalesOrderId, setPrefilledFromSalesOrderId] = useState<string>('');
 
   const { data: salesOrdersData } = useQuery(GET_SALES_ORDERS);
   const { data: productsData } = useQuery(GET_PRODUCTS);
 
-  const salesOrders = salesOrdersData?.salesOrders || [];
-  const products = productsData?.products || [];
+  const salesOrders = useMemo<SalesOrder[]>(
+    () => (salesOrdersData?.salesOrders ?? []) as SalesOrder[],
+    [salesOrdersData],
+  );
+
+  const products = useMemo<Product[]>(
+    () => (productsData?.products ?? []) as Product[],
+    [productsData],
+  );
+
+  const prefillItemsFromSalesOrder = useCallback(
+    (selectedSalesOrderId: string) => {
+      const salesOrder = salesOrders.find((so) => so.id === selectedSalesOrderId);
+      const salesOrderItems = salesOrder?.items || [];
+
+      const prefilledItems: IssueItem[] = salesOrderItems
+        .filter((soi) => (soi.product?.id ? (soi.pending_quantity ?? 0) > 0 : false))
+        .map((soi) => ({
+          product_id: soi.product.id,
+          quantity: 0,
+        }));
+
+      setItems(prefilledItems);
+      setPrefilledFromSalesOrderId(selectedSalesOrderId);
+
+      if (prefilledItems.length === 0) {
+        toast({
+          title: 'No pending items',
+          description: 'The selected sales order has no pending quantities to issue.',
+        });
+      }
+    },
+    [salesOrders, toast],
+  );
+
+  useEffect(() => {
+    // If a sales order was selected before the list finished loading, prefill once data arrives.
+    if (salesOrderId && salesOrderId !== prefilledFromSalesOrderId && salesOrders.length > 0) {
+      prefillItemsFromSalesOrder(salesOrderId);
+    }
+  }, [salesOrderId, prefilledFromSalesOrderId, salesOrders.length, prefillItemsFromSalesOrder]);
 
   const [createIssue, { loading }] = useMutation(CREATE_ISSUE_NOTE_WITH_FEFO, {
     onCompleted: (data) => {
@@ -53,7 +112,9 @@ export default function NewIssueNotePage() {
         title: 'Success',
         description: 'Issue note created successfully with FEFO lot selection',
       });
-      router.push(`/${companySlug}/warehouses/${warehouseSlug}/issues/${data.createIssueNoteWithFEFO.id}`);
+      router.push(
+        `/${companySlug}/warehouses/${warehouseSlug}/issues/${data.createIssueNoteWithFEFO.id}`,
+      );
     },
     onError: (error) => {
       toast({
@@ -72,7 +133,7 @@ export default function NewIssueNotePage() {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const updateItem = (index: number, field: keyof IssueItem, value: any) => {
+  const updateItem = <K extends keyof IssueItem>(index: number, field: K, value: IssueItem[K]) => {
     const updated = [...items];
     updated[index] = { ...updated[index], [field]: value };
     setItems(updated);
@@ -134,15 +195,26 @@ export default function NewIssueNotePage() {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="salesOrder">Link to Sales Order (Optional)</Label>
-              <Select value={salesOrderId || 'NONE'} onValueChange={(value) => setSalesOrderId(value === 'NONE' ? '' : value)}>
+              <Select
+                value={salesOrderId || 'NONE'}
+                onValueChange={(value) => {
+                  const nextId = value === 'NONE' ? '' : value;
+                  setSalesOrderId(nextId);
+
+                  // Auto-populate issue items from the chosen Sales Order
+                  if (nextId) {
+                    prefillItemsFromSalesOrder(nextId);
+                  }
+                }}
+              >
                 <SelectTrigger className="mt-2">
                   <SelectValue placeholder="Select sales order (optional)" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NONE">None (Direct Issue)</SelectItem>
                   {salesOrders
-                    .filter((so: any) => so.status === 'CONFIRMED')
-                    .map((so: any) => (
+                    .filter((so) => so.status === 'CONFIRMED')
+                    .map((so) => (
                       <SelectItem key={so.id} value={so.id}>
                         {so.customer_name} - {so.id.slice(0, 8)}
                       </SelectItem>
@@ -162,7 +234,8 @@ export default function NewIssueNotePage() {
         <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/30">
           <Info className="h-4 w-4 text-blue-600" />
           <AlertDescription className="text-blue-800 dark:text-blue-200">
-            <strong>Automatic Lot Selection (FEFO):</strong> Lots will be automatically selected based on earliest expiry date. No manual lot selection needed!
+            <strong>Automatic Lot Selection (FEFO):</strong> Lots will be automatically selected
+            based on earliest expiry date. No manual lot selection needed!
           </AlertDescription>
         </Alert>
 
@@ -180,13 +253,17 @@ export default function NewIssueNotePage() {
             {items.length === 0 ? (
               <div className="text-center py-12 text-slate-500">
                 <p className="text-lg font-medium">No items added yet</p>
-                <p className="text-sm text-slate-400 mt-1">Click "Add Item" to get started</p>
+                <p className="text-sm text-slate-400 mt-1">
+                  Click &quot;Add Item&quot; to get started
+                </p>
               </div>
             ) : (
               items.map((item, index) => {
-                const product = products.find((p: any) => p.id === item.product_id);
                 return (
-                  <div key={index} className="flex gap-4 items-end p-6 border rounded-lg bg-slate-50 dark:bg-slate-900/50">
+                  <div
+                    key={index}
+                    className="flex gap-4 items-end p-6 border rounded-lg bg-slate-50 dark:bg-slate-900/50"
+                  >
                     <div className="flex-1">
                       <Label className="mb-2 block">Product</Label>
                       <Select
@@ -197,7 +274,7 @@ export default function NewIssueNotePage() {
                           <SelectValue placeholder="Select product" />
                         </SelectTrigger>
                         <SelectContent>
-                          {products.map((product: any) => (
+                          {products.map((product) => (
                             <SelectItem key={product.id} value={product.id}>
                               {product.name} ({product.sku})
                             </SelectItem>

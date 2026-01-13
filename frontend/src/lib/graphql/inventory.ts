@@ -29,6 +29,12 @@ export const GET_WAREHOUSE_STOCK = gql`
       min_stock_level
       max_stock_level
       reorder_point
+      lots {
+        id
+        quantity
+        expiry_date
+        received_at
+      }
       created_at
       updated_at
     }

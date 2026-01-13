@@ -103,16 +103,16 @@ export class StockMovement {
     })
     type: MovementType;
 
-    @Field(() => Int)
-    @Column('integer')
+    @Field(() => Float, { nullable: true })
+    @Column('decimal', { precision: 10, scale: 2, nullable: true })
     quantity: number; // Positive for IN, negative for OUT/ADJUSTMENT
 
-    @Field(() => Int)
-    @Column('integer')
+    @Field(() => Float, { nullable: true })
+    @Column('decimal', { precision: 10, scale: 2, nullable: true })
     previous_quantity: number;
 
-    @Field(() => Int)
-    @Column('integer')
+    @Field(() => Float, { nullable: true })
+    @Column('decimal', { precision: 10, scale: 2, nullable: true })
     new_quantity: number;
 
     @Field({ nullable: true })

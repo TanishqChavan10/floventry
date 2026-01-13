@@ -41,20 +41,20 @@ export class Stock {
     @JoinColumn({ name: 'company_id' })
     company: Company;
 
-    @Field(() => Int)
-    @Column('integer', { default: 0 })
+    @Field(() => Float)
+    @Column('decimal', { precision: 10, scale: 2, default: 0 })
     quantity: number;
 
-    @Field(() => Int, { nullable: true })
-    @Column('integer', { nullable: true })
+    @Field(() => Float, { nullable: true })
+    @Column('decimal', { precision: 10, scale: 2, nullable: true })
     min_stock_level: number;
 
-    @Field(() => Int, { nullable: true })
-    @Column('integer', { nullable: true })
+    @Field(() => Float, { nullable: true })
+    @Column('decimal', { precision: 10, scale: 2, nullable: true })
     max_stock_level: number;
 
-    @Field(() => Int, { nullable: true })
-    @Column('integer', { nullable: true })
+    @Field(() => Float, { nullable: true })
+    @Column('decimal', { precision: 10, scale: 2, nullable: true })
     reorder_point: number;
 
     @Field()

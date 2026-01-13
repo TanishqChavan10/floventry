@@ -205,13 +205,13 @@ function WarehouseDashboardData({
                         </div>
                         <div
                           className={`font-mono font-semibold ${
-                            movement.quantity > 0
+                            (movement.quantity ?? 0) > 0
                               ? 'text-green-600 dark:text-green-400'
                               : 'text-red-600 dark:text-red-400'
                           }`}
                         >
-                          {movement.quantity > 0 ? '+' : ''}
-                          {movement.quantity}
+                          {(movement.quantity ?? 0) > 0 ? '+' : ''}
+                          {movement.quantity ?? 0}
                         </div>
                       </div>
                     ))

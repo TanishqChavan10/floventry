@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID, registerEnumType } from '@nestjs/graphql';
+import { ObjectType, Field, ID, registerEnumType, GraphQLISODateTime } from '@nestjs/graphql';
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn, Index } from 'typeorm';
 import { Company } from '../../company/company.entity';
 import { User } from '../../auth/entities/user.entity';
@@ -48,9 +48,25 @@ export class SalesOrder {
     })
     status: SalesOrderStatus;
 
-    @Field({ nullable: true })
-    @Column({ type: 'date', nullable: true })
-    expected_dispatch_date: Date;
+    @Field(() => GraphQLISODateTime, { nullable: true })
+    @Column({
+        type: 'date',
+        nullable: true,
+        transformer: {
+            to: (value: Date | null | undefined) => {
+                if (!value) return null;
+                // Store as a date-only string to avoid timezone shifts (DATE has no timezone)
+                return value.toISOString().slice(0, 10);
+            },
+            from: (value: string | Date | null) => {
+                if (!value) return null;
+                if (value instanceof Date) return value;
+                // DB 'date' columns may come back as YYYY-MM-DD strings
+                return new Date(value);
+            },
+        },
+    })
+    expected_dispatch_date: Date | null;
 
     @Field()
     @Column('uuid')

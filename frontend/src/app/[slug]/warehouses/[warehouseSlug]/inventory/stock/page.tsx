@@ -31,6 +31,10 @@ import { GET_CATEGORIES } from '@/lib/graphql/catalog';
 import { GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
 import OpeningStockModal from '@/components/inventory/OpeningStockModal';
 import StockDrawer from '@/components/inventory/StockDrawer';
+import { LotBreakdownModal } from '@/components/inventory/LotBreakdownModal';
+import { ExpiryStatusBadge } from '@/components/inventory/ExpiryStatusBadge';
+import { getNearestExpiryDate, getProductExpiryStatus, getDaysUntilExpiry } from '@/lib/utils/expiry';
+import { format } from 'date-fns';
 
 function StockPageContent() {
   const params = useParams();
@@ -45,6 +49,8 @@ function StockPageContent() {
   const [isOpeningStockModalOpen, setIsOpeningStockModalOpen] = useState(false);
   const [selectedStock, setSelectedStock] = useState<any>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [lotBreakdownProduct, setLotBreakdownProduct] = useState<any>(null);
+  const [isLotModalOpen, setIsLotModalOpen] = useState(false);
 
   // Get warehouse ID from context or user data
   const activeWarehouse = user?.warehouses?.find(
@@ -272,12 +278,18 @@ function StockPageContent() {
                         <TableHead>Category</TableHead>
                         <TableHead>Unit</TableHead>
                         <TableHead className="text-right">Quantity</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>Nearest Expiry</TableHead>
+                        <TableHead>Expiry Status</TableHead>
+                        <TableHead>Stock Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredStock.map((item: any) => {
                         const isLowStock = item.reorder_point && parseFloat(item.quantity) <= parseFloat(item.reorder_point);
+                        const nearestExpiry = getNearestExpiryDate(item.lots || []);
+                        const expiryStatus = getProductExpiryStatus(item.lots || []);
+                        const daysRemaining = getDaysUntilExpiry(nearestExpiry);
+                        
                         return (
                           <TableRow
                             key={item.id}
@@ -290,6 +302,21 @@ function StockPageContent() {
                             <TableCell className="font-mono text-sm">{item.product.unit}</TableCell>
                             <TableCell className="text-right font-semibold">
                               {Math.round(parseFloat(item.quantity))}
+                            </TableCell>
+                            <TableCell
+                              className="text-sm cursor-pointer hover:underline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLotBreakdownProduct(item);
+                                setIsLotModalOpen(true);
+                              }}
+                            >
+                              {nearestExpiry
+                                ? format(new Date(nearestExpiry), 'dd MMM yyyy')
+                                : '—'}
+                            </TableCell>
+                            <TableCell>
+                              <ExpiryStatusBadge status={expiryStatus} daysRemaining={daysRemaining} />
                             </TableCell>
                             <TableCell>
                               {isLowStock ? (
@@ -332,6 +359,19 @@ function StockPageContent() {
             refetch();
           }}
           canModify={canModifyStock}
+        />
+      )}
+
+      {isLotModalOpen && lotBreakdownProduct && (
+        <LotBreakdownModal
+          isOpen={isLotModalOpen}
+          onClose={() => {
+            setIsLotModalOpen(false);
+            setLotBreakdownProduct(null);
+          }}
+          productName={lotBreakdownProduct.product.name}
+          productSku={lotBreakdownProduct.product.sku}
+          lots={lotBreakdownProduct.lots || []}
         />
       )}
     </div>

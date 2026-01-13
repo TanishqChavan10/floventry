@@ -39,8 +39,8 @@ export class StockLot {
     @Column('uuid')
     product_id: string;
 
-    @Field()
-    @Column('int')
+    @Field({ nullable: true })
+    @Column('decimal', { precision: 10, scale: 2, nullable: true })
     quantity: number;
 
     @Field({ nullable: true })
