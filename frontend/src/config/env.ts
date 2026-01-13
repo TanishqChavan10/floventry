@@ -11,6 +11,35 @@ type RequiredEnvOptions = {
   devDefault?: string;
 };
 
+function normalizeAbsoluteUrl(value: string, nameForErrors: string): string {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error(`Invalid ${nameForErrors}: ${value}`);
+  }
+
+  const normalized = url.toString();
+  return normalized.endsWith('/') ? normalized.slice(0, -1) : normalized;
+}
+
+function assertNotLocalhostInProduction(value: string, name: string): void {
+  if (process.env.NODE_ENV !== 'production') return;
+  if (process.env.NEXT_PUBLIC_ALLOW_LOCALHOST === 'true') return;
+
+  let hostname: string;
+  try {
+    hostname = new URL(value).hostname;
+  } catch {
+    // If it's not a valid URL, another validator will throw.
+    return;
+  }
+
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+    throw new Error(`${name} points to localhost in production: ${value}`);
+  }
+}
+
 function requiredEnv(
   value: string | undefined,
   name: string,
@@ -49,12 +78,44 @@ function deriveApiUrlFromGraphqlUrl(graphqlUrl: string): string {
   return apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
 }
 
-// GraphQL endpoint (must end with '/graphql', usually '/api/graphql')
-export const GRAPHQL_URL = requiredEnv(
-  process.env.NEXT_PUBLIC_GRAPHQL_URL,
-  'NEXT_PUBLIC_GRAPHQL_URL',
-  { devDefault: 'http://localhost:5000/api/graphql' },
-);
+function normalizeApiUrl(apiUrl: string): string {
+  // Accept any absolute URL (e.g. https://api.example.com/api)
+  const normalized = normalizeAbsoluteUrl(apiUrl, 'NEXT_PUBLIC_API_URL');
+  assertNotLocalhostInProduction(normalized, 'NEXT_PUBLIC_API_URL');
+  return normalized;
+}
 
-// REST base URL derived from GRAPHQL_URL (usually '/api')
-export const API_URL = deriveApiUrlFromGraphqlUrl(GRAPHQL_URL);
+function normalizeGraphqlUrl(graphqlUrl: string): string {
+  // Must end with '/graphql'
+  const normalized = normalizeAbsoluteUrl(graphqlUrl, 'NEXT_PUBLIC_GRAPHQL_URL');
+  assertNotLocalhostInProduction(normalized, 'NEXT_PUBLIC_GRAPHQL_URL');
+
+  // Keep existing validation semantics.
+  // (deriveApiUrlFromGraphqlUrl also validates the suffix.)
+  deriveApiUrlFromGraphqlUrl(normalized);
+  return normalized;
+}
+
+// GraphQL endpoint (must end with '/graphql', usually '/api/graphql')
+export const GRAPHQL_URL = (() => {
+  const graphqlUrl = process.env.NEXT_PUBLIC_GRAPHQL_URL?.trim();
+  if (graphqlUrl) return normalizeGraphqlUrl(graphqlUrl);
+
+  // Fallback: allow configuring only the REST API base and deriving GraphQL from it.
+  // Example: NEXT_PUBLIC_API_URL=https://example.com/api -> GraphQL=https://example.com/api/graphql
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (apiUrl) return normalizeGraphqlUrl(`${normalizeApiUrl(apiUrl)}/graphql`);
+
+  return normalizeGraphqlUrl(
+    requiredEnv(process.env.NEXT_PUBLIC_GRAPHQL_URL, 'NEXT_PUBLIC_GRAPHQL_URL', {
+      devDefault: 'http://localhost:5000/api/graphql',
+    }),
+  );
+})();
+
+// REST base URL (usually '/api')
+export const API_URL = (() => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (apiUrl) return normalizeApiUrl(apiUrl);
+  return deriveApiUrlFromGraphqlUrl(GRAPHQL_URL);
+})();
