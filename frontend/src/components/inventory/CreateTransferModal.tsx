@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery } from '@apollo/client';
 import { useWarehouse } from '@/context/warehouse-context';
 import { Button } from '@/components/ui/button';
@@ -72,8 +72,10 @@ export function CreateTransferModal({
   onSuccess,
   initialProductId,
 }: CreateTransferModalProps) {
+  const router = useRouter();
   const params = useParams();
   const companySlug = params?.slug as string;
+  const warehouseSlug = params?.warehouseSlug as string;
   const { activeWarehouse } = useWarehouse();
 
   const [destinationWarehouseId, setDestinationWarehouseId] = useState('');
@@ -102,7 +104,7 @@ export function CreateTransferModal({
   });
 
   const warehouses = (warehousesData?.companyBySlug?.warehouses || []).filter(
-    (w: any) => w.id !== activeWarehouse?.id
+    (w: any) => w.id !== activeWarehouse?.id,
   );
 
   const stock = stockData?.stockByWarehouse || [];
@@ -170,7 +172,9 @@ export function CreateTransferModal({
         return false;
       }
       if (item.quantity > (item.available_stock || 0)) {
-        toast.error(`Insufficient stock for ${item.product_name}. Available: ${item.available_stock}`);
+        toast.error(
+          `Insufficient stock for ${item.product_name}. Available: ${item.available_stock}`,
+        );
         return false;
       }
     }
@@ -235,11 +239,13 @@ export function CreateTransferModal({
     if (!draftTransferId) return;
 
     try {
+      const transferId = draftTransferId;
       await postTransfer({ variables: { id: draftTransferId } });
       toast.success('Transfer posted successfully! Stock has been updated.');
       setShowPostDialog(false);
       handleClose();
       onSuccess?.();
+      router.push(`/${companySlug}/warehouses/${warehouseSlug}/inventory/transfers/${transferId}`);
     } catch (error: any) {
       console.error('Error posting transfer:', error);
       toast.error(error.message || 'Failed to post transfer');
@@ -286,8 +292,8 @@ export function CreateTransferModal({
                         loadingWarehouses
                           ? 'Loading warehouses...'
                           : warehouses.length === 0
-                          ? 'No other warehouses available'
-                          : 'Select destination warehouse'
+                            ? 'No other warehouses available'
+                            : 'Select destination warehouse'
                       }
                     />
                   </SelectTrigger>
@@ -347,7 +353,7 @@ export function CreateTransferModal({
                                     disabled={items.some(
                                       (i) =>
                                         i.product_id === s.product.id &&
-                                        items[index].product_id !== s.product.id
+                                        items[index].product_id !== s.product.id,
                                     )}
                                   >
                                     {s.product.name} (Stock: {s.quantity})
@@ -402,10 +408,7 @@ export function CreateTransferModal({
             <Button variant="outline" onClick={handleClose} disabled={creating || posting}>
               Cancel
             </Button>
-            <Button
-              onClick={handleSaveDraft}
-              disabled={creating || posting || items.length === 0}
-            >
+            <Button onClick={handleSaveDraft} disabled={creating || posting || items.length === 0}>
               {creating ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />

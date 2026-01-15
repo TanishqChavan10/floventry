@@ -16,11 +16,16 @@ export class ClerkAuthGuard implements CanActivate {
     let request: any;
 
     // Determine whether request is GraphQL or HTTP
-    if (context.getType().toString() === 'graphql') {
-      const ctx = GqlExecutionContext.create(context);
-      request = ctx.getContext().req;
+    const contextType = context.getType<string>();
+    if (contextType === 'graphql') {
+      const gqlCtx = GqlExecutionContext.create(context);
+      request = gqlCtx.getContext()?.req;
     } else {
       request = context.switchToHttp().getRequest();
+    }
+
+    if (!request) {
+      throw new GraphQLError('Unauthorized');
     }
 
     const authHeader = request.headers.authorization;

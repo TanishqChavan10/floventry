@@ -4,7 +4,7 @@ import { gql } from '@apollo/client';
  * Get stock health for a specific warehouse
  */
 export const GET_WAREHOUSE_STOCK_HEALTH = gql`
-  query GetWarehouseStockHealth($warehouseId: ID!) {
+  query GetWarehouseStockHealth($warehouseId: String!) {
     warehouseStockHealth(warehouseId: $warehouseId) {
       productId
       productName
@@ -42,38 +42,38 @@ export const GET_COMPANY_STOCK_HEALTH = gql`
  * Stock health state enum
  */
 export type StockHealthState =
-    | 'HEALTHY'
-    | 'AT_RISK'
-    | 'LOW_STOCK'
-    | 'CRITICAL'
-    | 'BLOCKED';
+  | 'HEALTHY'
+  | 'AT_RISK'
+  | 'LOW_STOCK'
+  | 'CRITICAL'
+  | 'BLOCKED';
 
 /**
  * Warehouse stock health result type
  */
 export interface WarehouseStockHealth {
-    productId: string;
-    productName: string;
-    warehouseId: string;
-    totalStock: number;
-    usableStock: number;
-    expiredQty: number;
-    expiringSoonQty: number;
-    state: StockHealthState;
-    nearestExpiryDate?: string;
-    reorderPoint?: number;
-    recommendation: string;
+  productId: string;
+  productName: string;
+  warehouseId: string;
+  totalStock: number;
+  usableStock: number;
+  expiredQty: number;
+  expiringSoonQty: number;
+  state: StockHealthState;
+  nearestExpiryDate?: string;
+  reorderPoint?: number;
+  recommendation: string;
 }
 
 /**
  * Company stock health result type
  */
 export interface CompanyStockHealth {
-    productId: string;
-    productName: string;
-    totalUsableStock: number;
-    state: StockHealthState;
-    affectedWarehouses: string[];
-    nearestExpiryDate?: string;
-    recommendation: string;
+  productId: string;
+  productName: string;
+  totalUsableStock: number;
+  state: StockHealthState;
+  affectedWarehouses: string[];
+  nearestExpiryDate?: string;
+  recommendation: string;
 }

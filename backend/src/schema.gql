@@ -354,6 +354,25 @@ type ExpiryRiskDistribution {
   ok: Int!
 }
 
+type ExpiryScanResult {
+  lotsScanned: Float!
+  message: String!
+  success: Boolean!
+}
+
+type ExpiryScanStatus {
+  cronExpression: String!
+  enabled: Boolean!
+  jobName: String!
+  jobRegistered: Boolean!
+  lastErrorAt: DateTime
+  lastErrorMessage: String
+  lastRunAt: DateTime
+  lastSuccessAt: DateTime
+  nextRunAt: DateTime
+  timeZone: String!
+}
+
 input ExportFiltersInput {
   dateFrom: String
   dateTo: String
@@ -584,6 +603,7 @@ type Mutation {
   sendInvite(input: SendInviteInput!): Invite!
   switchCompany(companyId: String!): SwitchCompanyResponse!
   switchWarehouse(warehouseId: String!): Boolean!
+  triggerExpiryScan: ExpiryScanResult!
   unarchiveSupplier(id: String!): Supplier!
   updateCategory(input: UpdateCategoryInput!): Category!
   updateCompany(id: String!, input: UpdateCompanyInput!): Company!
@@ -617,7 +637,7 @@ type Notification {
   entity_type: String!
   id: ID!
   message: String!
-  metadata: String
+  metadata: JSON
   read_at: DateTime
   severity: NotificationSeverity!
   title: String!
@@ -735,6 +755,7 @@ type Query {
   companyStockHealth: [CompanyStockHealthResult!]!
   companyStockMovements(filters: StockMovementFilterInput!): [StockMovement!]!
   criticalStockProducts(limit: Float = 10): [CriticalStockProduct!]!
+  expiryScanStatus: ExpiryScanStatus!
   grn(id: String!): GoodsReceiptNote
   grns(filters: GRNFilterInput!): [GoodsReceiptNote!]!
   inventoryHealthStats: InventoryHealthStats!

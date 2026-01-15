@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, Not, IsNull } from 'typeorm';
 import { StockLot } from '../inventory/entities/stock-lot.entity';
@@ -7,15 +7,41 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { isExpiryInPastEndOfDay, endOfDayUtcFromNowPlusDays } from '../common/utils/expiry-date';
 
 @Injectable()
-export class ExpiryScannerService {
+export class ExpiryScannerService implements OnModuleInit {
     private readonly logger = new Logger(ExpiryScannerService.name);
     private readonly EXPIRY_WARNING_DAYS = parseInt(process.env.EXPIRY_WARNING_DAYS || '30', 10);
+
+    private lastRunAt?: Date;
+    private lastSuccessAt?: Date;
+    private lastErrorAt?: Date;
+    private lastErrorMessage?: string;
 
     constructor(
         @InjectRepository(StockLot)
         private stockLotRepository: Repository<StockLot>,
         private notificationsService: NotificationsService,
+        private schedulerRegistry: SchedulerRegistry,
     ) { }
+
+    async onModuleInit(): Promise<void> {
+        // Startup visibility: confirm cron is registered.
+        try {
+            this.schedulerRegistry.getCronJob('daily-expiry-scan');
+            this.logger.log('Cron job registered: daily-expiry-scan');
+        } catch {
+            this.logger.warn('Cron job not registered: daily-expiry-scan');
+        }
+
+        // Optional dev/test hook to prove the scanner executes without waiting for midnight UTC.
+        if (
+            process.env.NODE_ENV !== 'production' &&
+            process.env.EXPIRY_SCAN_ENABLED === 'true' &&
+            process.env.EXPIRY_SCAN_RUN_ON_START === 'true'
+        ) {
+            this.logger.log('EXPIRY_SCAN_RUN_ON_START enabled; running expiry scan now');
+            await this.handleDailyExpiryScan();
+        }
+    }
 
     /**
      * Daily cron job to scan for expiry status changes
@@ -32,14 +58,34 @@ export class ExpiryScannerService {
             return;
         }
 
+        this.lastRunAt = new Date();
         this.logger.log('Starting daily expiry scan');
 
         try {
             await this.scanExpiryStatuses();
+            this.lastSuccessAt = new Date();
+            this.lastErrorAt = undefined;
+            this.lastErrorMessage = undefined;
             this.logger.log('Completed daily expiry scan successfully');
         } catch (error) {
+            this.lastErrorAt = new Date();
+            this.lastErrorMessage = error?.message || 'Unknown error';
             this.logger.error('Expiry scan failed', error.stack);
         }
+    }
+
+    getRuntimeStatus(): {
+        lastRunAt?: Date;
+        lastSuccessAt?: Date;
+        lastErrorAt?: Date;
+        lastErrorMessage?: string;
+    } {
+        return {
+            lastRunAt: this.lastRunAt,
+            lastSuccessAt: this.lastSuccessAt,
+            lastErrorAt: this.lastErrorAt,
+            lastErrorMessage: this.lastErrorMessage,
+        };
     }
 
     /**

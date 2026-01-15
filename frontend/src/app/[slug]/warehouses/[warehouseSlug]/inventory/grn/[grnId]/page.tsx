@@ -321,14 +321,16 @@ function GRNDetailContent() {
               Post Goods Receipt Note?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Posting this GRN will immediately:
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Update stock quantities in the warehouse</li>
-                <li>Create stock movement records</li>
-                <li>Update purchase order received quantities</li>
-                <li>Potentially close the purchase order if fully received</li>
-              </ul>
-              <strong className="block mt-3">This action cannot be undone.</strong>
+              <div>
+                Posting this GRN will immediately:
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>Update stock quantities in the warehouse</li>
+                  <li>Create stock movement records</li>
+                  <li>Update purchase order received quantities</li>
+                  <li>Potentially close the purchase order if fully received</li>
+                </ul>
+                <strong className="block mt-3">This action cannot be undone.</strong>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

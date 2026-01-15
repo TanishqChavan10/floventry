@@ -156,7 +156,9 @@ export class StockHealthService {
         let nearestExpiry: Date | null = null;
 
         for (const lot of lots) {
-            const qty = parseFloat(lot.quantity.toString());
+            const qty = lot.quantity === null || lot.quantity === undefined
+                ? 0
+                : parseFloat(lot.quantity.toString());
 
             if (!lot.expiry_date || qty <= 0) continue;
 
@@ -176,7 +178,9 @@ export class StockHealthService {
             }
         }
 
-        const totalStock = parseFloat(stock.quantity.toString());
+        const totalStock = stock.quantity === null || stock.quantity === undefined
+            ? 0
+            : parseFloat(stock.quantity.toString());
         const usableStock = calculateUsableStock(
             totalStock,
             expiredQty,

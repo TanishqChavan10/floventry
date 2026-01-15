@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery } from '@apollo/client';
 import { useWarehouse } from '@/context/warehouse-context';
 import { Button } from '@/components/ui/button';
@@ -63,6 +63,7 @@ interface CreateGRNModalProps {
 }
 
 export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModalProps) {
+  const router = useRouter();
   const params = useParams();
   const companySlug = params?.slug as string;
   const warehouseSlug = params?.warehouseSlug as string;
@@ -94,7 +95,7 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
   });
 
   const purchaseOrders = (posData?.purchaseOrders || []).filter(
-    (po: any) => po.warehouse?.id === activeWarehouse?.id
+    (po: any) => po.warehouse?.id === activeWarehouse?.id,
   );
 
   // Load PO items when PO is selected
@@ -192,11 +193,13 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
     if (!draftGRNId) return;
 
     try {
+      const grnId = draftGRNId;
       await postGRN({ variables: { id: draftGRNId } });
       toast.success('GRN posted successfully! Stock has been updated.');
       setShowPostDialog(false);
       handleClose();
       onSuccess?.();
+      router.push(`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn/${grnId}`);
     } catch (error: any) {
       console.error('Error posting GRN:', error);
       toast.error(error.message || 'Failed to post GRN');
@@ -218,9 +221,7 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Goods Receipt Note</DialogTitle>
-            <DialogDescription>
-              Record goods received from a purchase order
-            </DialogDescription>
+            <DialogDescription>Record goods received from a purchase order</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
@@ -241,8 +242,8 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
                         loadingPOs
                           ? 'Loading purchase orders...'
                           : purchaseOrders.length === 0
-                          ? 'No ORDERED POs for this warehouse'
-                          : 'Select a PO'
+                            ? 'No ORDERED POs for this warehouse'
+                            : 'Select a PO'
                       }
                     />
                   </SelectTrigger>
@@ -340,10 +341,7 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
             <Button variant="outline" onClick={handleClose} disabled={creating || posting}>
               Cancel
             </Button>
-            <Button
-              onClick={handleSaveDraft}
-              disabled={creating || posting || items.length === 0}
-            >
+            <Button onClick={handleSaveDraft} disabled={creating || posting || items.length === 0}>
               {creating ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />

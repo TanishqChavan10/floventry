@@ -5,9 +5,10 @@ import { StockHealthResolver } from './stock-health.resolver';
 import { Stock } from '../entities/stock.entity';
 import { StockLot } from '../entities/stock-lot.entity';
 import { Product } from '../entities/product.entity';
+import { AuthModule } from '../../auth/auth.module';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Stock, StockLot, Product])],
+    imports: [TypeOrmModule.forFeature([Stock, StockLot, Product]), AuthModule],
     providers: [StockHealthService, StockHealthResolver],
     exports: [StockHealthService],
 })

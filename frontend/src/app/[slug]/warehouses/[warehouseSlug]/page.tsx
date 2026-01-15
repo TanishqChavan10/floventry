@@ -34,6 +34,7 @@ function WarehouseDashboardData({
   const { data, loading, error } = useQuery(GET_WAREHOUSE_DASHBOARD, {
     variables: { warehouseId: activeWarehouse.id },
     pollInterval: 30000, // Real-time-ish update
+    errorPolicy: 'all', // Continue even if there are errors
   });
 
   const kpis = data?.warehouseKPIs || {
@@ -98,7 +99,7 @@ function WarehouseDashboardData({
             <CardContent>
               <div className="text-2xl font-bold">{kpis.totalProducts}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                {kpis.totalQuantity.toLocaleString()} total units
+                {(kpis.totalQuantity ?? 0).toLocaleString()} total units
               </p>
             </CardContent>
           </Card>
@@ -191,15 +192,15 @@ function WarehouseDashboardData({
                           <div>
                             <p className="font-medium text-slate-900 dark:text-slate-100">
                               {/* Better formatting for type */}
-                              {movement.type.replace(/_/g, ' ')}
+                              {movement.type?.replace(/_/g, ' ') || 'Unknown'}
                             </p>
                             <p className="text-sm text-slate-600 dark:text-slate-400">
-                              {movement.product.name}
+                              {movement.product?.name || 'Unknown Product'}
                             </p>
                             <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                               <span>by {movement.performedBy?.name || 'System'}</span>
                               <span>•</span>
-                              <span>{format(new Date(movement.createdAt), 'MMM d, h:mm a')}</span>
+                              <span>{movement.createdAt ? format(new Date(movement.createdAt), 'MMM d, h:mm a') : 'N/A'}</span>
                             </div>
                           </div>
                         </div>
@@ -247,19 +248,19 @@ function WarehouseDashboardData({
                       >
                         <div className="min-w-0 flex-1 pr-4">
                           <p className="truncate font-medium text-sm text-slate-900 dark:text-slate-100">
-                            {item.product.name}
+                            {item?.product?.name || 'Unknown Product'}
                           </p>
-                          <p className="text-xs text-muted-foreground">{item.product.sku}</p>
+                          <p className="text-xs text-muted-foreground">{item?.product?.sku || 'N/A'}</p>
                         </div>
                         <div className="text-right">
                           <p className="font-mono text-sm font-bold text-orange-600">
-                            {item.quantity}
+                            {item?.quantity ?? 0}
                           </p>
                           <Badge
-                            variant={item.status === 'CRITICAL' ? 'destructive' : 'secondary'}
+                            variant={item?.status === 'CRITICAL' ? 'destructive' : 'secondary'}
                             className="text-[10px] h-5 px-1.5"
                           >
-                            {item.status}
+                            {item?.status || 'UNKNOWN'}
                           </Badge>
                         </div>
                       </div>

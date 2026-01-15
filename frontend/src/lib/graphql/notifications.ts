@@ -32,7 +32,7 @@ export const GET_UNREAD_COUNT = gql`
 
 export const MARK_AS_READ = gql`
   ${NOTIFICATION_FRAGMENT}
-  mutation MarkNotificationAsRead($id: ID!) {
+  mutation MarkNotificationAsRead($id: String!) {
     markNotificationAsRead(id: $id) {
       ...NotificationFields
     }

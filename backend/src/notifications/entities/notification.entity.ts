@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, Index } from 'typeorm';
 import { ObjectType, Field, ID, GraphQLISODateTime, registerEnumType } from '@nestjs/graphql';
+import GraphQLJSONObject from 'graphql-type-json';
 
 export enum NotificationType {
     STOCK_LOW = 'STOCK_LOW',
@@ -81,7 +82,7 @@ export class Notification {
     @Column('text')
     message: string;
 
-    @Field(() => String, { nullable: true })
+    @Field(() => GraphQLJSONObject, { nullable: true })
     @Column('jsonb', { nullable: true })
     metadata: any;
 
