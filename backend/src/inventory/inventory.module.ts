@@ -25,6 +25,7 @@ import { SupplierModule } from '../supplier/supplier.module';
 import { WarehouseModule } from '../warehouse/warehouse.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PurchaseOrdersModule } from '../purchase-orders/purchase-orders.module';
+import { StockHealthModule } from './stock-health/stock-health.module';
 
 @Module({
     imports: [
@@ -47,6 +48,7 @@ import { PurchaseOrdersModule } from '../purchase-orders/purchase-orders.module'
         WarehouseModule,
         NotificationsModule,
         PurchaseOrdersModule,
+        StockHealthModule, // Stock health intelligence
     ],
     providers: [
         InventoryService,

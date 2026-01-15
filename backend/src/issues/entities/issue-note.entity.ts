@@ -39,8 +39,8 @@ export class IssueNote {
     @Column('uuid')
     warehouse_id: string;
 
-    @Field(() => Warehouse)
-    @ManyToOne(() => Warehouse, { nullable: false })
+    @Field(() => Warehouse, { nullable: true })
+    @ManyToOne(() => Warehouse, { nullable: true })
     @JoinColumn({ name: 'warehouse_id' })
     warehouse: Warehouse;
 

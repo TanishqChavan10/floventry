@@ -11,6 +11,7 @@ import CompanyGuard from '@/components/CompanyGuard';
 import { AlertCircle } from 'lucide-react';
 import { useQuery } from '@apollo/client';
 import { GET_COMPANY_DASHBOARD } from '@/lib/graphql/company-dashboard';
+import { StockHealthWidget } from '@/components/company/stock-health-widget';
 
 function CompanyDashboardContent() {
   const params = useParams();
@@ -97,6 +98,7 @@ function CompanyDashboardContent() {
           </div>
 
           <div className="space-y-6">
+            <StockHealthWidget companySlug={companySlug} />
             <QuickActions companySlug={companySlug} />
           </div>
         </div>

@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { useParams, useRouter } from 'next/navigation';
-import CompanyGuard from '@/components/CompanyGuard';
+import  CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
+import { CreatePurchaseOrderModal } from '@/components/purchase-orders/CreatePurchaseOrderModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -53,9 +54,10 @@ function CompanyPurchaseOrdersContent() {
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Fetch purchase orders
-  const { data, loading, error } = useQuery(GET_PURCHASE_ORDERS, {
+  const { data, loading, error, refetch } = useQuery(GET_PURCHASE_ORDERS, {
     variables: {
       filters: {
         ...(statusFilter !== 'all' && { status: statusFilter }),
@@ -137,12 +139,10 @@ function CompanyPurchaseOrdersContent() {
                 Manage purchase orders across all warehouses
               </p>
             </div>
-            <Link href={`/${companySlug}/purchase-orders/new`}>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Create PO
-              </Button>
-            </Link>
+            <Button className="gap-2" onClick={() => setIsCreateModalOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Create PO
+            </Button>
           </div>
         </div>
       </header>
@@ -236,12 +236,10 @@ function CompanyPurchaseOrdersContent() {
                     : 'Create your first purchase order to get started'}
                 </p>
                 {!searchQuery && statusFilter === 'all' && (
-                  <Link href={`/${companySlug}/purchase-orders/new`}>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create First PO
-                    </Button>
-                  </Link>
+                  <Button onClick={() => setIsCreateModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create First PO
+                  </Button>
                 )}
               </div>
             ) : (
@@ -287,6 +285,13 @@ function CompanyPurchaseOrdersContent() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Create Purchase Order Modal */}
+      <CreatePurchaseOrderModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 }

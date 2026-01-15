@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CREATE_OPENING_STOCK} from '@/lib/graphql/inventory';
+import { CREATE_OPENING_STOCK } from '@/lib/graphql/inventory';
 
 import { GET_PRODUCTS } from '@/lib/graphql/catalog';
 
@@ -38,6 +38,7 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
   const [formData, setFormData] = useState({
     product_id: '',
     quantity: '',
+    expiry_date: '',
     min_stock_level: '',
     max_stock_level: '',
     reorder_point: '',
@@ -52,7 +53,15 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
         title: 'Opening stock created',
         description: 'Opening stock has been created successfully',
       });
-      setFormData({ product_id: '', quantity: '', min_stock_level: '', max_stock_level: '', reorder_point: '', note: '' });
+      setFormData({
+        product_id: '',
+        quantity: '',
+        expiry_date: '',
+        min_stock_level: '',
+        max_stock_level: '',
+        reorder_point: '',
+        note: '',
+      });
       onClose();
     },
     onError: (error) => {
@@ -91,8 +100,13 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
           product_id: formData.product_id,
           warehouse_id: warehouseId,
           quantity: parseInt(formData.quantity),
-          min_stock_level: formData.min_stock_level ? parseInt(formData.min_stock_level) : undefined,
-          max_stock_level: formData.max_stock_level ? parseInt(formData.max_stock_level) : undefined,
+          expiry_date: formData.expiry_date || undefined,
+          min_stock_level: formData.min_stock_level
+            ? parseInt(formData.min_stock_level)
+            : undefined,
+          max_stock_level: formData.max_stock_level
+            ? parseInt(formData.max_stock_level)
+            : undefined,
           reorder_point: formData.reorder_point ? parseInt(formData.reorder_point) : undefined,
           note: formData.note || null,
         },
@@ -104,118 +118,139 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add Opening Stock</DialogTitle>
-          <DialogDescription>
-            Set the initial stock quantity for a product in this warehouse
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-hidden flex flex-col">
+        <form onSubmit={handleSubmit} className="flex flex-1 flex-col min-h-0 overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Add Opening Stock</DialogTitle>
+            <DialogDescription>
+              Set the initial stock quantity for a product in this warehouse
+            </DialogDescription>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Product Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="product">
-              Product <span className="text-destructive">*</span>
-            </Label>
-            <Select
-              value={formData.product_id}
-              onValueChange={(value) => setFormData({ ...formData, product_id: value })}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select product" />
-              </SelectTrigger>
-              <SelectContent>
-                {products.map((product: any) => (
-                  <SelectItem key={product.id} value={product.id}>
-                    {product.name} ({product.sku})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Quantity */}
-          <div className="space-y-2">
-            <Label htmlFor="quantity">
-              Initial Quantity <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="quantity"
-              type="number"
-              step="1"
-              min="0"
-              value={formData.quantity}
-              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-              placeholder="0"
-              required
-            />
-          </div>
-
-          {/* Stock Levels Section */}
-          <div className="space-y-4 pt-2">
-            <h4 className="text-sm font-medium text-muted-foreground">Stock Levels (Optional)</h4>
-            
-            {/* Min Stock Level */}
+          <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4">
+            {/* Product Selection */}
             <div className="space-y-2">
-              <Label htmlFor="min_stock_level">Minimum Stock Level</Label>
+              <Label htmlFor="product">
+                Product <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={formData.product_id}
+                onValueChange={(value) => setFormData({ ...formData, product_id: value })}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select product" />
+                </SelectTrigger>
+                <SelectContent>
+                  {products.map((product: any) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name} ({product.sku})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Expiry Date (Optional) */}
+            <div className="space-y-2">
+              <Label htmlFor="expiry_date">Expiry Date (Optional)</Label>
               <Input
-                id="min_stock_level"
+                id="expiry_date"
+                type="date"
+                value={formData.expiry_date}
+                onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                placeholder="YYYY-MM-DD"
+              />
+              <p className="text-xs text-muted-foreground">
+                Recommended for perishables. Leave empty for non-expiring stock.
+              </p>
+            </div>
+
+            {/* Quantity */}
+            <div className="space-y-2">
+              <Label htmlFor="quantity">
+                Initial Quantity <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="quantity"
                 type="number"
                 step="1"
                 min="0"
-                value={formData.min_stock_level}
-                onChange={(e) => setFormData({ ...formData, min_stock_level: e.target.value })}
-                placeholder="e.g., 50"
+                value={formData.quantity}
+                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                placeholder="0"
+                required
               />
-              <p className="text-xs text-muted-foreground">Alert when stock falls below this level</p>
             </div>
 
-            {/* Max Stock Level */}
-            <div className="space-y-2">
-              <Label htmlFor="max_stock_level">Maximum Stock Level</Label>
-              <Input
-                id="max_stock_level"
-                type="number"
-                step="1"
-                min="0"
-                value={formData.max_stock_level}
-                onChange={(e) => setFormData({ ...formData, max_stock_level: e.target.value })}
-                placeholder="e.g., 500"
-              />
-              <p className="text-xs text-muted-foreground">Maximum capacity for this warehouse</p>
+            {/* Stock Levels Section */}
+            <div className="space-y-4 pt-2">
+              <h4 className="text-sm font-medium text-muted-foreground">Stock Levels (Optional)</h4>
+
+              {/* Min Stock Level */}
+              <div className="space-y-2">
+                <Label htmlFor="min_stock_level">Minimum Stock Level</Label>
+                <Input
+                  id="min_stock_level"
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={formData.min_stock_level}
+                  onChange={(e) => setFormData({ ...formData, min_stock_level: e.target.value })}
+                  placeholder="e.g., 50"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Alert when stock falls below this level
+                </p>
+              </div>
+
+              {/* Max Stock Level */}
+              <div className="space-y-2">
+                <Label htmlFor="max_stock_level">Maximum Stock Level</Label>
+                <Input
+                  id="max_stock_level"
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={formData.max_stock_level}
+                  onChange={(e) => setFormData({ ...formData, max_stock_level: e.target.value })}
+                  placeholder="e.g., 500"
+                />
+                <p className="text-xs text-muted-foreground">Maximum capacity for this warehouse</p>
+              </div>
+
+              {/* Reorder Point */}
+              <div className="space-y-2">
+                <Label htmlFor="reorder_point">Reorder Point</Label>
+                <Input
+                  id="reorder_point"
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={formData.reorder_point}
+                  onChange={(e) => setFormData({ ...formData, reorder_point: e.target.value })}
+                  placeholder="e.g., 100"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Trigger purchase orders at this level
+                </p>
+              </div>
             </div>
 
-            {/* Reorder Point */}
+            {/* Note */}
             <div className="space-y-2">
-              <Label htmlFor="reorder_point">Reorder Point</Label>
-              <Input
-                id="reorder_point"
-                type="number"
-                step="1"
-                min="0"
-                value={formData.reorder_point}
-                onChange={(e) => setFormData({ ...formData, reorder_point: e.target.value })}
-                placeholder="e.g., 100"
+              <Label htmlFor="note">Note (Optional)</Label>
+              <Textarea
+                id="note"
+                value={formData.note}
+                onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                placeholder="Add a note about this opening stock..."
+                rows={3}
               />
-              <p className="text-xs text-muted-foreground">Trigger purchase orders at this level</p>
             </div>
           </div>
 
-          {/* Note */}
-          <div className="space-y-2">
-            <Label htmlFor="note">Note (Optional)</Label>
-            <Textarea
-              id="note"
-              value={formData.note}
-              onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-              placeholder="Add a note about this opening stock..."
-              rows={3}
-            />
-          </div>
-
-          <DialogFooter>
+          <DialogFooter className="pt-4 flex-none">
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancel
             </Button>

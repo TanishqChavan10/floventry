@@ -35,6 +35,8 @@ import { LotBreakdownModal } from '@/components/inventory/LotBreakdownModal';
 import { ExpiryStatusBadge } from '@/components/inventory/ExpiryStatusBadge';
 import { getNearestExpiryDate, getProductExpiryStatus, getDaysUntilExpiry } from '@/lib/utils/expiry';
 import { format } from 'date-fns';
+import { GET_WAREHOUSE_STOCK_HEALTH, WarehouseStockHealth } from '@/lib/graphql/stock-health';
+import { StockHealthBadge } from '@/components/inventory/stock-health-badge';
 
 function StockPageContent() {
   const params = useParams();
@@ -81,10 +83,24 @@ function StockPageContent() {
 
   const { data: categoriesData } = useQuery(GET_CATEGORIES);
 
+  // Get stock health data
+  const { data: stockHealthData } = useQuery(GET_WAREHOUSE_STOCK_HEALTH, {
+    variables: { warehouseId: warehouseId || '' },
+    skip: !warehouseId,
+  });
+
   const canModifyStock = userRole ? ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole) : false;
 
   const stock = stockData?.stockByWarehouse || [];
   const categories = categoriesData?.categories || [];
+
+  // Create stock health lookup map
+  const stockHealthMap = new Map<string, WarehouseStockHealth>();
+  if (stockHealthData?.warehouseStockHealth) {
+    stockHealthData.warehouseStockHealth.forEach((health: WarehouseStockHealth) => {
+      stockHealthMap.set(health.productId, health);
+    });
+  }
 
   // Auto-open drawer if stockId is in URL query params
   useEffect(() => {
@@ -281,13 +297,16 @@ function StockPageContent() {
                         <TableHead>Nearest Expiry</TableHead>
                         <TableHead>Expiry Status</TableHead>
                         <TableHead>Stock Status</TableHead>
+                        <TableHead>Stock Health</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredStock.map((item: any) => {
-                        const isLowStock = item.reorder_point && parseFloat(item.quantity) <= parseFloat(item.reorder_point);
-                        const nearestExpiry = getNearestExpiryDate(item.lots || []);
-                        const expiryStatus = getProductExpiryStatus(item.lots || []);
+                        const quantity = parseFloat(item.quantity);
+                        const isOutOfStock = quantity === 0;
+                        const isLowStock = !isOutOfStock && item.reorder_point && quantity <= parseFloat(item.reorder_point);
+                        const nearestExpiry = isOutOfStock ? null : getNearestExpiryDate(item.lots || []);
+                        const expiryStatus = isOutOfStock ? 'NO_EXPIRY' : getProductExpiryStatus(item.lots || []);
                         const daysRemaining = getDaysUntilExpiry(nearestExpiry);
                         
                         return (
@@ -301,29 +320,44 @@ function StockPageContent() {
                             <TableCell>{item.product.category?.name || '—'}</TableCell>
                             <TableCell className="font-mono text-sm">{item.product.unit}</TableCell>
                             <TableCell className="text-right font-semibold">
-                              {Math.round(parseFloat(item.quantity))}
+                              {Math.round(quantity)}
                             </TableCell>
                             <TableCell
                               className="text-sm cursor-pointer hover:underline"
                               onClick={(e) => {
-                                e.stopPropagation();
-                                setLotBreakdownProduct(item);
-                                setIsLotModalOpen(true);
+                                if (!isOutOfStock) {
+                                  e.stopPropagation();
+                                  setLotBreakdownProduct(item);
+                                  setIsLotModalOpen(true);
+                                }
                               }}
                             >
-                              {nearestExpiry
-                                ? format(new Date(nearestExpiry), 'dd MMM yyyy')
-                                : '—'}
+                              {isOutOfStock
+                                ? '—'
+                                : (nearestExpiry ? format(new Date(nearestExpiry), 'dd MMM yyyy') : '—')}
                             </TableCell>
                             <TableCell>
-                              <ExpiryStatusBadge status={expiryStatus} daysRemaining={daysRemaining} />
+                              {isOutOfStock ? (
+                                <span className="text-muted-foreground text-sm">—</span>
+                              ) : (
+                                <ExpiryStatusBadge status={expiryStatus} daysRemaining={daysRemaining} />
+                              )}
                             </TableCell>
                             <TableCell>
-                              {isLowStock ? (
+                              {isOutOfStock ? (
+                                <Badge variant="secondary">Out of Stock</Badge>
+                              ) : isLowStock ? (
                                 <Badge variant="destructive">Low Stock</Badge>
                               ) : (
                                 <Badge variant="default">In Stock</Badge>
                               )}
+                            </TableCell>
+                            <TableCell>
+                              {(() => {
+                                const health = stockHealthMap.get(item.product_id);
+                                if (!health) return <span className="text-muted-foreground text-sm">—</span>;
+                                return <StockHealthBadge state={health.state} recommendation={health.recommendation} />;
+                              })()}
                             </TableCell>
                           </TableRow>
                         );

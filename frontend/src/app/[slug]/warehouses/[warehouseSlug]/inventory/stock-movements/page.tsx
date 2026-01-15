@@ -183,9 +183,9 @@ function StockMovementsContent() {
 
   // Fetch stock movements
   const { data, loading, error, refetch } = useQuery(GET_STOCK_MOVEMENTS, {
-    variables: { 
+    variables: {
       warehouseId: warehouseId || '',
-      filters 
+      filters,
     },
     skip: !warehouseId,
   });
@@ -394,7 +394,8 @@ function StockMovementsContent() {
                   No movements found
                 </h3>
                 <p className="text-slate-600 dark:text-slate-400">
-                  Stock movements will appear here when you add opening stock or make adjustments.
+                  Stock movements will appear here when you post GRNs, transfers, issues, or make
+                  adjustments.
                 </p>
               </div>
             )}
@@ -442,10 +443,7 @@ function StockMovementsContent() {
                               <div className="text-xs text-slate-500">{movement.userRole}</div>
                             )}
                           </TableCell>
-                          <TableCell
-                            className="max-w-xs truncate"
-                            title={movement.reason}
-                          >
+                          <TableCell className="max-w-xs truncate" title={movement.reason}>
                             {movement.reason || '-'}
                           </TableCell>
                         </TableRow>

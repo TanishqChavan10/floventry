@@ -92,15 +92,17 @@ export class CompanyDashboardService {
     const now = new Date();
     const soon = new Date(Date.now() + expirySoonDays * 24 * 60 * 60 * 1000);
 
+    const effectiveExpiry = "CASE WHEN lot.expiry_date = date_trunc('day', lot.expiry_date) THEN date_trunc('day', lot.expiry_date) + interval '1 day' - interval '1 millisecond' ELSE lot.expiry_date END";
+
     const raw = await this.stockLotRepository
       .createQueryBuilder('lot')
-      .select('COALESCE(SUM(CASE WHEN lot.quantity > 0 AND lot.expiry_date IS NOT NULL AND lot.expiry_date < :now THEN 1 ELSE 0 END), 0)', 'expired')
+      .select(`COALESCE(SUM(CASE WHEN lot.quantity > 0 AND lot.expiry_date IS NOT NULL AND ${effectiveExpiry} < :now THEN 1 ELSE 0 END), 0)`, 'expired')
       .addSelect(
-        'COALESCE(SUM(CASE WHEN lot.quantity > 0 AND lot.expiry_date IS NOT NULL AND lot.expiry_date >= :now AND lot.expiry_date <= :soon THEN 1 ELSE 0 END), 0)',
+        `COALESCE(SUM(CASE WHEN lot.quantity > 0 AND lot.expiry_date IS NOT NULL AND ${effectiveExpiry} >= :now AND ${effectiveExpiry} <= :soon THEN 1 ELSE 0 END), 0)`,
         'expiring_soon',
       )
       .addSelect(
-        'COALESCE(SUM(CASE WHEN lot.quantity > 0 AND (lot.expiry_date IS NULL OR lot.expiry_date > :soon) THEN 1 ELSE 0 END), 0)',
+        `COALESCE(SUM(CASE WHEN lot.quantity > 0 AND (lot.expiry_date IS NULL OR ${effectiveExpiry} > :soon) THEN 1 ELSE 0 END), 0)`,
         'ok',
       )
       .where('lot.company_id = :companyId', { companyId })
@@ -116,9 +118,10 @@ export class CompanyDashboardService {
 
   private async getExpiredStockUnits(companyId: string): Promise<number> {
     const now = new Date();
+    const effectiveExpiry = "CASE WHEN lot.expiry_date = date_trunc('day', lot.expiry_date) THEN date_trunc('day', lot.expiry_date) + interval '1 day' - interval '1 millisecond' ELSE lot.expiry_date END";
     const raw = await this.stockLotRepository
       .createQueryBuilder('lot')
-      .select('COALESCE(SUM(CASE WHEN lot.quantity > 0 AND lot.expiry_date IS NOT NULL AND lot.expiry_date < :now THEN lot.quantity ELSE 0 END), 0)', 'expired_units')
+      .select(`COALESCE(SUM(CASE WHEN lot.quantity > 0 AND lot.expiry_date IS NOT NULL AND ${effectiveExpiry} < :now THEN lot.quantity ELSE 0 END), 0)`, 'expired_units')
       .where('lot.company_id = :companyId', { companyId })
       .setParameters({ now })
       .getRawOne<{ expired_units: string }>();
@@ -216,10 +219,11 @@ export class CompanyDashboardService {
 
     // Also incorporate expiry risk per warehouse (any expired lots bumps to CRITICAL)
     const now = new Date();
+    const effectiveExpiry = "CASE WHEN lot.expiry_date = date_trunc('day', lot.expiry_date) THEN date_trunc('day', lot.expiry_date) + interval '1 day' - interval '1 millisecond' ELSE lot.expiry_date END";
     const expiryAgg = await this.stockLotRepository
       .createQueryBuilder('lot')
       .select('lot.warehouse_id', 'warehouse_id')
-      .addSelect('COALESCE(SUM(CASE WHEN lot.quantity > 0 AND lot.expiry_date IS NOT NULL AND lot.expiry_date < :now THEN 1 ELSE 0 END), 0)', 'expired_lots')
+      .addSelect(`COALESCE(SUM(CASE WHEN lot.quantity > 0 AND lot.expiry_date IS NOT NULL AND ${effectiveExpiry} < :now THEN 1 ELSE 0 END), 0)`, 'expired_lots')
       .where('lot.company_id = :companyId', { companyId })
       .setParameters({ now })
       .groupBy('lot.warehouse_id')

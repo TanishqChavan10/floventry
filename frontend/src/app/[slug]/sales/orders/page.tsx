@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery } from '@apollo/client';
 import { GET_SALES_ORDERS } from '@/lib/graphql/sales';
+import { CreateSalesOrderModal } from '@/components/sales/CreateSalesOrderModal';
 import { Loader2, Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,8 +39,9 @@ function SalesOrdersContent() {
 
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const { data, loading, error } = useQuery(GET_SALES_ORDERS);
+  const { data, loading, error, refetch } = useQuery(GET_SALES_ORDERS);
 
   const salesOrders = data?.salesOrders || [];
 
@@ -87,12 +89,10 @@ function SalesOrdersContent() {
               </p>
             </div>
             {canCreateOrder && (
-              <Link href={`/${companySlug}/sales/orders/new`}>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Order
-                </Button>
-              </Link>
+              <Button className="gap-2" onClick={() => setIsCreateModalOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Create Order
+              </Button>
             )}
           </div>
         </div>
@@ -232,6 +232,13 @@ function SalesOrdersContent() {
           </Card>
         </div>
       </main>
+
+      {/* Create Sales Order Modal */}
+      <CreateSalesOrderModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 }

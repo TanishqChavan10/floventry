@@ -36,7 +36,12 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from 'lucide-react';
-import { ADJUST_STOCK, UPDATE_STOCK_LEVELS, GET_STOCK_MOVEMENTS, GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
+import {
+  ADJUST_STOCK,
+  UPDATE_STOCK_LEVELS,
+  GET_STOCK_MOVEMENTS,
+  GET_WAREHOUSE_STOCK,
+} from '@/lib/graphql/inventory';
 
 interface StockDrawerProps {
   stock: any;
@@ -45,12 +50,7 @@ interface StockDrawerProps {
   canModify?: boolean;
 }
 
-export default function StockDrawer({
-  stock,
-  open,
-  onClose,
-  canModify = false,
-}: StockDrawerProps) {
+export default function StockDrawer({ stock, open, onClose, canModify = false }: StockDrawerProps) {
   const { toast } = useToast();
   const [isEditingLevels, setIsEditingLevels] = useState(false);
   const [isAdjusting, setIsAdjusting] = useState(false);
@@ -127,13 +127,16 @@ export default function StockDrawer({
 
   // Fetch recent stock movements for this product in this warehouse
   // Memoize the filters to prevent query re-execution on every render
-  const movementFilters = useMemo(() => ({
-    productId: stock?.product?.id,
-    fromDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    toDate: new Date().toISOString(),
-    limit: 5,
-    offset: 0,
-  }), [stock?.product?.id]);
+  const movementFilters = useMemo(
+    () => ({
+      productId: stock?.product?.id,
+      fromDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      toDate: new Date().toISOString(),
+      limit: 5,
+      offset: 0,
+    }),
+    [stock?.product?.id],
+  );
 
   const { data: movementsData } = useQuery(GET_STOCK_MOVEMENTS, {
     variables: {
@@ -154,12 +157,8 @@ export default function StockDrawer({
       variables: {
         input: {
           id: stock.id,
-          min_stock_level: levelForm.min_stock_level
-            ? parseInt(levelForm.min_stock_level)
-            : null,
-          max_stock_level: levelForm.max_stock_level
-            ? parseInt(levelForm.max_stock_level)
-            : null,
+          min_stock_level: levelForm.min_stock_level ? parseInt(levelForm.min_stock_level) : null,
+          max_stock_level: levelForm.max_stock_level ? parseInt(levelForm.max_stock_level) : null,
           reorder_point: levelForm.reorder_point ? parseInt(levelForm.reorder_point) : null,
         },
       },
@@ -191,8 +190,7 @@ export default function StockDrawer({
   };
 
   const currentQuantity = parseFloat(stock.quantity);
-  const isLowStock =
-    stock.reorder_point && currentQuantity <= parseFloat(stock.reorder_point);
+  const isLowStock = stock.reorder_point && currentQuantity <= parseFloat(stock.reorder_point);
 
   return (
     <Sheet open={open} onOpenChange={(open) => !open && onClose()}>
@@ -217,23 +215,17 @@ export default function StockDrawer({
         <div className="mt-6 space-y-6">
           {/* Current Stock */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-sm text-muted-foreground">
-              Current Stock Level
-            </h3>
+            <h3 className="font-semibold text-sm text-muted-foreground">Current Stock Level</h3>
             <div className="rounded-lg border p-4 bg-slate-50 dark:bg-slate-900">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Package className="h-8 w-8 text-primary" />
                   <div>
                     <p className="text-sm text-muted-foreground">Quantity</p>
-                    <p className="text-3xl font-bold">
-                      {Math.round(currentQuantity)}
-                    </p>
+                    <p className="text-3xl font-bold">{Math.round(currentQuantity)}</p>
                   </div>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  {stock.product.unit}
-                </div>
+                <div className="text-sm text-muted-foreground">{stock.product.unit}</div>
               </div>
             </div>
           </div>
@@ -268,9 +260,7 @@ export default function StockDrawer({
           {/* Stock Levels */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-muted-foreground">
-                Stock Thresholds
-              </h3>
+              <h3 className="font-semibold text-sm text-muted-foreground">Stock Thresholds</h3>
               {canModify && !isEditingLevels && !isAdjusting && (
                 <Button
                   variant="ghost"
@@ -319,9 +309,7 @@ export default function StockDrawer({
                     type="number"
                     step="1"
                     value={levelForm.reorder_point}
-                    onChange={(e) =>
-                      setLevelForm({ ...levelForm, reorder_point: e.target.value })
-                    }
+                    onChange={(e) => setLevelForm({ ...levelForm, reorder_point: e.target.value })}
                     placeholder="e.g., 100"
                   />
                 </div>
@@ -350,27 +338,21 @@ export default function StockDrawer({
                     <TrendingDown className="h-3 w-3 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">Min Level</p>
                   </div>
-                  <p className="text-lg font-bold">
-                    {stock.min_stock_level || '—'}
-                  </p>
+                  <p className="text-lg font-bold">{stock.min_stock_level || '—'}</p>
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-3 w-3 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">Max Level</p>
                   </div>
-                  <p className="text-lg font-bold">
-                    {stock.max_stock_level || '—'}
-                  </p>
+                  <p className="text-lg font-bold">{stock.max_stock_level || '—'}</p>
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="h-3 w-3 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">Reorder</p>
                   </div>
-                  <p className="text-lg font-bold">
-                    {stock.reorder_point || '—'}
-                  </p>
+                  <p className="text-lg font-bold">{stock.reorder_point || '—'}</p>
                 </div>
               </div>
             )}
@@ -381,9 +363,7 @@ export default function StockDrawer({
             <>
               <Separator />
               <div className="space-y-4">
-                <h3 className="font-semibold text-sm text-muted-foreground">
-                  Adjust Stock
-                </h3>
+                <h3 className="font-semibold text-sm text-muted-foreground">Adjust Stock</h3>
 
                 {isAdjusting ? (
                   <div className="space-y-4">
@@ -396,9 +376,7 @@ export default function StockDrawer({
                         type="number"
                         step="1"
                         value={adjustForm.quantity}
-                        onChange={(e) =>
-                          setAdjustForm({ ...adjustForm, quantity: e.target.value })
-                        }
+                        onChange={(e) => setAdjustForm({ ...adjustForm, quantity: e.target.value })}
                         placeholder="e.g., +50 or -20"
                       />
                       <p className="text-xs text-muted-foreground">
@@ -410,9 +388,7 @@ export default function StockDrawer({
                       <Label htmlFor="adjust_reason">Reason</Label>
                       <Select
                         value={adjustForm.reason}
-                        onValueChange={(value) =>
-                          setAdjustForm({ ...adjustForm, reason: value })
-                        }
+                        onValueChange={(value) => setAdjustForm({ ...adjustForm, reason: value })}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select reason" />
@@ -432,9 +408,7 @@ export default function StockDrawer({
                       <Textarea
                         id="adjust_notes"
                         value={adjustForm.notes}
-                        onChange={(e) =>
-                          setAdjustForm({ ...adjustForm, notes: e.target.value })
-                        }
+                        onChange={(e) => setAdjustForm({ ...adjustForm, notes: e.target.value })}
                         placeholder="Additional details about this adjustment..."
                         rows={3}
                       />
@@ -486,18 +460,26 @@ export default function StockDrawer({
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <History className="h-4 w-4 text-muted-foreground" />
-              <h3 className="font-semibold text-sm text-muted-foreground">
-                Recent Movements
-              </h3>
+              <h3 className="font-semibold text-sm text-muted-foreground">Recent Movements</h3>
             </div>
             {recentMovements.length === 0 ? (
-              <div className="text-center py-6 text-sm text-muted-foreground">
-                No movements yet
-              </div>
+              <div className="text-center py-6 text-sm text-muted-foreground">No movements yet</div>
             ) : (
               <div className="space-y-2">
                 {recentMovements.map((movement: any) => {
-                  const isIncrease = movement.quantity > 0;
+                  const movementType = String(movement.type ?? '');
+                  const isOut =
+                    movementType === 'OUT' ||
+                    /(^|_)OUT$/.test(movementType) ||
+                    movementType.includes('OUT');
+                  const isIncrease = !isOut;
+                  const rawQty = Number(movement.quantity ?? 0);
+                  const displayQty = isOut ? -Math.abs(rawQty) : Math.abs(rawQty);
+
+                  const createdAtValue = movement.createdAt ?? movement.created_at;
+                  const createdAtDate = createdAtValue ? new Date(createdAtValue) : null;
+                  const hasValidCreatedAt =
+                    !!createdAtDate && !Number.isNaN(createdAtDate.getTime());
                   return (
                     <div
                       key={movement.id}
@@ -516,8 +498,11 @@ export default function StockDrawer({
                             <p className="text-sm font-medium">
                               {movement.type.replace(/_/g, ' ')}
                             </p>
-                            <span className={`text-sm font-bold ${isIncrease ? 'text-green-600' : 'text-red-600'}`}>
-                              {isIncrease ? '+' : ''}{movement.quantity}
+                            <span
+                              className={`text-sm font-bold ${isIncrease ? 'text-green-600' : 'text-red-600'}`}
+                            >
+                              {displayQty > 0 ? '+' : ''}
+                              {displayQty}
                             </span>
                           </div>
                           {movement.reason && (
@@ -527,33 +512,43 @@ export default function StockDrawer({
                           )}
                           <div className="flex items-center gap-2 mt-1">
                             <p className="text-xs text-muted-foreground">
-                              {new Date(movement.created_at).toLocaleDateString()}{' '}
-                              {new Date(movement.created_at).toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
+                              {hasValidCreatedAt
+                                ? `${createdAtDate.toLocaleDateString()} ${createdAtDate.toLocaleTimeString(
+                                    [],
+                                    {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    },
+                                  )}`
+                                : '—'}
                             </p>
-                            {movement.user && (
+                            {movement.performedBy && (
                               <>
                                 <span className="text-xs text-muted-foreground">•</span>
                                 <p className="text-xs text-muted-foreground">
-                                  {movement.user.fullName}
+                                  {movement.performedBy}
                                 </p>
                               </>
                             )}
-                            {movement.user_role && (
+                            {movement.userRole && (
                               <>
                                 <span className="text-xs text-muted-foreground">by</span>
                                 <span className="text-xs px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
-                                  {movement.user_role}
+                                  {movement.userRole}
                                 </span>
                               </>
                             )}
                           </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {movement.previous_quantity} → {movement.new_quantity}
-                        </div>
+                        {(movement.previousQuantity !== undefined ||
+                          movement.newQuantity !== undefined ||
+                          movement.previous_quantity !== undefined ||
+                          movement.new_quantity !== undefined) && (
+                          <div className="text-xs text-muted-foreground">
+                            {movement.previousQuantity ?? movement.previous_quantity} →{' '}
+                            {movement.newQuantity ?? movement.new_quantity}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

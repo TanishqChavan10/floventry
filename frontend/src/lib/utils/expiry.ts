@@ -9,6 +9,23 @@ export interface LotWithExpiry {
     received_at: string;
 }
 
+function normalizeExpiryForComparison(expiryDate: string): Date {
+    const expiry = new Date(expiryDate);
+
+    // Backend now writes end-of-day, but older data and some inputs may still be date-only (00:00:00.000Z).
+    // Treat those as expiring at end-of-day UTC.
+    if (
+        expiry.getUTCHours() === 0 &&
+        expiry.getUTCMinutes() === 0 &&
+        expiry.getUTCSeconds() === 0 &&
+        expiry.getUTCMilliseconds() === 0
+    ) {
+        expiry.setUTCHours(23, 59, 59, 999);
+    }
+
+    return expiry;
+}
+
 /**
  * Calculate expiry status based on days until expiry
  * @param expiryDate - The expiry date string
@@ -22,7 +39,7 @@ export function getExpiryStatus(
     if (!expiryDate) return 'NO_EXPIRY';
 
     const now = new Date();
-    const expiry = new Date(expiryDate);
+    const expiry = normalizeExpiryForComparison(expiryDate);
     const daysUntilExpiry = differenceInDays(expiry, now);
 
     if (daysUntilExpiry < 0) return 'EXPIRED';
@@ -39,7 +56,7 @@ export function getDaysUntilExpiry(expiryDate: string | null | undefined): numbe
     if (!expiryDate) return null;
 
     const now = new Date();
-    const expiry = new Date(expiryDate);
+    const expiry = normalizeExpiryForComparison(expiryDate);
     return differenceInDays(expiry, now);
 }
 
@@ -55,7 +72,7 @@ export function getNearestExpiryDate(lots: LotWithExpiry[]): string | null {
         .filter((lot) => lot.expiry_date && lot.quantity > 0)
         .sort((a, b) => {
             if (!a.expiry_date || !b.expiry_date) return 0;
-            return new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime();
+            return normalizeExpiryForComparison(a.expiry_date).getTime() - normalizeExpiryForComparison(b.expiry_date).getTime();
         });
 
     return lotsWithExpiry.length > 0 ? lotsWithExpiry[0].expiry_date : null;

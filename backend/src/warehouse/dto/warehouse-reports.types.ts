@@ -81,6 +81,12 @@ export class StockMovementReportItem {
     @Field(() => Int)
     quantity: number;
 
+    @Field(() => Int, { nullable: true })
+    previousQuantity: number;
+
+    @Field(() => Int, { nullable: true })
+    newQuantity: number;
+
     @Field({ nullable: true })
     referenceId: string;
 

@@ -1,4 +1,4 @@
-import { InputType, Field, ID, Float, Int } from '@nestjs/graphql';
+import { InputType, Field, ID, Float, Int, GraphQLISODateTime } from '@nestjs/graphql';
 import { IsUUID, IsNumber, IsOptional, IsString, IsEnum, Min, IsInt } from 'class-validator';
 import { MovementType, ReferenceType } from '../entities/stock-movement.entity';
 import { StockHealthStatus } from '../types/stock-health.types';
@@ -74,6 +74,10 @@ export class CreateOpeningStockInput {
     @IsOptional()
     @IsString()
     note?: string;
+
+    @Field(() => GraphQLISODateTime, { nullable: true })
+    @IsOptional()
+    expiry_date?: Date;
 }
 
 @InputType()

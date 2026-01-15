@@ -1,14 +1,16 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { IssueNote, IssueNoteStatus } from './entities/issue-note.entity';
 import { IssueNoteItem } from './entities/issue-note-item.entity';
 import { StockLot } from '../inventory/entities/stock-lot.entity';
+import { normalizeExpiryToEndOfDayUTC } from '../common/utils/expiry-date';
 import { Stock } from '../inventory/entities/stock.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
 import { SalesService } from '../sales/sales.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateIssueNoteInput, UpdateIssueNoteInput, CreateFEFOIssueNoteInput } from './dto/issue-note.input';
+import { MovementType, ReferenceType } from '../inventory/entities/stock-movement.entity';
 
 @Injectable()
 export class IssuesService {
@@ -264,7 +266,7 @@ export class IssuesService {
 
         for (const lot of lots) {
             // HARD BLOCK: Skip expired lots
-            if (lot.expiry_date && new Date(lot.expiry_date) < now) {
+            if (lot.expiry_date && normalizeExpiryToEndOfDayUTC(new Date(lot.expiry_date)) < now) {
                 continue; // Cannot use expired lots
             }
 
@@ -278,7 +280,7 @@ export class IssuesService {
             let expiryStatus = 'OK';
             if (lot.expiry_date) {
                 const daysUntilExpiry = Math.ceil(
-                    (new Date(lot.expiry_date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+                    (normalizeExpiryToEndOfDayUTC(new Date(lot.expiry_date)).getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
                 );
                 if (daysUntilExpiry <= 30) {
                     expiryStatus = 'EXPIRING_SOON';
@@ -340,14 +342,22 @@ export class IssuesService {
                     }
 
                     // Check if expired
-                    if (lot.expiry_date && new Date(lot.expiry_date) < new Date()) {
+                    if (lot.expiry_date && normalizeExpiryToEndOfDayUTC(new Date(lot.expiry_date)) < new Date()) {
                         throw new BadRequestException(
                             `Lot for ${item.product?.name || 'product'} is expired`,
                         );
                     }
 
                     // Validate sufficient quantity
-                    if (lot.quantity < item.quantity) {
+                    const lotQuantity = Number(lot.quantity);
+                    const itemQuantity = Number(item.quantity);
+                    if (Number.isNaN(lotQuantity) || Number.isNaN(itemQuantity)) {
+                        throw new BadRequestException(
+                            `Invalid quantity for ${item.product?.name || 'product'}`,
+                        );
+                    }
+
+                    if (lotQuantity < itemQuantity) {
                         throw new BadRequestException(
                             `Insufficient quantity in lot for ${item.product?.name || 'product'}`,
                         );
@@ -355,39 +365,87 @@ export class IssuesService {
                 }
             }
 
+            // Preload Stock rows for movement FK (stock_id is NOT NULL)
+            const uniqueProducts = [...new Set(issueNote.items.map(i => i.product_id))];
+            const stockRows = await queryRunner.manager.find(Stock, {
+                where: {
+                    warehouse_id: issueNote.warehouse_id,
+                    product_id: In(uniqueProducts),
+                },
+            });
+            const stockIdByProductId = new Map<string, string>();
+            for (const row of stockRows) {
+                stockIdByProductId.set(row.product_id, row.id);
+            }
+
             // 3. Process each item (multi-lot support)
             for (const item of issueNote.items) {
+                const itemQuantity = Number(item.quantity);
+                if (Number.isNaN(itemQuantity)) {
+                    throw new BadRequestException(
+                        `Invalid quantity for ${item.product?.name || 'product'}`,
+                    );
+                }
+
+                // Ensure we have a Stock row for FK
+                let stockId = stockIdByProductId.get(item.product_id);
+                if (!stockId) {
+                    // Create missing stock row based on current lots total
+                    const lotTotal = await queryRunner.manager
+                        .createQueryBuilder(StockLot, 'lot')
+                        .select('SUM(lot.quantity)', 'total')
+                        .where('lot.warehouse_id = :warehouseId', { warehouseId: issueNote.warehouse_id })
+                        .andWhere('lot.product_id = :productId', { productId: item.product_id })
+                        .getRawOne();
+
+                    const totalQuantity = Number(lotTotal?.total ?? 0);
+
+                    const createdStock = queryRunner.manager.create(Stock, {
+                        company_id: issueNote.company_id,
+                        warehouse_id: issueNote.warehouse_id,
+                        product_id: item.product_id,
+                        quantity: Number.isNaN(totalQuantity) ? 0 : totalQuantity,
+                    } as any);
+                    const savedStock = await queryRunner.manager.save(createdStock);
+                    stockId = savedStock.id;
+                    stockIdByProductId.set(item.product_id, stockId);
+                }
+
                 // Decrease lot quantity
                 if (item.stock_lot_id) {
                     await queryRunner.manager.decrement(
                         StockLot,
                         { id: item.stock_lot_id },
                         'quantity',
-                        item.quantity,
+                        itemQuantity,
                     );
                 }
 
                 // Create stock movement
                 const movement = queryRunner.manager.create(StockMovement, {
+                    stock_id: stockId,
                     warehouse_id: issueNote.warehouse_id,
                     company_id: issueNote.company_id,
                     product_id: item.product_id,
                     lot_id: item.stock_lot_id,
-                    type: 'ISSUE_OUT',
-                    quantity: -item.quantity,
-                    reference_type: 'ISSUE_NOTE',
-                    reference_id: issueNote.id,
+                    type: MovementType.OUT,
+                    quantity: -itemQuantity,
+                    reference_type: issueNote.sales_order_id ? ReferenceType.SALES_ORDER : ReferenceType.MANUAL,
+                    reference_id: issueNote.sales_order_id || issueNote.id,
                     performed_by: userId,
                     user_role: 'USER', // TODO: Get actual role
+                    notes: issueNote.sales_order_id
+                        ? `Issued for sales order ${issueNote.sales_order_id}`
+                        : `Issued via issue note ${issueNote.issue_number}`,
                 } as any);
                 await queryRunner.manager.save(movement);
             }
 
             // 4. Update aggregated stock
-            const uniqueProducts = [...new Set(issueNote.items.map(i => i.product_id))];
             for (const productId of uniqueProducts) {
                 await this.updateAggregatedStock(
                     queryRunner,
+                    issueNote.company_id,
                     issueNote.warehouse_id,
                     productId,
                 );
@@ -455,6 +513,7 @@ export class IssuesService {
      */
     private async updateAggregatedStock(
         queryRunner: any,
+        companyId: string,
         warehouseId: string,
         productId: string,
     ): Promise<void> {
@@ -465,7 +524,7 @@ export class IssuesService {
             .andWhere('lot.product_id = :productId', { productId })
             .getRawOne();
 
-        const totalQuantity = parseInt(result?.total || '0', 10);
+        const totalQuantity = Number(result?.total ?? 0);
 
         // Update or create stock record
         const existingStock = await queryRunner.manager.findOne(Stock, {
@@ -475,6 +534,14 @@ export class IssuesService {
         if (existingStock) {
             existingStock.quantity = totalQuantity;
             await queryRunner.manager.save(existingStock);
+        } else {
+            const createdStock = queryRunner.manager.create(Stock, {
+                warehouse_id: warehouseId,
+                product_id: productId,
+                company_id: companyId,
+                quantity: totalQuantity,
+            } as any);
+            await queryRunner.manager.save(createdStock);
         }
     }
 }

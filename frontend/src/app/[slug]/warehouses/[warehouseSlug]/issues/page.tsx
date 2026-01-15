@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery } from '@apollo/client';
 import { GET_ISSUE_NOTES_BY_WAREHOUSE } from '@/lib/graphql/issues';
 import { Loader2, Plus, Search } from 'lucide-react';
+import { CreateIssueModal } from '@/components/issues/CreateIssueModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -31,15 +32,15 @@ import { format } from 'date-fns';
 
 export default function IssueNotesPage() {
   const params = useParams();
-  const router = useRouter();
   const { activeWarehouse } = useWarehouse();
   const companySlug = params.slug as string;
   const warehouseSlug = params.warehouseSlug as string;
 
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const { data, loading, error } = useQuery(GET_ISSUE_NOTES_BY_WAREHOUSE, {
+  const { data, loading, error, refetch } = useQuery(GET_ISSUE_NOTES_BY_WAREHOUSE, {
     variables: { warehouseId: activeWarehouse?.id },
     skip: !activeWarehouse?.id,
   });
@@ -82,12 +83,10 @@ export default function IssueNotesPage() {
             Track goods issued from warehouse
           </p>
         </div>
-        <Link href={`/${companySlug}/warehouses/${warehouseSlug}/issues/new`}>
-          <Button className="gap-2" size="lg">
-            <Plus className="h-4 w-4" />
-            Create Issue
-          </Button>
-        </Link>
+        <Button className="gap-2" size="lg" onClick={() => setIsCreateModalOpen(true)}>
+          <Plus className="h-4 w-4" />
+          Create Issue
+        </Button>
       </div>
 
       {/* Filters */}
@@ -233,6 +232,13 @@ export default function IssueNotesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Create Issue Modal */}
+      <CreateIssueModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 }

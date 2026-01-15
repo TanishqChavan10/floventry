@@ -234,10 +234,10 @@ function AdjustmentsPageContent() {
                           </span>
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">
-                          N/A
+                          {adjustment.previousQuantity ?? 'N/A'}
                         </TableCell>
                         <TableCell className="text-right font-semibold">
-                          N/A
+                          {adjustment.newQuantity ?? 'N/A'}
                         </TableCell>
                         <TableCell className="max-w-xs">
                           <p className="text-sm truncate" title={adjustment.reason}>

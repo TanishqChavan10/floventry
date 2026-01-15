@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Plus, X, Save, Send } from 'lucide-react';
+import { ArrowLeft, Plus, X, Save } from 'lucide-react';
 import { CREATE_PURCHASE_ORDER, GET_PURCHASE_ORDERS } from '@/lib/graphql/purchase-orders';
 import { GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
 import { GET_SUPPLIERS } from '@/lib/graphql/catalog';
@@ -41,6 +41,7 @@ function CreatePurchaseOrderContent() {
 
   const [selectedWarehouse, setSelectedWarehouse] = useState('');
   const [selectedSupplier, setSelectedSupplier] = useState('');
+  const [supplierAutoFilled, setSupplierAutoFilled] = useState(false);
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<POItem[]>([{ product_id: '', ordered_quantity: 1 }]);
   const [hasPrefilledData, setHasPrefilledData] = useState(false);
@@ -51,7 +52,7 @@ function CreatePurchaseOrderContent() {
     fetchPolicy: 'cache-and-network',
   });
 
-  // Fetch suppliers  
+  // Fetch suppliers
   const { data: suppliersData } = useQuery(GET_SUPPLIERS, {
     variables: { includeArchived: false },
     fetchPolicy: 'cache-and-network',
@@ -71,14 +72,14 @@ function CreatePurchaseOrderContent() {
   // Get user role and assigned warehouses
   const userRole = user?.companies?.find((c: any) => c.slug === companySlug)?.role;
   const userWarehouseIds = user?.warehouses?.map((w: any) => w.warehouseId) || [];
-  
+
   // Filter warehouses based on role
   let warehouses = warehousesData?.companyBySlug?.warehouses || [];
   if (userRole === 'MANAGER') {
     // Managers can only see their assigned warehouses
     warehouses = warehouses.filter((wh: any) => userWarehouseIds.includes(wh.id));
   }
-  
+
   const suppliers = suppliersData?.suppliers || [];
   const products = productsData?.stockByWarehouse || [];
 
@@ -105,11 +106,13 @@ function CreatePurchaseOrderContent() {
       if (productIdParam && products.length > 0) {
         const product = products.find((p: any) => p.product.id === productIdParam);
         if (product) {
-          setItems([{
-            product_id: product.product.id,
-            product_name: product.product.name,
-            ordered_quantity: 1, // User needs to specify quantity
-          }]);
+          setItems([
+            {
+              product_id: product.product.id,
+              product_name: product.product.name,
+              ordered_quantity: 1, // User needs to specify quantity
+            },
+          ]);
         }
         setHasPrefilledData(true);
       }
@@ -130,7 +133,39 @@ function CreatePurchaseOrderContent() {
     setItems(updated);
   };
 
-  const handleSubmit = async (markAsOrdered: boolean) => {
+  const autoSelectSupplierForProduct = (productId: string) => {
+    if (!productId) return;
+
+    const stockRow = products.find((p: any) => p?.product?.id === productId);
+    const supplierId = stockRow?.product?.supplier_id || stockRow?.product?.supplier?.id || '';
+
+    if (supplierId) {
+      setSelectedSupplier(supplierId);
+      setSupplierAutoFilled(true);
+      return;
+    }
+
+    setSupplierAutoFilled(false);
+  };
+
+  const handleSupplierChange = (value: string) => {
+    setSelectedSupplier(value);
+    setSupplierAutoFilled(false);
+  };
+
+  // If a product is prefilled (e.g., from low-stock flow) and supplier isn't,
+  // infer supplier from the product once products are available.
+  useEffect(() => {
+    if (!selectedWarehouse) return;
+    if (selectedSupplier) return;
+    const firstProductId = items?.[0]?.product_id;
+    if (!firstProductId) return;
+    if (!products || products.length === 0) return;
+    autoSelectSupplierForProduct(firstProductId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedWarehouse, selectedSupplier, items, products]);
+
+  const handleSubmit = async () => {
     // Validation
     if (!selectedWarehouse) {
       toast.error('Please select a warehouse');
@@ -140,7 +175,10 @@ function CreatePurchaseOrderContent() {
       toast.error('Please select a supplier');
       return;
     }
-    if (items.length === 0 || items.some(item => !item.product_id || item.ordered_quantity <= 0)) {
+    if (
+      items.length === 0 ||
+      items.some((item) => !item.product_id || item.ordered_quantity <= 0)
+    ) {
       toast.error('Please add at least one valid product');
       return;
     }
@@ -151,7 +189,7 @@ function CreatePurchaseOrderContent() {
           input: {
             warehouse_id: selectedWarehouse,
             supplier_id: selectedSupplier,
-            items: items.map(item => ({
+            items: items.map((item) => ({
               product_id: item.product_id,
               ordered_quantity: parseFloat(item.ordered_quantity.toString()),
             })),
@@ -219,7 +257,7 @@ function CreatePurchaseOrderContent() {
 
                 <div className="space-y-2">
                   <Label htmlFor="supplier">Supplier *</Label>
-                  <Select value={selectedSupplier} onValueChange={setSelectedSupplier}>
+                  <Select value={selectedSupplier} onValueChange={handleSupplierChange}>
                     <SelectTrigger id="supplier">
                       <SelectValue placeholder="Select supplier" />
                     </SelectTrigger>
@@ -231,6 +269,11 @@ function CreatePurchaseOrderContent() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {supplierAutoFilled && (
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      Auto-selected from the chosen product — you can change it.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -262,48 +305,54 @@ function CreatePurchaseOrderContent() {
                   Select a warehouse first to add products
                 </p>
               )}
-              
-              {selectedWarehouse && items.map((item, index) => (
-                <div key={index} className="flex gap-4 items-end">
-                  <div className="flex-1 space-y-2">
-                    <Label>Product *</Label>
-                    <Select
-                      value={item.product_id}
-                      onValueChange={(value) => updateItem(index, 'product_id', value)}
+
+              {selectedWarehouse &&
+                items.map((item, index) => (
+                  <div key={index} className="flex gap-4 items-end">
+                    <div className="flex-1 space-y-2">
+                      <Label>Product *</Label>
+                      <Select
+                        value={item.product_id}
+                        onValueChange={(value) => {
+                          updateItem(index, 'product_id', value);
+                          autoSelectSupplierForProduct(value);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select product" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {products.map((stock: any) => (
+                            <SelectItem key={stock.product.id} value={stock.product.id}>
+                              {stock.product.name} ({stock.product.sku}) - Current: {stock.quantity}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="w-32 space-y-2">
+                      <Label>Quantity *</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={item.ordered_quantity}
+                        onChange={(e) =>
+                          updateItem(index, 'ordered_quantity', parseInt(e.target.value) || 1)
+                        }
+                      />
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeItem(index)}
+                      disabled={items.length === 1}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products.map((stock: any) => (
-                          <SelectItem key={stock.product.id} value={stock.product.id}>
-                            {stock.product.name} ({stock.product.sku}) - Current: {stock.quantity}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-
-                  <div className="w-32 space-y-2">
-                    <Label>Quantity *</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={item.ordered_quantity}
-                      onChange={(e) => updateItem(index, 'ordered_quantity', parseInt(e.target.value) || 1)}
-                    />
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeItem(index)}
-                    disabled={items.length === 1}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+                ))}
             </CardContent>
           </Card>
 
@@ -312,11 +361,7 @@ function CreatePurchaseOrderContent() {
             <Link href={`/${companySlug}/purchase-orders`}>
               <Button variant="outline">Cancel</Button>
             </Link>
-            <Button
-              onClick={() => handleSubmit(false)}
-              disabled={loading}
-              variant="secondary"
-            >
+            <Button onClick={handleSubmit} disabled={loading} variant="secondary">
               <Save className="h-4 w-4 mr-2" />
               Save as Draft
             </Button>

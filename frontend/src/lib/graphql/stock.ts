@@ -10,6 +10,11 @@ export const GET_STOCK_BY_WAREHOUSE = gql`
         name
         sku
         unit
+        supplier_id
+        supplier {
+          id
+          name
+        }
         category {
           id
           name

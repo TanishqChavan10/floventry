@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { useWarehouse } from '@/context/warehouse-context';
 import RoleGuard from '@/components/guards/RoleGuard';
+import { CreateTransferModal } from '@/components/inventory/CreateTransferModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -61,6 +62,7 @@ function TransferListContent() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [directionFilter, setDirectionFilter] = useState<string>('all'); // outgoing, incoming, all
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Fetch transfers
   console.log('[TRANSFERS] Active warehouse:', activeWarehouse);
@@ -82,6 +84,9 @@ function TransferListContent() {
   console.log('[TRANSFERS] Query result:', { data, loading, error });
   
   const allTransfers = data?.warehouseTransfers || [];
+  const refetch = () => {
+    // Refetch handled by GraphQL cache
+  };
   
   // Filter to show only transfers involving the current warehouse (source OR destination)
   const warehouseTransfers = allTransfers.filter((transfer: any) => 
@@ -171,12 +176,10 @@ function TransferListContent() {
               </p>
             </div>
             {canCreateTransfer && (
-              <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/transfers/new`}>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create Transfer
-                </Button>
-              </Link>
+              <Button className="gap-2" onClick={() => setIsCreateModalOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Create Transfer
+              </Button>
             )}
           </div>
         </div>
@@ -271,12 +274,10 @@ function TransferListContent() {
                     : 'Create your first transfer to move stock between warehouses'}
                 </p>
                 {!searchQuery && statusFilter === 'all' && canCreateTransfer && (
-                  <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/transfers/new`}>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create First Transfer
-                    </Button>
-                  </Link>
+                  <Button onClick={() => setIsCreateModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create First Transfer
+                  </Button>
                 )}
               </div>
             ) : (
@@ -346,6 +347,13 @@ function TransferListContent() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Create Transfer Modal */}
+      <CreateTransferModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onSuccess={refetch}
+      />
     </div>
   );
 }

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useMutation, useQuery } from '@apollo/client';
 import { CREATE_ISSUE_NOTE_WITH_FEFO } from '@/lib/graphql/issues';
 import { GET_SALES_ORDERS } from '@/lib/graphql/sales';
-import { GET_PRODUCTS } from '@/lib/graphql/product';
+import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
 import { Loader2, Plus, Trash2, ArrowLeft, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,6 +46,7 @@ interface Product {
   id: string;
   name: string;
   sku: string;
+  availableQty?: number;
 }
 
 export default function NewIssueNotePage() {
@@ -62,32 +63,55 @@ export default function NewIssueNotePage() {
   const [prefilledFromSalesOrderId, setPrefilledFromSalesOrderId] = useState<string>('');
 
   const { data: salesOrdersData } = useQuery(GET_SALES_ORDERS);
-  const { data: productsData } = useQuery(GET_PRODUCTS);
+  const { data: warehouseStockData } = useQuery(GET_WAREHOUSE_STOCK, {
+    variables: { warehouseId: activeWarehouse?.id },
+    skip: !activeWarehouse?.id,
+    fetchPolicy: 'cache-and-network',
+  });
 
   const salesOrders = useMemo<SalesOrder[]>(
     () => (salesOrdersData?.salesOrders ?? []) as SalesOrder[],
     [salesOrdersData],
   );
 
-  const products = useMemo<Product[]>(
-    () => (productsData?.products ?? []) as Product[],
-    [productsData],
-  );
+  const products = useMemo<Product[]>(() => {
+    const stocks = (warehouseStockData?.stockByWarehouse ?? []) as any[];
+    return stocks
+      .filter((s) => Number(s?.quantity ?? 0) > 0)
+      .map((s) => ({
+        id: s.product.id,
+        name: s.product.name,
+        sku: s.product.sku,
+        availableQty: Number(s.quantity ?? 0),
+      }));
+  }, [warehouseStockData]);
+
+  const availableProductIds = useMemo(() => new Set(products.map((p) => p.id)), [products]);
 
   const prefillItemsFromSalesOrder = useCallback(
     (selectedSalesOrderId: string) => {
       const salesOrder = salesOrders.find((so) => so.id === selectedSalesOrderId);
       const salesOrderItems = salesOrder?.items || [];
 
-      const prefilledItems: IssueItem[] = salesOrderItems
+      const rawPrefilledItems: IssueItem[] = salesOrderItems
         .filter((soi) => (soi.product?.id ? (soi.pending_quantity ?? 0) > 0 : false))
         .map((soi) => ({
           product_id: soi.product.id,
           quantity: 0,
         }));
 
+      const prefilledItems = rawPrefilledItems.filter((i) => availableProductIds.has(i.product_id));
+      const skippedCount = rawPrefilledItems.length - prefilledItems.length;
+
       setItems(prefilledItems);
       setPrefilledFromSalesOrderId(selectedSalesOrderId);
+
+      if (skippedCount > 0) {
+        toast({
+          title: 'Some items unavailable',
+          description: `${skippedCount} item(s) from the sales order are not currently in stock in this warehouse and were skipped.`,
+        });
+      }
 
       if (prefilledItems.length === 0) {
         toast({
@@ -96,7 +120,7 @@ export default function NewIssueNotePage() {
         });
       }
     },
-    [salesOrders, toast],
+    [salesOrders, toast, availableProductIds],
   );
 
   useEffect(() => {
@@ -274,11 +298,20 @@ export default function NewIssueNotePage() {
                           <SelectValue placeholder="Select product" />
                         </SelectTrigger>
                         <SelectContent>
-                          {products.map((product) => (
-                            <SelectItem key={product.id} value={product.id}>
-                              {product.name} ({product.sku})
-                            </SelectItem>
-                          ))}
+                          {products.length === 0 ? (
+                            <div className="px-3 py-2 text-sm text-muted-foreground">
+                              No products with stock in this warehouse
+                            </div>
+                          ) : (
+                            products.map((product) => (
+                              <SelectItem key={product.id} value={product.id}>
+                                {product.name} ({product.sku})
+                                {typeof product.availableQty === 'number'
+                                  ? ` — ${product.availableQty}`
+                                  : ''}
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>

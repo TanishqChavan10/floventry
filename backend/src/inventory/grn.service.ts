@@ -11,6 +11,7 @@ import { GRNItem } from './entities/grn-item.entity';
 import { Stock } from './entities/stock.entity';
 import { StockLot, LotSourceType } from './entities/stock-lot.entity';
 import { StockMovement, MovementType, ReferenceType } from './entities/stock-movement.entity';
+import { isExpiryInPastEndOfDay, normalizeExpiryToEndOfDayUTC } from '../common/utils/expiry-date';
 import { PurchaseOrder, PurchaseOrderStatus } from '../purchase-orders/entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../purchase-orders/entities/purchase-order-item.entity';
 import {
@@ -200,7 +201,7 @@ export class GRNService {
             }
 
             // Validate expiry date if provided
-            if (itemInput.expiry_date && itemInput.expiry_date < new Date()) {
+            if (itemInput.expiry_date && isExpiryInPastEndOfDay(itemInput.expiry_date)) {
                 throw new BadRequestException('Expiry date cannot be in the past');
             }
 
@@ -209,7 +210,7 @@ export class GRNService {
                 purchase_order_item_id: itemInput.purchase_order_item_id,
                 product_id: poItem.product_id,
                 received_quantity: itemInput.received_quantity,
-                expiry_date: itemInput.expiry_date || undefined,
+                expiry_date: itemInput.expiry_date ? normalizeExpiryToEndOfDayUTC(itemInput.expiry_date) : undefined,
             });
         });
 
@@ -286,7 +287,7 @@ export class GRNService {
                 }
 
                 // Validate expiry date if provided
-                if (itemInput.expiry_date && itemInput.expiry_date < new Date()) {
+                if (itemInput.expiry_date && isExpiryInPastEndOfDay(itemInput.expiry_date)) {
                     throw new BadRequestException('Expiry date cannot be in the past');
                 }
 
@@ -295,7 +296,7 @@ export class GRNService {
                     purchase_order_item_id: itemInput.purchase_order_item_id,
                     product_id: poItem.product_id,
                     received_quantity: itemInput.received_quantity,
-                    expiry_date: itemInput.expiry_date || undefined,
+                    expiry_date: itemInput.expiry_date ? normalizeExpiryToEndOfDayUTC(itemInput.expiry_date) : undefined,
                 });
             });
 
@@ -328,7 +329,7 @@ export class GRNService {
             // For each GRN item, create stock lot, update stock, and create movement
             for (const item of grn.items) {
                 // Validate expiry date if provided
-                if (item.expiry_date && item.expiry_date < new Date()) {
+                if (item.expiry_date && isExpiryInPastEndOfDay(item.expiry_date)) {
                     throw new BadRequestException(`Expiry date for ${item.product.name} cannot be in the past`);
                 }
 
@@ -338,7 +339,7 @@ export class GRNService {
                     warehouse_id: grn.warehouse_id,
                     product_id: item.product_id,
                     quantity: Math.floor(Number(item.received_quantity)),
-                    expiry_date: item.expiry_date || null,
+                    expiry_date: item.expiry_date ? normalizeExpiryToEndOfDayUTC(item.expiry_date) : undefined,
                     received_at: grn.received_at,
                     source_type: LotSourceType.GRN,
                     source_id: grn.id,

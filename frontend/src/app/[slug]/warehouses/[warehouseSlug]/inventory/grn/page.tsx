@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { useAuth } from '@/context/auth-context';
 import { useWarehouse } from '@/context/warehouse-context';
+import { CreateGRNModal } from '@/components/inventory/CreateGRNModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -61,9 +62,10 @@ function GRNListContent() {
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Fetch GRNs
-  const { data, loading, error } = useQuery(GET_GRNS, {
+  const { data, loading, error, refetch } = useQuery(GET_GRNS, {
     variables: {
       filters: {
         warehouse_id: activeWarehouse?.id,
@@ -147,12 +149,10 @@ function GRNListContent() {
               </p>
             </div>
             {canCreateGRN && (
-              <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn/new`}>
-                <Button className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create GRN
-                </Button>
-              </Link>
+              <Button className="gap-2" onClick={() => setIsCreateModalOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Create GRN
+              </Button>
             )}
           </div>
         </div>
@@ -237,12 +237,10 @@ function GRNListContent() {
                     : 'Create your first GRN to receive goods from purchase orders'}
                 </p>
                 {!searchQuery && statusFilter === 'all' && canCreateGRN && (
-                  <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn/new`}>
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create First GRN
-                    </Button>
-                  </Link>
+                  <Button onClick={() => setIsCreateModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create First GRN
+                  </Button>
                 )}
               </div>
             ) : (
@@ -288,6 +286,13 @@ function GRNListContent() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Create GRN Modal */}
+      <CreateGRNModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 }

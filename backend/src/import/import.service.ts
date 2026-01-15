@@ -7,11 +7,10 @@ import { Supplier } from '../supplier/supplier.entity';
 import { Unit } from '../inventory/entities/unit.entity';
 import { StockLot } from '../inventory/entities/stock-lot.entity';
 import { Stock } from '../inventory/entities/stock.entity';
-import { StockMovement } from '../inventory/entities/stock-movement.entity';
 import { Warehouse } from '../warehouse/warehouse.entity';
 import { LotSourceType } from '../inventory/entities/stock-lot.entity';
-import { MovementType, ReferenceType } from '../inventory/entities/stock-movement.entity';
 import * as Papa from 'papaparse';
+import { isExpiryInPastEndOfDay, normalizeExpiryToEndOfDayUTC } from '../common/utils/expiry-date';
 
 export interface ValidationError {
     rowNumber: number;
@@ -53,8 +52,6 @@ export class ImportService {
         private stockLotRepository: Repository<StockLot>,
         @InjectRepository(Stock)
         private stockRepository: Repository<Stock>,
-        @InjectRepository(StockMovement)
-        private stockMovementRepository: Repository<StockMovement>,
         private dataSource: DataSource,
     ) { }
 
@@ -704,7 +701,7 @@ export class ImportService {
                         field: 'expiry_date',
                         message: 'Invalid expiry date format (use YYYY-MM-DD)',
                     });
-                } else if (expiryDate < new Date()) {
+                } else if (isExpiryInPastEndOfDay(expiryDate)) {
                     errors.push({
                         rowNumber,
                         field: 'expiry_date',
@@ -774,7 +771,7 @@ export class ImportService {
 
                     const quantity = Number(row.data.quantity);
                     const expiryDate = row.data.expiry_date
-                        ? new Date(row.data.expiry_date)
+                        ? normalizeExpiryToEndOfDayUTC(new Date(row.data.expiry_date))
                         : null;
 
                     // Create stock lot
@@ -814,24 +811,6 @@ export class ImportService {
                         });
                         await queryRunner.manager.save(stock);
                     }
-
-                    // Create stock movement
-                    const movement = queryRunner.manager.create(StockMovement, {
-                        stock_id: stock.id,
-                        warehouse_id: warehouseId,
-                        company_id: companyId,
-                        product_id: product.id,
-                        lot_id: lot.id,
-                        type: MovementType.OPENING,
-                        quantity,
-                        previous_quantity: previousQuantity,
-                        new_quantity: newQuantity,
-                        reason: 'Opening stock import',
-                        reference_type: ReferenceType.MANUAL,
-                        reference_id: 'OPENING_STOCK_IMPORT',
-                        performed_by: userId,
-                    } as any);
-                    await queryRunner.manager.save(movement);
 
                     successCount++;
                 } catch (error: any) {

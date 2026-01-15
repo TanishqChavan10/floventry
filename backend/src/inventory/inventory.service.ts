@@ -23,6 +23,7 @@ import { CreateInventoryAdjustmentInput, AdjustmentType } from './dto/adjustment
 import { Warehouse } from '../warehouse/warehouse.entity';
 import { StockHealthItem, StockHealthStatus, calculateStockHealthStatus } from './types/stock-health.types';
 import { ExpiryStatus, StockLotWithStatus } from './types/expiry-status.types';
+import { endOfDayUtcFromNowPlusDays, isExpiryInPastEndOfDay, normalizeExpiryToEndOfDayUTC } from '../common/utils/expiry-date';
 import {
     CompanyInventorySummaryItem,
     InventoryHealthStats,
@@ -205,70 +206,86 @@ export class InventoryService {
      * This is the entry point for initial stock setup
      */
     async createOpeningStock(input: CreateOpeningStockInput, companyId: string, userId: string, userRole?: string): Promise<Stock> {
-        // Check if stock already exists for this product in this warehouse
-        const existing = await this.stockRepository.findOne({
-            where: {
+        if (input.expiry_date && isExpiryInPastEndOfDay(input.expiry_date)) {
+            throw new BadRequestException('Expiry date cannot be in the past');
+        }
+
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            // Check if stock already exists for this product in this warehouse
+            const existing = await queryRunner.manager.findOne(Stock, {
+                where: {
+                    product_id: input.product_id,
+                    warehouse_id: input.warehouse_id,
+                    company_id: companyId,
+                },
+            });
+
+            if (existing) {
+                throw new BadRequestException(
+                    'Opening stock already exists for this product in this warehouse. Use adjust stock instead.'
+                );
+            }
+
+            // Verify product belongs to the company and is active
+            const product = await queryRunner.manager.findOne(Product, {
+                where: { id: input.product_id, company_id: companyId, is_active: true },
+            });
+
+            if (!product) {
+                throw new NotFoundException('Product not found or inactive');
+            }
+
+            // Create stock aggregate record
+            const stock = queryRunner.manager.create(Stock, {
                 product_id: input.product_id,
                 warehouse_id: input.warehouse_id,
                 company_id: companyId,
-            },
-        });
+                quantity: input.quantity,
+                min_stock_level: input.min_stock_level,
+                max_stock_level: input.max_stock_level,
+                reorder_point: input.reorder_point,
+            });
 
-        if (existing) {
-            throw new BadRequestException(
-                'Opening stock already exists for this product in this warehouse. Use adjust stock instead.'
-            );
+            const savedStock = await queryRunner.manager.save(Stock, stock);
+
+            // Create opening stock lot (expiry lives here)
+            const lot = queryRunner.manager.create(StockLot, {
+                company_id: companyId,
+                warehouse_id: input.warehouse_id,
+                product_id: input.product_id,
+                quantity: input.quantity,
+                expiry_date: input.expiry_date ? normalizeExpiryToEndOfDayUTC(input.expiry_date) : null,
+                received_at: new Date(),
+                source_type: LotSourceType.OPENING,
+                source_id: null,
+            } as any);
+
+            await queryRunner.manager.save(StockLot, lot);
+
+            // Opening stock is baseline: do NOT create StockMovement
+
+            await queryRunner.commitTransaction();
+
+            const stockWithRelations = await this.stockRepository.findOne({
+                where: { id: savedStock.id },
+                relations: ['product', 'warehouse'],
+            });
+
+            if (!stockWithRelations) {
+                throw new BadRequestException('Failed to load stock after creation');
+            }
+
+            return stockWithRelations;
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw error;
+        } finally {
+            await queryRunner.release();
         }
-
-        // Verify product belongs to the company and is active
-        const product = await this.productRepository.findOne({
-            where: { id: input.product_id, company_id: companyId, is_active: true },
-        });
-
-        if (!product) {
-            throw new NotFoundException('Product not found or inactive');
-        }
-
-        // Create stock record
-        const stock = this.stockRepository.create({
-            product_id: input.product_id,
-            warehouse_id: input.warehouse_id,
-            company_id: companyId,
-            quantity: input.quantity,
-            min_stock_level: input.min_stock_level,
-            max_stock_level: input.max_stock_level,
-            reorder_point: input.reorder_point,
-        });
-
-        const savedStock = await this.stockRepository.save(stock);
-
-        // Create opening stock movement
-        await this.stockMovementRepository.save({
-            stock_id: savedStock.id,
-            product_id: input.product_id,
-            warehouse_id: input.warehouse_id,
-            company_id: companyId,
-            type: MovementType.OPENING,
-            quantity: input.quantity,
-            previous_quantity: 0,
-            new_quantity: input.quantity,
-            reason: 'Opening stock',
-            notes: input.note || 'Initial stock entry',
-            performed_by: userId,
-            user_role: userRole,
-        });
-
-        // Return stock with relations loaded
-        const stockWithRelations = await this.stockRepository.findOne({
-            where: { id: savedStock.id },
-            relations: ['product', 'warehouse'],
-        });
-
-        if (!stockWithRelations) {
-            throw new BadRequestException('Failed to load stock after creation');
-        }
-
-        return stockWithRelations;
     }
 
     async createStock(input: CreateStockInput, companyId: string, userId: string): Promise<Stock> {
@@ -1287,11 +1304,14 @@ export class InventoryService {
      */
     async createStockLot(input: CreateStockLotInput): Promise<StockLot> {
         // Validate expiry date is not in the past
-        if (input.expiry_date && input.expiry_date < new Date()) {
+        if (input.expiry_date && isExpiryInPastEndOfDay(input.expiry_date)) {
             throw new BadRequestException('Expiry date cannot be in the past');
         }
 
-        const lot = this.stockLotRepository.create(input);
+        const lot = this.stockLotRepository.create({
+            ...input,
+            expiry_date: input.expiry_date ? normalizeExpiryToEndOfDayUTC(input.expiry_date) : input.expiry_date,
+        });
         return this.stockLotRepository.save(lot);
     }
 
@@ -1336,8 +1356,7 @@ export class InventoryService {
      * Get lots that are expiring soon or expired
      */
     async getExpiringLots(companyId: string, warningDays: number = 30): Promise<StockLotWithStatus[]> {
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() + warningDays);
+        const cutoffDate = endOfDayUtcFromNowPlusDays(warningDays);
 
         const lots = await this.stockLotRepository.find({
             where: {
@@ -1370,7 +1389,7 @@ export class InventoryService {
         }
 
         const now = new Date();
-        const expiry = new Date(expiryDate);
+        const expiry = normalizeExpiryToEndOfDayUTC(expiryDate);
 
         if (expiry < now) {
             return ExpiryStatus.EXPIRED;

@@ -424,6 +424,8 @@ export class WarehouseService {
         sku: movement.product.sku,
         type: movement.type,
         quantity: movement.quantity,
+        previousQuantity: movement.previous_quantity,
+        newQuantity: movement.new_quantity,
         referenceId: movement.reference_id,
         referenceType: movement.reference_type,
         reason: movement.reason,

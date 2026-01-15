@@ -35,6 +35,8 @@ export const GET_STOCK_MOVEMENTS_BY_WAREHOUSE = gql`
         id
         type
         quantity
+        previousQuantity
+        newQuantity
         referenceId
         reason
         createdAt

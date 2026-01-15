@@ -5,6 +5,7 @@ import { Stock } from '../inventory/entities/stock.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
 import { StockLot } from '../inventory/entities/stock-lot.entity';
 import * as Papa from 'papaparse';
+import { normalizeExpiryToEndOfDayUTC } from '../common/utils/expiry-date';
 
 export interface ExportFilters {
     dateFrom?: string;
@@ -213,7 +214,7 @@ export class ExportService {
 
             if (lot.expiry_date) {
                 daysUntilExpiry = Math.ceil(
-                    (new Date(lot.expiry_date).getTime() - now.getTime()) /
+                    (normalizeExpiryToEndOfDayUTC(new Date(lot.expiry_date)).getTime() - now.getTime()) /
                     (1000 * 60 * 60 * 24),
                 );
 
@@ -385,7 +386,7 @@ export class ExportService {
         const csvData = lots
             .map((lot) => {
                 const daysUntilExpiry = Math.ceil(
-                    (new Date(lot.expiry_date).getTime() - now.getTime()) /
+                    (normalizeExpiryToEndOfDayUTC(new Date(lot.expiry_date)).getTime() - now.getTime()) /
                     (1000 * 60 * 60 * 24),
                 );
 

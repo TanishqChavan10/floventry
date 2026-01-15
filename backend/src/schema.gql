@@ -199,6 +199,16 @@ type CompanyStats {
   totalStaff: Int!
 }
 
+type CompanyStockHealthResult {
+  affectedWarehouses: [String!]!
+  nearestExpiryDate: DateTime
+  productId: String!
+  productName: String!
+  recommendation: String!
+  state: StockHealthState!
+  totalUsableStock: Float!
+}
+
 input CreateCategoryInput {
   description: String
   name: String!
@@ -242,6 +252,7 @@ input CreateIssueNoteInput {
 }
 
 input CreateOpeningStockInput {
+  expiry_date: DateTime
   max_stock_level: Int
   min_stock_level: Int
   note: String
@@ -442,7 +453,7 @@ type IssueNote {
   sales_order: SalesOrder
   sales_order_id: String
   status: IssueNoteStatus!
-  warehouse: Warehouse!
+  warehouse: Warehouse
   warehouse_id: String!
 }
 
@@ -721,6 +732,7 @@ type Query {
   companyInvites(companyId: String!): [Invite!]!
   companyMembers(companyId: String!): [CompanyMemberDetails!]!
   companyStats(companyId: String!): CompanyStats!
+  companyStockHealth: [CompanyStockHealthResult!]!
   companyStockMovements(filters: StockMovementFilterInput!): [StockMovement!]!
   criticalStockProducts(limit: Float = 10): [CriticalStockProduct!]!
   grn(id: String!): GoodsReceiptNote
@@ -761,6 +773,7 @@ type Query {
   warehouseKPIs(warehouseId: ID!): WarehouseKPIs!
   warehouseMembers(warehouseId: String!): [WarehouseMember!]!
   warehouseStockDistribution(productId: String!): [WarehouseStockDistribution!]!
+  warehouseStockHealth(warehouseId: String!): [WarehouseStockHealthResult!]!
   warehouseTransfer(id: String!): WarehouseTransfer
   warehouseTransfers(filters: TransferFilterInput!): [WarehouseTransfer!]!
   warehouses: [Warehouse!]!
@@ -863,6 +876,15 @@ type StockHealthItem {
   stockId: ID!
 }
 
+"""Health state of stock considering expiry and availability"""
+enum StockHealthState {
+  AT_RISK
+  BLOCKED
+  CRITICAL
+  HEALTHY
+  LOW_STOCK
+}
+
 """Health status of stock based on quantity vs thresholds"""
 enum StockHealthStatus {
   CRITICAL
@@ -933,7 +955,9 @@ input StockMovementFilters {
 type StockMovementReportItem {
   createdAt: DateTime!
   id: ID!
+  newQuantity: Int
   performedBy: String
+  previousQuantity: Int
   productName: String!
   quantity: Int!
   reason: String
@@ -1337,6 +1361,20 @@ type WarehouseStockDistribution {
   status: StockHealthStatus!
   warehouseId: ID!
   warehouseName: String!
+}
+
+type WarehouseStockHealthResult {
+  expiredQty: Float!
+  expiringSoonQty: Float!
+  nearestExpiryDate: DateTime
+  productId: String!
+  productName: String!
+  recommendation: String!
+  reorderPoint: Float
+  state: StockHealthState!
+  totalStock: Float!
+  usableStock: Float!
+  warehouseId: String!
 }
 
 type WarehouseTransfer {
