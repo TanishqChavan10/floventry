@@ -17,6 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { GET_COMPANY_DASHBOARD } from '@/lib/graphql/company-dashboard';
+import { GET_COMPANY_STOCK_HEALTH_OVERVIEW } from '@/lib/graphql/inventory';
 import Link from 'next/link';
 
 function CompanyExpiryReportsContent() {
@@ -24,6 +25,7 @@ function CompanyExpiryReportsContent() {
   const companySlug = params.slug as string;
 
   const { data: dashboardData, loading } = useQuery(GET_COMPANY_DASHBOARD);
+  const { data: healthData, loading: healthLoading } = useQuery(GET_COMPANY_STOCK_HEALTH_OVERVIEW);
 
   const expiryRisk = dashboardData?.companyDashboard?.expiry_risk_distribution || {
     ok: 0,
@@ -38,6 +40,9 @@ function CompanyExpiryReportsContent() {
   const riskPercentage = totalLots > 0
     ? Math.round(((expiryRisk.expired + expiryRisk.expiring_soon) / totalLots) * 100)
     : 0;
+
+  const totalBlockedProducts = healthData?.companyStockHealthOverview?.totalBlockedProducts || 0;
+  const warehouseRiskMetrics = healthData?.companyStockHealthOverview?.warehouseRiskMetrics || [];
 
   // Sort warehouses by risk (CRITICAL first)
   const sortedWarehouses = useMemo(() => {
@@ -75,7 +80,7 @@ function CompanyExpiryReportsContent() {
 
       <main className="container mx-auto px-6 py-8 space-y-6">
         {/* Overall Statistics */}
-        <div className="grid gap-6 md:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Lots</CardTitle>
@@ -111,6 +116,19 @@ function CompanyExpiryReportsContent() {
               <div className="text-2xl font-bold text-orange-600">{expiryRisk.expiring_soon}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 Within 30 days
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-gray-200 dark:border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Blocked Products</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-gray-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-600">{totalBlockedProducts}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Fully expired stock
               </p>
             </CardContent>
           </Card>

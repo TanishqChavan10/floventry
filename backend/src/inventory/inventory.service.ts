@@ -36,8 +36,14 @@ import {
     AdjustmentTrendData,
     AdjustmentByWarehouse,
     AdjustmentByUser,
+    WarehouseHealthSummary,
+    CompanyStockHealthOverview,
+    WarehouseRiskMetric,
 } from './types/company-inventory.types';
 import { CompanyInventorySummaryFilterInput } from './dto/stock.input';
+import { StockHealthService } from './stock-health/stock-health.service';
+import { StockHealthState } from './stock-health/stock-health.types';
+import { calculateUsableStock, determineStockHealthState } from './stock-health/stock-health.utils';
 
 @Injectable()
 export class InventoryService {
@@ -48,6 +54,7 @@ export class InventoryService {
         private productRepository: Repository<Product>,
         @InjectRepository(Unit)
         private unitRepository: Repository<Unit>,
+        private readonly stockHealthService: StockHealthService,
         @InjectRepository(Stock)
         private stockRepository: Repository<Stock>,
         @InjectRepository(StockLot)
@@ -835,12 +842,29 @@ export class InventoryService {
 
         const stocks = await stockQuery.getMany();
 
-        // 3. Aggregate results
+        // 3. Fetch all lots for these products to calculate usable quantities
+        const allLots = await this.stockLotRepository.find({
+            where: { product_id: In(productIds), company_id: companyId },
+        });
+
+        // Group lots by product for efficient lookup
+        const lotsByProduct = new Map<string, StockLot[]>();
+        allLots.forEach(lot => {
+            const existing = lotsByProduct.get(lot.product_id) || [];
+            existing.push(lot);
+            lotsByProduct.set(lot.product_id, existing);
+        });
+
+        const expiryWarningDays = 30; // Match stock health service default
+        const excludeExpiringSoon = false; // Include expiring soon in usable calc
+
+        // 4. Aggregate results
         const result: CompanyInventorySummaryItem[] = products.map(product => {
             // Get all stocks for this product
             const productStocks = stocks.filter(s => s.product_id === product.id);
 
             let totalQuantity = 0;
+            let totalUsableQuantity = 0; // NEW: Total usable across all warehouses
             let warehouseCount = 0;
             let minQuantity = 0; // Across warehouses (for display/stats)
             let maxQuantity = 0;
@@ -848,6 +872,7 @@ export class InventoryService {
             // Health Logic
             let isCritical = false;
             let isWarning = false;
+            let worstStockHealthState = StockHealthState.HEALTHY; // NEW: Track worst state
 
             if (productStocks.length > 0) {
                 // Initialize min/max with first item
@@ -855,6 +880,29 @@ export class InventoryService {
                 maxQuantity = productStocks[0].quantity;
 
                 warehouseCount = productStocks.length;
+
+                const productLots = lotsByProduct.get(product.id) || [];
+
+                // Calculate expiry data for product
+                const now = new Date();
+                const warningCutoff = endOfDayUtcFromNowPlusDays(expiryWarningDays, now);
+                let totalExpiredQty = 0;
+                let totalExpiringSoonQty = 0;
+
+                // Calculate expired and expiring soon quantities from lots
+                productLots.forEach(lot => {
+                    const qty = lot.quantity === null || lot.quantity === undefined
+                        ? 0
+                        : parseFloat(lot.quantity.toString());
+
+                    if (!lot.expiry_date || qty <= 0) return;
+
+                    if (isExpiryInPastEndOfDay(lot.expiry_date, now)) {
+                        totalExpiredQty += qty;
+                    } else if (normalizeExpiryToEndOfDayUTC(lot.expiry_date) <= warningCutoff) {
+                        totalExpiringSoonQty += qty;
+                    }
+                });
 
                 productStocks.forEach(stock => {
                     const qty = Number(stock.quantity);
@@ -873,6 +921,23 @@ export class InventoryService {
                     if (stockStatus === StockHealthStatus.CRITICAL) isCritical = true;
                     if (stockStatus === StockHealthStatus.WARNING) isWarning = true;
                 });
+
+                // Calculate usable stock (total - expired)
+                totalUsableQuantity = calculateUsableStock(
+                    totalQuantity,
+                    totalExpiredQty,
+                    totalExpiringSoonQty,
+                    excludeExpiringSoon
+                );
+
+                // Determine stock health state based on expiry and availability
+                worstStockHealthState = determineStockHealthState(
+                    totalUsableQuantity,
+                    totalQuantity,
+                    totalExpiredQty,
+                    totalExpiringSoonQty,
+                    undefined // No single reorder point for company-level
+                );
             }
 
             // Determine final status
@@ -889,6 +954,8 @@ export class InventoryService {
                 productId: product.id,
                 product,
                 totalQuantity,
+                usableQuantity: totalUsableQuantity, // NEW
+                stockHealthState: worstStockHealthState, // NEW
                 warehouseCount,
                 minQuantity,
                 maxQuantity,
@@ -1467,5 +1534,70 @@ export class InventoryService {
             stock.quantity = totalQuantity;
             await this.stockRepository.save(stock);
         }
+    }
+
+    /**
+     * Get company-wide stock health overview
+     * Aggregates warehouse risk metrics and blocked products count
+     */
+    async getCompanyStockHealthOverview(companyId: string): Promise<CompanyStockHealthOverview> {
+        // Get all warehouses for this company
+        const warehouses = await this.dataSource.getRepository(Warehouse).find({
+            where: { company_id: companyId },
+        });
+
+        const warehouseRiskMetrics: WarehouseRiskMetric[] = [];
+        let totalBlockedProducts = 0;
+        const processedProducts = new Set<string>(); // Track products already counted as blocked
+
+        for (const warehouse of warehouses) {
+            // Get stock health for this warehouse
+            const warehouseHealth = await this.stockHealthService.getWarehouseStockHealth(warehouse.id);
+
+            let blockedCount = 0;
+            let totalStock = 0;
+            let expiredQty = 0;
+            let expiringSoonQty = 0;
+
+            warehouseHealth.forEach(health => {
+                totalStock += health.totalStock;
+                expiredQty += health.expiredQty;
+                expiringSoonQty += health.expiringSoonQty;
+
+                if (health.state === StockHealthState.BLOCKED) {
+                    blockedCount++;
+                    // Only count each product once for total blocked products
+                    if (!processedProducts.has(health.productId)) {
+                        totalBlockedProducts++;
+                        processedProducts.add(health.productId);
+                    }
+                }
+            });
+
+            // Calculate percentages
+            const expiredPercentage = totalStock > 0 ? (expiredQty / totalStock) * 100 : 0;
+            const expiringSoonPercentage = totalStock > 0 ? (expiringSoonQty / totalStock) * 100 : 0;
+
+            // Calculate health score (0-100, higher is better)
+            // 100 - (expired% + expiring%/2) - capped at 0 minimum
+            const healthScore = Math.max(0, 100 - expiredPercentage - (expiringSoonPercentage / 2));
+
+            warehouseRiskMetrics.push({
+                warehouseId: warehouse.id,
+                warehouseName: warehouse.name,
+                warehouseSlug: warehouse.slug,
+                blockedProductCount: blockedCount,
+                expiredPercentage: parseFloat(expiredPercentage.toFixed(2)),
+                expiringSoonPercentage: parseFloat(expiringSoonPercentage.toFixed(2)),
+                healthScore: parseFloat(healthScore.toFixed(2)),
+                lastUpdated: new Date().toISOString(),
+            });
+        }
+
+        return {
+            totalBlockedProducts,
+            warehouseRiskMetrics,
+            lastUpdated: new Date().toISOString(),
+        };
     }
 }

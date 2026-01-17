@@ -132,6 +132,8 @@ export const GET_COMPANY_INVENTORY_SUMMARY = gql`
         }
       }
       totalQuantity
+      usableQuantity
+      stockHealthState
       warehouseCount
       minQuantity
       maxQuantity
@@ -299,6 +301,25 @@ export const GET_ADJUSTMENTS_BY_USER = gql`
       userName
       adjustmentCount
       totalQuantity
+    }
+  }
+`;
+
+export const GET_COMPANY_STOCK_HEALTH_OVERVIEW = gql`
+  query GetCompanyStockHealthOverview {
+    companyStockHealthOverview {
+      totalBlockedProducts
+      warehouseRiskMetrics {
+        warehouseId
+        warehouseName
+        warehouseSlug
+        blockedProductCount
+        expiredPercentage
+        expiringSoonPercentage
+        healthScore
+        lastUpdated
+      }
+      lastUpdated
     }
   }
 `;

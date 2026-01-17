@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useWarehouse } from '@/context/warehouse-context';
 import { useQuery } from '@apollo/client';
 import { GET_STOCK_SNAPSHOT, GET_STOCK_MOVEMENTS, GET_ADJUSTMENT_REPORT } from '@/lib/graphql/warehouse-reports';
+import { GET_WAREHOUSE_STOCK_HEALTH } from '@/lib/graphql/stock-health';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,11 +20,12 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format, subDays } from 'date-fns';
-import { FileText, Activity, AlertTriangle, Calendar } from 'lucide-react';
+import { FileText, Activity, AlertTriangle, Calendar, Package, TrendingDown, Shield, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { ExportButton } from '@/components/export/ExportButton';
+import { StockHealthBadge } from '@/components/inventory/stock-health-badge';
 
 function WarehouseReportsContent() {
   const { activeWarehouse } = useWarehouse();
@@ -50,6 +52,12 @@ function WarehouseReportsContent() {
         offset: 0,
       },
     },
+    skip: !activeWarehouse?.id,
+  });
+
+  // Warehouse Stock Health Query (for health overview cards)
+  const { data: healthData, loading: healthLoading } = useQuery(GET_WAREHOUSE_STOCK_HEALTH, {
+    variables: { warehouseId: activeWarehouse?.id },
     skip: !activeWarehouse?.id,
   });
 
@@ -116,6 +124,102 @@ function WarehouseReportsContent() {
           Historical analysis and current inventory snapshot for {activeWarehouse?.name}
         </p>
       </div>
+
+      {/* Health Overview Cards */}
+      {!healthLoading && healthData?.warehouseStockHealth && (() => {
+        const healthMetrics = healthData.warehouseStockHealth.reduce(
+          (acc: any, item: any) => {
+            acc.totalStock += item.totalStock || 0;
+            acc.usableStock += item.usableStock || 0;
+            acc.expiredQty += item.expiredQty || 0;
+            acc.expiringSoonQty += item.expiringSoonQty || 0;
+            
+            if (item.state === 'BLOCKED') acc.blockedCount++;
+            else if (item.state === 'CRITICAL') acc.criticalCount++;
+            else if (item.state === 'AT_RISK') acc.atRiskCount++;
+            else if (item.state === 'LOW_STOCK') acc.lowStockCount++;
+            
+            return acc;
+          },
+          { totalStock: 0, usableStock: 0, expiredQty: 0, expiringSoonQty: 0, blockedCount: 0, criticalCount: 0, atRiskCount: 0, lowStockCount: 0 }
+        );
+
+        return (
+          <>
+            <div className="grid gap-4 md:grid-cols-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Stock</CardTitle>
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{healthMetrics.totalStock.toFixed(2)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">All inventory</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-green-200 dark:border-green-900">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Usable Stock</CardTitle>
+                  <Shield className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">{healthMetrics.usableStock.toFixed(2)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Available for use</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-red-200 dark:border-red-900">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Expired Qty</CardTitle>
+                  <TrendingDown className="h-4 w-4 text-red-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">{healthMetrics.expiredQty.toFixed(2)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Requires action</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-orange-200 dark:border-orange-900">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Expiring Soon</CardTitle>
+                  <Clock className="h-4 w-4 text-orange-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-orange-600">{healthMetrics.expiringSoonQty.toFixed(2)}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Within 30 days</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Product Health Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 md:grid-cols-4">
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <span className="text-sm font-medium">Blocked</span>
+                    <Badge variant="secondary" className="bg-gray-500">{healthMetrics.blockedCount}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <span className="text-sm font-medium">Critical</span>
+                    <Badge variant="destructive">{healthMetrics.criticalCount}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <span className="text-sm font-medium">At Risk</span>
+                    <Badge variant="secondary" className="border-yellow-500 text-yellow-700">{healthMetrics.atRiskCount}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <span className="text-sm font-medium">Low Stock</span>
+                    <Badge variant="secondary" className="border-orange-500 text-orange-700">{healthMetrics.lowStockCount}</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        );
+      })()}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

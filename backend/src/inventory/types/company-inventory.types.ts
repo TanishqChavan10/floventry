@@ -1,7 +1,8 @@
-import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
 import { Product } from '../entities/product.entity';
 import { StockHealthStatus } from './stock-health.types';
 import { MovementType } from '../entities/stock-movement.entity';
+import { StockHealthState } from '../stock-health/stock-health.types';
 
 // ===========================
 // EXISTING TYPE
@@ -16,6 +17,12 @@ export class CompanyInventorySummaryItem {
 
     @Field(() => Int)
     totalQuantity: number;
+
+    @Field(() => Float)
+    usableQuantity: number;
+
+    @Field(() => StockHealthState)
+    stockHealthState: StockHealthState;
 
     @Field(() => Int)
     warehouseCount: number;
@@ -180,3 +187,77 @@ export class AdjustmentByUser {
     @Field(() => Int)
     totalQuantity: number;
 }
+
+// ===========================
+// NEW STOCK HEALTH TYPES
+// ===========================
+
+@ObjectType()
+export class WarehouseHealthSummary {
+    @Field(() => Float)
+    totalStock: number;
+
+    @Field(() => Float)
+    usableStock: number;
+
+    @Field(() => Float)
+    expiredQuantity: number;
+
+    @Field(() => Float)
+    expiringSoonQuantity: number;
+
+    @Field(() => Int)
+    blockedProductsCount: number;
+
+    @Field(() => Int)
+    criticalProductsCount: number;
+
+    @Field(() => Int)
+    atRiskProductsCount: number;
+
+    @Field(() => Int)
+    lowStockProductsCount: number;
+
+    @Field(() => String)
+    lastUpdated: string;
+}
+
+@ObjectType()
+export class WarehouseRiskMetric {
+    @Field(() => String)
+    warehouseId: string;
+
+    @Field(() => String)
+    warehouseName: string;
+
+    @Field(() => String)
+    warehouseSlug: string;
+
+    @Field(() => Int)
+    blockedProductCount: number;
+
+    @Field(() => Float)
+    expiredPercentage: number;
+
+    @Field(() => Float)
+    expiringSoonPercentage: number;
+
+    @Field(() => Float)
+    healthScore: number;
+
+    @Field(() => String)
+    lastUpdated: string;
+}
+
+@ObjectType()
+export class CompanyStockHealthOverview {
+    @Field(() => Int)
+    totalBlockedProducts: number;
+
+    @Field(() => [WarehouseRiskMetric])
+    warehouseRiskMetrics: WarehouseRiskMetric[];
+
+    @Field(() => String)
+    lastUpdated: string;
+}
+

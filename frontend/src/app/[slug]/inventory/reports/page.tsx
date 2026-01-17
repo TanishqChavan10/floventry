@@ -27,6 +27,7 @@ import {
     GET_ADJUSTMENTS_BY_USER,
     GET_COMPANY_INVENTORY_SUMMARY,
 } from "@/lib/graphql/inventory";
+import { StockHealthBadge } from "@/components/inventory/stock-health-badge";
 
 const COLORS = {
     ok: "hsl(var(--chart-1))",
@@ -226,6 +227,8 @@ function InventoryHealthTab() {
                                     <TableHead>Product</TableHead>
                                     <TableHead>SKU</TableHead>
                                     <TableHead className="text-right">Total Stock</TableHead>
+                                    <TableHead className="text-right">Usable Stock</TableHead>
+                                    <TableHead>Stock Health</TableHead>
                                     <TableHead className="text-right">Warehouses</TableHead>
                                     <TableHead>Status</TableHead>
                                 </TableRow>
@@ -236,6 +239,15 @@ function InventoryHealthTab() {
                                         <TableCell className="font-medium">{item.product.name}</TableCell>
                                         <TableCell className="text-muted-foreground">{item.product.sku}</TableCell>
                                         <TableCell className="text-right">{item.totalQuantity}</TableCell>
+                                        <TableCell className="text-right font-medium text-green-600">
+                                            {item.usableQuantity?.toFixed(2) || '0.00'}
+                                        </TableCell>
+                                        <TableCell>
+                                            <StockHealthBadge 
+                                                state={item.stockHealthState} 
+                                                recommendation={item.stockHealthState === 'HEALTHY' ? 'Stock is healthy' : 'Action may be required'} 
+                                            />
+                                        </TableCell>
                                         <TableCell className="text-right">{item.warehouseCount}</TableCell>
                                         <TableCell>
                                             <Badge

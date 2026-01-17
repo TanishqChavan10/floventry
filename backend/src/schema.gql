@@ -148,7 +148,9 @@ type CompanyInventorySummaryItem {
   product: Product!
   productId: ID!
   status: StockHealthStatus!
+  stockHealthState: StockHealthState!
   totalQuantity: Int!
+  usableQuantity: Float!
   warehouseCount: Int!
 }
 
@@ -197,6 +199,12 @@ type CompanySettings {
 type CompanyStats {
   totalInventoryValue: Float!
   totalStaff: Int!
+}
+
+type CompanyStockHealthOverview {
+  lastUpdated: String!
+  totalBlockedProducts: Int!
+  warehouseRiskMetrics: [WarehouseRiskMetric!]!
 }
 
 type CompanyStockHealthResult {
@@ -753,6 +761,7 @@ type Query {
   companyMembers(companyId: String!): [CompanyMemberDetails!]!
   companyStats(companyId: String!): CompanyStats!
   companyStockHealth: [CompanyStockHealthResult!]!
+  companyStockHealthOverview: CompanyStockHealthOverview!
   companyStockMovements(filters: StockMovementFilterInput!): [StockMovement!]!
   criticalStockProducts(limit: Float = 10): [CriticalStockProduct!]!
   expiryScanStatus: ExpiryScanStatus!
@@ -1003,13 +1012,17 @@ input StockSnapshotFilters {
 
 type StockSnapshotItem {
   categoryName: String
+  expiringQuantity: Float
   id: ID!
   lastUpdated: DateTime!
+  nearestExpiry: String
   productName: String!
   quantity: Int!
   sku: String!
   status: StockHealthStatus!
+  stockHealthState: StockHealthState
   unit: String
+  usableQuantity: Float
 }
 
 type StockSnapshotResult {
@@ -1361,6 +1374,17 @@ type WarehouseMember {
   isManager: Boolean!
   role: String!
   userId: String!
+}
+
+type WarehouseRiskMetric {
+  blockedProductCount: Int!
+  expiredPercentage: Float!
+  expiringSoonPercentage: Float!
+  healthScore: Float!
+  lastUpdated: String!
+  warehouseId: String!
+  warehouseName: String!
+  warehouseSlug: String!
 }
 
 type WarehouseSettings {

@@ -14,6 +14,7 @@ import {
     AdjustmentResult,
     AdjustmentFilters
 } from './dto/warehouse-reports.types';
+import { WarehouseHealthSummary } from '../inventory/types/company-inventory.types';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';

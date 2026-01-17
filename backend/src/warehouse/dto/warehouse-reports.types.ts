@@ -1,6 +1,7 @@
-import { ObjectType, Field, Int, ID, InputType, registerEnumType } from '@nestjs/graphql';
+import { ObjectType, Field, Int, ID, InputType, registerEnumType, Float } from '@nestjs/graphql';
 import { StockHealthStatus } from '../../inventory/types/stock-health.types';
 import { MovementType } from '../../inventory/entities/stock-movement.entity';
+import { StockHealthState } from '../../inventory/stock-health/stock-health.types';
 
 // ============================================
 // Stock Snapshot Types (CURRENT STATE ONLY)
@@ -22,6 +23,18 @@ export class StockSnapshotItem {
 
     @Field(() => Int)
     quantity: number;
+
+    @Field(() => Float, { nullable: true })
+    usableQuantity: number;
+
+    @Field(() => StockHealthState, { nullable: true })
+    stockHealthState: StockHealthState;
+
+    @Field({ nullable: true })
+    nearestExpiry: string;
+
+    @Field(() => Float, { nullable: true })
+    expiringQuantity: number;
 
     @Field({ nullable: true })
     unit: string;

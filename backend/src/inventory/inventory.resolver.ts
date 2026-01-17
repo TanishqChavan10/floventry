@@ -23,6 +23,8 @@ import {
     AdjustmentTrendData,
     AdjustmentByWarehouse,
     AdjustmentByUser,
+    WarehouseHealthSummary,
+    CompanyStockHealthOverview,
 } from './types/company-inventory.types';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -364,6 +366,13 @@ export class StockResolver {
     ) {
         if (!user.activeCompanyId) throw new BadRequestException('Active company required');
         return this.inventoryService.getAdjustmentsByUser(user.activeCompanyId, days, limit);
+    }
+
+    @Query(() => CompanyStockHealthOverview, { name: 'companyStockHealthOverview' })
+    @Roles(Role.OWNER, Role.ADMIN)
+    async getCompanyStockHealthOverview(@ClerkUser() user: any) {
+        if (!user.activeCompanyId) throw new BadRequestException('Active company required');
+        return this.inventoryService.getCompanyStockHealthOverview(user.activeCompanyId);
     }
 }
 
