@@ -12,8 +12,11 @@ import {
     ChartContainer,
     ChartTooltip,
     ChartTooltipContent,
+    ChartLegend,
+    ChartLegendContent
 } from "@/components/ui/chart";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, LabelList, Sector } from "recharts";
+import { type PieSectorDataItem } from "recharts/types/polar/Pie";
 import RoleGuard from "@/components/guards/RoleGuard";
 import {
     GET_INVENTORY_HEALTH_STATS,
@@ -30,11 +33,11 @@ import {
 import { StockHealthBadge } from "@/components/inventory/stock-health-badge";
 
 const COLORS = {
-    ok: "hsl(var(--chart-1))",
-    warning: "hsl(var(--chart-2))",
-    critical: "hsl(var(--chart-3))",
-    in: "hsl(var(--chart-4))",
-    out: "hsl(var(--chart-5))",
+    ok: "#3b82f6", // Standard blue
+    warning: "#60a5fa", // Lighter blue
+    critical: "#1e40af", // Darker blue
+    in: "#3b82f6",
+    out: "#ef4444",
 };
 
 export default function CompanyInventoryReportsPage() {
@@ -127,6 +130,11 @@ function InventoryHealthTab() {
         ok: { label: "OK", color: COLORS.ok },
         warning: { label: "Warning", color: COLORS.warning },
         critical: { label: "Critical", color: COLORS.critical },
+        // Add mappings for specific data keys to ensure tooltips pick up the right color
+        lowestWarehouseStock: { label: "Stock", color: COLORS.ok },
+        totalQuantity: { label: "Quantity", color: COLORS.ok },
+        totalAdjustments: { label: "Adjustments", color: COLORS.ok },
+        adjustmentCount: { label: "Count", color: COLORS.ok },
     } satisfies ChartConfig;
 
     return (
@@ -145,20 +153,28 @@ function InventoryHealthTab() {
                         ) : (
                             <ChartContainer config={chartConfig} className="h-[200px]">
                                 <PieChart>
+                                    <ChartTooltip
+                                        cursor={false}
+                                        content={<ChartTooltipContent hideLabel />}
+                                    />
                                     <Pie
                                         data={healthChartData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
                                         dataKey="value"
-                                        label
+                                        nameKey="name"
+                                        innerRadius={60}
+                                        strokeWidth={5}
+                                        activeIndex={0}
+                                        activeShape={({
+                                            outerRadius = 0,
+                                            ...props
+                                        }: PieSectorDataItem) => (
+                                            <Sector {...props} outerRadius={outerRadius + 10} />
+                                        )}
                                     >
                                         {healthChartData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={entry.fill} />
                                         ))}
                                     </Pie>
-                                    <ChartTooltip content={<ChartTooltipContent />} />
                                 </PieChart>
                             </ChartContainer>
                         )}
@@ -176,12 +192,30 @@ function InventoryHealthTab() {
                             <Skeleton className="h-[200px] w-full" />
                         ) : (
                             <ChartContainer config={chartConfig} className="h-[200px]">
-                                <BarChart data={topProductsData?.topStockProducts || []} layout="vertical">
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis type="number" />
-                                    <YAxis dataKey="productName" type="category" width={150} />
-                                    <ChartTooltip content={<ChartTooltipContent />} />
-                                    <Bar dataKey="totalQuantity" fill={COLORS.in} />
+                                <BarChart
+                                    accessibilityLayer
+                                    data={topProductsData?.topStockProducts || []}
+                                    layout="vertical"
+                                    margin={{
+                                        left: -20,
+                                    }}
+                                >
+                                    <XAxis type="number" dataKey="totalQuantity" hide />
+                                    <YAxis
+                                        dataKey="productName"
+                                        type="category"
+                                        tickLine={false}
+                                        tickMargin={10}
+                                        axisLine={false}
+                                        tickFormatter={(value) => value.slice(0, 10) + (value.length > 10 ? '...' : '')}
+                                    />
+                                    <ChartTooltip
+                                        cursor={false}
+                                        content={<ChartTooltipContent hideLabel />}
+                                    />
+                                    <Bar dataKey="totalQuantity" fill={COLORS.in} radius={5}>
+                                        <LabelList dataKey="totalQuantity" position="right" />
+                                    </Bar>
                                 </BarChart>
                             </ChartContainer>
                         )}
@@ -200,13 +234,29 @@ function InventoryHealthTab() {
                         <Skeleton className="h-[250px] w-full" />
                     ) : (
                         <ChartContainer config={chartConfig} className="h-[250px]">
-                            <BarChart data={criticalData?.criticalStockProducts || []}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="productName" angle={-45} textAnchor="end" height={100} />
-                                <YAxis />
-                                <ChartTooltip content={<ChartTooltipContent />} />
-                                <Bar dataKey="lowestWarehouseStock" fill={COLORS.critical} />
-                            </BarChart>
+                            <BarChart
+                                accessibilityLayer
+                                data={criticalData?.criticalStockProducts || []}
+                                margin={{
+                                    top: 20,
+                                }}
+                            >
+                                <CartesianGrid vertical={false} />
+                                <XAxis
+                                    dataKey="productName"
+                                    tickLine={false}
+                                    tickMargin={10}
+                                    axisLine={false}
+                                    tickFormatter={(value) => value.slice(0, 10)}
+                                />
+                                <ChartTooltip
+                                    cursor={false}
+                                    content={<ChartTooltipContent hideLabel />}
+                                />
+                                    <Bar dataKey="lowestWarehouseStock" fill={COLORS.ok} radius={8}>
+                                        <LabelList position="top" offset={12} className="fill-foreground" fontSize={12} />
+                                    </Bar>
+                                </BarChart>
                         </ChartContainer>
                     )}
                 </CardContent>
@@ -295,16 +345,36 @@ function WarehouseComparisonTab() {
                 {loading ? (
                     <Skeleton className="h-[300px] w-full" />
                 ) : (
-                    <ChartContainer config={chartConfig} className="h-[300px]">
-                        <BarChart data={scorecardData?.warehouseHealthScorecard || []}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="warehouseName" />
-                            <YAxis />
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                            <Legend />
-                            <Bar dataKey="okCount" stackId="a" fill={COLORS.ok} name="OK" />
-                            <Bar dataKey="warningCount" stackId="a" fill={COLORS.warning} name="Warning" />
-                            <Bar dataKey="criticalCount" stackId="a" fill={COLORS.critical} name="Critical" />
+                    <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                        <BarChart accessibilityLayer data={scorecardData?.warehouseHealthScorecard || []}>
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                                dataKey="warehouseName"
+                                tickLine={false}
+                                tickMargin={10}
+                                axisLine={false}
+                                tickFormatter={(value) => value}
+                            />
+                            <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                            <ChartLegend content={<ChartLegendContent />} />
+                            <Bar
+                                dataKey="okCount"
+                                stackId="a"
+                                fill={COLORS.in}
+                                radius={[0, 0, 4, 4]}
+                            />
+                            <Bar
+                                dataKey="warningCount"
+                                stackId="a"
+                                fill={COLORS.warning}
+                                radius={[0, 0, 0, 0]}
+                            />
+                             <Bar
+                                dataKey="criticalCount"
+                                stackId="a"
+                                fill={COLORS.critical}
+                                radius={[4, 4, 0, 0]}
+                            />
                         </BarChart>
                     </ChartContainer>
                 )}
@@ -368,23 +438,37 @@ function StockFlowTab() {
                     ) : (
                         <ChartContainer config={chartConfig} className="h-[250px]">
                             <PieChart>
+                                <ChartTooltip
+                                    cursor={false}
+                                    content={<ChartTooltipContent hideLabel />}
+                                />
                                 <Pie
                                     data={breakdownData?.movementTypeBreakdown || []}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={false}
-                                    label={(entry) => entry.type}
-                                    outerRadius={80}
                                     dataKey="count"
+                                    nameKey="type"
+                                    innerRadius={60}
+                                    strokeWidth={5}
+                                    activeIndex={0}
+                                    activeShape={({
+                                        outerRadius = 0,
+                                        ...props
+                                    }: PieSectorDataItem) => (
+                                        <Sector {...props} outerRadius={outerRadius + 10} />
+                                    )}
                                 >
                                     {(breakdownData?.movementTypeBreakdown || []).map((_: any, index: number) => (
                                         <Cell
                                             key={`cell-${index}`}
-                                            fill={`hsl(var(--chart-${(index % 5) + 1}))`}
+                                            fill={[
+                                                "#3b82f6", // Standard
+                                                "#60a5fa", // Light
+                                                "#2563eb", // Dark
+                                                "#93c5fd", // Lighter
+                                                "#1d4ed8", // Darker
+                                            ][index % 5]}
                                         />
                                     ))}
                                 </Pie>
-                                <ChartTooltip content={<ChartTooltipContent />} />
                             </PieChart>
                         </ChartContainer>
                     )}
@@ -425,27 +509,70 @@ function AdjustmentsAuditTab() {
                     {trendsLoading ? (
                         <Skeleton className="h-[300px] w-full" />
                     ) : (
-                        <ChartContainer config={chartConfig} className="h-[300px]">
-                            <LineChart data={trendsData?.adjustmentTrends || []}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="date" />
-                                <YAxis />
-                                <ChartTooltip content={<ChartTooltipContent />} />
-                                <Legend />
-                                <Line
-                                    type="monotone"
-                                    dataKey="adjustmentInQuantity"
-                                    stroke={COLORS.in}
-                                    name="IN"
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="adjustmentOutQuantity"
-                                    stroke={COLORS.out}
-                                    name="OUT"
-                                />
-                            </LineChart>
-                        </ChartContainer>
+                            <ChartContainer config={chartConfig} className="h-[300px]">
+                                <LineChart
+                                    accessibilityLayer
+                                    data={trendsData?.adjustmentTrends || []}
+                                    margin={{
+                                        top: 20,
+                                        left: 12,
+                                        right: 12,
+                                    }}
+                                >
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis
+                                        dataKey="date"
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickMargin={8}
+                                        tickFormatter={(value) => value.slice(0, 5)}
+                                    />
+                                    <ChartTooltip
+                                        cursor={false}
+                                        content={<ChartTooltipContent indicator="line" />}
+                                    />
+                                    <Line
+                                        dataKey="adjustmentInQuantity"
+                                        type="natural"
+                                        stroke={COLORS.in}
+                                        strokeWidth={2}
+                                        dot={{
+                                            fill: COLORS.in,
+                                        }}
+                                        activeDot={{
+                                            r: 6,
+                                        }}
+                                        name="IN"
+                                    >
+                                        <LabelList
+                                            position="top"
+                                            offset={12}
+                                            className="fill-foreground"
+                                            fontSize={12}
+                                        />
+                                    </Line>
+                                    <Line
+                                        dataKey="adjustmentOutQuantity"
+                                        type="natural"
+                                        stroke={COLORS.out}
+                                        strokeWidth={2}
+                                        dot={{
+                                            fill: COLORS.out,
+                                        }}
+                                        activeDot={{
+                                            r: 6,
+                                        }}
+                                        name="OUT"
+                                    >
+                                        <LabelList
+                                            position="top"
+                                            offset={12}
+                                            className="fill-foreground"
+                                            fontSize={12}
+                                        />
+                                    </Line>
+                                </LineChart>
+                            </ChartContainer>
                     )}
                 </CardContent>
             </Card>
@@ -461,12 +588,28 @@ function AdjustmentsAuditTab() {
                             <Skeleton className="h-[250px] w-full" />
                         ) : (
                             <ChartContainer config={chartConfig} className="h-[250px]">
-                                <BarChart data={warehouseData?.adjustmentsByWarehouse || []}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="warehouseName" />
-                                    <YAxis />
-                                    <ChartTooltip content={<ChartTooltipContent />} />
-                                    <Bar dataKey="totalAdjustments" fill={COLORS.critical} />
+                            <BarChart
+                                accessibilityLayer
+                                data={warehouseData?.adjustmentsByWarehouse || []}
+                                margin={{
+                                    top: 20,
+                                }}
+                            >
+                                <CartesianGrid vertical={false} />
+                                    <XAxis
+                                        dataKey="warehouseName"
+                                        tickLine={false}
+                                        tickMargin={10}
+                                        axisLine={false}
+                                        tickFormatter={(value) => value}
+                                    />
+                                    <ChartTooltip
+                                        cursor={false}
+                                        content={<ChartTooltipContent hideLabel />}
+                                    />
+                                    <Bar dataKey="totalAdjustments" fill={COLORS.ok} radius={8}>
+                                        <LabelList position="top" offset={12} className="fill-foreground" fontSize={12} />
+                                    </Bar>
                                 </BarChart>
                             </ChartContainer>
                         )}
@@ -477,18 +620,35 @@ function AdjustmentsAuditTab() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base">Adjustments by User</CardTitle>
+                        <CardDescription>User activity breakdown</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {userLoading ? (
                             <Skeleton className="h-[250px] w-full" />
                         ) : (
                             <ChartContainer config={chartConfig} className="h-[250px]">
-                                <BarChart data={userData?.adjustmentsByUser || []}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="userName" />
-                                    <YAxis />
-                                    <ChartTooltip content={<ChartTooltipContent />} />
-                                    <Bar dataKey="adjustmentCount" fill={COLORS.warning} />
+                                <BarChart
+                                    accessibilityLayer
+                                    data={userData?.adjustmentsByUser || []}
+                                    margin={{
+                                        top: 20,
+                                    }}
+                                >
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis
+                                        dataKey="userName"
+                                        tickLine={false}
+                                        tickMargin={10}
+                                        axisLine={false}
+                                        tickFormatter={(value) => value}
+                                    />
+                                    <ChartTooltip
+                                        cursor={false}
+                                        content={<ChartTooltipContent hideLabel />}
+                                    />
+                                    <Bar dataKey="adjustmentCount" fill={COLORS.ok} radius={8}>
+                                        <LabelList position="top" offset={12} className="fill-foreground" fontSize={12} />
+                                    </Bar>
                                 </BarChart>
                             </ChartContainer>
                         )}

@@ -1,18 +1,26 @@
 'use client';
 
 import React from 'react';
+import { TrendingUp } from "lucide-react"
 import {
-  BarChart,
   Bar,
-  XAxis,
-  YAxis,
+  BarChart,
   CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
+  LabelList,
+  XAxis,
   LineChart,
   Line,
   Legend,
-} from 'recharts';
+  YAxis,
+  Tooltip,
+  ResponsiveContainer // Keeping this for the LineChart still using raw Recharts
+} from "recharts"
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart"
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -21,6 +29,12 @@ interface AnalyticsChartsProps {
 }
 
 export default function AnalyticsCharts({ role }: AnalyticsChartsProps) {
+  const chartConfig = {
+    stock: {
+      label: "Stock",
+      color: "#3b82f6",
+    },
+  } satisfies ChartConfig;
   const stockData = [
     { name: 'Electronics', stock: 4000, limit: 2400 },
     { name: 'Furniture', stock: 3000, limit: 1398 },
@@ -52,18 +66,36 @@ export default function AnalyticsCharts({ role }: AnalyticsChartsProps) {
           </TabsList>
           
           <TabsContent value="stock" className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stockData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
-                <XAxis dataKey="name" className="text-xs" />
-                <YAxis className="text-xs" />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
-                  itemStyle={{ color: 'var(--foreground)' }}
+            <ChartContainer config={chartConfig} className="h-full w-full">
+              <BarChart
+                accessibilityLayer
+                data={stockData}
+                margin={{
+                  top: 20,
+                }}
+              >
+                <CartesianGrid vertical={false} />
+                <XAxis
+                  dataKey="name"
+                  tickLine={false}
+                  tickMargin={10}
+                  axisLine={false}
+                  tickFormatter={(value) => value.slice(0, 3)}
                 />
-                <Bar dataKey="stock" fill="#4f46e5" radius={[4, 4, 0, 0]} name="Current Stock" />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent hideLabel />}
+                />
+                <Bar dataKey="stock" fill="var(--color-stock)" radius={8}>
+                  <LabelList
+                    position="top"
+                    offset={12}
+                    className="fill-foreground"
+                    fontSize={12}
+                  />
+                </Bar>
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </TabsContent>
           
           <TabsContent value="flow" className="h-[300px]">

@@ -12,6 +12,7 @@ import { AlertCircle } from 'lucide-react';
 import { useQuery } from '@apollo/client';
 import { GET_COMPANY_DASHBOARD } from '@/lib/graphql/company-dashboard';
 import { StockHealthWidget } from '@/components/company/stock-health-widget';
+import AnalyticsCharts from '@/components/dashboard/AnalyticsCharts';
 
 function CompanyDashboardContent() {
   const params = useParams();
@@ -95,6 +96,7 @@ function CompanyDashboardContent() {
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-6">
             <RecentActivity data={dashboard} />
+            <AnalyticsCharts role="ADMIN" />
           </div>
 
           <div className="space-y-6">
