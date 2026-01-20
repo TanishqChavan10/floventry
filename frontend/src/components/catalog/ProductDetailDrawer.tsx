@@ -8,6 +8,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { GenerateBarcodeLabelsButton } from '@/components/barcode/GenerateBarcodeLabelsButton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Edit, Package, Tag, Building2, Ruler, IndianRupee } from 'lucide-react';
@@ -34,9 +35,7 @@ export default function ProductDetailDrawer({
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <SheetTitle className="text-2xl">{product.name}</SheetTitle>
-              <SheetDescription className="font-mono text-sm">
-                SKU: {product.sku}
-              </SheetDescription>
+              <SheetDescription className="font-mono text-sm">SKU: {product.sku}</SheetDescription>
             </div>
             <Badge variant={product.is_active ? 'default' : 'secondary'}>
               {product.is_active ? 'Active' : 'Archived'}
@@ -58,18 +57,14 @@ export default function ProductDetailDrawer({
 
           {/* Basic Information */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-sm text-muted-foreground">
-              Basic Information
-            </h3>
+            <h3 className="font-semibold text-sm text-muted-foreground">Basic Information</h3>
             <div className="space-y-3">
               {product.barcode && (
                 <div className="flex items-center gap-3">
                   <Tag className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">Barcode</p>
-                    <p className="text-sm text-muted-foreground font-mono">
-                      {product.barcode}
-                    </p>
+                    <p className="text-sm text-muted-foreground font-mono">{product.barcode}</p>
                   </div>
                 </div>
               )}
@@ -78,9 +73,7 @@ export default function ProductDetailDrawer({
                 <Ruler className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">Unit</p>
-                  <p className="text-sm text-muted-foreground font-mono">
-                    {product.unit}
-                  </p>
+                  <p className="text-sm text-muted-foreground font-mono">{product.unit}</p>
                 </div>
               </div>
             </div>
@@ -90,9 +83,7 @@ export default function ProductDetailDrawer({
 
           {/* Category & Supplier */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-sm text-muted-foreground">
-              Classification
-            </h3>
+            <h3 className="font-semibold text-sm text-muted-foreground">Classification</h3>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Package className="h-4 w-4 text-muted-foreground" />
@@ -128,9 +119,7 @@ export default function ProductDetailDrawer({
                   <p className="text-sm font-medium">Cost Price</p>
                 </div>
                 <p className="text-lg font-bold">
-                  {product.cost_price
-                    ? `₹${parseFloat(product.cost_price).toFixed(2)}`
-                    : '—'}
+                  {product.cost_price ? `₹${parseFloat(product.cost_price).toFixed(2)}` : '—'}
                 </p>
               </div>
               <div className="space-y-1">
@@ -139,9 +128,7 @@ export default function ProductDetailDrawer({
                   <p className="text-sm font-medium">Selling Price</p>
                 </div>
                 <p className="text-lg font-bold">
-                  {product.selling_price
-                    ? `₹${parseFloat(product.selling_price).toFixed(2)}`
-                    : '—'}
+                  {product.selling_price ? `₹${parseFloat(product.selling_price).toFixed(2)}` : '—'}
                 </p>
               </div>
             </div>
@@ -152,9 +139,7 @@ export default function ProductDetailDrawer({
             <>
               <Separator />
               <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground">
-                  Description
-                </h3>
+                <h3 className="font-semibold text-sm text-muted-foreground">Description</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {product.description}
                 </p>
@@ -183,14 +168,23 @@ export default function ProductDetailDrawer({
           </div>
 
           {/* Actions */}
-          {onEdit && (
-            <div className="pt-4">
+          <div className="pt-4 space-y-2">
+            {product.barcode && (
+              <GenerateBarcodeLabelsButton
+                productIds={[product.id]}
+                filename={`barcode-label_${product.sku || product.id}.pdf`}
+                variant="outline"
+                size="default"
+              />
+            )}
+
+            {onEdit && (
               <Button onClick={onEdit} className="w-full gap-2">
                 <Edit className="h-4 w-4" />
                 Edit Product
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </SheetContent>
     </Sheet>

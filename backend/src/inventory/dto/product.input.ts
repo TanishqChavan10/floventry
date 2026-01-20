@@ -1,5 +1,5 @@
 import { InputType, Field, Float } from '@nestjs/graphql';
-import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
 
 @InputType()
 export class CreateProductInput {
@@ -17,6 +17,12 @@ export class CreateProductInput {
     @IsOptional()
     @IsString()
     barcode?: string;
+
+    @Field(() => [String], { nullable: true })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    alternate_barcodes?: string[];
 
     @Field({ nullable: true })
     @IsOptional()
@@ -75,6 +81,12 @@ export class UpdateProductInput {
     @IsOptional()
     @IsString()
     barcode?: string;
+
+    @Field(() => [String], { nullable: true })
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    alternate_barcodes?: string[];
 
     @Field({ nullable: true })
     @IsOptional()

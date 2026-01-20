@@ -22,6 +22,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { useWarehouse } from '@/context/warehouse-context';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { BarcodeScanInput } from '@/components/barcode/BarcodeScanInput';
 
 interface IssueItem {
   product_id: string;
@@ -61,6 +62,13 @@ export default function NewIssueNotePage() {
   const [salesOrderId, setSalesOrderId] = useState<string>('');
   const [items, setItems] = useState<IssueItem[]>([]);
   const [prefilledFromSalesOrderId, setPrefilledFromSalesOrderId] = useState<string>('');
+  const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (highlightIndex === null) return;
+    const el = document.getElementById(`issue-item-${highlightIndex}`);
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [highlightIndex]);
 
   const { data: salesOrdersData } = useQuery(GET_SALES_ORDERS);
   const { data: warehouseStockData } = useQuery(GET_WAREHOUSE_STOCK, {
@@ -161,6 +169,40 @@ export default function NewIssueNotePage() {
     const updated = [...items];
     updated[index] = { ...updated[index], [field]: value };
     setItems(updated);
+  };
+
+  const selectProductFromBarcode = (productId: string) => {
+    if (!availableProductIds.has(productId)) {
+      toast({
+        title: 'Not available in this warehouse',
+        description: 'This product is not currently in stock here.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const existingIndex = items.findIndex((i) => i.product_id === productId);
+    if (existingIndex >= 0) {
+      setHighlightIndex(existingIndex);
+      toast({
+        title: 'Already added',
+        description: 'That product is already in the issue list.',
+      });
+      return;
+    }
+
+    const emptyIndex = items.findIndex((i) => !i.product_id);
+    if (emptyIndex >= 0) {
+      updateItem(emptyIndex, 'product_id', productId);
+      setHighlightIndex(emptyIndex);
+      return;
+    }
+
+    setItems((prev) => {
+      const next = [...prev, { product_id: productId, quantity: 0 }];
+      setHighlightIndex(next.length - 1);
+      return next;
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -274,6 +316,21 @@ export default function NewIssueNotePage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            <BarcodeScanInput
+              label="Scan barcode to select product"
+              description="Scan only selects a product. Quantity stays manual."
+              onProductResolved={(product) => {
+                selectProductFromBarcode(product.id);
+              }}
+              onError={(message) =>
+                toast({
+                  title: 'Barcode scan failed',
+                  description: message,
+                  variant: 'destructive',
+                })
+              }
+            />
+
             {items.length === 0 ? (
               <div className="text-center py-12 text-slate-500">
                 <p className="text-lg font-medium">No items added yet</p>
@@ -286,7 +343,11 @@ export default function NewIssueNotePage() {
                 return (
                   <div
                     key={index}
-                    className="flex gap-4 items-end p-6 border rounded-lg bg-slate-50 dark:bg-slate-900/50"
+                    id={`issue-item-${index}`}
+                    className={
+                      `flex gap-4 items-end p-6 border rounded-lg bg-slate-50 dark:bg-slate-900/50 ` +
+                      (highlightIndex === index ? 'ring-2 ring-indigo-500 border-indigo-300' : '')
+                    }
                   >
                     <div className="flex-1">
                       <Label className="mb-2 block">Product</Label>

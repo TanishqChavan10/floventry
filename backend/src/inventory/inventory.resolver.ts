@@ -95,6 +95,15 @@ export class ProductResolver {
         return this.inventoryService.findOneProduct(id, user.activeCompanyId);
     }
 
+    @Query(() => Product, { name: 'productByBarcode' })
+    async productByBarcode(
+        @Args('barcode') barcode: string,
+        @ClerkUser() user: any,
+    ) {
+        if (!user.activeCompanyId) throw new BadRequestException('Active company required');
+        return this.inventoryService.findProductByBarcode(barcode, user.activeCompanyId);
+    }
+
     @Mutation(() => Product)
     async updateProduct(
         @Args('input') input: UpdateProductInput,

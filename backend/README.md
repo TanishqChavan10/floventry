@@ -25,6 +25,10 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Design & Safety Docs
+
+- Barcode Phase 0 scope lock (read before implementing barcode): `docs/barcode/phase-0-scope-and-safety.md`
+
 ## Project setup
 
 ```bash

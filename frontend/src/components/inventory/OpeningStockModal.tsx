@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { CREATE_OPENING_STOCK } from '@/lib/graphql/inventory';
+import { BarcodeScanInput } from '@/components/barcode/BarcodeScanInput';
 
 import { GET_PRODUCTS } from '@/lib/graphql/catalog';
 
@@ -128,6 +129,21 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
           </DialogHeader>
 
           <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4">
+            <BarcodeScanInput
+              label="Scan barcode to select product"
+              description="Scan only selects the product. Quantity and expiry stay manual."
+              onProductResolved={(product) => {
+                setFormData((prev) => ({ ...prev, product_id: product.id }));
+              }}
+              onError={(message) =>
+                toast({
+                  title: 'Barcode scan failed',
+                  description: message,
+                  variant: 'destructive',
+                })
+              }
+            />
+
             {/* Product Selection */}
             <div className="space-y-2">
               <Label htmlFor="product">

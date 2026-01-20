@@ -271,6 +271,7 @@ input CreateOpeningStockInput {
 }
 
 input CreateProductInput {
+  alternate_barcodes: [String!]
   barcode: String
   category_id: String
   cost_price: Float
@@ -673,6 +674,7 @@ enum NotificationType {
 }
 
 type Product {
+  alternate_barcodes: [String!]
   barcode: String
   category: Category
   category_id: String
@@ -780,6 +782,7 @@ type Query {
   myPendingInvites: [Invite!]!
   notifications(limit: Int = 50, offset: Int = 0): [Notification!]!
   product(id: String!): Product!
+  productByBarcode(barcode: String!): Product!
   products: [Product!]!
   purchaseOrder(id: String!): PurchaseOrder
   purchaseOrders(filters: PurchaseOrderFilterInput!): [PurchaseOrder!]!
@@ -1159,6 +1162,7 @@ input UpdateIssueNoteInput {
 }
 
 input UpdateProductInput {
+  alternate_barcodes: [String!]
   barcode: String
   category_id: String
   cost_price: Float

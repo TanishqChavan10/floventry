@@ -8,6 +8,7 @@ import { Company as CompanyModel } from '../../company/company.model';
 @ObjectType()
 @Entity('products')
 @Index(['company_id', 'sku'], { unique: true }) // Ensure SKU is unique per company
+@Index(['company_id', 'barcode'], { unique: true }) // Ensure barcode is unique per company (nullable allowed)
 @Index(['company_id']) // Optimize company-scoped queries
 export class Product {
     @Field(() => ID)
@@ -31,9 +32,13 @@ export class Product {
     @Column()
     sku: string;
 
-    @Field({ nullable: true })
-    @Column({ nullable: true })
-    barcode: string;
+    @Field(() => String, { nullable: true })
+    @Column('varchar', { nullable: true })
+    barcode: string | null;
+
+    @Field(() => [String], { nullable: true })
+    @Column('text', { array: true, nullable: true })
+    alternate_barcodes: string[] | null;
 
     @Field({ nullable: true })
     @Column({ nullable: true })

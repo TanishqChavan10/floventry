@@ -40,9 +40,11 @@ import { CREATE_GRN, POST_GRN, GET_GRNS } from '@/lib/graphql/grn';
 import { GET_PURCHASE_ORDERS } from '@/lib/graphql/purchase-orders';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { BarcodeScanInput } from '@/components/barcode/BarcodeScanInput';
 
 interface GRNItemInput {
   purchase_order_item_id: string;
+  product_id?: string;
   received_quantity: number;
   expiry_date?: string; // ISO date string
   product_name?: string;
@@ -63,6 +65,7 @@ function CreateGRNContent() {
   const [items, setItems] = useState<GRNItemInput[]>([]);
   const [showPostDialog, setShowPostDialog] = useState(false);
   const [draftGRNId, setDraftGRNId] = useState<string | null>(null);
+  const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
 
   // Fetch ORDERED POs for this warehouse
   const { data: posData, loading: loadingPOs } = useQuery(GET_PURCHASE_ORDERS, {
@@ -85,7 +88,7 @@ function CreateGRNContent() {
   });
 
   const purchaseOrders = (posData?.purchaseOrders || []).filter(
-    (po: any) => po.warehouse?.id === activeWarehouse?.id
+    (po: any) => po.warehouse?.id === activeWarehouse?.id,
   );
 
   // Debug logging
@@ -100,6 +103,7 @@ function CreateGRNContent() {
       if (po && po.items) {
         const poItems = po.items.map((item: any) => ({
           purchase_order_item_id: item.id,
+          product_id: item.product?.id,
           received_quantity: 0,
           expiry_date: '', // Initially empty
           product_name: item.product.name,
@@ -113,6 +117,22 @@ function CreateGRNContent() {
       setItems([]);
     }
   }, [selectedPO, posData]);
+
+  useEffect(() => {
+    if (highlightIndex === null) return;
+    const el = document.getElementById(`grn-item-${highlightIndex}`);
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [highlightIndex]);
+
+  const highlightProductFromBarcode = (productId: string) => {
+    const index = items.findIndex((i) => i.product_id === productId);
+    if (index < 0) {
+      toast.error('Scanned product is not part of this purchase order');
+      return;
+    }
+    setHighlightIndex(index);
+    toast.success('Product selected');
+  };
 
   const updateItemQuantity = (index: number, quantity: number) => {
     const updated = [...items];
@@ -152,7 +172,7 @@ function CreateGRNContent() {
 
     try {
       const po = purchaseOrders.find((p: any) => p.id === selectedPO);
-      
+
       // Prepare the input data
       const inputData = {
         warehouse_id: po.warehouse.id,
@@ -164,15 +184,18 @@ function CreateGRNContent() {
         })),
         notes: notes || undefined,
       };
-      
+
       // Debug logging
       console.log('[CREATE GRN] Input data:', inputData);
-      console.log('[CREATE GRN] Items with quantities:', inputData.items.map(i => ({
-        id: i.purchase_order_item_id,
-        qty: i.received_quantity,
-        type: typeof i.received_quantity
-      })));
-      
+      console.log(
+        '[CREATE GRN] Items with quantities:',
+        inputData.items.map((i) => ({
+          id: i.purchase_order_item_id,
+          qty: i.received_quantity,
+          type: typeof i.received_quantity,
+        })),
+      );
+
       const result = await createGRN({
         variables: {
           input: inputData,
@@ -243,13 +266,21 @@ function CreateGRNContent() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Select Purchase Order *</Label>
-                <Select value={selectedPO} onValueChange={setSelectedPO} disabled={loadingPOs || purchaseOrders.length === 0}>
+                <Select
+                  value={selectedPO}
+                  onValueChange={setSelectedPO}
+                  disabled={loadingPOs || purchaseOrders.length === 0}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder={
-                      loadingPOs ? "Loading purchase orders..." : 
-                      purchaseOrders.length === 0 ? "No ORDERED POs for this warehouse" :
-                      "Select a PO"
-                    } />
+                    <SelectValue
+                      placeholder={
+                        loadingPOs
+                          ? 'Loading purchase orders...'
+                          : purchaseOrders.length === 0
+                            ? 'No ORDERED POs for this warehouse'
+                            : 'Select a PO'
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {purchaseOrders.map((po: any) => (
@@ -282,6 +313,13 @@ function CreateGRNContent() {
               <CardTitle>Received Items</CardTitle>
             </CardHeader>
             <CardContent>
+              <BarcodeScanInput
+                label="Scan barcode to select item"
+                description="Scan highlights the matching PO item. Quantity and expiry stay manual."
+                onProductResolved={(product) => highlightProductFromBarcode(product.id)}
+                onError={(message) => toast.error(message)}
+              />
+
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -295,7 +333,13 @@ function CreateGRNContent() {
                 </TableHeader>
                 <TableBody>
                   {items.map((item, index) => (
-                    <TableRow key={item.purchase_order_item_id}>
+                    <TableRow
+                      key={item.purchase_order_item_id}
+                      id={`grn-item-${index}`}
+                      className={
+                        highlightIndex === index ? 'bg-indigo-50 dark:bg-indigo-950/30' : undefined
+                      }
+                    >
                       <TableCell className="font-medium">{item.product_name}</TableCell>
                       <TableCell className="text-right">{item.ordered_quantity}</TableCell>
                       <TableCell className="text-right">{item.already_received}</TableCell>
@@ -358,11 +402,7 @@ function CreateGRNContent() {
             <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn`}>
               <Button variant="outline">Cancel</Button>
             </Link>
-            <Button
-              onClick={handleSaveDraft}
-              disabled={creating || posting}
-              className="gap-2"
-            >
+            <Button onClick={handleSaveDraft} disabled={creating || posting} className="gap-2">
               <Save className="h-4 w-4" />
               {creating ? 'Saving...' : 'Save & Post'}
             </Button>
@@ -384,9 +424,7 @@ function CreateGRNContent() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleSaveAndExit}>
-              Save as Draft & Exit
-            </AlertDialogCancel>
+            <AlertDialogCancel onClick={handleSaveAndExit}>Save as Draft & Exit</AlertDialogCancel>
             <AlertDialogAction onClick={handlePost} disabled={posting}>
               <Send className="h-4 w-4 mr-2" />
               {posting ? 'Posting...' : 'Post GRN'}

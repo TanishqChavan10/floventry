@@ -26,6 +26,9 @@ import { WarehouseModule } from '../warehouse/warehouse.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PurchaseOrdersModule } from '../purchase-orders/purchase-orders.module';
 import { StockHealthModule } from './stock-health/stock-health.module';
+import { BarcodeService } from './barcode.service';
+import { BarcodeLabelController } from './barcode-label.controller';
+import { BarcodeLabelService } from './barcode-label.service';
 
 @Module({
     imports: [
@@ -50,7 +53,10 @@ import { StockHealthModule } from './stock-health/stock-health.module';
         PurchaseOrdersModule,
         StockHealthModule, // Stock health intelligence
     ],
+    controllers: [BarcodeLabelController],
     providers: [
+        BarcodeService,
+        BarcodeLabelService,
         InventoryService,
         CategoryResolver,
         ProductResolver,

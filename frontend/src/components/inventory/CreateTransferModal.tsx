@@ -50,6 +50,7 @@ import {
 import { GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
 import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
 import { toast } from 'sonner';
+import { BarcodeScanInput } from '@/components/barcode/BarcodeScanInput';
 
 interface TransferItemInput {
   product_id: string;
@@ -84,6 +85,13 @@ export function CreateTransferModal({
   const [showPostDialog, setShowPostDialog] = useState(false);
   const [draftTransferId, setDraftTransferId] = useState<string | null>(null);
   const [hasPrefilledItem, setHasPrefilledItem] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (highlightIndex === null) return;
+    const el = document.getElementById(`transfer-item-${highlightIndex}`);
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [highlightIndex]);
 
   const { data: warehousesData, loading: loadingWarehouses } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
     variables: { slug: companySlug },
@@ -154,6 +162,43 @@ export function CreateTransferModal({
       (updated[index] as any)[field] = value;
     }
     setItems(updated);
+  };
+
+  const selectProductFromBarcode = (productId: string) => {
+    const stockItem = stock.find((s: any) => s.product.id === productId);
+    if (!stockItem) {
+      toast.error('Product not found in source warehouse stock');
+      return;
+    }
+
+    const existingIndex = items.findIndex((i) => i.product_id === productId);
+    if (existingIndex >= 0) {
+      setHighlightIndex(existingIndex);
+      toast.message('Product already added');
+      return;
+    }
+
+    const emptyIndex = items.findIndex((i) => !i.product_id);
+    if (emptyIndex >= 0) {
+      updateItem(emptyIndex, 'product_id', productId);
+      setHighlightIndex(emptyIndex);
+      return;
+    }
+
+    setItems((prev) => {
+      const next = [
+        ...prev,
+        {
+          product_id: stockItem.product.id,
+          quantity: 0,
+          product_name: stockItem.product.name,
+          available_stock: Number(stockItem.quantity),
+          sku: stockItem.product.sku,
+        },
+      ];
+      setHighlightIndex(next.length - 1);
+      return next;
+    });
   };
 
   const validateItems = () => {
@@ -318,6 +363,14 @@ export function CreateTransferModal({
                 </Button>
               </div>
 
+              <BarcodeScanInput
+                label="Scan barcode to add product"
+                description="Scan only selects a product row. Quantity remains manual."
+                disabled={!open || loadingStock}
+                onProductResolved={(product) => selectProductFromBarcode(product.id)}
+                onError={(message) => toast.error(message)}
+              />
+
               {items.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
                   No items added yet. Click &quot;Add Item&quot; to begin.
@@ -336,7 +389,15 @@ export function CreateTransferModal({
                     </TableHeader>
                     <TableBody>
                       {items.map((item, index) => (
-                        <TableRow key={index}>
+                        <TableRow
+                          key={index}
+                          id={`transfer-item-${index}`}
+                          className={
+                            highlightIndex === index
+                              ? 'bg-indigo-50 dark:bg-indigo-950/30'
+                              : undefined
+                          }
+                        >
                           <TableCell>
                             <Select
                               value={item.product_id}

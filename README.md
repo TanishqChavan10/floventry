@@ -91,3 +91,9 @@ App will be available at:
 
 ---
 
+## Design & Safety Docs
+
+* Barcode Phase 0 scope lock (must read before implementing barcode): `backend/docs/barcode/phase-0-scope-and-safety.md`
+
+---
+

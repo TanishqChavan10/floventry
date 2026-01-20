@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, Edit, Archive, Package, PackagePlus } from 'lucide-react';
+import { Plus, Search, Edit, Archive, Package, PackagePlus, FileDown } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import {
   GET_PRODUCTS,
@@ -46,6 +46,7 @@ import {
 import ProductModal from '@/components/catalog/ProductModal';
 import ProductDetailDrawer from '@/components/catalog/ProductDetailDrawer';
 import { BulkEntryModal } from '@/components/catalog/BulkEntryModal';
+import { GenerateBarcodeLabelsButton } from '@/components/barcode/GenerateBarcodeLabelsButton';
 
 function CatalogProductsContent() {
   const { slug } = useParams();
@@ -388,6 +389,7 @@ function CatalogProductsContent() {
                         <TableHead>Cost Price</TableHead>
                         <TableHead>Selling Price</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Label</TableHead>
                         {canEdit && <TableHead className="text-right">Actions</TableHead>}
                       </TableRow>
                     </TableHeader>
@@ -417,6 +419,20 @@ function CatalogProductsContent() {
                             <Badge variant={product.is_active ? 'default' : 'secondary'}>
                               {product.is_active ? 'Active' : 'Archived'}
                             </Badge>
+                          </TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            {product.barcode ? (
+                              <GenerateBarcodeLabelsButton
+                                productIds={[product.id]}
+                                filename={`barcode-label_${product.sku || product.id}.pdf`}
+                                variant="ghost"
+                                size="icon"
+                              >
+                                <FileDown className="h-4 w-4" />
+                              </GenerateBarcodeLabelsButton>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
                           </TableCell>
                           {canEdit && (
                             <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>

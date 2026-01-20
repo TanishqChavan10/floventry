@@ -2,15 +2,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { INestApplication } from '@nestjs/common';
-import { Stock } from '../src/inventory/entities/stock.entity';
-import { StockLot } from '../src/inventory/entities/stock-lot.entity';
-import { Product } from '../src/inventory/entities/product.entity';
-import { Category } from '../src/inventory/entities/category.entity';
-import { Warehouse } from '../src/warehouse/warehouse.entity';
-import { Company } from '../src/company/company.entity';
-import { testDatabaseConfig } from './test-config';
-import { MinimalTestFactory } from './factories/minimal-test.factory';
-import { InventoryAssertions } from './helpers/inventory-assertions';
+import { Stock } from './entities/stock.entity';
+import { StockLot } from './entities/stock-lot.entity';
+import { Product } from './entities/product.entity';
+import { Category } from './entities/category.entity';
+import { Warehouse } from '../warehouse/warehouse.entity';
+import { Company } from '../company/company.entity';
+import { testDatabaseConfig } from '../../test/test-config';
+import { MinimalTestFactory } from '../../test/factories/minimal-test.factory';
+import { InventoryAssertions } from '../../test/helpers/inventory-assertions';
 
 /**
  * CRITICAL INVARIANT TESTS

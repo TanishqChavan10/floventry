@@ -44,6 +44,7 @@ import { CompanyInventorySummaryFilterInput } from './dto/stock.input';
 import { StockHealthService } from './stock-health/stock-health.service';
 import { StockHealthState } from './stock-health/stock-health.types';
 import { calculateUsableStock, determineStockHealthState } from './stock-health/stock-health.utils';
+import { BarcodeService } from './barcode.service';
 
 @Injectable()
 export class InventoryService {
@@ -52,6 +53,7 @@ export class InventoryService {
         private categoryRepository: Repository<Category>,
         @InjectRepository(Product)
         private productRepository: Repository<Product>,
+        private readonly barcodeService: BarcodeService,
         @InjectRepository(Unit)
         private unitRepository: Repository<Unit>,
         private readonly stockHealthService: StockHealthService,
@@ -122,8 +124,15 @@ export class InventoryService {
     // --- Products ---
 
     async createProduct(input: CreateProductInput, companyId: string): Promise<Product> {
+        const normalized = await this.barcodeService.normalizeAndValidateForCompany({
+            companyId,
+            barcode: input.barcode,
+            alternateBarcodes: (input as any).alternate_barcodes,
+        });
+
         const product = this.productRepository.create({
             ...input,
+            ...normalized,
             company_id: companyId,
         });
         return this.productRepository.save(product);
@@ -151,10 +160,28 @@ export class InventoryService {
 
     async updateProduct(input: UpdateProductInput, companyId: string): Promise<Product> {
         const product = await this.findOneProduct(input.id, companyId);
+
+        const nextBarcode = input.barcode !== undefined ? input.barcode : product.barcode;
+        const nextAlternate = (input as any).alternate_barcodes !== undefined
+            ? (input as any).alternate_barcodes
+            : product.alternate_barcodes;
+
+        const normalized = await this.barcodeService.normalizeAndValidateForCompany({
+            companyId,
+            barcode: nextBarcode,
+            alternateBarcodes: nextAlternate,
+            excludeProductId: product.id,
+        });
+
         Object.assign(product, input);
+        Object.assign(product, normalized);
         // Restoring product when updating
         product.is_active = true;
         return this.productRepository.save(product);
+    }
+
+    async findProductByBarcode(barcode: string, companyId: string): Promise<Product> {
+        return this.barcodeService.findProductByBarcode({ companyId, barcode });
     }
 
     async removeProduct(id: string, companyId: string): Promise<boolean> {
