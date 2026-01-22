@@ -109,27 +109,39 @@ export class BarcodeService {
             throw new BadRequestException('Barcode is required');
         }
 
-        const matches = await this.productRepository
+        const baseQuery = this.productRepository
             .createQueryBuilder('p')
             .where('p.company_id = :companyId', { companyId: params.companyId })
-            .andWhere('p.is_active = true')
             .andWhere(
                 new Brackets((sub) => {
                     sub.where('p.barcode = :barcode', { barcode: normalized }).orWhere(':barcode = ANY(p.alternate_barcodes)', {
                         barcode: normalized,
                     });
                 }),
-            )
+            );
+
+        const activeMatches = await baseQuery
+            .clone()
+            .andWhere('p.is_active = true')
             .getMany();
 
-        if (matches.length === 0) {
-            throw new NotFoundException('No product found for barcode');
+        if (activeMatches.length > 1) {
+            throw new BadRequestException('Duplicate barcode: multiple active products match');
         }
 
-        if (matches.length > 1) {
-            throw new BadRequestException('Ambiguous barcode: multiple products match');
+        if (activeMatches.length === 1) {
+            return activeMatches[0];
         }
 
-        return matches[0];
+        const inactiveMatches = await baseQuery
+            .clone()
+            .andWhere('p.is_active = false')
+            .getMany();
+
+        if (inactiveMatches.length > 0) {
+            throw new BadRequestException('Barcode assigned to inactive product');
+        }
+
+        throw new NotFoundException('Barcode not found');
     }
 }
