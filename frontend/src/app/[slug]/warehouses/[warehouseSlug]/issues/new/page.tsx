@@ -7,6 +7,8 @@ import { useMutation, useQuery } from '@apollo/client';
 import { CREATE_ISSUE_NOTE_WITH_FEFO } from '@/lib/graphql/issues';
 import { GET_SALES_ORDERS } from '@/lib/graphql/sales';
 import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
+import { GET_WAREHOUSE_STOCK_HEALTH } from '@/lib/graphql/stock-health';
+import { differenceInCalendarDays, format } from 'date-fns';
 import { Loader2, Plus, Trash2, ArrowLeft, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +24,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { useWarehouse } from '@/context/warehouse-context';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { BarcodeScanInput } from '@/components/barcode/BarcodeScanInput';
+import { SafeBarcodeScanInput } from '@/components/barcode/SafeBarcodeScanInput';
 
 interface IssueItem {
   product_id: string;
@@ -63,15 +65,33 @@ export default function NewIssueNotePage() {
   const [items, setItems] = useState<IssueItem[]>([]);
   const [prefilledFromSalesOrderId, setPrefilledFromSalesOrderId] = useState<string>('');
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
+  const [lastScan, setLastScan] = useState<{
+    barcode: string;
+    productId: string;
+    productName: string;
+    sku: string;
+  } | null>(null);
 
   useEffect(() => {
     if (highlightIndex === null) return;
     const el = document.getElementById(`issue-item-${highlightIndex}`);
     el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+
+    // Give the browser a tick to render before focusing.
+    window.setTimeout(() => {
+      const qtyEl = document.getElementById(`issue-item-qty-${highlightIndex}`);
+      if (qtyEl instanceof HTMLInputElement) qtyEl.focus();
+    }, 50);
   }, [highlightIndex]);
 
   const { data: salesOrdersData } = useQuery(GET_SALES_ORDERS);
   const { data: warehouseStockData } = useQuery(GET_WAREHOUSE_STOCK, {
+    variables: { warehouseId: activeWarehouse?.id },
+    skip: !activeWarehouse?.id,
+    fetchPolicy: 'cache-and-network',
+  });
+
+  const { data: stockHealthData } = useQuery(GET_WAREHOUSE_STOCK_HEALTH, {
     variables: { warehouseId: activeWarehouse?.id },
     skip: !activeWarehouse?.id,
     fetchPolicy: 'cache-and-network',
@@ -93,6 +113,15 @@ export default function NewIssueNotePage() {
         availableQty: Number(s.quantity ?? 0),
       }));
   }, [warehouseStockData]);
+
+  const stockHealthByProductId = useMemo(() => {
+    const rows = (stockHealthData?.warehouseStockHealth ?? []) as any[];
+    const map = new Map<string, any>();
+    for (const row of rows) {
+      if (row?.productId) map.set(row.productId, row);
+    }
+    return map;
+  }, [stockHealthData]);
 
   const availableProductIds = useMemo(() => new Set(products.map((p) => p.id)), [products]);
 
@@ -239,6 +268,12 @@ export default function NewIssueNotePage() {
     });
   };
 
+  const canSubmit = useMemo(() => {
+    if (loading) return false;
+    if (!activeWarehouse?.id) return false;
+    return items.some((item) => Boolean(item.product_id) && Number(item.quantity) > 0);
+  }, [activeWarehouse?.id, items, loading]);
+
   return (
     <div className="space-y-8 p-6">
       <div className="flex items-center gap-4">
@@ -316,10 +351,17 @@ export default function NewIssueNotePage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <BarcodeScanInput
+            <SafeBarcodeScanInput
+              context="ISSUE"
               label="Scan barcode to select product"
-              description="Scan only selects a product. Quantity stays manual."
-              onProductResolved={(product) => {
+              description="Scan selects a product only — you still confirm quantity and submit."
+              onProductResolved={(product, scannedBarcode) => {
+                setLastScan({
+                  barcode: scannedBarcode,
+                  productId: product.id,
+                  productName: product.name,
+                  sku: product.sku,
+                });
                 selectProductFromBarcode(product.id);
               }}
               onError={(message) =>
@@ -330,6 +372,58 @@ export default function NewIssueNotePage() {
                 })
               }
             />
+
+            {lastScan ? (
+              <Alert className="border-slate-200 bg-slate-50 dark:bg-slate-900/40">
+                <Info className="h-4 w-4 text-slate-700 dark:text-slate-200" />
+                <AlertDescription className="text-slate-700 dark:text-slate-200">
+                  <div className="font-medium">
+                    Product selected via barcode. Please confirm quantity.
+                  </div>
+                  <div className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                    <div>
+                      <span className="font-medium">Selected:</span> {lastScan.productName} (
+                      {lastScan.sku})
+                    </div>
+                    {(() => {
+                      const health = stockHealthByProductId.get(lastScan.productId);
+                      if (!health) return null;
+                      const usableStock = Number(health.usableStock ?? 0);
+                      const nearestExpiryDate = health.nearestExpiryDate
+                        ? new Date(health.nearestExpiryDate)
+                        : null;
+                      const daysToExpiry = nearestExpiryDate
+                        ? differenceInCalendarDays(nearestExpiryDate, new Date())
+                        : null;
+
+                      const expiryLabel = nearestExpiryDate
+                        ? `${format(nearestExpiryDate, 'dd MMM yyyy')}${
+                            typeof daysToExpiry === 'number' ? ` (${daysToExpiry}d)` : ''
+                          }`
+                        : '—';
+
+                      const hasExpiryWarning = Number(health.expiringSoonQty ?? 0) > 0;
+
+                      return (
+                        <div className="mt-2 grid gap-1">
+                          <div>
+                            <span className="font-medium">Usable stock:</span> {usableStock}
+                          </div>
+                          <div>
+                            <span className="font-medium">Nearest expiry:</span> {expiryLabel}{' '}
+                            {hasExpiryWarning ? (
+                              <span className="ml-1 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                                expiring soon
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            ) : null}
 
             {items.length === 0 ? (
               <div className="text-center py-12 text-slate-500">
@@ -379,6 +473,7 @@ export default function NewIssueNotePage() {
                     <div className="w-32">
                       <Label className="mb-2 block">Quantity</Label>
                       <Input
+                        id={`issue-item-qty-${index}`}
                         type="number"
                         min="0"
                         step="0.01"
@@ -409,7 +504,7 @@ export default function NewIssueNotePage() {
               Cancel
             </Button>
           </Link>
-          <Button type="submit" disabled={loading} size="lg">
+          <Button type="submit" disabled={!canSubmit} size="lg">
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Create Issue Note
           </Button>

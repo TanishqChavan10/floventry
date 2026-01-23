@@ -50,7 +50,7 @@ import {
 import { GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
 import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
 import { toast } from 'sonner';
-import { BarcodeScanInput } from '@/components/barcode/BarcodeScanInput';
+import { SafeBarcodeScanInput } from '@/components/barcode/SafeBarcodeScanInput';
 
 interface TransferItemInput {
   product_id: string;
@@ -363,7 +363,8 @@ export function CreateTransferModal({
                 </Button>
               </div>
 
-              <BarcodeScanInput
+              <SafeBarcodeScanInput
+                context="TRANSFER"
                 label="Scan barcode to add product"
                 description="Scan only selects a product row. Quantity remains manual."
                 disabled={!open || loadingStock}

@@ -1,10 +1,12 @@
 import { Resolver, Query, Mutation, Args, Int, ID } from '@nestjs/graphql';
-import { UseGuards } from '@nestjs/common';
+import { UseGuards, BadRequestException } from '@nestjs/common';
 import { WarehouseService } from './warehouse.service';
 import { Warehouse } from './warehouse.entity';
 import { WarehouseSettings as WarehouseSettingsModel } from './warehouse-settings.model';
+import { UserWarehouse } from './models/user-warehouse.model';
 import { CreateWarehouseInput } from './dto/create-warehouse.input';
 import { UpdateWarehouseInput, UpdateWarehouseSettingsInput } from './dto/update-warehouse.input';
+import { AssignUserToWarehouseInput } from './dto/assign-user-warehouse.input';
 import { WarehouseKPIs, LowStockPreviewItem, DashboardMovementItem } from './dto/warehouse-dashboard.types';
 import {
     StockSnapshotResult,
@@ -57,6 +59,59 @@ export class WarehouseResolver {
         @Args('input') input: UpdateWarehouseSettingsInput,
     ): Promise<WarehouseSettingsModel> {
         return this.warehouseService.updateSettings(warehouseId, input);
+    }
+
+    @Mutation(() => Boolean)
+    @UseGuards(ClerkAuthGuard, RolesGuard)
+    @Roles(Role.OWNER, Role.ADMIN)
+    async deleteWarehouse(
+        @Args('id', { type: () => ID }) id: string,
+    ): Promise<boolean> {
+        await this.warehouseService.remove(id);
+        return true;
+    }
+
+    @Mutation(() => UserWarehouse)
+    @UseGuards(ClerkAuthGuard, RolesGuard)
+    @Roles(Role.OWNER, Role.ADMIN)
+    async assignUserToWarehouse(
+        @Args('warehouseId', { type: () => ID }) warehouseId: string,
+        @Args('input') input: AssignUserToWarehouseInput,
+    ): Promise<any> {
+        const assignment = await this.warehouseService.assignUser(
+            warehouseId,
+            input.userId,
+            input.role,
+        );
+
+        return {
+            id: assignment.id,
+            userId: assignment.user_id,
+            warehouseId: assignment.warehouse_id,
+            role: assignment.role,
+            isManagerOfWarehouse: assignment.is_manager_of_warehouse,
+            createdAt: assignment.created_at,
+        };
+    }
+
+    @Mutation(() => Boolean)
+    @UseGuards(ClerkAuthGuard, RolesGuard)
+    @Roles(Role.OWNER, Role.ADMIN)
+    async removeUserFromWarehouse(
+        @Args('warehouseId', { type: () => ID }) warehouseId: string,
+        @Args('userId', { type: () => ID }) userId: string,
+    ): Promise<boolean> {
+        await this.warehouseService.removeUser(warehouseId, userId);
+        return true;
+    }
+
+    @Mutation(() => Warehouse)
+    @UseGuards(ClerkAuthGuard, RolesGuard)
+    @Roles(Role.OWNER) // OWNER only
+    async reactivateWarehouse(
+        @Args('id', { type: () => ID }) id: string,
+    ): Promise<Warehouse> {
+        return this.warehouseService.reactivate(id);
     }
 
     @Query(() => Warehouse)

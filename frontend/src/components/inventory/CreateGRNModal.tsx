@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery } from '@apollo/client';
+import { differenceInCalendarDays, format } from 'date-fns';
 import { useWarehouse } from '@/context/warehouse-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,13 +45,17 @@ import {
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { CREATE_GRN, POST_GRN, GET_GRNS } from '@/lib/graphql/grn';
 import { GET_PURCHASE_ORDERS } from '@/lib/graphql/purchase-orders';
+import { GET_WAREHOUSE_STOCK_HEALTH } from '@/lib/graphql/stock-health';
 import { toast } from 'sonner';
+import { SafeBarcodeScanInput } from '@/components/barcode/SafeBarcodeScanInput';
 
 interface GRNItemInput {
   purchase_order_item_id: string;
+  product_id: string;
   received_quantity: number;
   expiry_date?: string;
   product_name?: string;
+  sku?: string;
   ordered_quantity?: number;
   already_received?: number;
   remaining_quantity?: number;
@@ -74,6 +79,13 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
   const [items, setItems] = useState<GRNItemInput[]>([]);
   const [showPostDialog, setShowPostDialog] = useState(false);
   const [draftGRNId, setDraftGRNId] = useState<string | null>(null);
+  const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
+  const [lastScan, setLastScan] = useState<{
+    barcode: string;
+    productId: string;
+    productName: string;
+    sku: string;
+  } | null>(null);
 
   const { data: posData, loading: loadingPOs } = useQuery(GET_PURCHASE_ORDERS, {
     variables: {
@@ -98,6 +110,21 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
     (po: any) => po.warehouse?.id === activeWarehouse?.id,
   );
 
+  const { data: stockHealthData } = useQuery(GET_WAREHOUSE_STOCK_HEALTH, {
+    variables: { warehouseId: activeWarehouse?.id || '' },
+    skip: !activeWarehouse?.id,
+    fetchPolicy: 'cache-and-network',
+  });
+
+  const stockHealthByProductId = useMemo(() => {
+    const rows = (stockHealthData?.warehouseStockHealth ?? []) as any[];
+    const map = new Map<string, any>();
+    for (const row of rows) {
+      if (row?.productId) map.set(row.productId, row);
+    }
+    return map;
+  }, [stockHealthData]);
+
   // Load PO items when PO is selected
   useEffect(() => {
     if (selectedPO && posData?.purchaseOrders) {
@@ -105,9 +132,11 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
       if (po && po.items) {
         const poItems = po.items.map((item: any) => ({
           purchase_order_item_id: item.id,
+          product_id: item.product.id,
           received_quantity: 0,
           expiry_date: '',
           product_name: item.product.name,
+          sku: item.product.sku,
           ordered_quantity: item.ordered_quantity,
           already_received: item.received_quantity || 0,
           remaining_quantity: item.ordered_quantity - (item.received_quantity || 0),
@@ -118,6 +147,16 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
       setItems([]);
     }
   }, [selectedPO, posData]);
+
+  useEffect(() => {
+    if (highlightIndex === null) return;
+    const row = document.getElementById(`grn-item-${highlightIndex}`);
+    row?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const qtyInput = document.getElementById(
+      `grn-item-qty-${highlightIndex}`,
+    ) as HTMLInputElement | null;
+    qtyInput?.focus();
+  }, [highlightIndex]);
 
   const updateItemQuantity = (index: number, quantity: number) => {
     const updated = [...items];
@@ -269,6 +308,76 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
               )}
             </div>
 
+            {/* Barcode Scan (PO-scoped suggestion only) */}
+            {items.length > 0 ? (
+              <div className="space-y-3">
+                <SafeBarcodeScanInput
+                  context="GRN"
+                  label="Scan barcode to find PO item"
+                  description="Scan only highlights the matching PO line. Quantity and expiry stay manual."
+                  disabled={!selectedPO}
+                  onProductResolved={(product, scannedBarcode) => {
+                    setLastScan({
+                      barcode: scannedBarcode,
+                      productId: product.id,
+                      productName: product.name,
+                      sku: product.sku,
+                    });
+
+                    const idx = items.findIndex((i) => i.product_id === product.id);
+                    if (idx < 0) {
+                      toast.error('Scanned product is not in this purchase order');
+                      return;
+                    }
+                    setHighlightIndex(idx);
+                  }}
+                  onError={(message) => toast.error(message)}
+                />
+
+                {lastScan ? (
+                  <div className="rounded-md border bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:bg-slate-900/40 dark:text-slate-200">
+                    <div className="font-medium">
+                      Product selected via barcode. Please confirm quantities.
+                    </div>
+                    <div className="mt-1 text-slate-600 dark:text-slate-300">
+                      Selected: {lastScan.productName} ({lastScan.sku})
+                    </div>
+                    {(() => {
+                      const health = stockHealthByProductId.get(lastScan.productId);
+                      if (!health) return null;
+                      const usableStock = Number(health.usableStock ?? 0);
+                      const nearestExpiryDate = health.nearestExpiryDate
+                        ? new Date(health.nearestExpiryDate)
+                        : null;
+                      const daysToExpiry = nearestExpiryDate
+                        ? differenceInCalendarDays(nearestExpiryDate, new Date())
+                        : null;
+                      const expiryLabel = nearestExpiryDate
+                        ? `${format(nearestExpiryDate, 'dd MMM yyyy')}${
+                            typeof daysToExpiry === 'number' ? ` (${daysToExpiry}d)` : ''
+                          }`
+                        : '—';
+                      const hasExpiryWarning = Number(health.expiringSoonQty ?? 0) > 0;
+
+                      return (
+                        <div className="mt-2 grid gap-1">
+                          <div>Current usable stock here: {usableStock}</div>
+                          <div>
+                            Nearest expiry here: {expiryLabel}
+                            {hasExpiryWarning ? (
+                              <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                                expiring soon
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
             {/* Items Table */}
             {items.length > 0 && (
               <div className="border rounded-lg">
@@ -286,8 +395,21 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
                     </TableHeader>
                     <TableBody>
                       {items.map((item, index) => (
-                        <TableRow key={item.purchase_order_item_id}>
-                          <TableCell className="font-medium">{item.product_name}</TableCell>
+                        <TableRow
+                          key={item.purchase_order_item_id}
+                          id={`grn-item-${index}`}
+                          className={
+                            highlightIndex === index
+                              ? 'bg-indigo-50 dark:bg-indigo-950/30'
+                              : undefined
+                          }
+                        >
+                          <TableCell className="font-medium">
+                            {item.product_name}{' '}
+                            {item.sku ? (
+                              <span className="text-xs text-muted-foreground">({item.sku})</span>
+                            ) : null}
+                          </TableCell>
                           <TableCell className="text-right">{item.ordered_quantity}</TableCell>
                           <TableCell className="text-right">{item.already_received}</TableCell>
                           <TableCell className="text-right font-semibold">
@@ -295,6 +417,7 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
                           </TableCell>
                           <TableCell className="text-right">
                             <Input
+                              id={`grn-item-qty-${index}`}
                               type="number"
                               min="0"
                               max={item.remaining_quantity}

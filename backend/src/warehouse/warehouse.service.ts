@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Warehouse } from './warehouse.entity';
@@ -255,11 +255,133 @@ export class WarehouseService {
   }
 
   async remove(id: string): Promise<void> {
+    // Pre-delete validation: Check warehouse exists
+    const warehouse = await this.warehouseRepository.findOne({
+      where: { id },
+    });
+
+    if (!warehouse) {
+      throw new NotFoundException(`Warehouse with ID ${id} not found`);
+    }
+
+    // ========================================
+    // PRE-DELETE VALIDATION (MANDATORY)
+    // ========================================
+
+    // 1. Check for active stock (quantity > 0)
+    const activeStockCount = await this.stockRepository
+      .createQueryBuilder('stock')
+      .where('stock.warehouse_id = :warehouseId', { warehouseId: id })
+      .andWhere('stock.quantity > 0')
+      .getCount();
+
+    if (activeStockCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete warehouse: ${activeStockCount} product(s) still have active stock. Please transfer or adjust out all stock before deleting.`,
+      );
+    }
+
+    // 2. Check for stock lots with quantity > 0
+    const activeLotsCount = await this.dataSource
+      .getRepository('StockLot')
+      .createQueryBuilder('lot')
+      .where('lot.warehouse_id = :warehouseId', { warehouseId: id })
+      .andWhere('lot.quantity > 0')
+      .getCount();
+
+    if (activeLotsCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete warehouse: ${activeLotsCount} stock lot(s) still have active inventory. Please clear all lots before deleting.`,
+      );
+    }
+
+    // 3. Check for in-progress GRNs (DRAFT status)
+    const draftGRNCount = await this.dataSource
+      .getRepository('GoodsReceiptNote')
+      .createQueryBuilder('grn')
+      .where('grn.warehouse_id = :warehouseId', { warehouseId: id })
+      .andWhere('grn.status = :status', { status: 'DRAFT' })
+      .getCount();
+
+    if (draftGRNCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete warehouse: ${draftGRNCount} draft GRN(s) pending. Please post or cancel all draft GRNs before deleting.`,
+      );
+    }
+
+    // 4. Check for in-progress Issue Notes (DRAFT status)
+    const draftIssueCount = await this.dataSource
+      .getRepository('IssueNote')
+      .createQueryBuilder('issue')
+      .where('issue.warehouse_id = :warehouseId', { warehouseId: id })
+      .andWhere('issue.status = :status', { status: 'DRAFT' })
+      .getCount();
+
+    if (draftIssueCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete warehouse: ${draftIssueCount} draft issue note(s) pending. Please post or cancel all draft issues before deleting.`,
+      );
+    }
+
+    // 5. Check for in-progress Transfers (DRAFT status, source or destination)
+    const draftTransferCount = await this.dataSource
+      .getRepository('WarehouseTransfer')
+      .createQueryBuilder('transfer')
+      .where(
+        '(transfer.source_warehouse_id = :warehouseId OR transfer.destination_warehouse_id = :warehouseId)',
+        { warehouseId: id },
+      )
+      .andWhere('transfer.status = :status', { status: 'DRAFT' })
+      .getCount();
+
+    if (draftTransferCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete warehouse: ${draftTransferCount} draft transfer(s) pending. Please post or cancel all draft transfers before deleting.`,
+      );
+    }
+
+    // ========================================
+    // SOFT DELETE (All validations passed)
+    // ========================================
+
+    // Set warehouse to inactive before soft delete
+    warehouse.status = 'inactive';
+    await this.warehouseRepository.save(warehouse);
+
+    // Soft delete the warehouse
     const result = await this.warehouseRepository.softDelete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Warehouse with ID ${id} not found`);
     }
   }
+
+  async reactivate(id: string): Promise<Warehouse> {
+    // Check if warehouse exists (including soft-deleted ones)
+    const warehouse = await this.warehouseRepository.findOne({
+      where: { id },
+      withDeleted: true, // Include soft-deleted records
+    });
+
+    if (!warehouse) {
+      throw new NotFoundException(`Warehouse with ID ${id} not found`);
+    }
+
+    // Check if warehouse is actually deleted/inactive
+    if (warehouse.status === 'active' && !warehouse.deleted_at) {
+      throw new BadRequestException('Warehouse is already active');
+    }
+
+    // Restore warehouse
+    warehouse.status = 'active';
+
+    await this.warehouseRepository.save(warehouse);
+
+    // Restore from soft delete
+    await this.warehouseRepository.restore(id);
+
+    return warehouse;
+  }
+
 
   async findByUser(userId: string, companyId?: string): Promise<Warehouse[]> {
     const userWarehouses = await this.userWarehouseRepository.find({

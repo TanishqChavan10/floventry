@@ -244,3 +244,39 @@ export const GET_COMPANY_STATS = gql`
     }
   }
 `;
+
+export const DELETE_WAREHOUSE = gql`
+  mutation DeleteWarehouse($id: ID!) {
+    deleteWarehouse(id: $id)
+  }
+`;
+
+export const ASSIGN_USER_TO_WAREHOUSE = gql`
+  mutation AssignUserToWarehouse($warehouseId: ID!, $input: AssignUserToWarehouseInput!) {
+    assignUserToWarehouse(warehouseId: $warehouseId, input: $input) {
+      id
+      userId
+      warehouseId
+      role
+      isManagerOfWarehouse
+      createdAt
+    }
+  }
+`;
+
+export const REMOVE_USER_FROM_WAREHOUSE = gql`
+  mutation RemoveUserFromWarehouse($warehouseId: ID!, $userId: ID!) {
+    removeUserFromWarehouse(warehouseId: $warehouseId, userId: $userId)
+  }
+`;
+
+export const REACTIVATE_WAREHOUSE = gql`
+  mutation ReactivateWarehouse($id: ID!) {
+    reactivateWarehouse(id: $id) {
+      id
+      name
+      status
+      deleted_at
+    }
+  }
+`;

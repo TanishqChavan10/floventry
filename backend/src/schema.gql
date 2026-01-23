@@ -72,6 +72,17 @@ type AdjustmentTrendData {
   date: String!
 }
 
+input AssignUserToWarehouseInput {
+  role: String
+  userId: ID!
+}
+
+type BarcodeLabelResult {
+  filename: String!
+  mimeType: String!
+  pdfData: String!
+}
+
 type Category {
   company: Company!
   company_id: String!
@@ -425,6 +436,10 @@ enum GRNStatus {
   POSTED
 }
 
+input GenerateBarcodeLabelsInput {
+  productIds: [ID!]!
+}
+
 type GoodsReceiptNote {
   created_at: DateTime!
   grn_number: String!
@@ -559,6 +574,7 @@ type Mutation {
   acceptInvite(input: AcceptInviteInput!): UserCompany!
   adjustStock(input: AdjustStockInput!): Stock!
   archiveSupplier(id: String!): Supplier!
+  assignUserToWarehouse(input: AssignUserToWarehouseInput!, warehouseId: ID!): UserWarehouse!
   cancelGRN(id: String!): GoodsReceiptNote!
   cancelInvite(inviteId: String!): Boolean!
   cancelIssueNote(id: ID!): IssueNote!
@@ -581,6 +597,7 @@ type Mutation {
   createUnit(input: CreateUnitInput!): Unit!
   createWarehouse(input: CreateWarehouseInput!): Warehouse!
   createWarehouseTransfer(input: CreateTransferInput!): WarehouseTransfer!
+  deleteWarehouse(id: ID!): Boolean!
   downloadCategoryTemplate: String!
   downloadOpeningStockTemplate: String!
   downloadProductTemplate: String!
@@ -598,17 +615,20 @@ type Mutation {
   exportInventorySummary(filters: ExportFiltersInput): String!
   exportStockMovements(filters: ExportFiltersInput, warehouseId: String!): String!
   exportStockSnapshot(filters: ExportFiltersInput, warehouseId: String!): String!
+  generateBarcodeLabels(input: GenerateBarcodeLabelsInput!): BarcodeLabelResult!
   markAllNotificationsAsRead: Int!
   markNotificationAsRead(id: String!): Notification!
   markPurchaseOrderOrdered(id: String!): PurchaseOrder!
   postGRN(id: String!): GoodsReceiptNote!
   postIssueNote(id: ID!): IssueNote!
   postWarehouseTransfer(id: String!): WarehouseTransfer!
+  reactivateWarehouse(id: ID!): Warehouse!
   removeCategory(id: String!): Boolean!
   removeMemberValidated(membershipId: String!): Boolean!
   removeProduct(id: String!): Boolean!
   removeUnit(id: String!): Boolean!
   removeUser(membershipId: String!): Boolean!
+  removeUserFromWarehouse(userId: ID!, warehouseId: ID!): Boolean!
   sendInvite(input: SendInviteInput!): Invite!
   switchCompany(companyId: String!): SwitchCompanyResponse!
   switchWarehouse(warehouseId: String!): Boolean!
@@ -1303,6 +1323,15 @@ type UserModel {
   preferences: JSON
   updated_at: DateTime!
   warehouses: [UserWarehouseInfo!]
+}
+
+type UserWarehouse {
+  createdAt: DateTime!
+  id: ID!
+  isManagerOfWarehouse: Boolean!
+  role: String
+  userId: ID!
+  warehouseId: ID!
 }
 
 type UserWarehouseInfo {

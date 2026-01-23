@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
+import { differenceInCalendarDays, format } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import {
   Dialog,
@@ -23,7 +24,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { CREATE_OPENING_STOCK } from '@/lib/graphql/inventory';
-import { BarcodeScanInput } from '@/components/barcode/BarcodeScanInput';
+import { SafeBarcodeScanInput } from '@/components/barcode/SafeBarcodeScanInput';
+import { GET_WAREHOUSE_STOCK_HEALTH } from '@/lib/graphql/stock-health';
 
 import { GET_PRODUCTS } from '@/lib/graphql/catalog';
 
@@ -36,6 +38,13 @@ interface OpeningStockModalProps {
 export default function OpeningStockModal({ warehouseId, open, onClose }: OpeningStockModalProps) {
   const { toast } = useToast();
 
+  const [lastScan, setLastScan] = useState<{
+    barcode: string;
+    productId: string;
+    productName: string;
+    sku: string;
+  } | null>(null);
+
   const [formData, setFormData] = useState({
     product_id: '',
     quantity: '',
@@ -47,6 +56,21 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
   });
 
   const { data: productsData } = useQuery(GET_PRODUCTS);
+
+  const { data: stockHealthData } = useQuery(GET_WAREHOUSE_STOCK_HEALTH, {
+    variables: { warehouseId },
+    skip: !warehouseId,
+    fetchPolicy: 'cache-and-network',
+  });
+
+  const stockHealthByProductId = useMemo(() => {
+    const rows = (stockHealthData?.warehouseStockHealth ?? []) as any[];
+    const map = new Map<string, any>();
+    for (const row of rows) {
+      if (row?.productId) map.set(row.productId, row);
+    }
+    return map;
+  }, [stockHealthData]);
 
   const [createOpeningStock, { loading }] = useMutation(CREATE_OPENING_STOCK, {
     onCompleted: () => {
@@ -73,6 +97,21 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
       });
     },
   });
+
+  const canSubmit = useMemo(() => {
+    if (loading) return false;
+    if (!warehouseId) return false;
+    if (!formData.product_id) return false;
+
+    // Quantity must be explicitly entered; do not allow barcode to imply it.
+    if (formData.quantity.trim() === '') return false;
+
+    const qty = Number(formData.quantity);
+    if (!Number.isFinite(qty)) return false;
+    if (qty < 0) return false;
+
+    return true;
+  }, [formData.product_id, formData.quantity, loading, warehouseId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,10 +168,17 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
           </DialogHeader>
 
           <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4">
-            <BarcodeScanInput
+            <SafeBarcodeScanInput
+              context="OPENING_STOCK"
               label="Scan barcode to select product"
               description="Scan only selects the product. Quantity and expiry stay manual."
-              onProductResolved={(product) => {
+              onProductResolved={(product, scannedBarcode) => {
+                setLastScan({
+                  barcode: scannedBarcode,
+                  productId: product.id,
+                  productName: product.name,
+                  sku: product.sku,
+                });
                 setFormData((prev) => ({ ...prev, product_id: product.id }));
               }}
               onError={(message) =>
@@ -143,6 +189,48 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
                 })
               }
             />
+
+            {lastScan ? (
+              <div className="rounded-md border bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:bg-slate-900/40 dark:text-slate-200">
+                <div className="font-medium">
+                  Product selected via barcode. Please confirm inputs.
+                </div>
+                <div className="mt-1 text-slate-600 dark:text-slate-300">
+                  Selected: {lastScan.productName} ({lastScan.sku})
+                </div>
+                {(() => {
+                  const health = stockHealthByProductId.get(lastScan.productId);
+                  if (!health) return null;
+                  const usableStock = Number(health.usableStock ?? 0);
+                  const nearestExpiryDate = health.nearestExpiryDate
+                    ? new Date(health.nearestExpiryDate)
+                    : null;
+                  const daysToExpiry = nearestExpiryDate
+                    ? differenceInCalendarDays(nearestExpiryDate, new Date())
+                    : null;
+                  const expiryLabel = nearestExpiryDate
+                    ? `${format(nearestExpiryDate, 'dd MMM yyyy')}${
+                        typeof daysToExpiry === 'number' ? ` (${daysToExpiry}d)` : ''
+                      }`
+                    : '—';
+                  const hasExpiryWarning = Number(health.expiringSoonQty ?? 0) > 0;
+
+                  return (
+                    <div className="mt-2 grid gap-1">
+                      <div>Current usable stock here: {usableStock}</div>
+                      <div>
+                        Nearest expiry here: {expiryLabel}
+                        {hasExpiryWarning ? (
+                          <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                            expiring soon
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : null}
 
             {/* Product Selection */}
             <div className="space-y-2">
@@ -270,7 +358,7 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={!canSubmit}>
               {loading ? 'Creating...' : 'Create Opening Stock'}
             </Button>
           </DialogFooter>

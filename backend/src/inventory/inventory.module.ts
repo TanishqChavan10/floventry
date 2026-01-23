@@ -29,6 +29,7 @@ import { StockHealthModule } from './stock-health/stock-health.module';
 import { BarcodeService } from './barcode.service';
 import { BarcodeLabelController } from './barcode-label.controller';
 import { BarcodeLabelService } from './barcode-label.service';
+import { BarcodeLabelResolver } from './barcode-label.resolver';
 
 @Module({
     imports: [
@@ -57,6 +58,7 @@ import { BarcodeLabelService } from './barcode-label.service';
     providers: [
         BarcodeService,
         BarcodeLabelService,
+        BarcodeLabelResolver,
         InventoryService,
         CategoryResolver,
         ProductResolver,

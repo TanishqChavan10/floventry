@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { WarehouseAccessList } from '@/components/warehouse/WarehouseAccessList';
+import { DeleteWarehouseDialog } from '@/components/warehouses/DeleteWarehouseDialog';
 import {
   Select,
   SelectContent,
@@ -44,12 +45,14 @@ import {
   CalendarClock,
   Star,
   Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import {
   GET_WAREHOUSE_WITH_SETTINGS,
   UPDATE_WAREHOUSE,
   UPDATE_WAREHOUSE_SETTINGS,
   GET_WAREHOUSES_BY_COMPANY,
+  REACTIVATE_WAREHOUSE,
 } from '@/lib/graphql/company';
 
 function WarehouseSettingsContent() {
@@ -80,6 +83,7 @@ function WarehouseSettingsContent() {
   const [updateWarehouse, { loading: updatingWarehouse }] = useMutation(UPDATE_WAREHOUSE);
   const [updateWarehouseSettings, { loading: updatingSettings }] =
     useMutation(UPDATE_WAREHOUSE_SETTINGS);
+  const [reactivateWarehouse, { loading: reactivating }] = useMutation(REACTIVATE_WAREHOUSE);
 
   // Form state - Warehouse
   const [name, setName] = useState('');
@@ -104,6 +108,9 @@ function WarehouseSettingsContent() {
   const [allowInboundTransfers, setAllowInboundTransfers] = useState(true);
   const [allowOutboundTransfers, setAllowOutboundTransfers] = useState(true);
   const [requireTransferApproval, setRequireTransferApproval] = useState(false);
+
+  // Dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Initialize form when data loads
   useEffect(() => {
@@ -186,6 +193,22 @@ function WarehouseSettingsContent() {
     } catch (error: any) {
       console.error('Error updating warehouse settings:', error);
       toast.error(error.message || 'Failed to update warehouse settings');
+    }
+  };
+
+  const handleReactivate = async () => {
+    if (!warehouse) return;
+
+    try {
+      await reactivateWarehouse({
+        variables: { id: warehouse.id },
+      });
+
+      toast.success('Warehouse reactivated successfully');
+      refetch();
+    } catch (error: any) {
+      console.error('Error reactivating warehouse:', error);
+      toast.error(error.message || 'Failed to reactivate warehouse');
     }
   };
 
@@ -620,6 +643,34 @@ function WarehouseSettingsContent() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {warehouse.status === 'inactive' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <p className="font-medium text-green-600 dark:text-green-400">
+                            Reactivate Warehouse
+                          </p>
+                          <p className="text-sm text-green-600/70 dark:text-green-400/70">
+                            Restore this archived warehouse and make it available for operations again.
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          className="border-green-600 text-green-600 hover:bg-green-50"
+                          onClick={handleReactivate}
+                          disabled={reactivating}
+                        >
+                          {reactivating ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                          )}
+                          Reactivate
+                        </Button>
+                      </div>
+                      <Separator className="bg-red-200 dark:bg-red-800/30" />
+                    </>
+                  )}
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       <p className="font-medium text-slate-900 dark:text-white">
@@ -640,7 +691,11 @@ function WarehouseSettingsContent() {
                         be undone.
                       </p>
                     </div>
-                    <Button variant="destructive" className="bg-red-600 hover:bg-red-700">
+                    <Button 
+                      variant="destructive" 
+                      className="bg-red-600 hover:bg-red-700"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                    >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete Warehouse
                     </Button>
@@ -651,6 +706,21 @@ function WarehouseSettingsContent() {
           )}
         </Tabs>
       </main>
+
+      {/* Delete Warehouse Dialog */}
+      {warehouse && (
+        <DeleteWarehouseDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          warehouseId={warehouse.id}
+          warehouseName={warehouse.name}
+          companySlug={companySlug}
+          onSuccess={() => {
+            // Redirect to warehouse list or company dashboard after successful deletion
+            window.location.href = `/${companySlug}/warehouses`;
+          }}
+        />
+      )}
     </div>
   );
 }

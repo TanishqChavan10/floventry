@@ -40,7 +40,7 @@ import { CREATE_GRN, POST_GRN, GET_GRNS } from '@/lib/graphql/grn';
 import { GET_PURCHASE_ORDERS } from '@/lib/graphql/purchase-orders';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { BarcodeScanInput } from '@/components/barcode/BarcodeScanInput';
+import { SafeBarcodeScanInput } from '@/components/barcode/SafeBarcodeScanInput';
 
 interface GRNItemInput {
   purchase_order_item_id: string;
@@ -66,6 +66,12 @@ function CreateGRNContent() {
   const [showPostDialog, setShowPostDialog] = useState(false);
   const [draftGRNId, setDraftGRNId] = useState<string | null>(null);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
+  const [lastScan, setLastScan] = useState<{
+    barcode: string;
+    productId: string;
+    productName: string;
+    sku: string;
+  } | null>(null);
 
   // Fetch ORDERED POs for this warehouse
   const { data: posData, loading: loadingPOs } = useQuery(GET_PURCHASE_ORDERS, {
@@ -90,11 +96,6 @@ function CreateGRNContent() {
   const purchaseOrders = (posData?.purchaseOrders || []).filter(
     (po: any) => po.warehouse?.id === activeWarehouse?.id,
   );
-
-  // Debug logging
-  console.log('[GRN Create] Active warehouse:', activeWarehouse);
-  console.log('[GRN Create] All POs:', posData?.purchaseOrders);
-  console.log('[GRN Create] Filtered POs:', purchaseOrders);
 
   // When PO is selected, load its items
   useEffect(() => {
@@ -122,6 +123,10 @@ function CreateGRNContent() {
     if (highlightIndex === null) return;
     const el = document.getElementById(`grn-item-${highlightIndex}`);
     el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const qtyInput = document.getElementById(
+      `grn-item-qty-${highlightIndex}`,
+    ) as HTMLInputElement | null;
+    qtyInput?.focus();
   }, [highlightIndex]);
 
   const highlightProductFromBarcode = (productId: string) => {
@@ -131,7 +136,6 @@ function CreateGRNContent() {
       return;
     }
     setHighlightIndex(index);
-    toast.success('Product selected');
   };
 
   const updateItemQuantity = (index: number, quantity: number) => {
@@ -313,12 +317,35 @@ function CreateGRNContent() {
               <CardTitle>Received Items</CardTitle>
             </CardHeader>
             <CardContent>
-              <BarcodeScanInput
-                label="Scan barcode to select item"
-                description="Scan highlights the matching PO item. Quantity and expiry stay manual."
-                onProductResolved={(product) => highlightProductFromBarcode(product.id)}
-                onError={(message) => toast.error(message)}
-              />
+              <div className="space-y-3">
+                <SafeBarcodeScanInput
+                  context="GRN"
+                  label="Scan barcode to select item"
+                  description="Scan highlights the matching PO item. Quantity and expiry stay manual."
+                  disabled={!selectedPO}
+                  onProductResolved={(product, scannedBarcode) => {
+                    setLastScan({
+                      barcode: scannedBarcode,
+                      productId: product.id,
+                      productName: product.name,
+                      sku: product.sku,
+                    });
+                    highlightProductFromBarcode(product.id);
+                  }}
+                  onError={(message) => toast.error(message)}
+                />
+
+                {lastScan ? (
+                  <div className="rounded-md border bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:bg-slate-900/40 dark:text-slate-200">
+                    <div className="font-medium">
+                      Product selected via barcode. Please confirm quantities.
+                    </div>
+                    <div className="mt-1 text-slate-600 dark:text-slate-300">
+                      Selected: {lastScan.productName} ({lastScan.sku})
+                    </div>
+                  </div>
+                ) : null}
+              </div>
 
               <Table>
                 <TableHeader>
@@ -348,6 +375,7 @@ function CreateGRNContent() {
                       </TableCell>
                       <TableCell className="text-right">
                         <Input
+                          id={`grn-item-qty-${index}`}
                           type="number"
                           min="0"
                           max={item.remaining_quantity}

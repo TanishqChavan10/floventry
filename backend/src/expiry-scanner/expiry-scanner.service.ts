@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, Not, IsNull } from 'typeorm';
 import { StockLot } from '../inventory/entities/stock-lot.entity';
@@ -20,18 +20,9 @@ export class ExpiryScannerService implements OnModuleInit {
         @InjectRepository(StockLot)
         private stockLotRepository: Repository<StockLot>,
         private notificationsService: NotificationsService,
-        private schedulerRegistry: SchedulerRegistry,
     ) { }
 
     async onModuleInit(): Promise<void> {
-        // Startup visibility: confirm cron is registered.
-        try {
-            this.schedulerRegistry.getCronJob('daily-expiry-scan');
-            this.logger.log('Cron job registered: daily-expiry-scan');
-        } catch {
-            this.logger.warn('Cron job not registered: daily-expiry-scan');
-        }
-
         // Optional dev/test hook to prove the scanner executes without waiting for midnight UTC.
         if (
             process.env.NODE_ENV !== 'production' &&

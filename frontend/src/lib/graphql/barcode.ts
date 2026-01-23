@@ -11,3 +11,13 @@ export const PRODUCT_BY_BARCODE = gql`
     }
   }
 `;
+
+export const GENERATE_BARCODE_LABELS = gql`
+  mutation GenerateBarcodeLabels($input: GenerateBarcodeLabelsInput!) {
+    generateBarcodeLabels(input: $input) {
+      pdfData
+      filename
+      mimeType
+    }
+  }
+`;
