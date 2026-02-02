@@ -4,6 +4,7 @@ import AuthGuard from '@/components/AuthGuard';
 import { ManagerGuard } from '@/components/guards/ManagerGuard';
 import { Sidebar, SidebarBody, SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { Navbar } from '@/components/navigation/Navbar';
+import { IconRail } from '@/components/navigation/IconRail';
 import { SidebarSection } from '@/components/navigation/SidebarSection';
 import { SidebarItem } from '@/components/navigation/SidebarItem';
 import {
@@ -33,12 +34,12 @@ function BottomSection() {
   if (!user) return null;
 
   return (
-    <div className="border-t border-neutral-200 dark:border-neutral-700 pt-2">
+    <div className="border-t border-neutral-200 pt-2">
       <div
         className={cn(
           'flex items-center rounded-xl transition-all duration-300 ease-out group',
           open ? 'gap-3 px-3 mx-2 py-2.5' : 'justify-center mx-1 px-0 py-2.5',
-          'hover:bg-neutral-50 dark:hover:bg-neutral-800/50',
+          'hover:bg-neutral-50',
         )}
       >
         {/* Clerk UserButton with custom appearance */}
@@ -47,7 +48,7 @@ function BottomSection() {
             appearance={{
               elements: {
                 avatarBox: 'h-9 w-9',
-                userButtonPopoverCard: 'shadow-lg',
+                userButtonPopoverCard: 'shadow-none border border-neutral-200',
               },
             }}
             afterSignOutUrl="/auth/sign-in"
@@ -65,10 +66,10 @@ function BottomSection() {
         {/* User Info - Only visible when sidebar is open */}
         {open && (
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
+            <p className="text-sm font-medium text-neutral-900 truncate">
               {user.firstName} {user.lastName}
             </p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{user.email}</p>
+            <p className="text-xs text-neutral-500 truncate">{user.email}</p>
           </div>
         )}
       </div>
@@ -162,8 +163,8 @@ function AppSidebarContent() {
         {/* Logo/Brand (optional) */}
         <div className="mb-6 px-3">
           <Link href={logoHref}>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Flowventory
+            <h1 className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+              Flowventory<span className="text-[#E53935]">.</span>
             </h1>
           </Link>
         </div>
@@ -206,14 +207,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
       <ManagerGuard>
-        <div className="flex h-screen overflow-hidden bg-white dark:bg-slate-900">
+        <div className="flex h-screen overflow-hidden bg-background">
           {/* Sidebar - only show for authenticated pages that are not landing/auth */}
           {shouldShowSidebar && (
-            <SidebarProvider>
-              <Sidebar>
-                <AppSidebarContent />
-              </Sidebar>
-            </SidebarProvider>
+            <>
+              <IconRail />
+              <SidebarProvider>
+                <Sidebar>
+                  <AppSidebarContent />
+                </Sidebar>
+              </SidebarProvider>
+            </>
           )}
 
           {/* Main Content */}

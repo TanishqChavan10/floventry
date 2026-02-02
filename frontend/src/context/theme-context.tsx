@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect } from 'react';
 
 type ThemeContextType = {
   darkMode: boolean;
@@ -13,30 +13,29 @@ const ThemeContext = createContext<ThemeContextType>({
 });
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const [darkMode, setDarkMode] = useState<boolean>(false);
-
-  // ⭐ Load preference on mount
   useEffect(() => {
-    const stored = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const shouldUseDark = stored === "dark" || (!stored && prefersDark);
-
-    setDarkMode(shouldUseDark);
-    document.documentElement.classList.toggle("dark", shouldUseDark);
+    // Light-mode only: ensure the `dark` class is never applied.
+    document.documentElement.classList.remove('dark');
+    try {
+      localStorage.setItem('theme', 'light');
+    } catch {
+      // ignore
+    }
   }, []);
 
-  // ⭐ Whenever darkMode changes
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", darkMode);
-    localStorage.setItem("theme", darkMode ? "dark" : "light");
-  }, [darkMode]);
-
-  const toggleTheme = () => setDarkMode((prev) => !prev);
+  const darkMode = false;
+  const toggleTheme = () => {
+    // No-op: app is light-mode only.
+    document.documentElement.classList.remove('dark');
+    try {
+      localStorage.setItem('theme', 'light');
+    } catch {
+      // ignore
+    }
+  };
 
   return (
-    <ThemeContext.Provider value={{ darkMode, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={{ darkMode, toggleTheme }}>{children}</ThemeContext.Provider>
   );
 };
 

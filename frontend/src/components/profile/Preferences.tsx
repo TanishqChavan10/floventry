@@ -3,9 +3,24 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useTheme } from '@/context/theme-context';
-import { Moon, Sun, Bell, Mail, Settings, Package, AlertTriangle, FileText, Globe, Clock, Smartphone } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Bell,
+  Mail,
+  Settings,
+  Package,
+  AlertTriangle,
+  FileText,
+  Globe,
+  Clock,
+  Smartphone,
+} from 'lucide-react';
 
 interface PreferencesProps {
   preferences: {
@@ -22,19 +37,17 @@ interface PreferencesProps {
 }
 
 export function Preferences({ preferences, onPreferencesChange }: PreferencesProps) {
-  const { darkMode, toggleTheme } = useTheme();
-
   const handleToggle = (key: keyof PreferencesProps['preferences']) => {
     onPreferencesChange({
       ...preferences,
-      [key]: !preferences[key as keyof typeof preferences]
+      [key]: !preferences[key as keyof typeof preferences],
     });
   };
 
   const handleChange = (key: keyof PreferencesProps['preferences'], value: any) => {
     onPreferencesChange({
       ...preferences,
-      [key]: value
+      [key]: value,
     });
   };
 
@@ -47,13 +60,12 @@ export function Preferences({ preferences, onPreferencesChange }: PreferencesPro
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-8">
-        
         {/* Notifications Section */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             <Bell className="h-4 w-4" /> Notifications
           </div>
-          
+
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/30 transition-colors">
               <div className="flex items-center gap-3">
@@ -65,7 +77,10 @@ export function Preferences({ preferences, onPreferencesChange }: PreferencesPro
                   <p className="text-xs text-muted-foreground">Alerts within the application</p>
                 </div>
               </div>
-              <Switch checked={preferences.inAppNotifications} onCheckedChange={() => handleToggle('inAppNotifications')} />
+              <Switch
+                checked={preferences.inAppNotifications}
+                onCheckedChange={() => handleToggle('inAppNotifications')}
+              />
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/30 transition-colors">
@@ -78,9 +93,12 @@ export function Preferences({ preferences, onPreferencesChange }: PreferencesPro
                   <p className="text-xs text-muted-foreground">Receive emails about activity</p>
                 </div>
               </div>
-              <Switch checked={preferences.emailNotifications} onCheckedChange={() => handleToggle('emailNotifications')} />
+              <Switch
+                checked={preferences.emailNotifications}
+                onCheckedChange={() => handleToggle('emailNotifications')}
+              />
             </div>
-            
+
             <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/30 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
@@ -91,7 +109,10 @@ export function Preferences({ preferences, onPreferencesChange }: PreferencesPro
                   <p className="text-xs text-muted-foreground">Get notified when stock runs low</p>
                 </div>
               </div>
-              <Switch checked={preferences.lowStockAlerts} onCheckedChange={() => handleToggle('lowStockAlerts')} />
+              <Switch
+                checked={preferences.lowStockAlerts}
+                onCheckedChange={() => handleToggle('lowStockAlerts')}
+              />
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/30 transition-colors">
@@ -104,7 +125,10 @@ export function Preferences({ preferences, onPreferencesChange }: PreferencesPro
                   <p className="text-xs text-muted-foreground">Notifications for expiring items</p>
                 </div>
               </div>
-              <Switch checked={preferences.expiryAlerts} onCheckedChange={() => handleToggle('expiryAlerts')} />
+              <Switch
+                checked={preferences.expiryAlerts}
+                onCheckedChange={() => handleToggle('expiryAlerts')}
+              />
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/30 transition-colors">
@@ -117,7 +141,10 @@ export function Preferences({ preferences, onPreferencesChange }: PreferencesPro
                   <p className="text-xs text-muted-foreground">Purchase order status changes</p>
                 </div>
               </div>
-              <Switch checked={preferences.poUpdates} onCheckedChange={() => handleToggle('poUpdates')} />
+              <Switch
+                checked={preferences.poUpdates}
+                onCheckedChange={() => handleToggle('poUpdates')}
+              />
             </div>
           </div>
         </div>
@@ -127,21 +154,8 @@ export function Preferences({ preferences, onPreferencesChange }: PreferencesPro
           <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             <Settings className="h-4 w-4" /> Interface
           </div>
-          
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/30 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                  {darkMode ? <Moon className="h-4 w-4 text-purple-600 dark:text-purple-400" /> : <Sun className="h-4 w-4 text-purple-600 dark:text-purple-400" />}
-                </div>
-                <div className="space-y-0.5">
-                  <Label className="text-sm font-medium cursor-pointer">Theme</Label>
-                  <p className="text-xs text-muted-foreground">{darkMode ? 'Dark Mode' : 'Light Mode'}</p>
-                </div>
-              </div>
-              <Switch checked={darkMode} onCheckedChange={toggleTheme} />
-            </div>
 
+          <div className="space-y-3">
             <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/30 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
@@ -152,7 +166,11 @@ export function Preferences({ preferences, onPreferencesChange }: PreferencesPro
                   <p className="text-xs text-muted-foreground">Display language</p>
                 </div>
               </div>
-              <Select value={preferences.language} onValueChange={(val) => handleChange('language', val)} disabled>
+              <Select
+                value={preferences.language}
+                onValueChange={(val) => handleChange('language', val)}
+                disabled
+              >
                 <SelectTrigger className="w-[120px] h-8 text-xs">
                   <SelectValue placeholder="English" />
                 </SelectTrigger>
@@ -174,7 +192,10 @@ export function Preferences({ preferences, onPreferencesChange }: PreferencesPro
                   <p className="text-xs text-muted-foreground">Clock display preference</p>
                 </div>
               </div>
-              <Select value={preferences.timeFormat} onValueChange={(val) => handleChange('timeFormat', val)}>
+              <Select
+                value={preferences.timeFormat}
+                onValueChange={(val) => handleChange('timeFormat', val)}
+              >
                 <SelectTrigger className="w-[120px] h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -186,7 +207,6 @@ export function Preferences({ preferences, onPreferencesChange }: PreferencesPro
             </div>
           </div>
         </div>
-
       </CardContent>
     </Card>
   );

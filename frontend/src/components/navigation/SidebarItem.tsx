@@ -41,27 +41,31 @@ export function SidebarItem({ label, href, icon: Icon, onClick }: SidebarItemPro
         'relative flex items-center py-2.5 rounded-xl transition-all duration-300 ease-out group overflow-hidden',
         open ? 'gap-3 px-3 mx-2' : 'justify-center mx-1 px-0', // Adjusted spacing for collapsed state
         isActive
-          ? 'bg-gradient-to-r from-indigo-50 to-white dark:from-indigo-950/40 dark:to-transparent text-indigo-700 dark:text-indigo-300 shadow-sm border border-indigo-100/50 dark:border-indigo-900/20'
-          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 hover:text-neutral-900 dark:hover:text-neutral-200',
+          ? 'bg-neutral-50 text-neutral-900 border border-neutral-200'
+          : 'text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900',
       )}
     >
-      {/* Active Indicator - Floating Pill REMOVED */}
+      {isActive && (
+        <span
+          aria-hidden
+          className={cn(
+            'absolute top-2 bottom-2 w-1 rounded-full bg-[#E53935]',
+            open ? 'left-1' : 'left-0.5',
+          )}
+        />
+      )}
 
       {/* Icon with hover effect */}
       <div
         className={cn(
           'relative flex items-center justify-center p-0.5 rounded-md transition-all duration-300',
-          isActive
-            ? 'bg-indigo-100/50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400'
-            : 'bg-transparent',
+          isActive ? 'bg-white border border-neutral-200 text-[#E53935]' : 'bg-transparent',
         )}
       >
         <Icon
           className={cn(
             'h-5 w-5 shrink-0 transition-transform duration-300 group-hover:scale-110',
-            isActive
-              ? 'text-indigo-600 dark:text-indigo-400'
-              : 'text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-700 dark:group-hover:text-neutral-200',
+            isActive ? 'text-[#E53935]' : 'text-neutral-500 group-hover:text-neutral-700',
           )}
         />
       </div>

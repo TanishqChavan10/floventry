@@ -104,12 +104,12 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
       // User has companies and appropriate active company - allow access
 
-      // Redirect authenticated users away from auth pages and root route
+      // Redirect authenticated users away from auth pages.
+      // NOTE: Do NOT redirect from '/' so users can manually view the landing page.
       if (
         pathname.startsWith('/auth/') ||
         pathname === '/auth/sign-in' ||
-        pathname === '/dashboard' ||
-        pathname === '/'
+        pathname === '/dashboard'
       ) {
         console.log('[AuthGuard] Redirecting from auth/root page, pathname:', pathname);
 
