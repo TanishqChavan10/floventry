@@ -40,7 +40,7 @@ export function SafeBarcodeScanInput(
 
   if (enforceRoute && !isAllowedPath(pathname, props.context)) {
     if (process.env.NODE_ENV !== 'production') {
-      // eslint-disable-next-line no-console
+       
       console.warn(
         `[SafeBarcodeScanInput] Blocked render outside allowed route. context=${props.context} pathname=${pathname}`,
       );

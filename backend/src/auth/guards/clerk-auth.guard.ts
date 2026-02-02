@@ -68,7 +68,10 @@ export class ClerkAuthGuard implements CanActivate {
       // 4️⃣ Attach the CORRECT user object for RolesGuard
       //-------------------------------------------------------
       request.user = {
-        id: internalUser?.id, // 🟩 UUID from your database
+        // NOTE: historically many resolvers/services expect `user.userId`.
+        // Keep both `id` and `userId` for backwards compatibility.
+        id: internalUser?.id, // 🟩 Internal user id (Clerk ID in this project)
+        userId: internalUser?.id,
         clerkId: clerkId,
         sessionId: payload.sid,
         activeCompanyId: metadata.activeCompanyId,

@@ -10,6 +10,7 @@ import { IssuesResolver } from './issues.resolver';
 import { SalesModule } from '../sales/sales.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthModule } from '../auth/auth.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
     imports: [
@@ -23,6 +24,7 @@ import { AuthModule } from '../auth/auth.module';
         SalesModule, // Import for SalesService
         NotificationsModule,
         AuthModule,
+        AuditModule,
     ],
     providers: [IssuesService, IssuesResolver],
     exports: [IssuesService],

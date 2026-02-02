@@ -17,6 +17,8 @@ import {
     TransferFilterInput,
 } from './dto/transfer.input';
 import { Role } from '../auth/enums/role.enum';
+import { AuditLogService } from '../audit/services/audit-log.service';
+import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
 
 @Injectable()
 export class TransferService {
@@ -32,6 +34,7 @@ export class TransferService {
         @InjectRepository(StockMovement)
         private stockMovementRepository: Repository<StockMovement>,
         private dataSource: DataSource,
+        private readonly auditLogService: AuditLogService,
     ) { }
 
     /**
@@ -413,7 +416,34 @@ export class TransferService {
             // Commit transaction
             await queryRunner.commitTransaction();
 
-            return this.getTransfer(transfer.id, companyId);
+            const result = await this.getTransfer(transfer.id, companyId);
+
+            // Record audit log (fire-and-forget)
+            try {
+                await this.auditLogService.record({
+                    companyId: transfer.company_id,
+                    actor: {
+                        id: userId,
+                        email: result.user?.email || 'unknown',
+                        role: userRole || transfer.user_role || 'STAFF',
+                    },
+                    action: AuditAction.TRANSFER_POSTED,
+                    entityType: AuditEntityType.TRANSFER,
+                    entityId: transfer.id,
+                    metadata: {
+                        transferNumber: transfer.transfer_number,
+                        sourceWarehouseName: result.source_warehouse?.name,
+                        sourceWarehouseSlug: (result as any).source_warehouse?.slug,
+                        destinationWarehouseName: result.destination_warehouse?.name,
+                        destinationWarehouseSlug: (result as any).destination_warehouse?.slug,
+                        itemCount: result.items?.length || 0,
+                    },
+                });
+            } catch (err) {
+                console.error('Failed to record audit log for transfer posting:', err);
+            }
+
+            return result;
         } catch (error) {
             // Rollback on error
             await queryRunner.rollbackTransaction();

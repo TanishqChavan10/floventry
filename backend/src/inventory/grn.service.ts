@@ -20,6 +20,8 @@ import {
     GRNFilterInput,
 } from './dto/grn.input';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditLogService } from '../audit/services/audit-log.service';
+import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
 
 @Injectable()
 export class GRNService {
@@ -39,6 +41,7 @@ export class GRNService {
         @InjectRepository(PurchaseOrderItem)
         private purchaseOrderItemRepository: Repository<PurchaseOrderItem>,
         private notificationsService: NotificationsService,
+        private auditLogService: AuditLogService,
         private dataSource: DataSource,
     ) { }
 
@@ -444,6 +447,31 @@ export class GRNService {
                     result.grn_number,
                 )
                 .catch((err) => console.error('Failed to send notification:', err));
+
+            // Record audit log (fire-and-forget)
+            try {
+                await this.auditLogService.record({
+                    companyId: grn.company_id,
+                    actor: {
+                        id: userId,
+                        email: result.user?.email || 'unknown',
+                        role: result.user_role || 'STAFF', // Pass as string
+                    },
+                    action: AuditAction.GRN_POSTED,
+                    entityType: AuditEntityType.GRN,
+                    entityId: grn.id,
+                    metadata: {
+                        grnNumber: grn.grn_number,
+                        warehouseName: result.warehouse?.name,
+                        warehouseSlug: (result as any).warehouse?.slug,
+                        itemCount: grn.items?.length || 0,
+                        poNumber: result.purchase_order?.po_number,
+                    },
+                });
+            } catch (err) {
+                // Fire-and-forget: Log error but don't break main flow
+                console.error('Failed to record audit log for GRN posting:', err);
+            }
 
             return result;
         } catch (error) {

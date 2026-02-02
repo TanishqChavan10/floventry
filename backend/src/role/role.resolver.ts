@@ -1,12 +1,12 @@
 import { Resolver, Query } from '@nestjs/graphql';
 import { RoleService } from './role.service';
-import { Role } from './role.model';
+import { RolePermission } from './role.model';
 
-@Resolver(() => Role)
+@Resolver(() => RolePermission)
 export class RoleResolver {
-  constructor(private readonly roleService: RoleService) {}
+  constructor(private readonly roleService: RoleService) { }
 
-  @Query(() => [Role])
+  @Query(() => [RolePermission])
   async roles() {
     return this.roleService.fetchRoles();
   }

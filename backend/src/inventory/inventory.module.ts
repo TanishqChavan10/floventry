@@ -30,6 +30,7 @@ import { BarcodeService } from './barcode.service';
 import { BarcodeLabelController } from './barcode-label.controller';
 import { BarcodeLabelService } from './barcode-label.service';
 import { BarcodeLabelResolver } from './barcode-label.resolver';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
     imports: [
@@ -53,6 +54,7 @@ import { BarcodeLabelResolver } from './barcode-label.resolver';
         NotificationsModule,
         PurchaseOrdersModule,
         StockHealthModule, // Stock health intelligence
+        AuditModule, // Company audit logs
     ],
     controllers: [BarcodeLabelController],
     providers: [

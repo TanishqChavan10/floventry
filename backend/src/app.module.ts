@@ -25,6 +25,7 @@ import { ImportModule } from './import/import.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { CompanyDashboardModule } from './company-dashboard/company-dashboard.module';
 import { ExpiryScannerModule } from './expiry-scanner/expiry-scanner.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -77,6 +78,8 @@ import { ExpiryScannerModule } from './expiry-scanner/expiry-scanner.module';
     NotificationsModule,
     CompanyDashboardModule,
     ExpiryScannerModule, // Automated expiry scanning
+    AuditModule, // Company audit logs
+    RoleModule,
   ],
   controllers: [AppController],
   providers: [AppService],

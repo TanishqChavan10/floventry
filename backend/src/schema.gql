@@ -77,6 +77,65 @@ input AssignUserToWarehouseInput {
   userId: ID!
 }
 
+"""Type of audit action"""
+enum AuditAction {
+  ADJUSTMENT_CREATED
+  BARCODE_LABELS_GENERATED
+  BULK_IMPORT_COMPLETED
+  BULK_IMPORT_STARTED
+  EXPIRY_SCAN_RUN
+  GRN_POSTED
+  ISSUE_POSTED
+  LOT_EXPIRED
+  LOT_EXPIRING_SOON
+  OPENING_STOCK_SET
+  ROLE_CHANGED
+  TRANSFER_POSTED
+  USER_ASSIGNED_TO_WAREHOUSE
+  USER_INVITED
+  USER_REMOVED
+  USER_REMOVED_FROM_WAREHOUSE
+  WAREHOUSE_ARCHIVED
+  WAREHOUSE_CREATED
+  WAREHOUSE_REACTIVATED
+}
+
+"""Type of entity being audited"""
+enum AuditEntityType {
+  ADJUSTMENT
+  BARCODE
+  BULK_IMPORT
+  GRN
+  ISSUE
+  OPENING_STOCK
+  PRODUCT
+  STOCK_LOT
+  TRANSFER
+  USER
+  WAREHOUSE
+}
+
+input AuditLogFilterInput {
+  action: AuditAction
+  actorUserId: String
+  dateFrom: DateTime
+  dateTo: DateTime
+  entityType: AuditEntityType
+}
+
+type AuditLogPageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  limit: Int!
+  page: Int!
+  total: Int!
+}
+
+type AuditLogResponse {
+  items: [CompanyAuditLog!]!
+  pageInfo: AuditLogPageInfo!
+}
+
 type BarcodeLabelResult {
   filename: String!
   mimeType: String!
@@ -118,6 +177,22 @@ type Company {
   updated_at: DateTime
   warehouses: [Warehouse!]
   website: String
+}
+
+type CompanyAuditLog {
+  action: AuditAction!
+  actor: User!
+  actor_email: String!
+  actor_role: String!
+  actor_user_id: String!
+  company_id: String!
+  created_at: DateTime!
+  entity_id: String
+  entity_type: AuditEntityType!
+  id: ID!
+  ip_address: String
+  metadata: JSON
+  user_agent: String
 }
 
 type CompanyDashboardData {
@@ -693,6 +768,11 @@ enum NotificationType {
   TRANSFER_COMPLETED
 }
 
+input PaginationInput {
+  limit: Int = 50
+  page: Int = 1
+}
+
 type Product {
   alternate_barcodes: [String!]
   barcode: String
@@ -776,6 +856,7 @@ type Query {
   categories: [Category!]!
   companies: [Company!]!
   company(id: String!): Company!
+  companyAuditLogs(filters: AuditLogFilterInput, pagination: PaginationInput): AuditLogResponse!
   companyBySlug(slug: String!): Company!
   companyDashboard: CompanyDashboardData!
   companyInventorySummary(filters: CompanyInventorySummaryFilterInput!): [CompanyInventorySummaryItem!]!
@@ -807,6 +888,7 @@ type Query {
   purchaseOrder(id: String!): PurchaseOrder
   purchaseOrders(filters: PurchaseOrderFilterInput!): [PurchaseOrder!]!
   recentMovements(limit: Int = 10, warehouseId: ID!): [DashboardMovementItem!]!
+  roles: [RolePermission!]!
   salesOrder(id: ID!): SalesOrder!
   salesOrders: [SalesOrder!]!
   stock(productId: String!, warehouseId: String!): Stock!
@@ -856,6 +938,17 @@ enum Role {
   MANAGER
   OWNER
   STAFF
+}
+
+type RolePermission {
+  color: String
+  created_at: DateTime!
+  description: String
+  is_default: Boolean!
+  name: String!
+  permissions: [String!]!
+  role_id: Int!
+  updated_at: DateTime
 }
 
 type SalesOrder {

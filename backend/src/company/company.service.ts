@@ -165,12 +165,19 @@ export class CompanyService {
   async getCompanyBySlug(slug: string): Promise<Company> {
     const company = await this.companyRepository.findOne({
       where: { slug: slug },
-      relations: ['settings', 'warehouses'],
+      relations: ['settings'],
+      withDeleted: true,
     });
 
     if (!company) {
       throw new NotFoundException('Company not found');
     }
+
+    // Load warehouses including soft-deleted ones (archived)
+    company.warehouses = await this.warehouseRepository.find({
+      where: { company_id: company.id },
+      withDeleted: true,
+    });
 
     return company;
   }

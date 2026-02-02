@@ -1,7 +1,7 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 
-@ObjectType()
-export class Role {
+@ObjectType('RolePermission')
+export class RolePermission {
   @Field(() => Int)
   role_id: number;
 

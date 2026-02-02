@@ -11,6 +11,8 @@ import { SalesService } from '../sales/sales.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateIssueNoteInput, UpdateIssueNoteInput, CreateFEFOIssueNoteInput } from './dto/issue-note.input';
 import { MovementType, ReferenceType } from '../inventory/entities/stock-movement.entity';
+import { AuditLogService } from '../audit/services/audit-log.service';
+import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
 
 @Injectable()
 export class IssuesService {
@@ -27,6 +29,7 @@ export class IssuesService {
         private stockMovementRepository: Repository<StockMovement>,
         private salesService: SalesService,
         private notificationsService: NotificationsService,
+        private readonly auditLogService: AuditLogService,
         private dataSource: DataSource,
     ) { }
 
@@ -481,6 +484,30 @@ export class IssuesService {
                     result.issue_number,
                 )
                 .catch((err) => console.error('Failed to send notification:', err));
+
+            // Record audit log (fire-and-forget)
+            try {
+                await this.auditLogService.record({
+                    companyId: issueNote.company_id,
+                    actor: {
+                        id: userId,
+                        email: result.issuer?.email || 'unknown',
+                        role: 'STAFF',
+                    },
+                    action: AuditAction.ISSUE_POSTED,
+                    entityType: AuditEntityType.ISSUE,
+                    entityId: issueNote.id,
+                    metadata: {
+                        issueNumber: result.issue_number,
+                        warehouseName: (result as any).warehouse?.name,
+                        warehouseSlug: (result as any).warehouse?.slug,
+                        itemCount: result.items?.length || 0,
+                        salesOrderId: result.sales_order_id || undefined,
+                    },
+                });
+            } catch (err) {
+                console.error('Failed to record audit log for issue posting:', err);
+            }
 
             return result;
         } catch (error) {

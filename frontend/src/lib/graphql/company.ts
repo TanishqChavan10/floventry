@@ -148,6 +148,7 @@ export const GET_WAREHOUSES_BY_COMPANY = gql`
         type
         code
         timezone
+        status
         created_at
       }
     }
