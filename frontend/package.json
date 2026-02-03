@@ -13,8 +13,8 @@
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next out dist node_modules/.cache",
     "analyze": "ANALYZE=true npm run build",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest --passWithNoTests"
   },
   "dependencies": {
     "@apollo/client": "^3.13.9",

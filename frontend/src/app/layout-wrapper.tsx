@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { motion } from 'motion/react';
 import { useAuth } from '@/context/auth-context';
+import { useWarehouse } from '@/context/warehouse-context';
 import { useParams, usePathname } from 'next/navigation';
 import { usePermissions } from '@/hooks/usePermissions';
 import { toast } from 'sonner';
@@ -212,11 +213,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {shouldShowSidebar && (
             <>
               <IconRail />
-              <SidebarProvider>
-                <Sidebar>
-                  <AppSidebarContent />
-                </Sidebar>
-              </SidebarProvider>
             </>
           )}
 
@@ -225,10 +221,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             className={`flex-1 flex flex-col overflow-hidden ${shouldShowSidebar ? '' : 'w-full'}`}
           >
             {shouldShowSidebar && <Navbar />}
+            {shouldShowSidebar && <ArchivedWarehouseBanner />}
             <div className="flex-1 overflow-y-auto">{children}</div>
           </main>
         </div>
       </ManagerGuard>
     </AuthGuard>
+  );
+}
+
+function ArchivedWarehouseBanner() {
+  const params = useParams();
+  const warehouseSlug = params?.warehouseSlug as string | undefined;
+  const { activeWarehouse } = useWarehouse();
+
+  if (!warehouseSlug || !activeWarehouse) return null;
+  if (String(activeWarehouse.status ?? 'active').toLowerCase() === 'active') return null;
+
+  return (
+    <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+      <span className="font-medium">Archived warehouse.</span> Read-only access — restore it to
+      resume operations.
+    </div>
   );
 }

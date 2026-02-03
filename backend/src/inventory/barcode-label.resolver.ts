@@ -8,31 +8,33 @@ import { BarcodeLabelResult } from './types/barcode-label.types';
 
 @Resolver()
 export class BarcodeLabelResolver {
-    constructor(private readonly barcodeLabelService: BarcodeLabelService) { }
+  constructor(private readonly barcodeLabelService: BarcodeLabelService) {}
 
-    @Mutation(() => BarcodeLabelResult)
-    @UseGuards(ClerkAuthGuard)
-    async generateBarcodeLabels(
-        @Args('input') input: GenerateBarcodeLabelsInput,
-        @ClerkUser() user: any,
-    ): Promise<BarcodeLabelResult> {
-        const companyId = user?.activeCompanyId;
-        if (!companyId) {
-            throw new BadRequestException('User does not have an active company selected');
-        }
-
-        const pdfBuffer = await this.barcodeLabelService.generateLabelsPdf({
-            companyId,
-            productIds: input.productIds,
-        });
-
-        // Convert buffer to base64
-        const pdfData = pdfBuffer.toString('base64');
-
-        return {
-            pdfData,
-            filename: 'barcode-labels.pdf',
-            mimeType: 'application/pdf',
-        };
+  @Mutation(() => BarcodeLabelResult)
+  @UseGuards(ClerkAuthGuard)
+  async generateBarcodeLabels(
+    @Args('input') input: GenerateBarcodeLabelsInput,
+    @ClerkUser() user: any,
+  ): Promise<BarcodeLabelResult> {
+    const companyId = user?.activeCompanyId;
+    if (!companyId) {
+      throw new BadRequestException(
+        'User does not have an active company selected',
+      );
     }
+
+    const pdfBuffer = await this.barcodeLabelService.generateLabelsPdf({
+      companyId,
+      productIds: input.productIds,
+    });
+
+    // Convert buffer to base64
+    const pdfData = pdfBuffer.toString('base64');
+
+    return {
+      pdfData,
+      filename: 'barcode-labels.pdf',
+      mimeType: 'application/pdf',
+    };
+  }
 }

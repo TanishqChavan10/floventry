@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Warehouse } from './warehouse.entity';
@@ -14,7 +18,6 @@ import slugify from 'slugify';
 
 @Injectable()
 export class WarehouseService {
-
   constructor(
     @InjectRepository(Warehouse)
     private warehouseRepository: Repository<Warehouse>,
@@ -27,11 +30,11 @@ export class WarehouseService {
     @InjectRepository(StockMovement)
     private stockMovementRepository: Repository<StockMovement>,
     private dataSource: DataSource,
-  ) { }
+  ) {}
 
   async getKPIs(warehouseId: string): Promise<any> {
     const totalProducts = await this.stockRepository.count({
-      where: { warehouse_id: warehouseId }
+      where: { warehouse_id: warehouseId },
     });
 
     const { totalQuantity } = await this.stockRepository
@@ -40,7 +43,7 @@ export class WarehouseService {
       .where('stock.warehouse_id = :warehouseId', { warehouseId })
       .getRawOne();
 
-    // Using query builder for low stock to handle the comparison properly if needed, 
+    // Using query builder for low stock to handle the comparison properly if needed,
     // but assuming simple logic: quantity <= reorder_point OR quantity <= min_stock_level
     // The requirement says "Low Stock Items" -> Low Stock logic.
     // Usually Low Stock means quantity <= reorder_point AND quantity > 0
@@ -50,14 +53,16 @@ export class WarehouseService {
       .createQueryBuilder('stock')
       .where('stock.warehouse_id = :warehouseId', { warehouseId })
       .andWhere('stock.quantity > 0')
-      .andWhere('(stock.quantity <= stock.reorder_point OR stock.quantity <= stock.min_stock_level)')
+      .andWhere(
+        '(stock.quantity <= stock.reorder_point OR stock.quantity <= stock.min_stock_level)',
+      )
       .getCount();
 
     const outOfStockCount = await this.stockRepository.count({
       where: {
         warehouse_id: warehouseId,
-        quantity: 0
-      }
+        quantity: 0,
+      },
     });
 
     // Adjustments Today
@@ -71,20 +76,20 @@ export class WarehouseService {
         {
           warehouse_id: warehouseId,
           type: 'ADJUSTMENT_IN' as any,
-          created_at: Between(todayStart, todayEnd)
+          created_at: Between(todayStart, todayEnd),
         },
         {
           warehouse_id: warehouseId,
           type: 'ADJUSTMENT_OUT' as any,
-          created_at: Between(todayStart, todayEnd)
+          created_at: Between(todayStart, todayEnd),
         },
         // Legacy support if needed
         {
           warehouse_id: warehouseId,
           type: 'ADJUSTMENT' as any,
-          created_at: Between(todayStart, todayEnd)
-        }
-      ]
+          created_at: Between(todayStart, todayEnd),
+        },
+      ],
     });
 
     // Transfers Today - Assuming TRANSFER_IN or TRANSFER_OUT
@@ -93,14 +98,14 @@ export class WarehouseService {
         {
           warehouse_id: warehouseId,
           type: 'TRANSFER_IN' as any,
-          created_at: Between(todayStart, todayEnd)
+          created_at: Between(todayStart, todayEnd),
         },
         {
           warehouse_id: warehouseId,
           type: 'TRANSFER_OUT' as any,
-          created_at: Between(todayStart, todayEnd)
-        }
-      ]
+          created_at: Between(todayStart, todayEnd),
+        },
+      ],
     });
 
     return {
@@ -119,55 +124,68 @@ export class WarehouseService {
       .leftJoinAndSelect('stock.product', 'product')
       .where('stock.warehouse_id = :warehouseId', { warehouseId })
       .andWhere('stock.quantity > 0') // Exclude out of stock for this list? Or include? "Low Stock Snapshot" usually implies items running low but not empty. Let's assume low stock logic.
-      .andWhere('(stock.quantity <= stock.reorder_point OR stock.quantity <= stock.min_stock_level)')
+      .andWhere(
+        '(stock.quantity <= stock.reorder_point OR stock.quantity <= stock.min_stock_level)',
+      )
       .take(limit)
       .getMany();
 
-    return lowStockItems.map(item => ({
-      product: {
-        name: item.product.name,
-        sku: item.product.sku
-      },
-      quantity: item.quantity,
-      status: 'WARNING' // Dynamic status logic can be here. simple for now. 
-      // If quantity <= min_stock_level -> CRITICAL? 
-    })).map(item => {
-      // Refine status logic if possible, reusing logic from Stock entity if it exists or doing it here
-      // For now hardcode WARNING as it's "Low Stock" list. Or check against min/reorder.
-      // We can do it better:
-      return item;
-    });
+    return lowStockItems
+      .map((item) => ({
+        product: {
+          name: item.product.name,
+          sku: item.product.sku,
+        },
+        quantity: item.quantity,
+        status: 'WARNING', // Dynamic status logic can be here. simple for now.
+        // If quantity <= min_stock_level -> CRITICAL?
+      }))
+      .map((item) => {
+        // Refine status logic if possible, reusing logic from Stock entity if it exists or doing it here
+        // For now hardcode WARNING as it's "Low Stock" list. Or check against min/reorder.
+        // We can do it better:
+        return item;
+      });
   }
 
   // Helper for status calculation
   private calculateStockStatus(stock: Stock): string {
     if (stock.quantity === 0) return 'CRITICAL'; // Out of stock
-    if (stock.min_stock_level !== null && stock.quantity <= stock.min_stock_level) return 'CRITICAL';
-    if (stock.reorder_point !== null && stock.quantity <= stock.reorder_point) return 'WARNING';
+    if (
+      stock.min_stock_level !== null &&
+      stock.quantity <= stock.min_stock_level
+    )
+      return 'CRITICAL';
+    if (stock.reorder_point !== null && stock.quantity <= stock.reorder_point)
+      return 'WARNING';
     return 'OK';
   }
 
-  async getLowStockPreviewWithStatus(warehouseId: string, limit: number): Promise<any[]> {
+  async getLowStockPreviewWithStatus(
+    warehouseId: string,
+    limit: number,
+  ): Promise<any[]> {
     const lowStockItems = await this.stockRepository
       .createQueryBuilder('stock')
       .leftJoinAndSelect('stock.product', 'product')
       .where('stock.warehouse_id = :warehouseId', { warehouseId })
       //.andWhere('stock.quantity > 0') // "Low Stock Page" usually has <= reorder point.
-      .andWhere('(stock.quantity <= stock.reorder_point OR stock.quantity <= stock.min_stock_level OR stock.quantity = 0)')
+      .andWhere(
+        '(stock.quantity <= stock.reorder_point OR stock.quantity <= stock.min_stock_level OR stock.quantity = 0)',
+      )
       .orderBy('stock.quantity', 'ASC')
       .take(limit)
       .getMany();
 
-    return lowStockItems.map(item => ({
+    return lowStockItems.map((item) => ({
       product: {
         name: item.product.name,
-        sku: item.product.sku
+        sku: item.product.sku,
       },
       quantity: item.quantity,
-      status: this.calculateStockStatus(item)
+      status: this.calculateStockStatus(item),
     }));
   }
-
 
   async getRecentMovements(warehouseId: string, limit: number): Promise<any[]> {
     const movements = await this.stockMovementRepository.find({
@@ -177,24 +195,33 @@ export class WarehouseService {
       relations: ['product', 'user'],
     });
 
-    return movements.map(m => ({
+    return movements.map((m) => ({
       type: m.type,
       quantity: m.quantity,
       product: {
         name: m.product.name,
       },
       createdAt: m.created_at,
-      performedBy: m.user ? { name: m.user.fullName || 'User' } : { name: 'System' }
+      performedBy: m.user
+        ? { name: m.user.fullName || 'User' }
+        : { name: 'System' },
     }));
   }
 
-  async create(createWarehouseDto: CreateWarehouseDto, companyId: string, userId: string): Promise<Warehouse> {
+  async create(
+    createWarehouseDto: CreateWarehouseDto,
+    companyId: string,
+    userId: string,
+  ): Promise<Warehouse> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const slug = slugify(createWarehouseDto.name, { lower: true, strict: true });
+      const slug = slugify(createWarehouseDto.name, {
+        lower: true,
+        strict: true,
+      });
       // TODO: Check unique slug per company? reusing name for now as requested.
 
       const warehouse = queryRunner.manager.create(Warehouse, {
@@ -239,14 +266,17 @@ export class WarehouseService {
     return warehouse;
   }
 
-  async update(id: string, updateWarehouseDto: UpdateWarehouseDto): Promise<Warehouse> {
+  async update(
+    id: string,
+    updateWarehouseDto: UpdateWarehouseDto,
+  ): Promise<Warehouse> {
     const warehouse = await this.findOne(id);
 
     // If setting this warehouse as default, unset all other defaults in the same company
     if (updateWarehouseDto.is_default === true) {
       await this.warehouseRepository.update(
         { company_id: warehouse.company_id },
-        { is_default: false }
+        { is_default: false },
       );
     }
 
@@ -382,7 +412,6 @@ export class WarehouseService {
     return warehouse;
   }
 
-
   async findByUser(userId: string, companyId?: string): Promise<Warehouse[]> {
     const userWarehouses = await this.userWarehouseRepository.find({
       where: { user_id: userId },
@@ -398,7 +427,11 @@ export class WarehouseService {
     return warehouses.filter((w) => w.company_id === companyId);
   }
 
-  async assignUser(warehouseId: string, userId: string, role?: string): Promise<UserWarehouse> {
+  async assignUser(
+    warehouseId: string,
+    userId: string,
+    role?: string,
+  ): Promise<UserWarehouse> {
     // Check if assignments exists
     const existing = await this.userWarehouseRepository.findOne({
       where: { warehouse_id: warehouseId, user_id: userId },
@@ -426,7 +459,10 @@ export class WarehouseService {
     });
   }
 
-  async updateSettings(warehouseId: string, input: UpdateWarehouseSettingsInput): Promise<WarehouseSettings> {
+  async updateSettings(
+    warehouseId: string,
+    input: UpdateWarehouseSettingsInput,
+  ): Promise<WarehouseSettings> {
     // Check if settings exist
     let settings = await this.warehouseSettingsRepository.findOne({
       where: { warehouse_id: warehouseId },
@@ -463,22 +499,24 @@ export class WarehouseService {
 
     // Apply filters
     if (filters.categoryId) {
-      queryBuilder.andWhere('product.category_id = :categoryId', { categoryId: filters.categoryId });
+      queryBuilder.andWhere('product.category_id = :categoryId', {
+        categoryId: filters.categoryId,
+      });
     }
 
     if (filters.status) {
       // Apply low-stock filtering based on status
       if (filters.status === 'CRITICAL') {
         queryBuilder.andWhere(
-          '(stock.quantity = 0 OR (stock.min_stock_level IS NOT NULL AND stock.quantity <= stock.min_stock_level))'
+          '(stock.quantity = 0 OR (stock.min_stock_level IS NOT NULL AND stock.quantity <= stock.min_stock_level))',
         );
       } else if (filters.status === 'WARNING') {
         queryBuilder.andWhere(
-          'stock.quantity > 0 AND stock.reorder_point IS NOT NULL AND stock.quantity <= stock.reorder_point AND (stock.min_stock_level IS NULL OR stock.quantity > stock.min_stock_level)'
+          'stock.quantity > 0 AND stock.reorder_point IS NOT NULL AND stock.quantity <= stock.reorder_point AND (stock.min_stock_level IS NULL OR stock.quantity > stock.min_stock_level)',
         );
       } else if (filters.status === 'OK') {
         queryBuilder.andWhere(
-          '(stock.reorder_point IS NULL OR stock.quantity > stock.reorder_point) AND (stock.min_stock_level IS NULL OR stock.quantity > stock.min_stock_level) AND stock.quantity > 0'
+          '(stock.reorder_point IS NULL OR stock.quantity > stock.reorder_point) AND (stock.min_stock_level IS NULL OR stock.quantity > stock.min_stock_level) AND stock.quantity > 0',
         );
       }
     }
@@ -493,7 +531,7 @@ export class WarehouseService {
       .getMany();
 
     return {
-      items: items.map(stock => ({
+      items: items.map((stock) => ({
         id: stock.id,
         productName: stock.product.name,
         sku: stock.product.sku,
@@ -516,17 +554,23 @@ export class WarehouseService {
       .leftJoinAndSelect('movement.product', 'product')
       .leftJoinAndSelect('movement.user', 'user')
       .where('movement.warehouse_id = :warehouseId', { warehouseId })
-      .andWhere('movement.created_at >= :fromDate', { fromDate: filters.fromDate })
+      .andWhere('movement.created_at >= :fromDate', {
+        fromDate: filters.fromDate,
+      })
       .andWhere('movement.created_at <= :toDate', { toDate: filters.toDate });
 
     // Apply movement type filter
     if (filters.types && filters.types.length > 0) {
-      queryBuilder.andWhere('movement.type IN (:...types)', { types: filters.types });
+      queryBuilder.andWhere('movement.type IN (:...types)', {
+        types: filters.types,
+      });
     }
 
     // Apply product filter
     if (filters.productId) {
-      queryBuilder.andWhere('movement.product_id = :productId', { productId: filters.productId });
+      queryBuilder.andWhere('movement.product_id = :productId', {
+        productId: filters.productId,
+      });
     }
 
     // Pagination
@@ -539,7 +583,7 @@ export class WarehouseService {
       .getMany();
 
     return {
-      items: items.map(movement => ({
+      items: items.map((movement) => ({
         id: movement.id,
         createdAt: movement.created_at,
         productName: movement.product.name,
@@ -567,12 +611,16 @@ export class WarehouseService {
       .leftJoinAndSelect('movement.product', 'product')
       .leftJoinAndSelect('movement.user', 'user')
       .where('movement.warehouse_id = :warehouseId', { warehouseId })
-      .andWhere('movement.created_at >= :fromDate', { fromDate: filters.fromDate })
+      .andWhere('movement.created_at >= :fromDate', {
+        fromDate: filters.fromDate,
+      })
       .andWhere('movement.created_at <= :toDate', { toDate: filters.toDate });
 
     // Filter by adjustment types only
     if (filters.adjustmentType) {
-      queryBuilder.andWhere('movement.type = :type', { type: filters.adjustmentType });
+      queryBuilder.andWhere('movement.type = :type', {
+        type: filters.adjustmentType,
+      });
     } else {
       queryBuilder.andWhere('movement.type IN (:...types)', {
         types: ['ADJUSTMENT_IN', 'ADJUSTMENT_OUT', 'ADJUSTMENT'],
@@ -581,12 +629,16 @@ export class WarehouseService {
 
     // Apply product filter
     if (filters.productId) {
-      queryBuilder.andWhere('movement.product_id = :productId', { productId: filters.productId });
+      queryBuilder.andWhere('movement.product_id = :productId', {
+        productId: filters.productId,
+      });
     }
 
     // Apply user filter
     if (filters.userId) {
-      queryBuilder.andWhere('movement.performed_by = :userId', { userId: filters.userId });
+      queryBuilder.andWhere('movement.performed_by = :userId', {
+        userId: filters.userId,
+      });
     }
 
     // Pagination
@@ -599,7 +651,7 @@ export class WarehouseService {
       .getMany();
 
     return {
-      items: items.map(movement => ({
+      items: items.map((movement) => ({
         id: movement.id,
         createdAt: movement.created_at,
         productName: movement.product.name,

@@ -10,88 +10,104 @@ import { ExportFiltersInput } from './dto/export-filters.input';
 
 @Resolver()
 export class ExportResolver {
-    constructor(private readonly exportService: ExportService) { }
+  constructor(private readonly exportService: ExportService) {}
 
-    @Mutation(() => String)
-    @UseGuards(ClerkAuthGuard)
-    async exportStockSnapshot(
-        @ClerkUser() user: any,
-        @Args('warehouseId') warehouseId: string,
-        @Args('filters', { type: () => ExportFiltersInput, nullable: true })
-        filters?: ExportFiltersInput,
-    ): Promise<string> {
-        return this.exportService.exportStockSnapshot(warehouseId, filters, user.activeCompanyId);
-    }
+  @Mutation(() => String)
+  @UseGuards(ClerkAuthGuard)
+  async exportStockSnapshot(
+    @ClerkUser() user: any,
+    @Args('warehouseId') warehouseId: string,
+    @Args('filters', { type: () => ExportFiltersInput, nullable: true })
+    filters?: ExportFiltersInput,
+  ): Promise<string> {
+    return this.exportService.exportStockSnapshot(
+      warehouseId,
+      filters,
+      user.activeCompanyId,
+    );
+  }
 
-    @Mutation(() => String)
-    @UseGuards(ClerkAuthGuard)
-    async exportStockMovements(
-        @ClerkUser() user: any,
-        @Args('warehouseId') warehouseId: string,
-        @Args('filters', { type: () => ExportFiltersInput, nullable: true })
-        filters?: ExportFiltersInput,
-    ): Promise<string> {
-        return this.exportService.exportStockMovements(warehouseId, filters, user.activeCompanyId);
-    }
+  @Mutation(() => String)
+  @UseGuards(ClerkAuthGuard)
+  async exportStockMovements(
+    @ClerkUser() user: any,
+    @Args('warehouseId') warehouseId: string,
+    @Args('filters', { type: () => ExportFiltersInput, nullable: true })
+    filters?: ExportFiltersInput,
+  ): Promise<string> {
+    return this.exportService.exportStockMovements(
+      warehouseId,
+      filters,
+      user.activeCompanyId,
+    );
+  }
 
-    @Mutation(() => String)
-    @UseGuards(ClerkAuthGuard)
-    async exportAdjustments(
-        @ClerkUser() user: any,
-        @Args('warehouseId') warehouseId: string,
-        @Args('filters', { type: () => ExportFiltersInput, nullable: true })
-        filters?: ExportFiltersInput,
-    ): Promise<string> {
-        return this.exportService.exportAdjustments(warehouseId, filters, user.activeCompanyId);
-    }
+  @Mutation(() => String)
+  @UseGuards(ClerkAuthGuard)
+  async exportAdjustments(
+    @ClerkUser() user: any,
+    @Args('warehouseId') warehouseId: string,
+    @Args('filters', { type: () => ExportFiltersInput, nullable: true })
+    filters?: ExportFiltersInput,
+  ): Promise<string> {
+    return this.exportService.exportAdjustments(
+      warehouseId,
+      filters,
+      user.activeCompanyId,
+    );
+  }
 
-    @Mutation(() => String)
-    @UseGuards(ClerkAuthGuard)
-    async exportExpiryLots(
-        @ClerkUser() user: any,
-        @Args('warehouseId') warehouseId: string,
-        @Args('filters', { type: () => ExportFiltersInput, nullable: true })
-        filters?: ExportFiltersInput,
-    ): Promise<string> {
-        return this.exportService.exportExpiryLots(warehouseId, filters, user.activeCompanyId);
-    }
+  @Mutation(() => String)
+  @UseGuards(ClerkAuthGuard)
+  async exportExpiryLots(
+    @ClerkUser() user: any,
+    @Args('warehouseId') warehouseId: string,
+    @Args('filters', { type: () => ExportFiltersInput, nullable: true })
+    filters?: ExportFiltersInput,
+  ): Promise<string> {
+    return this.exportService.exportExpiryLots(
+      warehouseId,
+      filters,
+      user.activeCompanyId,
+    );
+  }
 
-    @Mutation(() => String)
-    @UseGuards(ClerkAuthGuard, RolesGuard)
-    @Roles(Role.OWNER, Role.ADMIN)
-    async exportInventorySummary(
-        @ClerkUser() user: any,
-        @Args('filters', { type: () => ExportFiltersInput, nullable: true })
-        filters?: ExportFiltersInput,
-    ): Promise<string> {
-        return this.exportService.exportInventorySummary(
-            user.activeCompanyId,
-            filters,
-        );
-    }
+  @Mutation(() => String)
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN)
+  async exportInventorySummary(
+    @ClerkUser() user: any,
+    @Args('filters', { type: () => ExportFiltersInput, nullable: true })
+    filters?: ExportFiltersInput,
+  ): Promise<string> {
+    return this.exportService.exportInventorySummary(
+      user.activeCompanyId,
+      filters,
+    );
+  }
 
-    @Mutation(() => String)
-    @UseGuards(ClerkAuthGuard, RolesGuard)
-    @Roles(Role.OWNER, Role.ADMIN)
-    async exportCompanyMovements(
-        @ClerkUser() user: any,
-        @Args('filters', { type: () => ExportFiltersInput, nullable: true })
-        filters?: ExportFiltersInput,
-    ): Promise<string> {
-        return this.exportService.exportCompanyMovements(
-            user.activeCompanyId,
-            filters,
-        );
-    }
+  @Mutation(() => String)
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN)
+  async exportCompanyMovements(
+    @ClerkUser() user: any,
+    @Args('filters', { type: () => ExportFiltersInput, nullable: true })
+    filters?: ExportFiltersInput,
+  ): Promise<string> {
+    return this.exportService.exportCompanyMovements(
+      user.activeCompanyId,
+      filters,
+    );
+  }
 
-    @Mutation(() => String)
-    @UseGuards(ClerkAuthGuard, RolesGuard)
-    @Roles(Role.OWNER, Role.ADMIN)
-    async exportExpiryRisk(
-        @ClerkUser() user: any,
-        @Args('filters', { type: () => ExportFiltersInput, nullable: true })
-        filters?: ExportFiltersInput,
-    ): Promise<string> {
-        return this.exportService.exportExpiryRisk(user.activeCompanyId, filters);
-    }
+  @Mutation(() => String)
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN)
+  async exportExpiryRisk(
+    @ClerkUser() user: any,
+    @Args('filters', { type: () => ExportFiltersInput, nullable: true })
+    filters?: ExportFiltersInput,
+  ): Promise<string> {
+    return this.exportService.exportExpiryRisk(user.activeCompanyId, filters);
+  }
 }

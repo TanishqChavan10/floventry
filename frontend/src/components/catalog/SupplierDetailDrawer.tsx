@@ -31,7 +31,7 @@ export default function SupplierDetailDrawer({
     <Sheet open={open} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-3 pr-10">
             <div className="space-y-1">
               <SheetTitle className="text-2xl">{supplier.name}</SheetTitle>
               <SheetDescription className="flex items-center gap-2">
@@ -39,7 +39,7 @@ export default function SupplierDetailDrawer({
                 Supplier Details
               </SheetDescription>
             </div>
-            <Badge variant={supplier.isActive ? 'default' : 'secondary'}>
+            <Badge className="shrink-0 mt-1" variant={supplier.isActive ? 'default' : 'secondary'}>
               {supplier.isActive ? 'Active' : 'Archived'}
             </Badge>
           </div>
@@ -48,9 +48,7 @@ export default function SupplierDetailDrawer({
         <div className="mt-6 space-y-6">
           {/* Contact Information */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-sm text-muted-foreground">
-              Contact Information
-            </h3>
+            <h3 className="font-semibold text-sm text-muted-foreground">Contact Information</h3>
             <div className="space-y-3">
               {supplier.email && (
                 <div className="flex items-center gap-3">
@@ -100,16 +98,12 @@ export default function SupplierDetailDrawer({
 
           {/* Products Information */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-sm text-muted-foreground">
-              Products
-            </h3>
+            <h3 className="font-semibold text-sm text-muted-foreground">Products</h3>
             <div className="flex items-center gap-3">
               <Package className="h-4 w-4 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium">Linked Products</p>
-                <p className="text-2xl font-bold">
-                  {supplier.productsCount || 0}
-                </p>
+                <p className="text-2xl font-bold">{supplier.productsCount || 0}</p>
                 <p className="text-xs text-muted-foreground">
                   {supplier.productsCount === 1 ? 'product' : 'products'} using this supplier
                 </p>

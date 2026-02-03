@@ -10,6 +10,7 @@ export interface Warehouse {
   slug: string;
   type: WarehouseType;
   address: string;
+  status?: string;
 }
 
 interface WarehouseContextType {

@@ -9,8 +9,11 @@ import { AuthModule } from '../auth/auth.module';
 import { Warehouse } from '../warehouse/warehouse.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserCompany, Role, UserWarehouse, Warehouse]), AuthModule],
+  imports: [
+    TypeOrmModule.forFeature([UserCompany, Role, UserWarehouse, Warehouse]),
+    AuthModule,
+  ],
   providers: [UserCompanyService, UserCompanyResolver],
   exports: [UserCompanyService],
 })
-export class UserCompanyModule { }
+export class UserCompanyModule {}

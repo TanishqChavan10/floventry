@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Company } from './company.entity';
@@ -33,9 +37,12 @@ export class CompanyService {
     @InjectRepository(Stock)
     private stockRepository: Repository<Stock>,
     private clerkService: ClerkService,
-  ) { }
+  ) {}
 
-  async createCompany(input: CreateCompanyInput, ownerId: string): Promise<Company> {
+  async createCompany(
+    input: CreateCompanyInput,
+    ownerId: string,
+  ): Promise<Company> {
     // Check if company name already exists
     const existingCompany = await this.companyRepository.findOne({
       where: { name: input.name },
@@ -85,7 +92,10 @@ export class CompanyService {
     await this.userCompanyRepository.save(userCompany);
 
     // Set as active company for the user
-    await this.userRepository.update({ id: ownerId }, { activeCompanyId: savedCompany.id });
+    await this.userRepository.update(
+      { id: ownerId },
+      { activeCompanyId: savedCompany.id },
+    );
 
     // UPDATE CLERK METADATA
     await this.clerkService.updateUserMetadata(ownerId, {
@@ -96,7 +106,10 @@ export class CompanyService {
     return savedCompany;
   }
 
-  async updateSettings(companyId: string, input: UpdateCompanySettingsInput): Promise<CompanySettings> {
+  async updateSettings(
+    companyId: string,
+    input: UpdateCompanySettingsInput,
+  ): Promise<CompanySettings> {
     const settings = await this.settingsRepository.findOne({
       where: { company_id: companyId },
     });
@@ -150,7 +163,10 @@ export class CompanyService {
       throw new BadRequestException('User is not a member of this company');
     }
 
-    await this.userRepository.update({ id: userId }, { activeCompanyId: companyId });
+    await this.userRepository.update(
+      { id: userId },
+      { activeCompanyId: companyId },
+    );
 
     // UPDATE CLERK METADATA
     await this.clerkService.updateUserMetadata(userId, {
@@ -160,7 +176,6 @@ export class CompanyService {
 
     return this.getCompanyById(companyId);
   }
-
 
   async getCompanyBySlug(slug: string): Promise<Company> {
     const company = await this.companyRepository.findOne({
@@ -183,7 +198,9 @@ export class CompanyService {
   }
 
   async updateCompany(companyId: string, input: any): Promise<Company> {
-    const company = await this.companyRepository.findOne({ where: { id: companyId } });
+    const company = await this.companyRepository.findOne({
+      where: { id: companyId },
+    });
     if (!company) {
       throw new NotFoundException('Company not found');
     }
@@ -198,7 +215,7 @@ export class CompanyService {
       select: ['id'],
     });
 
-    const warehouseIds = warehouses.map(w => w.id);
+    const warehouseIds = warehouses.map((w) => w.id);
 
     // Count total staff (distinct users assigned to any warehouse in this company)
     let totalStaff = 0;

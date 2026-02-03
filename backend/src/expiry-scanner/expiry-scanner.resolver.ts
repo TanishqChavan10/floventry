@@ -16,50 +16,51 @@ const EXPIRY_SCAN_CRON_EXPRESSION = CronExpression.EVERY_DAY_AT_MIDNIGHT;
 
 @Resolver()
 export class ExpiryScannerResolver {
-    constructor(
-        private readonly expiryScannerService: ExpiryScannerService,
-        private readonly schedulerRegistry: SchedulerRegistry,
-    ) {}
+  constructor(
+    private readonly expiryScannerService: ExpiryScannerService,
+    private readonly schedulerRegistry: SchedulerRegistry,
+  ) {}
 
-    @Query(() => ExpiryScanStatus)
-    @UseGuards(ClerkAuthGuard, RolesGuard)
-    @Roles(Role.OWNER, Role.ADMIN)
-    async expiryScanStatus(): Promise<ExpiryScanStatus> {
-        const enabled = process.env.EXPIRY_SCAN_ENABLED === 'true';
+  @Query(() => ExpiryScanStatus)
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN)
+  async expiryScanStatus(): Promise<ExpiryScanStatus> {
+    const enabled = process.env.EXPIRY_SCAN_ENABLED === 'true';
 
-        let jobRegistered = false;
-        let nextRunAt: Date | undefined;
+    let jobRegistered = false;
+    let nextRunAt: Date | undefined;
 
-        try {
-            const job = this.schedulerRegistry.getCronJob(EXPIRY_SCAN_JOB_NAME);
-            jobRegistered = !!job;
-            // cron nextDates() can return a moment-like object; Date conversion via toDate() when available.
-            const next = (job as any).nextDates?.();
-            nextRunAt = typeof next?.toDate === 'function' ? next.toDate() : undefined;
-        } catch {
-            jobRegistered = false;
-        }
-
-        const runtime = this.expiryScannerService.getRuntimeStatus();
-
-        return {
-            enabled,
-            jobRegistered,
-            jobName: EXPIRY_SCAN_JOB_NAME,
-            timeZone: EXPIRY_SCAN_TIMEZONE,
-            cronExpression: EXPIRY_SCAN_CRON_EXPRESSION,
-            nextRunAt,
-            lastRunAt: runtime.lastRunAt,
-            lastSuccessAt: runtime.lastSuccessAt,
-            lastErrorAt: runtime.lastErrorAt,
-            lastErrorMessage: runtime.lastErrorMessage,
-        };
+    try {
+      const job = this.schedulerRegistry.getCronJob(EXPIRY_SCAN_JOB_NAME);
+      jobRegistered = !!job;
+      // cron nextDates() can return a moment-like object; Date conversion via toDate() when available.
+      const next = (job as any).nextDates?.();
+      nextRunAt =
+        typeof next?.toDate === 'function' ? next.toDate() : undefined;
+    } catch {
+      jobRegistered = false;
     }
 
-    @Mutation(() => ExpiryScanResult)
-    @UseGuards(ClerkAuthGuard, RolesGuard)
-    @Roles(Role.OWNER, Role.ADMIN)
-    async triggerExpiryScan(): Promise<ExpiryScanResult> {
-        return this.expiryScannerService.triggerManualScan();
-    }
+    const runtime = this.expiryScannerService.getRuntimeStatus();
+
+    return {
+      enabled,
+      jobRegistered,
+      jobName: EXPIRY_SCAN_JOB_NAME,
+      timeZone: EXPIRY_SCAN_TIMEZONE,
+      cronExpression: EXPIRY_SCAN_CRON_EXPRESSION,
+      nextRunAt,
+      lastRunAt: runtime.lastRunAt,
+      lastSuccessAt: runtime.lastSuccessAt,
+      lastErrorAt: runtime.lastErrorAt,
+      lastErrorMessage: runtime.lastErrorMessage,
+    };
+  }
+
+  @Mutation(() => ExpiryScanResult)
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN)
+  async triggerExpiryScan(): Promise<ExpiryScanResult> {
+    return this.expiryScannerService.triggerManualScan();
+  }
 }

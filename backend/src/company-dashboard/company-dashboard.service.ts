@@ -6,10 +6,23 @@ import { Warehouse } from '../warehouse/warehouse.entity';
 import { Stock } from '../inventory/entities/stock.entity';
 import { StockLot } from '../inventory/entities/stock-lot.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
-import { GoodsReceiptNote, GRNStatus } from '../inventory/entities/goods-receipt-note.entity';
-import { IssueNote, IssueNoteStatus } from '../issues/entities/issue-note.entity';
-import { WarehouseTransfer, TransferStatus } from '../inventory/entities/warehouse-transfer.entity';
-import { Notification, NotificationType, NotificationSeverity } from '../notifications/entities/notification.entity';
+import {
+  GoodsReceiptNote,
+  GRNStatus,
+} from '../inventory/entities/goods-receipt-note.entity';
+import {
+  IssueNote,
+  IssueNoteStatus,
+} from '../issues/entities/issue-note.entity';
+import {
+  WarehouseTransfer,
+  TransferStatus,
+} from '../inventory/entities/warehouse-transfer.entity';
+import {
+  Notification,
+  NotificationType,
+  NotificationSeverity,
+} from '../notifications/entities/notification.entity';
 import {
   ActiveAlertsSummary,
   CompanyDashboardData,
@@ -44,7 +57,11 @@ export class CompanyDashboardService {
     private notificationRepository: Repository<Notification>,
   ) {}
 
-  private calculateStockStatusCounts(stocks: Array<Pick<Stock, 'quantity' | 'min_stock_level' | 'reorder_point'>>): StockStatusDistribution {
+  private calculateStockStatusCounts(
+    stocks: Array<
+      Pick<Stock, 'quantity' | 'min_stock_level' | 'reorder_point'>
+    >,
+  ): StockStatusDistribution {
     let ok = 0;
     let low = 0;
     let critical = 0;
@@ -54,13 +71,20 @@ export class CompanyDashboardService {
       const minLevel = stock.min_stock_level;
       const reorderPoint = stock.reorder_point;
 
-      const isCritical = qty === 0 || (minLevel !== null && minLevel !== undefined && qty <= Number(minLevel));
+      const isCritical =
+        qty === 0 ||
+        (minLevel !== null &&
+          minLevel !== undefined &&
+          qty <= Number(minLevel));
       if (isCritical) {
         critical++;
         continue;
       }
 
-      const isLow = reorderPoint !== null && reorderPoint !== undefined && qty <= Number(reorderPoint);
+      const isLow =
+        reorderPoint !== null &&
+        reorderPoint !== undefined &&
+        qty <= Number(reorderPoint);
       if (isLow) {
         low++;
       } else {
@@ -71,13 +95,22 @@ export class CompanyDashboardService {
     return { ok, low, critical };
   }
 
-  private async getMovementsWindow(companyId: string, days: number): Promise<CompanyDashboardMovementsWindow> {
+  private async getMovementsWindow(
+    companyId: string,
+    days: number,
+  ): Promise<CompanyDashboardMovementsWindow> {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
     const raw = await this.stockMovementRepository
       .createQueryBuilder('m')
-      .select('COALESCE(SUM(CASE WHEN m.quantity > 0 THEN m.quantity ELSE 0 END), 0)', 'in_units')
-      .addSelect('COALESCE(SUM(CASE WHEN m.quantity < 0 THEN -m.quantity ELSE 0 END), 0)', 'out_units')
+      .select(
+        'COALESCE(SUM(CASE WHEN m.quantity > 0 THEN m.quantity ELSE 0 END), 0)',
+        'in_units',
+      )
+      .addSelect(
+        'COALESCE(SUM(CASE WHEN m.quantity < 0 THEN -m.quantity ELSE 0 END), 0)',
+        'out_units',
+      )
       .where('m.company_id = :companyId', { companyId })
       .andWhere('m.created_at >= :since', { since })
       .getRawOne<{ in_units: string; out_units: string }>();
@@ -88,15 +121,22 @@ export class CompanyDashboardService {
     };
   }
 
-  private async getExpiryDistribution(companyId: string, expirySoonDays: number): Promise<ExpiryRiskDistribution> {
+  private async getExpiryDistribution(
+    companyId: string,
+    expirySoonDays: number,
+  ): Promise<ExpiryRiskDistribution> {
     const now = new Date();
     const soon = new Date(Date.now() + expirySoonDays * 24 * 60 * 60 * 1000);
 
-    const effectiveExpiry = "CASE WHEN lot.expiry_date = date_trunc('day', lot.expiry_date) THEN date_trunc('day', lot.expiry_date) + interval '1 day' - interval '1 millisecond' ELSE lot.expiry_date END";
+    const effectiveExpiry =
+      "CASE WHEN lot.expiry_date = date_trunc('day', lot.expiry_date) THEN date_trunc('day', lot.expiry_date) + interval '1 day' - interval '1 millisecond' ELSE lot.expiry_date END";
 
     const raw = await this.stockLotRepository
       .createQueryBuilder('lot')
-      .select(`COALESCE(SUM(CASE WHEN lot.quantity > 0 AND lot.expiry_date IS NOT NULL AND ${effectiveExpiry} < :now THEN 1 ELSE 0 END), 0)`, 'expired')
+      .select(
+        `COALESCE(SUM(CASE WHEN lot.quantity > 0 AND lot.expiry_date IS NOT NULL AND ${effectiveExpiry} < :now THEN 1 ELSE 0 END), 0)`,
+        'expired',
+      )
       .addSelect(
         `COALESCE(SUM(CASE WHEN lot.quantity > 0 AND lot.expiry_date IS NOT NULL AND ${effectiveExpiry} >= :now AND ${effectiveExpiry} <= :soon THEN 1 ELSE 0 END), 0)`,
         'expiring_soon',
@@ -118,10 +158,14 @@ export class CompanyDashboardService {
 
   private async getExpiredStockUnits(companyId: string): Promise<number> {
     const now = new Date();
-    const effectiveExpiry = "CASE WHEN lot.expiry_date = date_trunc('day', lot.expiry_date) THEN date_trunc('day', lot.expiry_date) + interval '1 day' - interval '1 millisecond' ELSE lot.expiry_date END";
+    const effectiveExpiry =
+      "CASE WHEN lot.expiry_date = date_trunc('day', lot.expiry_date) THEN date_trunc('day', lot.expiry_date) + interval '1 day' - interval '1 millisecond' ELSE lot.expiry_date END";
     const raw = await this.stockLotRepository
       .createQueryBuilder('lot')
-      .select(`COALESCE(SUM(CASE WHEN lot.quantity > 0 AND lot.expiry_date IS NOT NULL AND ${effectiveExpiry} < :now THEN lot.quantity ELSE 0 END), 0)`, 'expired_units')
+      .select(
+        `COALESCE(SUM(CASE WHEN lot.quantity > 0 AND lot.expiry_date IS NOT NULL AND ${effectiveExpiry} < :now THEN lot.quantity ELSE 0 END), 0)`,
+        'expired_units',
+      )
       .where('lot.company_id = :companyId', { companyId })
       .setParameters({ now })
       .getRawOne<{ expired_units: string }>();
@@ -140,7 +184,9 @@ export class CompanyDashboardService {
     return Number(raw?.total ?? 0);
   }
 
-  private async getActiveAlerts(companyId: string): Promise<ActiveAlertsSummary> {
+  private async getActiveAlerts(
+    companyId: string,
+  ): Promise<ActiveAlertsSummary> {
     const unread = await this.notificationRepository.find({
       where: { company_id: companyId, read_at: IsNull() },
       select: ['type', 'severity'],
@@ -156,15 +202,24 @@ export class CompanyDashboardService {
       if (n.severity === NotificationSeverity.CRITICAL) critical++;
       if (n.severity === NotificationSeverity.WARNING) warning++;
 
-      if (n.type === NotificationType.STOCK_LOW || n.type === NotificationType.STOCK_CRITICAL) {
+      if (
+        n.type === NotificationType.STOCK_LOW ||
+        n.type === NotificationType.STOCK_CRITICAL
+      ) {
         low_stock++;
       }
 
-      if (n.type === NotificationType.STOCK_EXPIRING_SOON || n.type === NotificationType.STOCK_EXPIRED) {
+      if (
+        n.type === NotificationType.STOCK_EXPIRING_SOON ||
+        n.type === NotificationType.STOCK_EXPIRED
+      ) {
         expiry++;
       }
 
-      if (n.type === NotificationType.IMPORT_COMPLETED || n.type === NotificationType.IMPORT_PARTIAL_FAILURE) {
+      if (
+        n.type === NotificationType.IMPORT_COMPLETED ||
+        n.type === NotificationType.IMPORT_PARTIAL_FAILURE
+      ) {
         import_issues++;
       }
     }
@@ -172,7 +227,9 @@ export class CompanyDashboardService {
     return { critical, warning, low_stock, expiry, import_issues };
   }
 
-  private async getWarehouseHealthSnapshot(companyId: string): Promise<WarehouseHealthSnapshotItem[]> {
+  private async getWarehouseHealthSnapshot(
+    companyId: string,
+  ): Promise<WarehouseHealthSnapshotItem[]> {
     const warehouses = await this.warehouseRepository.find({
       where: { company_id: companyId },
       select: ['id', 'name', 'slug'],
@@ -189,7 +246,10 @@ export class CompanyDashboardService {
       select: ['warehouse_id', 'quantity', 'min_stock_level', 'reorder_point'],
     });
 
-    const perWarehouse: Record<string, { total: number; ok: number; low: number; critical: number }> = {};
+    const perWarehouse: Record<
+      string,
+      { total: number; ok: number; low: number; critical: number }
+    > = {};
     for (const w of warehouses) {
       perWarehouse[w.id] = { total: 0, ok: 0, low: 0, critical: 0 };
     }
@@ -203,13 +263,20 @@ export class CompanyDashboardService {
       const minLevel = s.min_stock_level;
       const reorderPoint = s.reorder_point;
 
-      const isCritical = qty === 0 || (minLevel !== null && minLevel !== undefined && qty <= Number(minLevel));
+      const isCritical =
+        qty === 0 ||
+        (minLevel !== null &&
+          minLevel !== undefined &&
+          qty <= Number(minLevel));
       if (isCritical) {
         bucket.critical++;
         continue;
       }
 
-      const isLow = reorderPoint !== null && reorderPoint !== undefined && qty <= Number(reorderPoint);
+      const isLow =
+        reorderPoint !== null &&
+        reorderPoint !== undefined &&
+        qty <= Number(reorderPoint);
       if (isLow) {
         bucket.low++;
       } else {
@@ -219,21 +286,33 @@ export class CompanyDashboardService {
 
     // Also incorporate expiry risk per warehouse (any expired lots bumps to CRITICAL)
     const now = new Date();
-    const effectiveExpiry = "CASE WHEN lot.expiry_date = date_trunc('day', lot.expiry_date) THEN date_trunc('day', lot.expiry_date) + interval '1 day' - interval '1 millisecond' ELSE lot.expiry_date END";
+    const effectiveExpiry =
+      "CASE WHEN lot.expiry_date = date_trunc('day', lot.expiry_date) THEN date_trunc('day', lot.expiry_date) + interval '1 day' - interval '1 millisecond' ELSE lot.expiry_date END";
     const expiryAgg = await this.stockLotRepository
       .createQueryBuilder('lot')
       .select('lot.warehouse_id', 'warehouse_id')
-      .addSelect(`COALESCE(SUM(CASE WHEN lot.quantity > 0 AND lot.expiry_date IS NOT NULL AND ${effectiveExpiry} < :now THEN 1 ELSE 0 END), 0)`, 'expired_lots')
+      .addSelect(
+        `COALESCE(SUM(CASE WHEN lot.quantity > 0 AND lot.expiry_date IS NOT NULL AND ${effectiveExpiry} < :now THEN 1 ELSE 0 END), 0)`,
+        'expired_lots',
+      )
       .where('lot.company_id = :companyId', { companyId })
       .setParameters({ now })
       .groupBy('lot.warehouse_id')
       .getRawMany<{ warehouse_id: string; expired_lots: string }>();
 
-    const expiredLotsByWarehouse = new Map(expiryAgg.map((r) => [r.warehouse_id, Number(r.expired_lots ?? 0)]));
+    const expiredLotsByWarehouse = new Map(
+      expiryAgg.map((r) => [r.warehouse_id, Number(r.expired_lots ?? 0)]),
+    );
 
     return warehouses.map((w) => {
-      const stats = perWarehouse[w.id] ?? { total: 0, ok: 0, low: 0, critical: 0 };
-      const okPercent = stats.total === 0 ? 100 : Math.round((stats.ok / stats.total) * 100);
+      const stats = perWarehouse[w.id] ?? {
+        total: 0,
+        ok: 0,
+        low: 0,
+        critical: 0,
+      };
+      const okPercent =
+        stats.total === 0 ? 100 : Math.round((stats.ok / stats.total) * 100);
       const expiredLots = expiredLotsByWarehouse.get(w.id) ?? 0;
 
       let risk_badge = 'OK';
@@ -253,7 +332,9 @@ export class CompanyDashboardService {
     });
   }
 
-  private async getRecentActivity(companyId: string): Promise<RecentInventoryEvent[]> {
+  private async getRecentActivity(
+    companyId: string,
+  ): Promise<RecentInventoryEvent[]> {
     const limitPerType = 10;
 
     const [grns, issues, transfers, adjustments] = await Promise.all([
@@ -320,7 +401,11 @@ export class CompanyDashboardService {
     // Adjustments: infer from movement type names
     for (const m of adjustments) {
       const typeStr = String((m as any).type);
-      const isAdjustment = typeStr.includes('ADJUST') || typeStr.includes('OPENING') || typeStr.includes('ISSUE') || String((m as any).reference_type) === 'ADJUSTMENT';
+      const isAdjustment =
+        typeStr.includes('ADJUST') ||
+        typeStr.includes('OPENING') ||
+        typeStr.includes('ISSUE') ||
+        String((m as any).reference_type) === 'ADJUSTMENT';
       if (!isAdjustment) continue;
 
       events.push({
@@ -352,7 +437,9 @@ export class CompanyDashboardService {
       recentActivity,
       stockRows,
     ] = await Promise.all([
-      this.productRepository.count({ where: { company_id: companyId, is_active: true as any } as any }),
+      this.productRepository.count({
+        where: { company_id: companyId, is_active: true as any } as any,
+      }),
       this.warehouseRepository.count({ where: { company_id: companyId } }),
       this.getTotalStockUnits(companyId),
       this.getExpiredStockUnits(companyId),
@@ -370,7 +457,8 @@ export class CompanyDashboardService {
 
     const stockStatus = this.calculateStockStatusCounts(stockRows);
 
-    const stockAtRisk = stockStatus.low + stockStatus.critical + expiryDistribution.expiring_soon;
+    const stockAtRisk =
+      stockStatus.low + stockStatus.critical + expiryDistribution.expiring_soon;
 
     const kpis: CompanyDashboardKPIs = {
       total_skus: totalSkus,

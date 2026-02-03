@@ -19,10 +19,17 @@ import {
   setPendingWarehouseRoute,
 } from '@/lib/warehouse-pending-route';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 function isHrefActive(pathname: string | null, href: string): boolean {
   if (!pathname) return false;
   if (pathname === href) return true;
+
+  // If href is a warehouse overview root (e.g., /company/warehouses/warehouse),
+  // only treat it as active on the exact page (not on sub-pages).
+  if (href.match(/^\/[^\/]+\/warehouses\/[^\/]+$/)) {
+    return false;
+  }
 
   // If href is a company root (e.g., /company-slug) and we're in a warehouse route,
   // don't mark as active.
@@ -50,9 +57,10 @@ export function IconRail() {
 
   const isWarehousesListPage = pathname?.includes('/warehouses') && !warehouseSlug;
 
-  const navigationSections = warehouseSlug || isWarehousesListPage
-    ? getWarehouseNavigation(companySlug, warehouseSlug || '')
-    : getCompanyNavigation(companySlug);
+  const navigationSections =
+    warehouseSlug || isWarehousesListPage
+      ? getWarehouseNavigation(companySlug, warehouseSlug || '')
+      : getCompanyNavigation(companySlug);
 
   const userRole: UserRole = permissions.isOwner
     ? 'OWNER'
@@ -87,6 +95,9 @@ export function IconRail() {
     ? `/${companySlug}/warehouses/${warehouseSlug}`
     : `/${companySlug}/dashboard`;
 
+  // Check if we're exactly on the home/overview page (not a sub-page)
+  const isOnHomePage = pathname === logoHref;
+
   const handleNavWithoutSelection = (href: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!isWarehousesListPage) return;
 
@@ -99,44 +110,58 @@ export function IconRail() {
   };
 
   return (
-    <div className="hidden md:flex w-16 shrink-0 bg-[#E53935] text-white flex-col items-center py-4">
-      <Link
-        href={logoHref}
-        className={cn(
-          'h-10 w-10 rounded-xl flex items-center justify-center',
-          'bg-white/10 hover:bg-white/15 transition-colors',
-        )}
-        title="Home"
-        aria-label="Home"
-      >
-        <span className="text-lg font-semibold leading-none">F</span>
-      </Link>
+    <TooltipProvider delayDuration={100}>
+      <div className="hidden md:flex w-20 shrink-0 bg-[#E53935] text-white flex-col items-center py-4">
+        <Link
+          href={logoHref}
+          className={cn(
+            'h-10 w-10 rounded-xl flex items-center justify-center',
+            'transition-all duration-200',
+            isOnHomePage
+              ? 'bg-white/10 hover:bg-white/15 opacity-100'
+              : 'bg-white/5 hover:bg-white/10 opacity-30',
+          )}
+          title="Home"
+          aria-label="Home"
+        >
+          <span className="text-lg font-semibold leading-none">F</span>
+        </Link>
 
-      <div className="mt-4 flex-1 w-full flex flex-col items-center gap-1 overflow-y-auto px-2">
-        {items.map((item) => {
-          const active = isHrefActive(pathname, item.href);
-          const Icon = item.icon;
+        <div className="mt-4 flex-1 w-full flex flex-col items-center gap-3 overflow-y-auto px-2">
+          {items.map((item) => {
+            const active = isHrefActive(pathname, item.href);
+            const Icon = item.icon;
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={isWarehousesListPage ? handleNavWithoutSelection(item.href) : undefined}
-              className={cn(
-                'h-10 w-10 rounded-xl flex items-center justify-center',
-                'transition-colors',
-                active ? 'bg-white text-[#E53935]' : 'text-white/85 hover:bg-white/10 hover:text-white',
-              )}
-              title={item.label}
-              aria-label={item.label}
-            >
-              <Icon className={cn('h-5 w-5', active ? 'text-[#E53935]' : 'text-white')} />
-            </Link>
-          );
-        })}
+            return (
+              <Tooltip key={item.href}>
+                <TooltipTrigger asChild>
+                  <Link
+                    href={item.href}
+                    onClick={
+                      isWarehousesListPage ? handleNavWithoutSelection(item.href) : undefined
+                    }
+                    className={cn(
+                      'h-10 w-10 rounded-xl flex items-center justify-center',
+                      'transition-colors',
+                      active
+                        ? 'bg-white text-[#E53935]'
+                        : 'text-white/85 hover:bg-white/10 hover:text-white',
+                    )}
+                    aria-label={item.label}
+                  >
+                    <Icon className={cn('h-5 w-5', active ? 'text-[#E53935]' : 'text-white')} />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="bg-neutral-900 text-white border-none">
+                  {item.label}
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </div>
+
+        <div className="mt-4" />
       </div>
-
-      <div className="mt-4" />
-    </div>
+    </TooltipProvider>
   );
 }

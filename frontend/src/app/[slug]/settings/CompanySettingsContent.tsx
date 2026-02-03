@@ -6,20 +6,12 @@ import {
   Building2, 
   MapPin, 
   Package, 
-  ShoppingCart, 
-  Bell, 
-  ShieldCheck, 
-  Activity, 
   AlertTriangle 
 } from 'lucide-react';
 import { 
   CompanyProfileForm, 
   BusinessInfoForm, 
   InventorySettingsForm, 
-  PurchaseOrderSettingsForm, 
-  NotificationSettingsForm, 
-  AccessSecurityForm, 
-  AuditActivityForm, 
   DangerZone 
 } from './components';
 import Link from 'next/link';
@@ -53,18 +45,6 @@ export default function CompanySettingsContent({ company }: CompanySettingsProps
           <TabsTrigger value="inventory" className="flex-1 min-w-[120px]">
             <Package className="w-4 h-4 mr-2" /> Inventory
           </TabsTrigger>
-          <TabsTrigger value="purchasing" className="flex-1 min-w-[120px]">
-            <ShoppingCart className="w-4 h-4 mr-2" /> Purchasing
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex-1 min-w-[120px]">
-            <Bell className="w-4 h-4 mr-2" /> Alerts
-          </TabsTrigger>
-          <TabsTrigger value="access" className="flex-1 min-w-[120px]">
-            <ShieldCheck className="w-4 h-4 mr-2" /> Access
-          </TabsTrigger>
-          <TabsTrigger value="audit" className="flex-1 min-w-[120px]">
-            <Activity className="w-4 h-4 mr-2" /> Audit
-          </TabsTrigger>
           <TabsTrigger value="danger" className="flex-1 min-w-[120px] text-red-500 data-[state=active]:text-red-600 data-[state=active]:bg-red-50 dark:data-[state=active]:bg-red-950/20">
             <AlertTriangle className="w-4 h-4 mr-2" /> Danger
           </TabsTrigger>
@@ -82,22 +62,6 @@ export default function CompanySettingsContent({ company }: CompanySettingsProps
           <InventorySettingsForm companyId={company.id} settings={settings} />
         </TabsContent>
         
-        <TabsContent value="purchasing" className="space-y-4">
-          <PurchaseOrderSettingsForm companyId={company.id} settings={settings} />
-        </TabsContent>
-        
-        <TabsContent value="notifications" className="space-y-4">
-          <NotificationSettingsForm companyId={company.id} settings={settings} />
-        </TabsContent>
-        
-        <TabsContent value="access" className="space-y-4">
-          <AccessSecurityForm companyId={company.id} settings={settings} />
-        </TabsContent>
-        
-        <TabsContent value="audit" className="space-y-4">
-          <AuditActivityForm companyId={company.id} settings={settings} />
-        </TabsContent>
-
         <TabsContent value="danger" className="space-y-4">
           <DangerZone companyId={company.id} />
         </TabsContent>

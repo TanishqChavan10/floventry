@@ -12,7 +12,7 @@ import { Role } from '../auth/enums/role.enum';
 
 @Resolver(() => UserCompany)
 export class UserCompanyResolver {
-  constructor(private readonly userCompanyService: UserCompanyService) { }
+  constructor(private readonly userCompanyService: UserCompanyService) {}
 
   @Query(() => [UserCompany])
   @UseGuards(ClerkAuthGuard)
@@ -59,7 +59,7 @@ export class UserCompanyResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async getCompanyMembers(
     @Args('companyId', { type: () => String }) companyId: string,
-    @Context() context: any
+    @Context() context: any,
   ) {
     // TODO: Add permission check if MANAGER - filter to only their warehouse users
     return this.userCompanyService.getCompanyMembersWithDetails(companyId);
@@ -73,7 +73,7 @@ export class UserCompanyResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async removeMemberValidated(
     @Args('membershipId', { type: () => String }) membershipId: string,
-    @Context() context: any
+    @Context() context: any,
   ) {
     const removerId = context.req.user.id;
     const removerRole = context.req.user.role || Role.STAFF;
@@ -81,7 +81,7 @@ export class UserCompanyResolver {
     await this.userCompanyService.removeMemberWithValidation(
       membershipId,
       removerId,
-      removerRole
+      removerRole,
     );
 
     return true;
@@ -89,14 +89,14 @@ export class UserCompanyResolver {
 
   //------------------------------------------------------------
   // NEW: Update member warehouses
-  //------------------------------------------------------------  
+  //------------------------------------------------------------
   @Mutation(() => Boolean, { name: 'updateMemberWarehouses' })
   @UseGuards(ClerkAuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async updateMemberWarehouses(
     @Args('membershipId', { type: () => String }) membershipId: string,
     @Args('warehouseIds', { type: () => [String] }) warehouseIds: string[],
-    @Context() context: any
+    @Context() context: any,
   ) {
     const updaterId = context.req.user.id;
     const updaterRole = context.req.user.role || Role.STAFF;
@@ -105,7 +105,7 @@ export class UserCompanyResolver {
       membershipId,
       warehouseIds,
       updaterRole,
-      updaterId
+      updaterId,
     );
 
     return true;
@@ -118,9 +118,10 @@ export class UserCompanyResolver {
   @UseGuards(ClerkAuthGuard)
   async getWarehouseMembers(
     @Args('warehouseId', { type: () => String }) warehouseId: string,
-    @Context() context: any
+    @Context() context: any,
   ): Promise<WarehouseMember[]> {
-    const members = await this.userCompanyService.getMembersByWarehouse(warehouseId);
+    const members =
+      await this.userCompanyService.getMembersByWarehouse(warehouseId);
 
     // Map the raw query result to WarehouseMember DTO
     return members.map((member: any) => ({
@@ -139,7 +140,7 @@ export class UserCompanyResolver {
   @UseGuards(ClerkAuthGuard)
   async switchWarehouse(
     @Args('warehouseId', { type: () => String }) warehouseId: string,
-    @Context() context: any
+    @Context() context: any,
   ): Promise<boolean> {
     const userId = context.req.user.id;
     await this.userCompanyService.setDefaultWarehouse(userId, warehouseId);

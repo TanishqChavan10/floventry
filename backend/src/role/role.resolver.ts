@@ -4,7 +4,7 @@ import { RolePermission } from './role.model';
 
 @Resolver(() => RolePermission)
 export class RoleResolver {
-  constructor(private readonly roleService: RoleService) { }
+  constructor(private readonly roleService: RoleService) {}
 
   @Query(() => [RolePermission])
   async roles() {

@@ -1,5 +1,11 @@
 import { InputType, Field } from '@nestjs/graphql';
-import { IsNotEmpty, IsString, MaxLength, IsOptional, Matches } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+  IsOptional,
+  Matches,
+} from 'class-validator';
 
 @InputType()
 export class CreateCompanyInput {
@@ -13,7 +19,9 @@ export class CreateCompanyInput {
   @IsNotEmpty()
   @IsString()
   @MaxLength(50)
-  @Matches(/^[a-z0-9-]+$/, { message: 'Slug must contain only lowercase letters, numbers, and hyphens' })
+  @Matches(/^[a-z0-9-]+$/, {
+    message: 'Slug must contain only lowercase letters, numbers, and hyphens',
+  })
   slug: string;
 
   @Field({ nullable: true })

@@ -12,49 +12,49 @@ import { Role } from '../auth/enums/role.enum';
 
 @ObjectType()
 class InventoryAdjustmentResult {
-    @Field()
-    success: boolean;
+  @Field()
+  success: boolean;
 
-    @Field(() => StockMovement)
-    stockMovement: StockMovement;
+  @Field(() => StockMovement)
+  stockMovement: StockMovement;
 
-    @Field(() => Stock)
-    stock: Stock;
+  @Field(() => Stock)
+  stock: Stock;
 }
 
 @Resolver()
 @UseGuards(ClerkAuthGuard, RolesGuard)
 export class AdjustmentResolver {
-    constructor(private readonly inventoryService: InventoryService) { }
+  constructor(private readonly inventoryService: InventoryService) {}
 
-    /**
-     * Create inventory adjustment for stock correction
-     * RBAC: OWNER, ADMIN, MANAGER only
-     * Managers can only adjust stock in their assigned warehouses
-     */
-    @Mutation(() => InventoryAdjustmentResult)
-    @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
-    async createInventoryAdjustment(
-        @Args('input') input: CreateInventoryAdjustmentInput,
-        @ClerkUser() user: any,
-    ): Promise<InventoryAdjustmentResult> {
-        if (!user.activeCompanyId) {
-            throw new BadRequestException('Active company required');
-        }
-
-        // TODO: For MANAGER role, validate warehouse assignment
-        // if (user.role === Role.MANAGER) {
-        //     const assignedWarehouses = user.warehouses?.map(w => w.warehouseId) || [];
-        //     if (!assignedWarehouses.includes(input.warehouse_id)) {
-        //         throw new ForbiddenException('You can only adjust stock in your assigned warehouses');
-        //     }
-        // }
-
-        return this.inventoryService.createInventoryAdjustment(
-            input,
-            user.activeCompanyId,
-            user.userId,
-            user.role,
-        );
+  /**
+   * Create inventory adjustment for stock correction
+   * RBAC: OWNER, ADMIN, MANAGER only
+   * Managers can only adjust stock in their assigned warehouses
+   */
+  @Mutation(() => InventoryAdjustmentResult)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  async createInventoryAdjustment(
+    @Args('input') input: CreateInventoryAdjustmentInput,
+    @ClerkUser() user: any,
+  ): Promise<InventoryAdjustmentResult> {
+    if (!user.activeCompanyId) {
+      throw new BadRequestException('Active company required');
     }
+
+    // TODO: For MANAGER role, validate warehouse assignment
+    // if (user.role === Role.MANAGER) {
+    //     const assignedWarehouses = user.warehouses?.map(w => w.warehouseId) || [];
+    //     if (!assignedWarehouses.includes(input.warehouse_id)) {
+    //         throw new ForbiddenException('You can only adjust stock in your assigned warehouses');
+    //     }
+    // }
+
+    return this.inventoryService.createInventoryAdjustment(
+      input,
+      user.activeCompanyId,
+      user.userId,
+      user.role,
+    );
+  }
 }

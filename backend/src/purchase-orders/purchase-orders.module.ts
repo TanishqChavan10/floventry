@@ -8,11 +8,11 @@ import { PurchaseOrdersResolver } from './purchase-orders.resolver';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([PurchaseOrder, PurchaseOrderItem, UserWarehouse]),
-        AuthModule,
-    ],
-    providers: [PurchaseOrdersService, PurchaseOrdersResolver],
-    exports: [PurchaseOrdersService],
+  imports: [
+    TypeOrmModule.forFeature([PurchaseOrder, PurchaseOrderItem, UserWarehouse]),
+    AuthModule,
+  ],
+  providers: [PurchaseOrdersService, PurchaseOrdersResolver],
+  exports: [PurchaseOrdersService],
 })
-export class PurchaseOrdersModule { }
+export class PurchaseOrdersModule {}

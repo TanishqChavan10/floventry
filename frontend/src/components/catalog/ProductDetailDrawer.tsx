@@ -32,12 +32,12 @@ export default function ProductDetailDrawer({
     <Sheet open={open} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-3 pr-10">
             <div className="space-y-1">
               <SheetTitle className="text-2xl">{product.name}</SheetTitle>
               <SheetDescription className="font-mono text-sm">SKU: {product.sku}</SheetDescription>
             </div>
-            <Badge variant={product.is_active ? 'default' : 'secondary'}>
+            <Badge className="shrink-0 mt-1" variant={product.is_active ? 'default' : 'secondary'}>
               {product.is_active ? 'Active' : 'Archived'}
             </Badge>
           </div>

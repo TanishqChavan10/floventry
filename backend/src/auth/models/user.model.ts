@@ -1,7 +1,6 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import GraphQLJSONObject from 'graphql-type-json';
 
-
 @ObjectType()
 export class UserWarehouseInfo {
   @Field(() => ID)

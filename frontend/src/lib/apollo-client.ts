@@ -8,19 +8,24 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (graphQLErrors)
     graphQLErrors.forEach(({ message }) => {
       // Suppress auth-related errors to prevent console spam
-      if (!message.includes('No token provided') && 
-          !message.includes('Invalid or expired token') &&
-          !message.includes('Unauthorized')) {
+      if (!message.includes('No token provided') &&
+        !message.includes('Invalid or expired token') &&
+        !message.includes('Unauthorized')) {
         console.error(`[GraphQL error]: ${message}`);
       }
     });
-  if (networkError) console.error(`[Network error]: ${networkError}`);
+
+  // Suppress AbortError - these are expected when queries are canceled
+  // (e.g., fast typing in search, navigation away from page, etc.)
+  if (networkError && networkError.name !== 'AbortError') {
+    console.error(`[Network error]: ${networkError}`);
+  }
 });
 
 // Auth link that gets token from window (set by ApolloAppProvider)
 const authLink = new ApolloLink((operation, forward) => {
-  const token = typeof window !== 'undefined' 
-    ? (window as any).__clerk_session_token 
+  const token = typeof window !== 'undefined'
+    ? (window as any).__clerk_session_token
     : null;
 
   operation.setContext(({ headers = {} }) => ({

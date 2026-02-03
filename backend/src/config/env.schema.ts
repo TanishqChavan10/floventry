@@ -59,38 +59,26 @@ export const envValidationSchema = Joi.object({
     .default('localhost')
     .description('Redis server host'),
 
-  REDIS_PORT: Joi.number()
-    .default(6379)
-    .description('Redis server port'),
+  REDIS_PORT: Joi.number().default(6379).description('Redis server port'),
 
-  REDIS_PASSWORD: Joi.string()
-    .optional()
-    .description('Redis server password'),
+  REDIS_PASSWORD: Joi.string().optional().description('Redis server password'),
 
-  REDIS_DB: Joi.number()
-    .default(0)
-    .description('Redis database number'),
+  REDIS_DB: Joi.number().default(0).description('Redis database number'),
 
   REDIS_URL: Joi.string()
     .optional()
     .description('Complete Redis connection URL'),
 
   // AWS S3 Configuration
-  AWS_ACCESS_KEY_ID: Joi.string()
-    .required()
-    .description('AWS access key ID'),
+  AWS_ACCESS_KEY_ID: Joi.string().required().description('AWS access key ID'),
 
   AWS_SECRET_ACCESS_KEY: Joi.string()
     .required()
     .description('AWS secret access key'),
 
-  AWS_REGION: Joi.string()
-    .default('us-east-1')
-    .description('AWS region'),
+  AWS_REGION: Joi.string().default('us-east-1').description('AWS region'),
 
-  S3_BUCKET_NAME: Joi.string()
-    .required()
-    .description('S3 bucket name'),
+  S3_BUCKET_NAME: Joi.string().required().description('S3 bucket name'),
 });
 
 /**

@@ -19,7 +19,7 @@ export class CompanyResolver {
   constructor(
     private readonly companyService: CompanyService,
     private readonly clerkService: ClerkService,
-  ) { }
+  ) {}
 
   @Query(() => [Company])
   @UseGuards(ClerkAuthGuard)
@@ -84,7 +84,9 @@ export class CompanyResolver {
   ) {
     // Security check: ensure user belongs to company (Role guard handles role, but need to check if company matches active or owned)
     if (user.activeCompanyId !== companyId) {
-      throw new Error('Unauthorized: You can only update settings for your active company');
+      throw new Error(
+        'Unauthorized: You can only update settings for your active company',
+      );
     }
     return this.companyService.updateSettings(companyId, input);
   }

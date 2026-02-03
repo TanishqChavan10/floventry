@@ -13,20 +13,20 @@ import { AuthModule } from '../auth/auth.module';
 import { AuditModule } from '../audit/audit.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([
-            IssueNote,
-            IssueNoteItem,
-            StockLot,
-            Stock,
-            StockMovement,
-        ]),
-        SalesModule, // Import for SalesService
-        NotificationsModule,
-        AuthModule,
-        AuditModule,
-    ],
-    providers: [IssuesService, IssuesResolver],
-    exports: [IssuesService],
+  imports: [
+    TypeOrmModule.forFeature([
+      IssueNote,
+      IssueNoteItem,
+      StockLot,
+      Stock,
+      StockMovement,
+    ]),
+    SalesModule, // Import for SalesService
+    NotificationsModule,
+    AuthModule,
+    AuditModule,
+  ],
+  providers: [IssuesService, IssuesResolver],
+  exports: [IssuesService],
 })
-export class IssuesModule { }
+export class IssuesModule {}

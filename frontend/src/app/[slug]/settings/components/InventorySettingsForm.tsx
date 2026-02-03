@@ -20,15 +20,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const formSchema = z.object({
   low_stock_threshold: z.coerce.number().min(0),
   expiry_warning_days: z.coerce.number().min(1),
   enable_expiry_tracking: z.boolean(),
-  allow_negative_stock: z.boolean(),
-  stock_valuation_method: z.string(),
 });
 
 interface InventorySettingsFormProps {
@@ -45,8 +42,6 @@ export function InventorySettingsForm({ companyId, settings }: InventorySettings
       low_stock_threshold: Number(settings?.low_stock_threshold ?? 10),
       expiry_warning_days: Number(settings?.expiry_warning_days ?? 30),
       enable_expiry_tracking: (settings?.enable_expiry_tracking as boolean) ?? true,
-      allow_negative_stock: (settings?.allow_negative_stock as boolean) ?? false,
-      stock_valuation_method: (settings?.stock_valuation_method as string) || 'FIFO',
     },
   });
 
@@ -69,53 +64,28 @@ export function InventorySettingsForm({ companyId, settings }: InventorySettings
       <CardHeader>
         <CardTitle>Inventory Configuration</CardTitle>
         <CardDescription>
-          Global rules for tracking stock, expiry, and valuation.
+          Configure low stock alerts and expiry tracking settings.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="low_stock_threshold"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Default Low Stock Threshold</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Default unit count to trigger low stock alerts.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="stock_valuation_method"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Stock Valuation Method</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select method" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="FIFO">First In, First Out (FIFO)</SelectItem>
-                        <SelectItem value="LIFO">Last In, First Out (LIFO)</SelectItem>
-                        <SelectItem value="WeightedAverage">Weighted Average</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="low_stock_threshold"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Default Low Stock Threshold</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Default unit count to trigger low stock alerts.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="space-y-4">
               <FormField
@@ -158,26 +128,6 @@ export function InventorySettingsForm({ companyId, settings }: InventorySettings
                />
               )}
 
-              <FormField
-                control={form.control}
-                name="allow_negative_stock"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">Allow Negative Stock</FormLabel>
-                      <FormDescription>
-                        Allow inventory stock to fall below zero.
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
             </div>
 
             <div className="flex justify-end">

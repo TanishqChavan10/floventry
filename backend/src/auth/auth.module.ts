@@ -14,8 +14,25 @@ import { WarehouseGuard } from './guards/warehouse.guard';
 import { UserWarehouseService } from './user-warehouse.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, UserWarehouse, Warehouse]), ConfigModule],
-  providers: [AuthResolver, ClerkService, ClerkAuthGuard, RolesGuard, WarehouseGuard, UserWarehouseService],
-  exports: [ClerkService, ClerkAuthGuard, RolesGuard, WarehouseGuard, UserWarehouseService, TypeOrmModule],
+  imports: [
+    TypeOrmModule.forFeature([User, UserWarehouse, Warehouse]),
+    ConfigModule,
+  ],
+  providers: [
+    AuthResolver,
+    ClerkService,
+    ClerkAuthGuard,
+    RolesGuard,
+    WarehouseGuard,
+    UserWarehouseService,
+  ],
+  exports: [
+    ClerkService,
+    ClerkAuthGuard,
+    RolesGuard,
+    WarehouseGuard,
+    UserWarehouseService,
+    TypeOrmModule,
+  ],
 })
-export class AuthModule { }
+export class AuthModule {}

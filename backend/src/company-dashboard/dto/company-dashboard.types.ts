@@ -1,4 +1,10 @@
-import { Field, Int, ObjectType, ID, GraphQLISODateTime } from '@nestjs/graphql';
+import {
+  Field,
+  Int,
+  ObjectType,
+  ID,
+  GraphQLISODateTime,
+} from '@nestjs/graphql';
 
 @ObjectType()
 export class CompanyDashboardMovementsWindow {

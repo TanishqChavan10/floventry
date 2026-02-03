@@ -9,7 +9,7 @@ export class ClerkService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-  ) { }
+  ) {}
 
   /**
    * Sync Clerk user with local database
@@ -26,7 +26,8 @@ export class ClerkService {
     // Data to sync (never overwrite PK)
     const userData = {
       email: clerkUser.emailAddresses[0]?.emailAddress || '',
-      fullName: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim(),
+      fullName:
+        `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim(),
       avatarUrl: clerkUser.imageUrl || undefined,
     };
 
@@ -38,7 +39,7 @@ export class ClerkService {
 
     // 3. If user does not exist → create new user
     user = this.userRepository.create({
-      id: clerkId,       // PK stays Clerk ID
+      id: clerkId, // PK stays Clerk ID
       ...userData,
     });
 
@@ -51,7 +52,12 @@ export class ClerkService {
   async getUserByClerkId(clerkId: string): Promise<User> {
     let user = await this.userRepository.findOne({
       where: { id: clerkId },
-      relations: ['userCompanies', 'userCompanies.company', 'userWarehouses', 'userWarehouses.warehouse'],
+      relations: [
+        'userCompanies',
+        'userCompanies.company',
+        'userWarehouses',
+        'userWarehouses.warehouse',
+      ],
     });
 
     if (!user) {

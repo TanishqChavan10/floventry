@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import CompanyGuard from '@/components/CompanyGuard';
@@ -21,6 +22,7 @@ import { GET_WAREHOUSE_DASHBOARD } from '@/lib/graphql/warehouse-dashboard';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 
 function WarehouseDashboardData({
   companySlug,
@@ -31,11 +33,17 @@ function WarehouseDashboardData({
   warehouseSlug: string;
   activeWarehouse: Warehouse;
 }) {
-  const { data, loading, error } = useQuery(GET_WAREHOUSE_DASHBOARD, {
+  const [lastUpdatedAt, setLastUpdatedAt] = React.useState<Date | null>(null);
+
+  const { data, loading, error, refetch } = useQuery(GET_WAREHOUSE_DASHBOARD, {
     variables: { warehouseId: activeWarehouse.id },
     pollInterval: 30000, // Real-time-ish update
     errorPolicy: 'all', // Continue even if there are errors
   });
+
+  React.useEffect(() => {
+    if (data) setLastUpdatedAt(new Date());
+  }, [data]);
 
   const kpis = data?.warehouseKPIs || {
     totalProducts: 0,
@@ -78,13 +86,73 @@ function WarehouseDashboardData({
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50">
       <main className="container mx-auto px-6 py-8 space-y-8">
         {/* Page Header */}
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            {activeWarehouse.name} Overview
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 max-w-2xl">
-            Real-time snapshot of inventory health and daily operations.
-          </p>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                {activeWarehouse.name} Overview
+              </h1>
+              <p className="text-slate-600 dark:text-slate-400 max-w-2xl">
+                Real-time snapshot of inventory health and daily operations.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="h-7">
+                Live • 30s
+              </Badge>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-7 px-2.5 text-xs"
+                onClick={() => refetch()}
+              >
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                Refresh
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs text-muted-foreground">
+              {lastUpdatedAt ? `Last updated ${lastUpdatedAt.toLocaleTimeString()}` : '—'}
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              <Link
+                href={`/${companySlug}/warehouses/${warehouseSlug}/inventory`}
+                className="shrink-0"
+              >
+                <Button variant="outline" className="h-8 px-3 text-xs">
+                  Inventory
+                </Button>
+              </Link>
+              <Link
+                href={`/${companySlug}/warehouses/${warehouseSlug}/expiry`}
+                className="shrink-0"
+              >
+                <Button variant="outline" className="h-8 px-3 text-xs">
+                  Expiry
+                </Button>
+              </Link>
+              <Link
+                href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/low-stock`}
+                className="shrink-0"
+              >
+                <Button variant="outline" className="h-8 px-3 text-xs">
+                  Low Stock
+                </Button>
+              </Link>
+              <Link
+                href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn`}
+                className="shrink-0"
+              >
+                <Button variant="outline" className="h-8 px-3 text-xs">
+                  GRN
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* KPI Summary Cards */}
@@ -200,7 +268,11 @@ function WarehouseDashboardData({
                             <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                               <span>by {movement.performedBy?.name || 'System'}</span>
                               <span>•</span>
-                              <span>{movement.createdAt ? format(new Date(movement.createdAt), 'MMM d, h:mm a') : 'N/A'}</span>
+                              <span>
+                                {movement.createdAt
+                                  ? format(new Date(movement.createdAt), 'MMM d, h:mm a')
+                                  : 'N/A'}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -250,7 +322,9 @@ function WarehouseDashboardData({
                           <p className="truncate font-medium text-sm text-slate-900 dark:text-slate-100">
                             {item?.product?.name || 'Unknown Product'}
                           </p>
-                          <p className="text-xs text-muted-foreground">{item?.product?.sku || 'N/A'}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {item?.product?.sku || 'N/A'}
+                          </p>
                         </div>
                         <div className="text-right">
                           <p className="font-mono text-sm font-bold text-orange-600">

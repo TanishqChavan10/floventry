@@ -40,9 +40,12 @@ export class InviteService {
     private clerkService: ClerkService,
     private dataSource: DataSource,
     private userWarehouseService: UserWarehouseService,
-  ) { }
+  ) {}
 
-  private async validateWarehousesBelongToCompany(companyId: string, warehouseIds: string[]): Promise<void> {
+  private async validateWarehousesBelongToCompany(
+    companyId: string,
+    warehouseIds: string[],
+  ): Promise<void> {
     if (!warehouseIds || warehouseIds.length === 0) return;
 
     const count = await this.warehouseRepository.count({
@@ -50,17 +53,24 @@ export class InviteService {
     });
 
     if (count !== warehouseIds.length) {
-      throw new BadRequestException('One or more warehouses are invalid for this company');
+      throw new BadRequestException(
+        'One or more warehouses are invalid for this company',
+      );
     }
   }
 
-  private async assertActiveCompanyMember(userId: string, companyId: string): Promise<void> {
+  private async assertActiveCompanyMember(
+    userId: string,
+    companyId: string,
+  ): Promise<void> {
     const membership = await this.userCompanyRepository.findOne({
       where: { user_id: userId, company_id: companyId, status: 'active' },
     });
 
     if (!membership) {
-      throw new BadRequestException('Not authorized to view invites for this company');
+      throw new BadRequestException(
+        'Not authorized to view invites for this company',
+      );
     }
   }
 
@@ -86,8 +96,12 @@ export class InviteService {
       });
 
       if (anyInvite) {
-        this.logger.warn(`Invite found but status is: ${anyInvite.status}, expected: pending`);
-        throw new NotFoundException(`Invite status is '${anyInvite.status}', cannot be accepted`);
+        this.logger.warn(
+          `Invite found but status is: ${anyInvite.status}, expected: pending`,
+        );
+        throw new NotFoundException(
+          `Invite status is '${anyInvite.status}', cannot be accepted`,
+        );
       }
 
       this.logger.warn(`No invite found with token: ${token}`);
@@ -112,7 +126,10 @@ export class InviteService {
    * Validate if inviter has permission to invite target role
    * Rule: STAFF < MANAGER < ADMIN < OWNER
    */
-  private validateInvitePermissions(inviterRole: string, targetRole: string): void {
+  private validateInvitePermissions(
+    inviterRole: string,
+    targetRole: string,
+  ): void {
     const hierarchy = {
       STAFF: 1,
       MANAGER: 2,
@@ -134,7 +151,7 @@ export class InviteService {
 
     // Otherwise, deny
     throw new BadRequestException(
-      `${inviterRole} does not have permission to invite ${targetRole}`
+      `${inviterRole} does not have permission to invite ${targetRole}`,
     );
   }
 
@@ -145,19 +162,19 @@ export class InviteService {
    */
   private validateWarehouseRequirements(
     role: string,
-    warehouseIds: string[]
+    warehouseIds: string[],
   ): void {
     const needsWarehouse = role === Role.MANAGER || role === Role.STAFF;
 
     if (needsWarehouse && (!warehouseIds || warehouseIds.length === 0)) {
       throw new BadRequestException(
-        `${role} must be assigned to at least one warehouse`
+        `${role} must be assigned to at least one warehouse`,
       );
     }
 
     if (!needsWarehouse && warehouseIds && warehouseIds.length > 0) {
       throw new BadRequestException(
-        `${role} should not be assigned to specific warehouses (has access to all)`
+        `${role} should not be assigned to specific warehouses (has access to all)`,
       );
     }
   }
@@ -167,24 +184,25 @@ export class InviteService {
    */
   private async validateManagerScope(
     inviterId: string,
-    warehouseIds: string[]
+    warehouseIds: string[],
   ): Promise<void> {
     if (!warehouseIds || warehouseIds.length === 0) return;
 
     // Get manager's warehouses
-    const managerWarehouses = await this.userWarehouseService.getUserWarehouses(inviterId);
+    const managerWarehouses =
+      await this.userWarehouseService.getUserWarehouses(inviterId);
     const managedWarehouseIds = managerWarehouses
-      .filter(uw => uw.is_manager_of_warehouse)
-      .map(uw => uw.warehouse_id);
+      .filter((uw) => uw.is_manager_of_warehouse)
+      .map((uw) => uw.warehouse_id);
 
     // Check if all target warehouses are in manager's scope
     const invalidWarehouses = warehouseIds.filter(
-      id => !managedWarehouseIds.includes(id)
+      (id) => !managedWarehouseIds.includes(id),
     );
 
     if (invalidWarehouses.length > 0) {
       throw new BadRequestException(
-        'You can only assign warehouses that you manage'
+        'You can only assign warehouses that you manage',
       );
     }
   }
@@ -217,12 +235,14 @@ export class InviteService {
       throw new NotFoundException('Company not found');
     }
 
-    const inviter = await this.userRepository.findOne({ where: { id: invitedBy } });
+    const inviter = await this.userRepository.findOne({
+      where: { id: invitedBy },
+    });
     const inviterName = inviter?.fullName || inviter?.email || 'A team member';
 
     // Get inviter's role from user_companies
     const inviterMembership = await this.userCompanyRepository.findOne({
-      where: { user_id: invitedBy, company_id: companyId }
+      where: { user_id: invitedBy, company_id: companyId },
     });
 
     if (!inviterMembership) {
@@ -237,7 +257,9 @@ export class InviteService {
         throw new BadRequestException('Managers can only invite STAFF users');
       }
       if (input.managesWarehouseIds && input.managesWarehouseIds.length > 0) {
-        throw new BadRequestException('Managers cannot assign managed warehouses via invites');
+        throw new BadRequestException(
+          'Managers cannot assign managed warehouses via invites',
+        );
       }
     }
 
@@ -252,8 +274,14 @@ export class InviteService {
     this.validateWarehouseRequirements(role, input.warehouseIds || []);
 
     // Ensure any warehouse IDs referenced in the invite belong to this company
-    await this.validateWarehousesBelongToCompany(companyId, input.warehouseIds || []);
-    await this.validateWarehousesBelongToCompany(companyId, input.managesWarehouseIds || []);
+    await this.validateWarehousesBelongToCompany(
+      companyId,
+      input.warehouseIds || [],
+    );
+    await this.validateWarehousesBelongToCompany(
+      companyId,
+      input.managesWarehouseIds || [],
+    );
 
     //------------------------------------------------------------
     // VALIDATION: Manager Scope (if inviter is MANAGER)
@@ -275,7 +303,9 @@ export class InviteService {
     });
 
     const savedInvite = await this.inviteRepository.save(invite);
-    this.logger.log(`Invite saved successfully with token: ${savedInvite.token}`);
+    this.logger.log(
+      `Invite saved successfully with token: ${savedInvite.token}`,
+    );
 
     // SEND EMAIL
     const invitationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/invite/accept?token=${savedInvite.token}`;
@@ -300,7 +330,11 @@ export class InviteService {
   async acceptInvite(
     input: AcceptInviteInput,
     userId: string,
-  ): Promise<{ membership: UserCompany; companyId: string; companySlug: string }> {
+  ): Promise<{
+    membership: UserCompany;
+    companyId: string;
+    companySlug: string;
+  }> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -309,18 +343,29 @@ export class InviteService {
       //------------------------------------------------------------
       // 1) USE SHARED VALIDATION METHOD (INSIDE TRANSACTION)
       //------------------------------------------------------------
-      const invite = await this.validateInviteToken(input.token, queryRunner.manager);
+      const invite = await this.validateInviteToken(
+        input.token,
+        queryRunner.manager,
+      );
 
       // Security: ensure any warehouses referenced by the invite belong to the invite's company.
       // This protects against legacy pending invites created before validations were added,
       // and against any unexpected data tampering.
-      await this.validateWarehousesBelongToCompany(invite.company_id, invite.warehouse_ids || []);
-      await this.validateWarehousesBelongToCompany(invite.company_id, invite.manages_warehouse_ids || []);
+      await this.validateWarehousesBelongToCompany(
+        invite.company_id,
+        invite.warehouse_ids || [],
+      );
+      await this.validateWarehousesBelongToCompany(
+        invite.company_id,
+        invite.manages_warehouse_ids || [],
+      );
 
       //------------------------------------------------------------
       // 2) VALIDATE USER
       //------------------------------------------------------------
-      const user = await queryRunner.manager.findOne(User, { where: { id: userId } });
+      const user = await queryRunner.manager.findOne(User, {
+        where: { id: userId },
+      });
       if (!user) throw new NotFoundException('User not found');
 
       if (user.email.toLowerCase() !== invite.email.toLowerCase()) {
@@ -341,7 +386,9 @@ export class InviteService {
       if (existing) {
         // If user was previously removed (inactive), reactivate them
         if (existing.status === 'inactive') {
-          this.logger.log(`Reactivating previously removed user ${userId} for company ${invite.company_id}`);
+          this.logger.log(
+            `Reactivating previously removed user ${userId} for company ${invite.company_id}`,
+          );
 
           existing.role = invite.role.toUpperCase();
           existing.status = 'active';
@@ -349,10 +396,14 @@ export class InviteService {
           existing.joined_at = new Date(); // Update to latest join date
           savedMembership = await queryRunner.manager.save(existing);
 
-          this.logger.log(`✅ Membership reactivated with role ${savedMembership.role}`);
+          this.logger.log(
+            `✅ Membership reactivated with role ${savedMembership.role}`,
+          );
         } else {
           // User is already an active member
-          throw new ConflictException('User is already a member of this company');
+          throw new ConflictException(
+            'User is already a member of this company',
+          );
         }
       } else {
         //------------------------------------------------------------
@@ -366,8 +417,13 @@ export class InviteService {
           status: 'active',
         });
 
-        savedMembership = await queryRunner.manager.save(UserCompany, membership);
-        this.logger.log(`✅ New membership created with role ${savedMembership.role}`);
+        savedMembership = await queryRunner.manager.save(
+          UserCompany,
+          membership,
+        );
+        this.logger.log(
+          `✅ New membership created with role ${savedMembership.role}`,
+        );
       }
 
       //------------------------------------------------------------
@@ -382,10 +438,12 @@ export class InviteService {
             .createQueryBuilder()
             .select('id')
             .from('warehouses', 'w')
-            .where('w.company_id = :companyId', { companyId: invite.company_id })
+            .where('w.company_id = :companyId', {
+              companyId: invite.company_id,
+            })
             .getRawMany();
 
-          const warehouseIds = allWarehouses.map(w => w.id);
+          const warehouseIds = allWarehouses.map((w) => w.id);
 
           if (warehouseIds.length > 0) {
             await this.userWarehouseService.assignUserToWarehouses(
@@ -395,12 +453,19 @@ export class InviteService {
               invite.invited_by,
               Role.OWNER,
             );
-            this.logger.log(`✅ Assigned ${warehouseIds.length} warehouses to ${invite.role} user ${userId}`);
+            this.logger.log(
+              `✅ Assigned ${warehouseIds.length} warehouses to ${invite.role} user ${userId}`,
+            );
           } else {
-            this.logger.warn(`⚠️ No warehouses found for company ${invite.company_id}`);
+            this.logger.warn(
+              `⚠️ No warehouses found for company ${invite.company_id}`,
+            );
           }
         } catch (error) {
-          this.logger.error('❌ Error assigning all warehouses to ADMIN/OWNER:', error);
+          this.logger.error(
+            '❌ Error assigning all warehouses to ADMIN/OWNER:',
+            error,
+          );
           // Continue with invite acceptance even if warehouse assignment fails
         }
       } else if (invite.warehouse_ids && invite.warehouse_ids.length > 0) {
@@ -413,9 +478,14 @@ export class InviteService {
             invite.invited_by,
             Role.OWNER,
           );
-          this.logger.log(`✅ Assigned ${invite.warehouse_ids.length} warehouses to ${invite.role} user ${userId}`);
+          this.logger.log(
+            `✅ Assigned ${invite.warehouse_ids.length} warehouses to ${invite.role} user ${userId}`,
+          );
         } catch (error) {
-          this.logger.error('❌ Error assigning warehouses to MANAGER/STAFF:', error);
+          this.logger.error(
+            '❌ Error assigning warehouses to MANAGER/STAFF:',
+            error,
+          );
           // Continue with invite acceptance even if warehouse assignment fails
         }
       }
@@ -431,9 +501,13 @@ export class InviteService {
       // 7) SET DEFAULT COMPANY (if first company)
       //------------------------------------------------------------
       if (!user.activeCompanyId) {
-        await queryRunner.manager.update(User, { id: userId }, {
-          activeCompanyId: invite.company_id
-        });
+        await queryRunner.manager.update(
+          User,
+          { id: userId },
+          {
+            activeCompanyId: invite.company_id,
+          },
+        );
         this.logger.log(`✅ Set default company for user ${userId}`);
       }
 
@@ -441,9 +515,10 @@ export class InviteService {
       // 8) SET DEFAULT WAREHOUSE (if warehouses assigned)
       //------------------------------------------------------------
       if (invite.warehouse_ids && invite.warehouse_ids.length > 0) {
-        await queryRunner.manager.update(UserCompany,
+        await queryRunner.manager.update(
+          UserCompany,
           { user_id: userId, company_id: invite.company_id },
-          { default_warehouse_id: invite.warehouse_ids[0] }
+          { default_warehouse_id: invite.warehouse_ids[0] },
         );
         this.logger.log(`✅ Set default warehouse for user ${userId}`);
       }
@@ -505,7 +580,10 @@ export class InviteService {
     });
   }
 
-  async getInvitesForMember(companyId: string, userId: string): Promise<Invite[]> {
+  async getInvitesForMember(
+    companyId: string,
+    userId: string,
+  ): Promise<Invite[]> {
     await this.assertActiveCompanyMember(userId, companyId);
     return this.getInvites(companyId);
   }

@@ -21,10 +21,12 @@ export class EmailService {
 
   private initializeTransporter() {
     const host = process.env.SMTP_HOST || process.env.EMAIL_HOST;
-const port = parseInt(process.env.SMTP_PORT || process.env.EMAIL_PORT || '587', 10);
-const user = process.env.SMTP_USER || process.env.EMAIL_USER;
-const password = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD;
-
+    const port = parseInt(
+      process.env.SMTP_PORT || process.env.EMAIL_PORT || '587',
+      10,
+    );
+    const user = process.env.SMTP_USER || process.env.EMAIL_USER;
+    const password = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD;
 
     if (!host || !user || !password) {
       this.logger.warn(
@@ -63,7 +65,9 @@ const password = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD;
     html?: string,
   ): Promise<void> {
     if (!this.transporter) {
-      this.logger.warn('Email transporter not configured. Skipping email send.');
+      this.logger.warn(
+        'Email transporter not configured. Skipping email send.',
+      );
       return;
     }
 
@@ -78,7 +82,9 @@ const password = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD;
         html,
       });
 
-      this.logger.log(`Email sent successfully to ${to}. MessageId: ${info.messageId}`);
+      this.logger.log(
+        `Email sent successfully to ${to}. MessageId: ${info.messageId}`,
+      );
     } catch (error) {
       this.logger.error(`Failed to send email to ${to}:`, error);
       throw error;

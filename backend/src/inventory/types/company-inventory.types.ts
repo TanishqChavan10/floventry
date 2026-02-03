@@ -9,32 +9,32 @@ import { StockHealthState } from '../stock-health/stock-health.types';
 // ===========================
 @ObjectType()
 export class CompanyInventorySummaryItem {
-    @Field(() => ID)
-    productId: string;
+  @Field(() => ID)
+  productId: string;
 
-    @Field(() => Product)
-    product: Product;
+  @Field(() => Product)
+  product: Product;
 
-    @Field(() => Int)
-    totalQuantity: number;
+  @Field(() => Int)
+  totalQuantity: number;
 
-    @Field(() => Float)
-    usableQuantity: number;
+  @Field(() => Float)
+  usableQuantity: number;
 
-    @Field(() => StockHealthState)
-    stockHealthState: StockHealthState;
+  @Field(() => StockHealthState)
+  stockHealthState: StockHealthState;
 
-    @Field(() => Int)
-    warehouseCount: number;
+  @Field(() => Int)
+  warehouseCount: number;
 
-    @Field(() => Int)
-    minQuantity: number;
+  @Field(() => Int)
+  minQuantity: number;
 
-    @Field(() => Int)
-    maxQuantity: number;
+  @Field(() => Int)
+  maxQuantity: number;
 
-    @Field(() => StockHealthStatus)
-    status: StockHealthStatus;
+  @Field(() => StockHealthStatus)
+  status: StockHealthStatus;
 }
 
 // ===========================
@@ -43,149 +43,149 @@ export class CompanyInventorySummaryItem {
 
 @ObjectType()
 export class InventoryHealthStats {
-    @Field(() => Int)
-    okCount: number;
+  @Field(() => Int)
+  okCount: number;
 
-    @Field(() => Int)
-    warningCount: number;
+  @Field(() => Int)
+  warningCount: number;
 
-    @Field(() => Int)
-    criticalCount: number;
+  @Field(() => Int)
+  criticalCount: number;
 }
 
 @ObjectType()
 export class TopStockProduct {
-    @Field(() => ID)
-    productId: string;
+  @Field(() => ID)
+  productId: string;
 
-    @Field(() => String)
-    productName: string;
+  @Field(() => String)
+  productName: string;
 
-    @Field(() => String)
-    sku: string;
+  @Field(() => String)
+  sku: string;
 
-    @Field(() => Int)
-    totalQuantity: number;
+  @Field(() => Int)
+  totalQuantity: number;
 }
 
 @ObjectType()
 export class CriticalStockProduct {
-    @Field(() => ID)
-    productId: string;
+  @Field(() => ID)
+  productId: string;
 
-    @Field(() => String)
-    productName: string;
+  @Field(() => String)
+  productName: string;
 
-    @Field(() => String)
-    sku: string;
+  @Field(() => String)
+  sku: string;
 
-    @Field(() => Int)
-    lowestWarehouseStock: number;
+  @Field(() => Int)
+  lowestWarehouseStock: number;
 
-    @Field(() => String)
-    warehouseName: string;
+  @Field(() => String)
+  warehouseName: string;
 }
 
 @ObjectType()
 export class WarehouseStockDistribution {
-    @Field(() => ID)
-    warehouseId: string;
+  @Field(() => ID)
+  warehouseId: string;
 
-    @Field(() => String)
-    warehouseName: string;
+  @Field(() => String)
+  warehouseName: string;
 
-    @Field(() => Int)
-    quantity: number;
+  @Field(() => Int)
+  quantity: number;
 
-    @Field(() => Int, { nullable: true })
-    minLevel: number;
+  @Field(() => Int, { nullable: true })
+  minLevel: number;
 
-    @Field(() => Int, { nullable: true })
-    reorderPoint: number;
+  @Field(() => Int, { nullable: true })
+  reorderPoint: number;
 
-    @Field(() => StockHealthStatus)
-    status: StockHealthStatus;
+  @Field(() => StockHealthStatus)
+  status: StockHealthStatus;
 }
 
 @ObjectType()
 export class WarehouseHealthScore {
-    @Field(() => ID)
-    warehouseId: string;
+  @Field(() => ID)
+  warehouseId: string;
 
-    @Field(() => String)
-    warehouseName: string;
+  @Field(() => String)
+  warehouseName: string;
 
-    @Field(() => Int)
-    okCount: number;
+  @Field(() => Int)
+  okCount: number;
 
-    @Field(() => Int)
-    warningCount: number;
+  @Field(() => Int)
+  warningCount: number;
 
-    @Field(() => Int)
-    criticalCount: number;
+  @Field(() => Int)
+  criticalCount: number;
 }
 
 @ObjectType()
 export class MovementTrendData {
-    @Field(() => String)
-    date: string;
+  @Field(() => String)
+  date: string;
 
-    @Field(() => Int)
-    inQuantity: number;
+  @Field(() => Int)
+  inQuantity: number;
 
-    @Field(() => Int)
-    outQuantity: number;
+  @Field(() => Int)
+  outQuantity: number;
 }
 
 @ObjectType()
 export class MovementTypeBreakdown {
-    @Field(() => MovementType)
-    type: MovementType;
+  @Field(() => MovementType)
+  type: MovementType;
 
-    @Field(() => Int)
-    count: number;
+  @Field(() => Int)
+  count: number;
 
-    @Field(() => Int)
-    totalQuantity: number;
+  @Field(() => Int)
+  totalQuantity: number;
 }
 
 @ObjectType()
 export class AdjustmentTrendData {
-    @Field(() => String)
-    date: string;
+  @Field(() => String)
+  date: string;
 
-    @Field(() => Int)
-    adjustmentInQuantity: number;
+  @Field(() => Int)
+  adjustmentInQuantity: number;
 
-    @Field(() => Int)
-    adjustmentOutQuantity: number;
+  @Field(() => Int)
+  adjustmentOutQuantity: number;
 }
 
 @ObjectType()
 export class AdjustmentByWarehouse {
-    @Field(() => ID)
-    warehouseId: string;
+  @Field(() => ID)
+  warehouseId: string;
 
-    @Field(() => String)
-    warehouseName: string;
+  @Field(() => String)
+  warehouseName: string;
 
-    @Field(() => Int)
-    totalAdjustments: number;
+  @Field(() => Int)
+  totalAdjustments: number;
 }
 
 @ObjectType()
 export class AdjustmentByUser {
-    @Field(() => String)
-    userId: string;
+  @Field(() => String)
+  userId: string;
 
-    @Field(() => String)
-    userName: string;
+  @Field(() => String)
+  userName: string;
 
-    @Field(() => Int)
-    adjustmentCount: number;
+  @Field(() => Int)
+  adjustmentCount: number;
 
-    @Field(() => Int)
-    totalQuantity: number;
+  @Field(() => Int)
+  totalQuantity: number;
 }
 
 // ===========================
@@ -194,70 +194,69 @@ export class AdjustmentByUser {
 
 @ObjectType()
 export class WarehouseHealthSummary {
-    @Field(() => Float)
-    totalStock: number;
+  @Field(() => Float)
+  totalStock: number;
 
-    @Field(() => Float)
-    usableStock: number;
+  @Field(() => Float)
+  usableStock: number;
 
-    @Field(() => Float)
-    expiredQuantity: number;
+  @Field(() => Float)
+  expiredQuantity: number;
 
-    @Field(() => Float)
-    expiringSoonQuantity: number;
+  @Field(() => Float)
+  expiringSoonQuantity: number;
 
-    @Field(() => Int)
-    blockedProductsCount: number;
+  @Field(() => Int)
+  blockedProductsCount: number;
 
-    @Field(() => Int)
-    criticalProductsCount: number;
+  @Field(() => Int)
+  criticalProductsCount: number;
 
-    @Field(() => Int)
-    atRiskProductsCount: number;
+  @Field(() => Int)
+  atRiskProductsCount: number;
 
-    @Field(() => Int)
-    lowStockProductsCount: number;
+  @Field(() => Int)
+  lowStockProductsCount: number;
 
-    @Field(() => String)
-    lastUpdated: string;
+  @Field(() => String)
+  lastUpdated: string;
 }
 
 @ObjectType()
 export class WarehouseRiskMetric {
-    @Field(() => String)
-    warehouseId: string;
+  @Field(() => String)
+  warehouseId: string;
 
-    @Field(() => String)
-    warehouseName: string;
+  @Field(() => String)
+  warehouseName: string;
 
-    @Field(() => String)
-    warehouseSlug: string;
+  @Field(() => String)
+  warehouseSlug: string;
 
-    @Field(() => Int)
-    blockedProductCount: number;
+  @Field(() => Int)
+  blockedProductCount: number;
 
-    @Field(() => Float)
-    expiredPercentage: number;
+  @Field(() => Float)
+  expiredPercentage: number;
 
-    @Field(() => Float)
-    expiringSoonPercentage: number;
+  @Field(() => Float)
+  expiringSoonPercentage: number;
 
-    @Field(() => Float)
-    healthScore: number;
+  @Field(() => Float)
+  healthScore: number;
 
-    @Field(() => String)
-    lastUpdated: string;
+  @Field(() => String)
+  lastUpdated: string;
 }
 
 @ObjectType()
 export class CompanyStockHealthOverview {
-    @Field(() => Int)
-    totalBlockedProducts: number;
+  @Field(() => Int)
+  totalBlockedProducts: number;
 
-    @Field(() => [WarehouseRiskMetric])
-    warehouseRiskMetrics: WarehouseRiskMetric[];
+  @Field(() => [WarehouseRiskMetric])
+  warehouseRiskMetrics: WarehouseRiskMetric[];
 
-    @Field(() => String)
-    lastUpdated: string;
+  @Field(() => String)
+  lastUpdated: string;
 }
-

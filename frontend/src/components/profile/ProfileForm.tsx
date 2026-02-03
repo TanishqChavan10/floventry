@@ -17,22 +17,30 @@ export function ProfileForm({ formData, onFormDataChange }: ProfileFormProps) {
   const { user } = useUser();
 
   return (
-    <Card className="h-full border-border/50 shadow-sm hover:shadow-md transition-shadow duration-200">
-      <CardHeader>
-        <CardTitle>Personal Information</CardTitle>
+    <Card className="hover:shadow-lg transition-shadow">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <User className="h-4 w-4 text-muted-foreground" />
+          Personal Information
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-8">
+      <CardContent className="space-y-6">
         {/* Avatar Section */}
-        <div className="flex flex-col sm:flex-row items-center gap-6 border-b pb-8">
+        <div className="flex flex-col sm:flex-row items-center gap-6 rounded-xl border bg-muted/20 p-4">
           <Avatar className="h-24 w-24 border-2 border-border shadow-sm">
             <AvatarImage src={user?.imageUrl} className="object-cover" />
-            <AvatarFallback className="text-2xl bg-muted">{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
+            <AvatarFallback className="text-2xl bg-muted">
+              {user?.firstName?.[0]}
+              {user?.lastName?.[0]}
+            </AvatarFallback>
           </Avatar>
-          
+
           <div className="flex-1 space-y-2 text-center sm:text-left">
             <div>
               <h3 className="text-xl font-bold tracking-tight">{user?.fullName}</h3>
-              <p className="text-sm text-muted-foreground">{user?.primaryEmailAddress?.emailAddress}</p>
+              <p className="text-sm text-muted-foreground">
+                {user?.primaryEmailAddress?.emailAddress}
+              </p>
             </div>
           </div>
         </div>
@@ -40,8 +48,9 @@ export function ProfileForm({ formData, onFormDataChange }: ProfileFormProps) {
         <div className="space-y-6">
           <div className="grid gap-2">
             <div className="flex items-center gap-2 mb-2">
-               <User className="h-4 w-4 text-primary" />
-               <h4 className="font-semibold text-sm">Basic Details</h4>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Basic details
+              </span>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -64,13 +73,16 @@ export function ProfileForm({ formData, onFormDataChange }: ProfileFormProps) {
               </div>
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <div className="flex items-center gap-2 mb-2">
-               <Mail className="h-4 w-4 text-primary" />
-               <h4 className="font-semibold text-sm">Contact Info</h4>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Contact
+              </span>
             </div>
-            <Label htmlFor="email" className="sr-only">Email</Label>
+            <Label htmlFor="email" className="sr-only">
+              Email
+            </Label>
             <Input
               id="email"
               value={user?.primaryEmailAddress?.emailAddress || ''}

@@ -68,7 +68,7 @@ export class Company {
   @Column({ nullable: true })
   legal_name: string;
 
-  @Column({ type: "text" })
+  @Column({ type: 'text' })
   created_by: string; // FK → users(id)
 
   @CreateDateColumn()
@@ -82,10 +82,12 @@ export class Company {
 
   // Relationships
   @ManyToOne(() => User, { nullable: false })
-  @JoinColumn({ name: "created_by" })
+  @JoinColumn({ name: 'created_by' })
   createdBy: User;
 
-  @OneToOne(() => CompanySettings, (settings) => settings.company, { cascade: true })
+  @OneToOne(() => CompanySettings, (settings) => settings.company, {
+    cascade: true,
+  })
   settings: CompanySettings;
 
   @OneToMany(() => UserCompany, (userCompany) => userCompany.company)

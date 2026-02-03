@@ -1,86 +1,93 @@
 import { InputType, Field, Float } from '@nestjs/graphql';
-import { IsNotEmpty, IsOptional, IsUUID, IsArray, ValidateNested, Min } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsUUID,
+  IsArray,
+  ValidateNested,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 @InputType()
 export class IssueNoteItemInput {
-    @Field()
-    @IsUUID()
-    @IsNotEmpty()
-    product_id: string;
+  @Field()
+  @IsUUID()
+  @IsNotEmpty()
+  product_id: string;
 
-    @Field({ nullable: true })
-    @IsOptional()
-    @IsUUID()
-    stock_lot_id?: string;
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsUUID()
+  stock_lot_id?: string;
 
-    @Field(() => Float)
-    @Min(0.01)
-    quantity: number;
+  @Field(() => Float)
+  @Min(0.01)
+  quantity: number;
 }
 
 @InputType()
 export class CreateIssueNoteInput {
-    @Field()
-    @IsUUID()
-    @IsNotEmpty()
-    warehouse_id: string;
+  @Field()
+  @IsUUID()
+  @IsNotEmpty()
+  warehouse_id: string;
 
-    @Field({ nullable: true })
-    @IsOptional()
-    @IsUUID()
-    sales_order_id?: string;
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsUUID()
+  sales_order_id?: string;
 
-    @Field(() => [IssueNoteItemInput])
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => IssueNoteItemInput)
-    items: IssueNoteItemInput[];
+  @Field(() => [IssueNoteItemInput])
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => IssueNoteItemInput)
+  items: IssueNoteItemInput[];
 }
 
 @InputType()
 export class UpdateIssueNoteInput {
-    @Field({ nullable: true })
-    @IsOptional()
-    @IsUUID()
-    sales_order_id?: string;
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsUUID()
+  sales_order_id?: string;
 
-    @Field(() => [IssueNoteItemInput], { nullable: true })
-    @IsOptional()
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => IssueNoteItemInput)
-    items?: IssueNoteItemInput[];
+  @Field(() => [IssueNoteItemInput], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => IssueNoteItemInput)
+  items?: IssueNoteItemInput[];
 }
 
 // New: For FEFO-based issue creation (no manual lot selection)
 @InputType()
 export class FEFOIssueNoteItemInput {
-    @Field()
-    @IsUUID()
-    @IsNotEmpty()
-    product_id: string;
+  @Field()
+  @IsUUID()
+  @IsNotEmpty()
+  product_id: string;
 
-    @Field(() => Float)
-    @Min(0.01)
-    quantity: number;
+  @Field(() => Float)
+  @Min(0.01)
+  quantity: number;
 }
 
 @InputType()
 export class CreateFEFOIssueNoteInput {
-    @Field()
-    @IsUUID()
-    @IsNotEmpty()
-    warehouse_id: string;
+  @Field()
+  @IsUUID()
+  @IsNotEmpty()
+  warehouse_id: string;
 
-    @Field({ nullable: true })
-    @IsOptional()
-    @IsUUID()
-    sales_order_id?: string;
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsUUID()
+  sales_order_id?: string;
 
-    @Field(() => [FEFOIssueNoteItemInput])
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => FEFOIssueNoteItemInput)
-    items: FEFOIssueNoteItemInput[];
+  @Field(() => [FEFOIssueNoteItemInput])
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FEFOIssueNoteItemInput)
+  items: FEFOIssueNoteItemInput[];
 }

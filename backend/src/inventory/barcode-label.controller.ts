@@ -27,7 +27,9 @@ export class BarcodeLabelController {
   ) {
     const companyId = req?.user?.activeCompanyId;
     if (!companyId) {
-      throw new BadRequestException('User does not have an active company selected');
+      throw new BadRequestException(
+        'User does not have an active company selected',
+      );
     }
 
     const pdf = await this.barcodeLabelService.generateLabelsPdf({
@@ -36,7 +38,10 @@ export class BarcodeLabelController {
     });
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="barcode-labels.pdf"');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="barcode-labels.pdf"',
+    );
     res.setHeader('Content-Length', pdf.length);
 
     return res.send(pdf);

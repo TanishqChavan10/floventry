@@ -3,17 +3,16 @@
 import React from 'react';
 import { useAuth } from '@/context/auth-context';
 import { useWarehouse } from '@/context/warehouse-context';
-import { useRouter, useParams, usePathname } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   IconBuilding,
   IconChevronDown,
   IconSearch,
-  IconBell,
+  IconPlus,
   IconUser,
-  IconLogout,
-  IconSettings,
   IconShield,
+  IconHome,
 } from '@tabler/icons-react';
 import {
   DropdownMenu,
@@ -23,18 +22,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input'; // Assuming Input component exists
-import { useClerk } from '@clerk/nextjs';
-import Link from 'next/link';
+import { UserButton } from '@clerk/nextjs';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import { useGlobalSearch } from '@/components/search/useGlobalSearch';
+import { CreateWarehouseDialog } from '@/components/warehouses/CreateWarehouseDialog';
 
 export function Navbar() {
   const { user } = useAuth();
   const { warehouses, activeWarehouse } = useWarehouse();
   const router = useRouter();
   const params = useParams();
-  const pathname = usePathname();
-  const { signOut } = useClerk();
+  const { openPalette } = useGlobalSearch();
+
+  const [createWarehouseOpen, setCreateWarehouseOpen] = React.useState(false);
 
   const companySlug = params?.slug as string;
   const warehouseSlug = params?.warehouseSlug as string;
@@ -64,131 +64,210 @@ export function Navbar() {
     router.push(`/${newSlug}`);
   };
 
+  const handleCreateCompany = () => {
+    router.push('/onboarding/create-company');
+  };
+
+  const handleCreateWarehouse = () => {
+    setCreateWarehouseOpen(true);
+  };
+
   if (!activeCompany) return null;
 
   return (
-    <div className="h-16 border-b border-neutral-200 bg-white px-4 flex items-center justify-between gap-4">
-      {/* Left Side: Switchers */}
-      <div className="flex items-center gap-4">
-        {/* Company Switcher - Available for all roles */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className={cn(
-                'flex items-center gap-2 px-3 py-2 rounded-lg',
-                'bg-neutral-50',
-                'border border-neutral-200',
-                'hover:bg-neutral-100',
-                'transition-colors duration-200',
-              )}
-            >
-              <IconBuilding className="h-4 w-4 text-neutral-600" />
-              <span className="font-medium text-sm text-neutral-900 max-w-[150px] truncate">
-                {activeCompany.name}
-              </span>
-              <IconChevronDown className="h-4 w-4 text-neutral-500" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-[200px]">
-            <DropdownMenuLabel>Switch Company</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {user?.companies?.map((company) => (
-              <DropdownMenuItem
-                key={company.slug}
-                onClick={() => handleCompanySwitch(company.slug)}
+    <header className="sticky top-0 z-40 border-b border-neutral-200/70 bg-white/80 backdrop-blur">
+      <div className="h-16 px-4 flex items-center gap-3">
+        {/* Left Side: Switchers */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Company Switcher - Available for all roles */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
                 className={cn(
-                  'cursor-pointer',
-                  company.slug === companySlug && 'bg-neutral-100',
+                  'h-9 flex items-center gap-2 px-3 rounded-lg',
+                  'bg-white',
+                  'border border-neutral-200',
+                  'hover:bg-neutral-50',
+                  'shadow-sm',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E53935]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+                  'transition-colors duration-200',
                 )}
               >
-                {company.name}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Warehouse Switcher - Always visible for all roles */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className={cn(
-                'flex items-center gap-2 px-3 py-2 rounded-full',
-                'bg-neutral-50',
-                'border border-neutral-200',
-                'hover:bg-neutral-100',
-                'transition-colors duration-200',
-              )}
-            >
-              <span className="font-medium text-sm text-neutral-900 max-w-[150px] truncate">
-                {displayWarehouse
-                  ? displayWarehouse.name
-                  : warehouses.length > 0
-                    ? 'Select Warehouse'
-                    : 'No Warehouses'}
-              </span>
-              <IconChevronDown className="h-4 w-4 text-neutral-500" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-[250px]">
-            <DropdownMenuLabel>Switch Warehouse</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {warehouses.length > 0 ? (
-              warehouses.map((warehouse) => (
+                <IconBuilding className="h-4 w-4 text-[#E53935]" />
+                <span className="font-medium text-sm text-neutral-900 max-w-[150px] truncate">
+                  {activeCompany.name}
+                </span>
+                <IconChevronDown className="h-4 w-4 text-neutral-500" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[220px]">
+              <DropdownMenuLabel>Switch Company</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {user?.companies?.map((company) => (
                 <DropdownMenuItem
-                  key={warehouse.id}
-                  onClick={() => handleWarehouseSwitch(warehouse.slug)}
-                  className={cn(
-                    'cursor-pointer',
-                    displayWarehouse &&
-                      warehouse.id === displayWarehouse.id &&
-                      'bg-neutral-50 text-neutral-900',
-                  )}
+                  key={company.slug}
+                  onClick={() => handleCompanySwitch(company.slug)}
+                  className={cn('cursor-pointer', company.slug === companySlug && 'bg-neutral-100')}
                 >
-                  <div className="flex flex-col">
-                    <span className="font-medium">{warehouse.name}</span>
-                    <span className="text-xs text-neutral-500">
-                      {warehouse.type.replace(/_/g, ' ')}
-                    </span>
-                  </div>
+                  {company.name}
                 </DropdownMenuItem>
-              ))
-            ) : (
-              <div className="px-2 py-6 text-center text-sm text-neutral-500">
-                No warehouses available
-              </div>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+              ))}
 
-      {/* Center/Right: Search, Alerts, User */}
-      <div className="flex items-center gap-4 flex-1">
-        {/* Search Bar */}
-        <div className="relative flex-1 w-full max-w-4xl px-4 hidden md:block">
-          <IconSearch className="absolute left-7 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
-          <input
-            type="text"
-            placeholder="Search..."
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleCreateCompany} className="cursor-pointer">
+                <IconPlus className="h-4 w-4 mr-2 text-neutral-600" />
+                Create company
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="hidden sm:block h-6 w-px bg-neutral-200" />
+
+          {/* Warehouse Switcher - Always visible for all roles */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  'h-9 flex items-center gap-2 px-3 rounded-lg',
+                  'bg-white',
+                  'border border-neutral-200',
+                  'hover:bg-neutral-50',
+                  'shadow-sm',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E53935]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+                  'transition-colors duration-200',
+                )}
+              >
+                <IconHome className="h-4 w-4 text-[#E53935]" />
+                <span className="font-medium text-sm text-neutral-900 max-w-[150px] truncate">
+                  {displayWarehouse
+                    ? displayWarehouse.name
+                    : warehouses.length > 0
+                      ? 'Select Warehouse'
+                      : 'No Warehouses'}
+                </span>
+                <IconChevronDown className="h-4 w-4 text-neutral-500" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[250px]">
+              <DropdownMenuLabel>Switch Warehouse</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {warehouses.length > 0 ? (
+                warehouses.map((warehouse) => (
+                  <DropdownMenuItem
+                    key={warehouse.id}
+                    onClick={() => handleWarehouseSwitch(warehouse.slug)}
+                    className={cn(
+                      'cursor-pointer',
+                      displayWarehouse &&
+                        warehouse.id === displayWarehouse.id &&
+                        'bg-neutral-50 text-neutral-900',
+                    )}
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">{warehouse.name}</span>
+                      <span className="text-xs text-neutral-500">
+                        {warehouse.type.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <div className="px-2 py-6 text-center text-sm text-neutral-500">
+                  No warehouses available
+                </div>
+              )}
+
+              {String(activeCompany.role).toUpperCase() !== 'STAFF' && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleCreateWarehouse} className="cursor-pointer">
+                    <IconPlus className="h-4 w-4 mr-2 text-neutral-600" />
+                    Create warehouse
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Center: Search */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-full max-w-2xl hidden md:block">
+            <button
+              type="button"
+              onClick={openPalette}
+              className={cn(
+                'relative w-full h-9 pl-9 pr-3 text-sm rounded-lg',
+                'bg-white',
+                'border border-neutral-200',
+                'shadow-sm',
+                'hover:bg-neutral-50',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E53935]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+                'flex items-center justify-between',
+              )}
+              aria-label="Open global search"
+            >
+              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+              <span className="text-neutral-500">Search…</span>
+              <span className="text-[11px] text-neutral-600 border border-neutral-200 bg-neutral-50 rounded-md px-2 py-0.5">
+                Ctrl/⌘ K
+              </span>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            onClick={openPalette}
             className={cn(
-              'w-full h-9 pl-9 pr-4 text-sm rounded-lg',
-              'bg-neutral-100',
-              'border-none outline-none focus:ring-2 focus:ring-[#E53935]/20',
-              'placeholder:text-neutral-500',
+              'md:hidden h-9 w-9 inline-flex items-center justify-center rounded-lg',
+              'border border-neutral-200 bg-white shadow-sm',
+              'hover:bg-neutral-50',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E53935]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
             )}
-          />
+            aria-label="Open global search"
+          >
+            <IconSearch className="h-4 w-4 text-neutral-600" />
+          </button>
         </div>
 
-        {/* Alerts */}
-        <NotificationBell />
+        {/* Right: Alerts + Role */}
+        <div className="flex items-center gap-3 shrink-0">
+          <NotificationBell />
 
-        {/* User Role Badge */}
-        <div className="hidden md:flex items-center px-2 py-1 bg-neutral-100 rounded-md border border-neutral-200">
-          <IconShield className="h-3 w-3 mr-1 text-neutral-500" />
-          <span className="text-xs font-medium text-neutral-600 uppercase">
-            {activeCompany.role}
-          </span>
+          <div className="hidden md:flex items-center h-9 px-2.5 rounded-lg border border-neutral-200 bg-white shadow-sm">
+            <IconShield className="h-3.5 w-3.5 mr-1 text-neutral-500" />
+            <span className="text-xs font-medium text-neutral-600 uppercase">
+              {activeCompany.role}
+            </span>
+          </div>
+
+          <div className="flex items-center">
+            <UserButton
+              appearance={{
+                elements: {
+                  avatarBox: 'h-9 w-9',
+                  userButtonPopoverCard: 'shadow-none border border-neutral-200',
+                },
+              }}
+              afterSignOutUrl="/auth/sign-in"
+            >
+              <UserButton.MenuItems>
+                <UserButton.Link
+                  label="Profile"
+                  labelIcon={<IconUser className="h-4 w-4" />}
+                  href="/profile"
+                />
+              </UserButton.MenuItems>
+            </UserButton>
+          </div>
         </div>
       </div>
-    </div>
+
+      <CreateWarehouseDialog
+        open={createWarehouseOpen}
+        onOpenChange={setCreateWarehouseOpen}
+        companySlug={companySlug || activeCompany.slug}
+      />
+    </header>
   );
 }

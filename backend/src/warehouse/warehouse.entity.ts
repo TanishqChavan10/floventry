@@ -99,7 +99,9 @@ export class Warehouse {
   company: Company;
 
   @Field(() => WarehouseSettingsModel, { nullable: true })
-  @OneToOne(() => WarehouseSettings, (settings) => settings.warehouse, { cascade: true })
+  @OneToOne(() => WarehouseSettings, (settings) => settings.warehouse, {
+    cascade: true,
+  })
   settings: WarehouseSettings;
 
   // Removed commented code - userWarehouses relation

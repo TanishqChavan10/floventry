@@ -515,6 +515,24 @@ input GenerateBarcodeLabelsInput {
   productIds: [ID!]!
 }
 
+type GlobalSearchDocument {
+  id: ID!
+  number: String!
+  type: GlobalSearchDocumentType!
+}
+
+enum GlobalSearchDocumentType {
+  GRN
+  ISSUE
+  TRANSFER
+}
+
+type GlobalSearchResponse {
+  documents: [GlobalSearchDocument!]!
+  products: [Product!]!
+  warehouses: [Warehouse!]!
+}
+
 type GoodsReceiptNote {
   created_at: DateTime!
   grn_number: String!
@@ -868,6 +886,7 @@ type Query {
   companyStockMovements(filters: StockMovementFilterInput!): [StockMovement!]!
   criticalStockProducts(limit: Float = 10): [CriticalStockProduct!]!
   expiryScanStatus: ExpiryScanStatus!
+  globalSearch(query: String!): GlobalSearchResponse!
   grn(id: String!): GoodsReceiptNote
   grns(filters: GRNFilterInput!): [GoodsReceiptNote!]!
   inventoryHealthStats: InventoryHealthStats!

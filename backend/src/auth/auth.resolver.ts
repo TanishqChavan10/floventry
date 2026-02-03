@@ -8,7 +8,7 @@ import { GraphQLError } from 'graphql';
 
 @Resolver(() => UserModel)
 export class AuthResolver {
-  constructor(private clerkService: ClerkService) { }
+  constructor(private clerkService: ClerkService) {}
 
   @Query(() => UserModel, { nullable: true })
   @UseGuards(ClerkAuthGuard)
@@ -30,20 +30,23 @@ export class AuthResolver {
       full_name: user.fullName,
       avatar_url: user.avatarUrl,
       activeCompanyId: user.activeCompanyId,
-      companies: user.userCompanies
-        ?.filter((uc) => uc.status === 'active') // Only include active memberships
-        ?.map((uc) => ({
-          id: uc.company.id,
-          name: uc.company.name,
-          slug: uc.company.slug,
-          role: uc.role,
-          isActive: user.activeCompanyId === uc.company.id,
-        })) || [],
+      companies:
+        user.userCompanies
+          ?.filter((uc) => uc.status === 'active') // Only include active memberships
+          ?.map((uc) => ({
+            id: uc.company.id,
+            name: uc.company.name,
+            slug: uc.company.slug,
+            role: uc.role,
+            isActive: user.activeCompanyId === uc.company.id,
+          })) || [],
       warehouses:
         user.userWarehouses
           ?.filter((uw) => {
             if (!user.activeCompanyId) return true;
-            return uw.warehouse && uw.warehouse.company_id === user.activeCompanyId;
+            return (
+              uw.warehouse && uw.warehouse.company_id === user.activeCompanyId
+            );
           })
           ?.map((uw) => ({
             warehouseId: uw.warehouse_id,
@@ -51,9 +54,9 @@ export class AuthResolver {
             warehouseSlug: uw.warehouse.slug,
             isManager: uw.role === 'MANAGER',
           })) || [],
-      defaultWarehouseId: user.userCompanies?.find(
-        uc => uc.company_id === user.activeCompanyId
-      )?.default_warehouse_id || undefined,
+      defaultWarehouseId:
+        user.userCompanies?.find((uc) => uc.company_id === user.activeCompanyId)
+          ?.default_warehouse_id || undefined,
       preferences: user.preferences || {},
       created_at: user.created_at,
       updated_at: user.updated_at,
@@ -71,7 +74,10 @@ export class AuthResolver {
     }
 
     const preferences = JSON.parse(preferencesJson);
-    const user = await this.clerkService.updatePreferences(clerkUser.clerkId, preferences);
+    const user = await this.clerkService.updatePreferences(
+      clerkUser.clerkId,
+      preferences,
+    );
 
     return {
       id: user.id,

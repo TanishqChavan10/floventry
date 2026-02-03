@@ -8,8 +8,11 @@ import { StockLot } from '../inventory/entities/stock-lot.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Stock, StockMovement, StockLot]), AuthModule],
-    providers: [ExportService, ExportResolver],
-    exports: [ExportService],
+  imports: [
+    TypeOrmModule.forFeature([Stock, StockMovement, StockLot]),
+    AuthModule,
+  ],
+  providers: [ExportService, ExportResolver],
+  exports: [ExportService],
 })
-export class ExportModule { }
+export class ExportModule {}

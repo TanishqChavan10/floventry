@@ -12,7 +12,6 @@ import { AuthModule } from '../auth/auth.module';
 import { EmailModule } from '../email/email.module';
 import { InviteResolver } from './invite.resolver';
 
-
 @Module({
   imports: [
     TypeOrmModule.forFeature([Invite, UserCompany, User, Company, Warehouse]),
@@ -22,4 +21,4 @@ import { InviteResolver } from './invite.resolver';
   providers: [InviteService, InviteResolver],
   exports: [InviteService],
 })
-export class InviteModule { }
+export class InviteModule {}

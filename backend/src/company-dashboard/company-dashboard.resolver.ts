@@ -15,7 +15,9 @@ export class CompanyDashboardResolver {
 
   @Query(() => CompanyDashboardData)
   @Roles(Role.OWNER, Role.ADMIN)
-  async companyDashboard(@ClerkUser() user: any): Promise<CompanyDashboardData> {
+  async companyDashboard(
+    @ClerkUser() user: any,
+  ): Promise<CompanyDashboardData> {
     if (!user?.activeCompanyId) {
       throw new BadRequestException('Active company required');
     }

@@ -93,6 +93,11 @@ export class CompanySettings {
   @Column({ default: true })
   track_stock_adjustments: boolean;
 
+  // Subscription / Plan flags
+  // V1 usage: Global search barcode matching is enabled only when is_premium is true.
+  @Column({ default: false })
+  is_premium: boolean;
+
   @CreateDateColumn()
   created_at: Date;
 }

@@ -12,19 +12,19 @@ import { StockMovement } from '../inventory/entities/stock-movement.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([
-            Product,
-            Category,
-            Supplier,
-            Unit,
-            StockLot,
-            Stock,
-            StockMovement,
-        ]),
-        AuthModule,
-    ],
-    providers: [ImportService, ImportResolver],
-    exports: [ImportService],
+  imports: [
+    TypeOrmModule.forFeature([
+      Product,
+      Category,
+      Supplier,
+      Unit,
+      StockLot,
+      Stock,
+      StockMovement,
+    ]),
+    AuthModule,
+  ],
+  providers: [ImportService, ImportResolver],
+  exports: [ImportService],
 })
-export class ImportModule { }
+export class ImportModule {}

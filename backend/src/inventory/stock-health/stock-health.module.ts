@@ -8,8 +8,8 @@ import { Product } from '../entities/product.entity';
 import { AuthModule } from '../../auth/auth.module';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Stock, StockLot, Product]), AuthModule],
-    providers: [StockHealthService, StockHealthResolver],
-    exports: [StockHealthService],
+  imports: [TypeOrmModule.forFeature([Stock, StockLot, Product]), AuthModule],
+  providers: [StockHealthService, StockHealthResolver],
+  exports: [StockHealthService],
 })
-export class StockHealthModule { }
+export class StockHealthModule {}

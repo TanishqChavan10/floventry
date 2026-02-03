@@ -12,12 +12,13 @@ export interface InviteEmailTemplateParams {
 export function generateInviteEmailTemplate(
   params: InviteEmailTemplateParams,
 ): string {
-  const { companyName, invitedEmail, invitedByName, role, invitationLink } = params;
+  const { companyName, invitedEmail, invitedByName, role, invitationLink } =
+    params;
 
   // Format role to be more readable (e.g., warehouse_staff -> Warehouse Staff)
   const formattedRole = role
     .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
   return `

@@ -1,6 +1,13 @@
 // send-invite.input.ts
 import { InputType, Field } from '@nestjs/graphql';
-import { IsNotEmpty, IsEmail, IsEnum, IsArray, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsEmail,
+  IsEnum,
+  IsArray,
+  IsOptional,
+  IsUUID,
+} from 'class-validator';
 import { Role } from '../../auth/enums/role.enum';
 
 @InputType()

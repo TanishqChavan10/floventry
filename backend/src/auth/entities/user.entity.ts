@@ -5,7 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
-  PrimaryColumn
+  PrimaryColumn,
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import GraphQLJSONObject from 'graphql-type-json';

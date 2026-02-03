@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
 import CompanyGuard from '@/components/CompanyGuard';
 import { Button } from '@/components/ui/button';
@@ -50,6 +50,7 @@ import { GenerateBarcodeLabelsButton } from '@/components/barcode/GenerateBarcod
 
 function CatalogProductsContent() {
   const { slug } = useParams();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -111,6 +112,21 @@ function CatalogProductsContent() {
   const products = productsData?.products || [];
   const categories = categoriesData?.categories || [];
   const suppliers = suppliersData?.suppliers || [];
+
+  const openedFromUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const productId = searchParams.get('productId');
+    if (!productId) return;
+    if (openedFromUrlRef.current === productId) return;
+
+    const match = products.find((p: any) => p.id === productId);
+    if (!match) return;
+
+    openedFromUrlRef.current = productId;
+    setSelectedProduct(match);
+    setIsDetailDrawerOpen(true);
+  }, [products, searchParams]);
 
   // Filter products
   const filteredProducts = products.filter((product: any) => {

@@ -19,7 +19,7 @@ export class InviteResolver {
   constructor(
     private readonly inviteService: InviteService,
     private readonly clerkService: ClerkService,
-  ) { }
+  ) {}
 
   @Mutation(() => Invite)
   @UseGuards(ClerkAuthGuard, RolesGuard)
@@ -32,7 +32,9 @@ export class InviteResolver {
     const activeCompanyId = context.req.user.activeCompanyId; // Get from Clerk metadata
 
     if (!activeCompanyId) {
-      throw new BadRequestException('User does not have an active company selected');
+      throw new BadRequestException(
+        'User does not have an active company selected',
+      );
     }
 
     return this.inviteService.createInvite(input, activeCompanyId, user.id);
@@ -65,9 +67,7 @@ export class InviteResolver {
   //------------------------------------------------------------
 
   @Query(() => ValidateInviteResponse)
-  async validateInvite(
-    @Args('token', { type: () => String }) token: string,
-  ) {
+  async validateInvite(@Args('token', { type: () => String }) token: string) {
     if (!token) {
       throw new BadRequestException('Token is required');
     }
@@ -98,7 +98,9 @@ export class InviteResolver {
     if (!context.req.user?.clerkId) {
       return [];
     }
-    const user = await this.clerkService.getUserByClerkId(context.req.user.clerkId);
+    const user = await this.clerkService.getUserByClerkId(
+      context.req.user.clerkId,
+    );
     if (!user || !user.email) {
       return [];
     }

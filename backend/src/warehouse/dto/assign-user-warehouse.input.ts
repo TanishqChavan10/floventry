@@ -3,12 +3,12 @@ import { IsUUID, IsOptional, IsString } from 'class-validator';
 
 @InputType()
 export class AssignUserToWarehouseInput {
-    @Field(() => ID)
-    @IsUUID()
-    userId: string;
+  @Field(() => ID)
+  @IsUUID()
+  userId: string;
 
-    @Field({ nullable: true })
-    @IsOptional()
-    @IsString()
-    role?: string;
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  role?: string;
 }

@@ -8,11 +8,11 @@ import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([Notification, UserCompany, UserWarehouse]),
-        AuthModule,
-    ],
-    providers: [NotificationsService, NotificationsResolver],
-    exports: [NotificationsService],
+  imports: [
+    TypeOrmModule.forFeature([Notification, UserCompany, UserWarehouse]),
+    AuthModule,
+  ],
+  providers: [NotificationsService, NotificationsResolver],
+  exports: [NotificationsService],
 })
-export class NotificationsModule { }
+export class NotificationsModule {}

@@ -1,7 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { InventoryService } from './inventory.service';
-import { CategoryResolver, ProductResolver, UnitResolver, StockResolver } from './inventory.resolver';
+import {
+  CategoryResolver,
+  ProductResolver,
+  UnitResolver,
+  StockResolver,
+} from './inventory.resolver';
 import { GRNService } from './grn.service';
 import { GRNResolver } from './grn.resolver';
 import { TransferService } from './transfer.service';
@@ -33,46 +38,46 @@ import { BarcodeLabelResolver } from './barcode-label.resolver';
 import { AuditModule } from '../audit/audit.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([
-            Category,
-            Product,
-            Unit,
-            Stock,
-            StockLot,
-            StockMovement,
-            GoodsReceiptNote,
-            GRNItem,
-            WarehouseTransfer,
-            WarehouseTransferItem,
-            PurchaseOrder,
-            PurchaseOrderItem,
-        ]),
-        AuthModule,
-        SupplierModule,
-        WarehouseModule,
-        NotificationsModule,
-        PurchaseOrdersModule,
-        StockHealthModule, // Stock health intelligence
-        AuditModule, // Company audit logs
-    ],
-    controllers: [BarcodeLabelController],
-    providers: [
-        BarcodeService,
-        BarcodeLabelService,
-        BarcodeLabelResolver,
-        InventoryService,
-        CategoryResolver,
-        ProductResolver,
-        UnitResolver,
-        StockResolver,
-        GRNService,
-        GRNResolver,
-        TransferService,
-        TransferResolver,
-        LowStockResolver,
-        AdjustmentResolver,
-    ],
-    exports: [InventoryService, GRNService, TransferService],
+  imports: [
+    TypeOrmModule.forFeature([
+      Category,
+      Product,
+      Unit,
+      Stock,
+      StockLot,
+      StockMovement,
+      GoodsReceiptNote,
+      GRNItem,
+      WarehouseTransfer,
+      WarehouseTransferItem,
+      PurchaseOrder,
+      PurchaseOrderItem,
+    ]),
+    AuthModule,
+    SupplierModule,
+    WarehouseModule,
+    NotificationsModule,
+    PurchaseOrdersModule,
+    StockHealthModule, // Stock health intelligence
+    AuditModule, // Company audit logs
+  ],
+  controllers: [BarcodeLabelController],
+  providers: [
+    BarcodeService,
+    BarcodeLabelService,
+    BarcodeLabelResolver,
+    InventoryService,
+    CategoryResolver,
+    ProductResolver,
+    UnitResolver,
+    StockResolver,
+    GRNService,
+    GRNResolver,
+    TransferService,
+    TransferResolver,
+    LowStockResolver,
+    AdjustmentResolver,
+  ],
+  exports: [InventoryService, GRNService, TransferService],
 })
-export class InventoryModule { }
+export class InventoryModule {}

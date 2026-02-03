@@ -23,6 +23,12 @@ export function SidebarItem({ label, href, icon: Icon, onClick }: SidebarItemPro
   const isActive = (() => {
     if (pathname === href) return true;
 
+    // If href is a warehouse overview root (e.g., /company/warehouses/warehouse),
+    // only treat it as active on the exact page (not on sub-pages).
+    if (href.match(/^\/[^\/]+\/warehouses\/[^\/]+$/)) {
+      return false;
+    }
+
     // If href is a company root (e.g., /company-slug) and we're in a warehouse route,
     // don't mark as active
     if (href.match(/^\/[^\/]+$/) && pathname?.includes('/warehouses/')) {

@@ -1,4 +1,12 @@
-import { ObjectType, Field, Int, ID, InputType, registerEnumType, Float } from '@nestjs/graphql';
+import {
+  ObjectType,
+  Field,
+  Int,
+  ID,
+  InputType,
+  registerEnumType,
+  Float,
+} from '@nestjs/graphql';
 import { StockHealthStatus } from '../../inventory/types/stock-health.types';
 import { MovementType } from '../../inventory/entities/stock-movement.entity';
 import { StockHealthState } from '../../inventory/stock-health/stock-health.types';
@@ -9,65 +17,65 @@ import { StockHealthState } from '../../inventory/stock-health/stock-health.type
 
 @ObjectType()
 export class StockSnapshotItem {
-    @Field(() => ID)
-    id: string;
+  @Field(() => ID)
+  id: string;
 
-    @Field()
-    productName: string;
+  @Field()
+  productName: string;
 
-    @Field()
-    sku: string;
+  @Field()
+  sku: string;
 
-    @Field({ nullable: true })
-    categoryName: string;
+  @Field({ nullable: true })
+  categoryName: string;
 
-    @Field(() => Int)
-    quantity: number;
+  @Field(() => Int)
+  quantity: number;
 
-    @Field(() => Float, { nullable: true })
-    usableQuantity: number;
+  @Field(() => Float, { nullable: true })
+  usableQuantity: number;
 
-    @Field(() => StockHealthState, { nullable: true })
-    stockHealthState: StockHealthState;
+  @Field(() => StockHealthState, { nullable: true })
+  stockHealthState: StockHealthState;
 
-    @Field({ nullable: true })
-    nearestExpiry: string;
+  @Field({ nullable: true })
+  nearestExpiry: string;
 
-    @Field(() => Float, { nullable: true })
-    expiringQuantity: number;
+  @Field(() => Float, { nullable: true })
+  expiringQuantity: number;
 
-    @Field({ nullable: true })
-    unit: string;
+  @Field({ nullable: true })
+  unit: string;
 
-    @Field(() => StockHealthStatus)
-    status: StockHealthStatus;
+  @Field(() => StockHealthStatus)
+  status: StockHealthStatus;
 
-    @Field()
-    lastUpdated: Date;
+  @Field()
+  lastUpdated: Date;
 }
 
 @ObjectType()
 export class StockSnapshotResult {
-    @Field(() => [StockSnapshotItem])
-    items: StockSnapshotItem[];
+  @Field(() => [StockSnapshotItem])
+  items: StockSnapshotItem[];
 
-    @Field(() => Int)
-    total: number;
+  @Field(() => Int)
+  total: number;
 }
 
 @InputType()
 export class StockSnapshotFilters {
-    @Field({ nullable: true })
-    categoryId?: string;
+  @Field({ nullable: true })
+  categoryId?: string;
 
-    @Field(() => StockHealthStatus, { nullable: true })
-    status?: StockHealthStatus;
+  @Field(() => StockHealthStatus, { nullable: true })
+  status?: StockHealthStatus;
 
-    @Field(() => Int, { nullable: true, defaultValue: 50 })
-    limit?: number;
+  @Field(() => Int, { nullable: true, defaultValue: 50 })
+  limit?: number;
 
-    @Field(() => Int, { nullable: true, defaultValue: 0 })
-    offset?: number;
+  @Field(() => Int, { nullable: true, defaultValue: 0 })
+  offset?: number;
 }
 
 // ============================================
@@ -76,74 +84,74 @@ export class StockSnapshotFilters {
 
 @ObjectType()
 export class StockMovementReportItem {
-    @Field(() => ID)
-    id: string;
+  @Field(() => ID)
+  id: string;
 
-    @Field()
-    createdAt: Date;
+  @Field()
+  createdAt: Date;
 
-    @Field()
-    productName: string;
+  @Field()
+  productName: string;
 
-    @Field()
-    sku: string;
+  @Field()
+  sku: string;
 
-    @Field(() => MovementType)
-    type: MovementType;
+  @Field(() => MovementType)
+  type: MovementType;
 
-    @Field(() => Int)
-    quantity: number;
+  @Field(() => Int)
+  quantity: number;
 
-    @Field(() => Int, { nullable: true })
-    previousQuantity: number;
+  @Field(() => Int, { nullable: true })
+  previousQuantity: number;
 
-    @Field(() => Int, { nullable: true })
-    newQuantity: number;
+  @Field(() => Int, { nullable: true })
+  newQuantity: number;
 
-    @Field({ nullable: true })
-    referenceId: string;
+  @Field({ nullable: true })
+  referenceId: string;
 
-    @Field({ nullable: true })
-    referenceType: string;
+  @Field({ nullable: true })
+  referenceType: string;
 
-    @Field({ nullable: true })
-    reason: string;
+  @Field({ nullable: true })
+  reason: string;
 
-    @Field({ nullable: true })
-    performedBy: string;
+  @Field({ nullable: true })
+  performedBy: string;
 
-    @Field({ nullable: true })
-    userRole: string;
+  @Field({ nullable: true })
+  userRole: string;
 }
 
 @ObjectType()
 export class StockMovementResult {
-    @Field(() => [StockMovementReportItem])
-    items: StockMovementReportItem[];
+  @Field(() => [StockMovementReportItem])
+  items: StockMovementReportItem[];
 
-    @Field(() => Int)
-    total: number;
+  @Field(() => Int)
+  total: number;
 }
 
 @InputType()
 export class StockMovementFilters {
-    @Field()
-    fromDate: Date;
+  @Field()
+  fromDate: Date;
 
-    @Field()
-    toDate: Date;
+  @Field()
+  toDate: Date;
 
-    @Field(() => [MovementType], { nullable: true })
-    types?: MovementType[];
+  @Field(() => [MovementType], { nullable: true })
+  types?: MovementType[];
 
-    @Field({ nullable: true })
-    productId?: string;
+  @Field({ nullable: true })
+  productId?: string;
 
-    @Field(() => Int, { nullable: true, defaultValue: 50 })
-    limit?: number;
+  @Field(() => Int, { nullable: true, defaultValue: 50 })
+  limit?: number;
 
-    @Field(() => Int, { nullable: true, defaultValue: 0 })
-    offset?: number;
+  @Field(() => Int, { nullable: true, defaultValue: 0 })
+  offset?: number;
 }
 
 // ============================================
@@ -152,66 +160,66 @@ export class StockMovementFilters {
 
 @ObjectType()
 export class AdjustmentReportItem {
-    @Field(() => ID)
-    id: string;
+  @Field(() => ID)
+  id: string;
 
-    @Field()
-    createdAt: Date;
+  @Field()
+  createdAt: Date;
 
-    @Field()
-    productName: string;
+  @Field()
+  productName: string;
 
-    @Field()
-    sku: string;
+  @Field()
+  sku: string;
 
-    @Field(() => MovementType)
-    adjustmentType: MovementType; // ADJUSTMENT_IN or ADJUSTMENT_OUT
+  @Field(() => MovementType)
+  adjustmentType: MovementType; // ADJUSTMENT_IN or ADJUSTMENT_OUT
 
-    @Field(() => Int)
-    quantity: number;
+  @Field(() => Int)
+  quantity: number;
 
-    @Field({ nullable: true })
-    reason: string;
+  @Field({ nullable: true })
+  reason: string;
 
-    @Field({ nullable: true })
-    referenceId: string;
+  @Field({ nullable: true })
+  referenceId: string;
 
-    @Field({ nullable: true })
-    performedBy: string;
+  @Field({ nullable: true })
+  performedBy: string;
 
-    @Field({ nullable: true })
-    userRole: string;
+  @Field({ nullable: true })
+  userRole: string;
 }
 
 @ObjectType()
 export class AdjustmentResult {
-    @Field(() => [AdjustmentReportItem])
-    items: AdjustmentReportItem[];
+  @Field(() => [AdjustmentReportItem])
+  items: AdjustmentReportItem[];
 
-    @Field(() => Int)
-    total: number;
+  @Field(() => Int)
+  total: number;
 }
 
 @InputType()
 export class AdjustmentFilters {
-    @Field()
-    fromDate: Date;
+  @Field()
+  fromDate: Date;
 
-    @Field()
-    toDate: Date;
+  @Field()
+  toDate: Date;
 
-    @Field({ nullable: true })
-    productId?: string;
+  @Field({ nullable: true })
+  productId?: string;
 
-    @Field({ nullable: true })
-    userId?: string;
+  @Field({ nullable: true })
+  userId?: string;
 
-    @Field(() => MovementType, { nullable: true })
-    adjustmentType?: MovementType; // ADJUSTMENT_IN or ADJUSTMENT_OUT only
+  @Field(() => MovementType, { nullable: true })
+  adjustmentType?: MovementType; // ADJUSTMENT_IN or ADJUSTMENT_OUT only
 
-    @Field(() => Int, { nullable: true, defaultValue: 50 })
-    limit?: number;
+  @Field(() => Int, { nullable: true, defaultValue: 50 })
+  limit?: number;
 
-    @Field(() => Int, { nullable: true, defaultValue: 0 })
-    offset?: number;
+  @Field(() => Int, { nullable: true, defaultValue: 0 })
+  offset?: number;
 }

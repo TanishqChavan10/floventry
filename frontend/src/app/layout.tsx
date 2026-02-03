@@ -10,6 +10,7 @@ import { ClerkThemeProvider } from '@/components/ClerkThemeProvider';
 import { ApolloAppProvider } from '@/components/ApolloAppProvider';
 import { WarehouseProvider } from '@/context/warehouse-context';
 import { ThemeProvider } from '@/context/theme-context';
+import { GlobalSearchProvider } from '@/components/search/GlobalSearchProvider';
 
 // UI Wrappers
 import PageWrapper from '@/components/ui/PageWrapper';
@@ -35,9 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <title>Floventory</title>
       </head>
-      <body
-        className={`${poppins.variable} font-sans min-h-screen flex flex-col`}
-      >
+      <body className={`${poppins.variable} font-sans min-h-screen flex flex-col`}>
         {/* --- 1) Theme Provider first for useTheme --- */}
         <ThemeProvider>
           {/* --- 2) Clerk (light only) --- */}
@@ -45,13 +44,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {/* --- 3) Apollo loads AFTER Clerk (prevents redirect loops) --- */}
             <ApolloAppProvider>
               <WarehouseProvider>
-                <PageWrapper>
-                  <AppLayoutWrapper>
-                    <main className="flex-1 min-h-screen">{children}</main>
-                  </AppLayoutWrapper>
+                <GlobalSearchProvider>
+                  <PageWrapper>
+                    <AppLayoutWrapper>
+                      <main className="flex-1 min-h-screen">{children}</main>
+                    </AppLayoutWrapper>
 
-                  <Toaster richColors position="top-center" />
-                </PageWrapper>
+                    <Toaster richColors position="top-center" />
+                  </PageWrapper>
+                </GlobalSearchProvider>
               </WarehouseProvider>
             </ApolloAppProvider>
           </ClerkThemeProvider>

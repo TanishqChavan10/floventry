@@ -1,11 +1,18 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import bwipjs from 'bwip-js';
 import PDFDocument = require('pdfkit');
 import { Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
 
-export type BarcodeLabelProduct = Pick<Product, 'id' | 'name' | 'sku' | 'barcode'>;
+export type BarcodeLabelProduct = Pick<
+  Product,
+  'id' | 'name' | 'sku' | 'barcode'
+>;
 
 @Injectable()
 export class BarcodeLabelService {
@@ -78,9 +85,13 @@ export class BarcodeLabelService {
   }): Promise<Buffer> {
     const products = await this.fetchProductsForCompany(params);
 
-    const missingBarcode = products.filter((p) => !this.normalizeBarcode(p.barcode));
+    const missingBarcode = products.filter(
+      (p) => !this.normalizeBarcode(p.barcode),
+    );
     if (missingBarcode.length) {
-      throw new BadRequestException('One or more products do not have a barcode');
+      throw new BadRequestException(
+        'One or more products do not have a barcode',
+      );
     }
 
     const doc = new PDFDocument({
@@ -90,7 +101,9 @@ export class BarcodeLabelService {
     });
 
     const chunks: Buffer[] = [];
-    doc.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+    doc.on('data', (chunk) =>
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)),
+    );
 
     const endPromise = new Promise<Buffer>((resolve, reject) => {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
@@ -107,7 +120,8 @@ export class BarcodeLabelService {
       const pageWidth = doc.page.width;
       const pageHeight = doc.page.height;
 
-      const contentWidth = pageWidth - doc.page.margins.left - doc.page.margins.right;
+      const contentWidth =
+        pageWidth - doc.page.margins.left - doc.page.margins.right;
       const left = doc.page.margins.left;
       const top = doc.page.margins.top;
 
