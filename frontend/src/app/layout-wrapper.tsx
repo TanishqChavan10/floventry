@@ -1,5 +1,7 @@
 'use client';
 
+import { Fragment } from 'react';
+
 import AuthGuard from '@/components/AuthGuard';
 import { ManagerGuard } from '@/components/guards/ManagerGuard';
 import { Sidebar, SidebarBody, SidebarProvider, useSidebar } from '@/components/ui/sidebar';
@@ -173,7 +175,7 @@ function AppSidebarContent() {
         {/* Main Navigation Sections */}
         <div className="flex-1">
           {filteredSections.map((section, index) => (
-            <React.Fragment key={index}>
+            <Fragment key={index}>
               <SidebarSection title={section.title}>
                 {section.items.map((item) => (
                   <SidebarItem
@@ -188,7 +190,7 @@ function AppSidebarContent() {
                 ))}
               </SidebarSection>
               {index === 0 && <div className="my-3 mx-4 h-px bg-border" />}
-            </React.Fragment>
+            </Fragment>
           ))}
         </div>
 

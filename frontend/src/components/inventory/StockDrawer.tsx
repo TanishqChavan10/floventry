@@ -43,14 +43,14 @@ import {
   GET_STOCK_MOVEMENTS,
   GET_WAREHOUSE_STOCK,
 } from '@/lib/graphql/inventory';
+import { CopyButton } from '@/components/common/CopyButton';
 
 type StockDrawerStock = {
   id: string;
-  import { CopyButton } from '@/components/common/CopyButton';
   quantity: string | number;
   min_stock_level?: number | null;
   max_stock_level?: number | null;
-  reorder_point?: number | null;
+  reorder_point?: string | number | null;
   created_at: string;
   updated_at: string;
   product: {
@@ -255,8 +255,11 @@ export default function StockDrawer({
     });
   };
 
-  const currentQuantity = parseFloat(stock.quantity);
-  const isLowStock = stock.reorder_point && currentQuantity <= parseFloat(stock.reorder_point);
+  const currentQuantity = Number.parseFloat(String(stock.quantity ?? 0));
+  const isLowStock =
+    stock.reorder_point != null &&
+    String(stock.reorder_point).trim() !== '' &&
+    currentQuantity <= Number.parseFloat(String(stock.reorder_point));
 
   const handleCancelEditLevels = () => {
     setLevelForm({

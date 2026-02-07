@@ -132,7 +132,7 @@ function AdjustmentsPageContent() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Header */}
-      <header className="border-b bg-white dark:bg-slate-900">
+      <header className="bg-white dark:bg-slate-900">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
@@ -257,20 +257,23 @@ function AdjustmentsPageContent() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {adjustment.type === 'ADJUSTMENT_IN' ? (
-                            <Badge
-                              variant="default"
-                              className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
-                            >
-                              <TrendingUp className="h-3 w-3 mr-1" />
-                              IN
-                            </Badge>
-                          ) : (
-                            <Badge variant="destructive">
-                              <TrendingDown className="h-3 w-3 mr-1" />
-                              OUT
-                            </Badge>
-                          )}
+                          <div className="flex flex-col gap-1 items-start">
+                            {adjustment.type === 'ADJUSTMENT_IN' ? (
+                              <Badge
+                                variant="default"
+                                className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
+                              >
+                                <TrendingUp className="h-3 w-3 mr-1" />
+                                IN
+                              </Badge>
+                            ) : (
+                              <Badge variant="destructive">
+                                <TrendingDown className="h-3 w-3 mr-1" />
+                                OUT
+                              </Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">Adjustment</span>
+                          </div>
                         </TableCell>
                         <TableCell className="text-right font-bold">
                           <span
@@ -291,7 +294,7 @@ function AdjustmentsPageContent() {
                           {adjustment.newQuantity ?? 'N/A'}
                         </TableCell>
                         <TableCell className="max-w-xs">
-                          <p className="text-sm truncate" title={adjustment.reason}>
+                          <p className="text-sm truncate" title={adjustment.reason ?? undefined}>
                             {adjustment.reason || 'N/A'}
                           </p>
                           {adjustment.referenceId && (

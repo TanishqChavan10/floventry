@@ -116,18 +116,8 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
     skip: !activeWarehouse?.id,
     fetchPolicy: 'cache-and-network',
   });
-                    <div className="mt-1 text-slate-600 dark:text-slate-300">
-                      <div className="flex items-center gap-1">
-                        <span>
-                          Selected: {lastScan.productName} ({lastScan.sku})
-                        </span>
-                        <CopyButton
-                          value={lastScan.sku}
-                          ariaLabel="Copy SKU"
-                          successMessage="Copied SKU to clipboard"
-                          className="h-6 w-6 text-muted-foreground"
-                        />
-                      </div>
+
+  const stockHealthByProductId = useMemo(() => {
     const rows = (stockHealthData?.warehouseStockHealth ?? []) as any[];
     const map = new Map<string, any>();
     for (const row of rows) {

@@ -1,0 +1,75 @@
+﻿node.exe : npm verbose cli C:\Program 
+Files\nodejs\node.exe C:\Users\tan20\AppData\Roam
+ing\npm\node_modules\npm\bin\npm-cli.js
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" 
+"C:\Users\tan20\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm 
+    verbose cli...\bin\npm-cli.js:String) [], R  
+  emoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm info using npm@11.6.0
+npm info using node@v24.8.0
+npm verbose title npm run build
+npm verbose argv "run" "build" "--loglevel" 
+"verbose"
+npm verbose logfile logs-max:10 dir:C:\Users\tan2
+0\AppData\Local\npm-cache\_logs\2026-02-07T18_48_
+50_017Z-
+npm verbose logfile C:\Users\tan20\AppData\Local\
+npm-cache\_logs\2026-02-07T18_48_50_017Z-debug-0.
+log
+
+> flowventory-frontend@0.1.0 build
+> next build
+
+   Γû▓ Next.js 15.5.9
+   - Environments: .env.local
+   - Experiments (use with caution):
+     ┬╖ optimizePackageImports
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully in 8.1s
+   Skipping linting
+   Checking validity of types ...
+Failed to compile.
+
+./src/app/[slug]/warehouses/[warehouseSlug]/inven
+tory/stock/page.tsx:505:11
+Type error: Type 'StockLot[]' is not assignable 
+to type 'LotWithExpiry[]'.
+  Type 'StockLot' is not assignable to type 
+'LotWithExpiry'.
+    Types of property 'quantity' are 
+incompatible.
+      Type 'string | number' is not assignable 
+to type 'number'.
+        Type 'string' is not assignable to type 
+'number'.
+
+[0m [90m 503 |[39m           productName[33m=
+[39m{lotBreakdownProduct[33m.[39mproduct[33m.
+[39mname}
+ [90m 504 |[39m           productSku[33m=[39m
+{lotBreakdownProduct[33m.[39mproduct[33m.[39m
+sku}
+[31m[1m>[22m[39m[90m 505 |[39m           lo
+ts[33m=[39m{lotBreakdownProduct[33m.[39mlots 
+[33m||[39m []}
+ [90m     |[39m           [31m[1m^[22m[39m
+ [90m 506 |[39m         [33m/[39m[33m>[39m
+ [90m 507 |[39m       )}
+ [90m 508 |[39m     [33m<[39m[33m/[39m[33m
+div[39m[33m>[39m[0m
+Next.js build worker exited with code: 1 and 
+signal: null
+npm verbose cwd T:\college 
+projects\floventry\frontend
+npm verbose os Windows_NT 10.0.26200
+npm verbose node v24.8.0
+npm verbose npm  v11.6.0
+npm verbose exit 1
+npm verbose code 1

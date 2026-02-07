@@ -175,15 +175,15 @@ function LowStockContent() {
     const reorder = thresholds.reorder_point;
     const max = thresholds.max_stock_level;
 
-    if (min !== null && reorder !== null && min > reorder) {
+    if (min != null && reorder != null && min > reorder) {
       toast.error('Min stock must be ≤ reorder point');
       return;
     }
-    if (reorder !== null && max !== null && reorder > max) {
+    if (reorder != null && max != null && reorder > max) {
       toast.error('Reorder point must be ≤ max stock');
       return;
     }
-    if (min !== null && max !== null && min > max) {
+    if (min != null && max != null && min > max) {
       toast.error('Min stock must be ≤ max stock');
       return;
     }
@@ -385,7 +385,7 @@ function LowStockContent() {
                                 min="0"
                                 value={
                                   editValues.min_stock_level !== undefined
-                                    ? editValues.min_stock_level
+                                    ? (editValues.min_stock_level ?? '')
                                     : (item.minStockLevel ?? '')
                                 }
                                 onChange={(e) =>
@@ -409,7 +409,7 @@ function LowStockContent() {
                                 min="0"
                                 value={
                                   editValues.reorder_point !== undefined
-                                    ? editValues.reorder_point
+                                    ? (editValues.reorder_point ?? '')
                                     : (item.reorderPoint ?? '')
                                 }
                                 onChange={(e) =>
@@ -433,7 +433,7 @@ function LowStockContent() {
                                 min="0"
                                 value={
                                   editValues.max_stock_level !== undefined
-                                    ? editValues.max_stock_level
+                                    ? (editValues.max_stock_level ?? '')
                                     : (item.maxStockLevel ?? '')
                                 }
                                 onChange={(e) =>

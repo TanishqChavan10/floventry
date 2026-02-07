@@ -301,11 +301,6 @@ export default function NewIssueNotePage() {
                 onValueChange={(value) => {
                   const nextId = value === 'NONE' ? '' : value;
                   setSalesOrderId(nextId);
-
-                  // Auto-populate issue items from the chosen Sales Order
-                  if (nextId) {
-                    prefillItemsFromSalesOrder(nextId);
-                  }
                 }}
               >
                 <SelectTrigger className="mt-2">

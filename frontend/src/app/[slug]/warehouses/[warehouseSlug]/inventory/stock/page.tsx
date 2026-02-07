@@ -38,6 +38,7 @@ import {
   getProductExpiryStatus,
   getDaysUntilExpiry,
 } from '@/lib/utils/expiry';
+import type { LotWithExpiry } from '@/lib/utils/expiry';
 import { format } from 'date-fns';
 import { GET_WAREHOUSE_STOCK_HEALTH, WarehouseStockHealth } from '@/lib/graphql/stock-health';
 import { StockHealthBadge } from '@/components/inventory/stock-health-badge';
@@ -53,8 +54,16 @@ type StockLot = {
 
 type StockItem = {
   id: string;
-  quantity: string;
-  reorder_point?: string | null;
+  quantity: string | number;
+  min_stock_level?: number | null;
+  max_stock_level?: number | null;
+  reorder_point?: string | number | null;
+  created_at: string;
+  updated_at: string;
+  warehouse: {
+    id: string;
+    name: string;
+  };
   lots?: StockLot[] | null;
   product: {
     id: string;
@@ -63,6 +72,10 @@ type StockItem = {
     unit: string;
     category?: Category | null;
   };
+};
+
+type StockItemWithConvertedLots = Omit<StockItem, 'lots'> & {
+  lots: LotWithExpiry[];
 };
 
 function StockPageContent() {
@@ -77,7 +90,7 @@ function StockPageContent() {
   const [isOpeningStockModalOpen, setIsOpeningStockModalOpen] = React.useState(false);
   const [selectedStock, setSelectedStock] = React.useState<StockItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
-  const [lotBreakdownProduct, setLotBreakdownProduct] = React.useState<StockItem | null>(null);
+  const [lotBreakdownProduct, setLotBreakdownProduct] = React.useState<StockItemWithConvertedLots | null>(null);
   const [isLotModalOpen, setIsLotModalOpen] = React.useState(false);
 
   // Get warehouse ID from context or user data
@@ -161,10 +174,18 @@ function StockPageContent() {
     return matchesSearch && matchesCategory;
   });
 
-  const totalQuantity = stock.reduce((sum, item) => sum + parseFloat(item.quantity || '0'), 0);
-  const lowStockCount = stock.filter(
-    (item) => item.reorder_point && parseFloat(item.quantity) <= parseFloat(item.reorder_point),
-  ).length;
+  const totalQuantity = stock.reduce((sum, item) => {
+    const q = Number.parseFloat(String(item.quantity ?? 0));
+    return sum + (Number.isFinite(q) ? q : 0);
+  }, 0);
+
+  const lowStockCount = stock.filter((item) => {
+    if (item.reorder_point == null) return false;
+    const reorder = Number.parseFloat(String(item.reorder_point));
+    const qty = Number.parseFloat(String(item.quantity ?? 0));
+    if (!Number.isFinite(reorder) || !Number.isFinite(qty)) return false;
+    return qty <= reorder;
+  }).length;
 
   const handleViewStock = (stockItem: StockItem) => {
     setSelectedStock(stockItem);
@@ -172,7 +193,18 @@ function StockPageContent() {
   };
 
   const handleViewLots = (stockItem: StockItem) => {
-    setLotBreakdownProduct(stockItem);
+    // Convert StockLot[] to LotWithExpiry[] for the modal
+    const convertedItem: StockItemWithConvertedLots = {
+      ...stockItem,
+      lots: (stockItem.lots ?? []).map((lot) => ({
+        id: lot.id,
+        quantity:
+          typeof lot.quantity === 'string' ? Number.parseFloat(lot.quantity) : lot.quantity,
+        expiry_date: lot.expiry_date ?? null,
+        received_at: lot.received_at ?? '',
+      })),
+    };
+    setLotBreakdownProduct(convertedItem);
     setIsLotModalOpen(true);
   };
 
@@ -201,9 +233,9 @@ function StockPageContent() {
   const isEmpty = stock.length === 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Header */}
-      <header className="bg-background">
+      <header className="bg-white dark:bg-slate-900">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold tracking-tight text-foreground">Stock</h1>
@@ -305,18 +337,30 @@ function StockPageContent() {
                       </TableHeader>
                       <TableBody>
                         {filteredStock.map((item) => {
-                          const quantity = parseFloat(item.quantity);
+                          const quantity = Number.parseFloat(String(item.quantity ?? 0));
                           const isOutOfStock = quantity === 0;
                           const isLowStock =
                             !isOutOfStock &&
-                            item.reorder_point &&
-                            quantity <= parseFloat(item.reorder_point);
+                            item.reorder_point != null &&
+                            String(item.reorder_point).trim() !== '' &&
+                            quantity <= Number.parseFloat(String(item.reorder_point));
+
+                          const lotsForExpiry: LotWithExpiry[] = (item.lots ?? []).map((lot) => ({
+                            id: lot.id,
+                            quantity:
+                              typeof lot.quantity === 'string'
+                                ? Number.parseFloat(lot.quantity)
+                                : lot.quantity,
+                            expiry_date: lot.expiry_date ?? null,
+                            received_at: lot.received_at ?? '',
+                          }));
+
                           const nearestExpiry = isOutOfStock
                             ? null
-                            : getNearestExpiryDate(item.lots || []);
+                            : getNearestExpiryDate(lotsForExpiry);
                           const expiryStatus = isOutOfStock
                             ? 'NO_EXPIRY'
-                            : getProductExpiryStatus(item.lots || []);
+                            : getProductExpiryStatus(lotsForExpiry);
                           const daysRemaining = getDaysUntilExpiry(nearestExpiry);
 
                           return (

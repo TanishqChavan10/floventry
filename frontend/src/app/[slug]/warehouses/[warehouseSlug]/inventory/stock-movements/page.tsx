@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CopyButton } from '@/components/common/CopyButton';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ArrowUpDown, Loader2, AlertCircle, Filter, X, Calendar } from 'lucide-react';
 import {
   Table,
@@ -88,41 +89,81 @@ type StockMovementsFilters = {
 };
 
 // Helper function to get badge variant for movement type
-function getMovementBadgeVariant(
-  type: MovementType,
-): 'default' | 'destructive' | 'secondary' | 'outline' {
+function getMovementDirection(type: MovementType): 'IN' | 'OUT' | 'NEUTRAL' {
   switch (type) {
     case MovementType.OPENING:
     case MovementType.ADJUSTMENT_IN:
     case MovementType.IN:
     case MovementType.TRANSFER_IN:
-      return 'default'; // Green/Blue for incoming
+      return 'IN';
     case MovementType.ADJUSTMENT_OUT:
     case MovementType.OUT:
     case MovementType.TRANSFER_OUT:
-      return 'destructive'; // Red for outgoing
+      return 'OUT';
+    default:
+      return 'NEUTRAL';
+  }
+}
+
+function getDirectionBadgeVariant(
+  direction: 'IN' | 'OUT' | 'NEUTRAL',
+): 'default' | 'destructive' | 'secondary' | 'outline' {
+  switch (direction) {
+    case 'IN':
+      return 'default';
+    case 'OUT':
+      return 'destructive';
     default:
       return 'secondary';
   }
 }
 
+function formatSourceLabel(input?: string): string {
+  if (!input) return 'Manual';
+  switch (input) {
+    case 'SALES_ORDER':
+      return 'Sale';
+    case 'PURCHASE_ORDER':
+      return 'Purchase';
+    case 'GRN':
+      return 'GRN';
+    case 'TRANSFER':
+      return 'Transfer';
+    case 'ADJUSTMENT':
+      return 'Adjustment';
+    case 'MANUAL':
+      return 'Manual';
+    default:
+      return input
+        .replace(/_/g, ' ')
+        .toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+}
+
 // Helper function to format quantity with sign and color
-function QuantityDelta({ quantity }: { quantity: number }) {
-  const isPositive = quantity > 0;
-  const isNegative = quantity < 0;
+function QuantityDelta({
+  quantity,
+  direction,
+}: {
+  quantity: number;
+  direction: 'IN' | 'OUT' | 'NEUTRAL';
+}) {
+  const absQuantity = Math.abs(quantity);
+
+  const className =
+    direction === 'IN'
+      ? 'text-green-600 dark:text-green-400'
+      : direction === 'OUT'
+        ? 'text-red-600 dark:text-red-400'
+        : 'text-slate-600 dark:text-slate-400';
+
+  const prefix = direction === 'IN' ? '+' : direction === 'OUT' ? '-' : '';
 
   return (
-    <span
-      className={`font-mono font-semibold ${
-        isPositive
-          ? 'text-green-600 dark:text-green-400'
-          : isNegative
-            ? 'text-red-600 dark:text-red-400'
-            : 'text-slate-600 dark:text-slate-400'
-      }`}
-    >
-      {isPositive ? '+' : ''}
-      {quantity}
+    <span className={`font-mono font-semibold ${className}`}>
+      {prefix}
+      {absQuantity}
     </span>
   );
 }
@@ -264,7 +305,7 @@ function StockMovementsContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <header className="border-b bg-white dark:bg-slate-900">
+      <header className="bg-white dark:bg-slate-900">
         <div className="container mx-auto px-6 py-6">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Stock Movements</h1>
           <p className="text-slate-600 dark:text-slate-400 mt-2">
@@ -308,13 +349,11 @@ function StockMovementsContent() {
           </Card>
         </div>
 
-        {/* Filters */}
+        {/* Movement Log with Filters */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
-                <CardTitle>Filters</CardTitle>
                 {activeFilterCount > 0 && (
                   <Badge variant="secondary">{activeFilterCount} active</Badge>
                 )}
@@ -327,7 +366,8 @@ function StockMovementsContent() {
               )}
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
+            {/* Filters */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {/* Date Range - From */}
               <div className="space-y-2">
@@ -363,14 +403,16 @@ function StockMovementsContent() {
               <div className="space-y-2">
                 <Label>Product</Label>
                 <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="All Products" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Products</SelectItem>
                     {stock.map((item) => (
                       <SelectItem key={item.product.id} value={item.product.id}>
-                        {item.product.name} ({item.product.sku})
+                        <span className="truncate">
+                          {item.product.name} ({item.product.sku})
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -381,27 +423,24 @@ function StockMovementsContent() {
               <div className="space-y-2">
                 <Label>Movement Type</Label>
                 <Select value={selectedType} onValueChange={setSelectedType}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="All Types" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="OPENING">Opening Stock</SelectItem>
+                    <SelectItem value="IN">Stock In (GRN)</SelectItem>
+                    <SelectItem value="OUT">Stock Out (Issue)</SelectItem>
                     <SelectItem value="ADJUSTMENT_IN">Adjustment In</SelectItem>
                     <SelectItem value="ADJUSTMENT_OUT">Adjustment Out</SelectItem>
+                    <SelectItem value="TRANSFER_IN">Transfer In</SelectItem>
+                    <SelectItem value="TRANSFER_OUT">Transfer Out</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Movement Log */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Movement Log</CardTitle>
-          </CardHeader>
-          <CardContent>
+            {/* Table Content */}
             {/* Loading State */}
             {loading && (
               <div className="flex items-center justify-center py-12">
@@ -457,6 +496,8 @@ function StockMovementsContent() {
                     {movements.map((movement) => {
                       const { date, time } = formatDateTime(movement.createdAt);
                       const userName = movement.performedBy || 'System';
+                      const direction = getMovementDirection(movement.type);
+                      const sourceLabel = formatSourceLabel(movement.referenceType);
 
                       return (
                         <TableRow key={movement.id}>
@@ -477,12 +518,17 @@ function StockMovementsContent() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={getMovementBadgeVariant(movement.type)}>
-                              {movement.type.replace(/_/g, ' ')}
-                            </Badge>
+                            <div className="flex flex-col gap-1 items-start">
+                              <Badge variant={getDirectionBadgeVariant(direction)}>
+                                {direction === 'NEUTRAL'
+                                  ? movement.type.replace(/_/g, ' ')
+                                  : direction}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">{sourceLabel}</span>
+                            </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            <QuantityDelta quantity={movement.quantity} />
+                            <QuantityDelta quantity={movement.quantity} direction={direction} />
                           </TableCell>
                           <TableCell className="text-slate-600 dark:text-slate-400">
                             {userName}
@@ -490,8 +536,32 @@ function StockMovementsContent() {
                               <div className="text-xs text-slate-500">{movement.userRole}</div>
                             )}
                           </TableCell>
-                          <TableCell className="max-w-xs truncate" title={movement.reason}>
-                            {movement.reason || '-'}
+                          <TableCell className="max-w-xs">
+                            {movement.reason ? (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="block w-full text-left truncate text-sm text-slate-600 dark:text-slate-400 hover:underline"
+                                    title={movement.reason ?? undefined}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {movement.reason}
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  className="w-80 max-w-[90vw]"
+                                  align="start"
+                                  onOpenAutoFocus={(e) => e.preventDefault()}
+                                >
+                                  <div className="text-sm whitespace-pre-wrap break-words">
+                                    {movement.reason}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            ) : (
+                              <span className="text-sm text-slate-600 dark:text-slate-400">-</span>
+                            )}
                           </TableCell>
                         </TableRow>
                       );

@@ -137,7 +137,7 @@ function GRNListContent() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Header */}
-      <header className="border-b bg-white dark:bg-slate-900">
+      <header className="bg-white dark:bg-slate-900">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
@@ -191,9 +191,11 @@ function GRNListContent() {
           </Card>
         </div>
 
-        {/* Filters */}
+        {/* GRNs Table with Filters */}
         <Card>
-          <CardContent className="pt-6">
+          
+          <CardContent className="space-y-4">
+            {/* Search and Filters */}
             <div className="flex gap-4">
               <div className="flex-1">
                 <div className="relative">
@@ -218,15 +220,8 @@ function GRNListContent() {
                 </SelectContent>
               </Select>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* GRNs Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>GRNs ({filteredGRNs.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
+            {/* Table Content */}
             {filteredGRNs.length === 0 ? (
               <div className="text-center py-12">
                 <PackageCheck className="h-12 w-12 text-slate-400 mx-auto mb-4" />

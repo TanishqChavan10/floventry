@@ -30,6 +30,12 @@ interface Notification {
   createdAt: string;
 }
 
+function getStringMetadataValue(metadata: unknown, key: string): string | undefined {
+  if (!metadata || typeof metadata !== 'object') return undefined;
+  const value = (metadata as Record<string, unknown>)[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
 type TabFilter = 'all' | 'unread' | 'critical';
 
 function NotificationsPageContent() {
@@ -160,6 +166,8 @@ function NotificationsPageContent() {
 
     // Deep-link navigation based on entity type
     const { entityType, entityId, metadata } = notification;
+    const warehouseSlug = getStringMetadataValue(metadata, 'warehouseSlug');
+    const warehouseId = getStringMetadataValue(metadata, 'warehouseId');
 
     if (!companySlug) return;
 
@@ -168,21 +176,21 @@ function NotificationsPageContent() {
         router.push(`/${companySlug}/purchase/grn/${entityId}`);
         break;
       case 'Issue':
-        if (metadata?.warehouseSlug) {
-          router.push(`/${companySlug}/warehouses/${metadata.warehouseSlug}/issues`);
+        if (warehouseSlug) {
+          router.push(`/${companySlug}/warehouses/${warehouseSlug}/issues`);
         }
         break;
       case 'Transfer':
         router.push(`/${companySlug}/transfers/${entityId}`);
         break;
       case 'Product':
-        if (metadata?.warehouseId) {
+        if (warehouseId) {
           router.push(`/${companySlug}/inventory/products`);
         }
         break;
       case 'StockLot':
-        if (metadata?.warehouseSlug) {
-          router.push(`/${companySlug}/warehouses/${metadata.warehouseSlug}/inventory/reports`);
+        if (warehouseSlug) {
+          router.push(`/${companySlug}/warehouses/${warehouseSlug}/inventory/reports`);
         }
         break;
       default:

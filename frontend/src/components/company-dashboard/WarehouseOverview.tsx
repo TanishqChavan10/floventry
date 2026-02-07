@@ -13,20 +13,24 @@ interface WarehouseOverviewProps {
   data?: CompanyDashboardData;
 }
 
+type RiskLabel = 'Healthy' | 'At-risk' | 'Critical';
+
 export function WarehouseOverview({ companySlug, data }: WarehouseOverviewProps) {
   const warehouses = data?.warehouseHealthSnapshot ?? [];
 
-  const getRisk = (riskBadge: string) => {
+  const getRisk = (
+    riskBadge: string,
+  ): { label: RiskLabel; variant: 'destructive' | 'secondary' | 'outline' } => {
     if (riskBadge === 'CRITICAL') {
-      return { label: 'Critical', variant: 'destructive' as const };
+      return { label: 'Critical', variant: 'destructive' };
     }
     if (riskBadge === 'WARNING') {
-      return { label: 'At-risk', variant: 'secondary' as const };
+      return { label: 'At-risk', variant: 'secondary' };
     }
-    return { label: 'Healthy', variant: 'outline' as const };
+    return { label: 'Healthy', variant: 'outline' };
   };
 
-  const getHint = (riskLabel: 'Healthy' | 'At-risk' | 'Critical') => {
+  const getHint = (riskLabel: RiskLabel) => {
     if (riskLabel === 'Critical') return 'Needs attention today';
     if (riskLabel === 'At-risk') return 'Review soon to avoid issues';
     return 'No major risk signals';

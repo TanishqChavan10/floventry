@@ -199,14 +199,14 @@ export function CreateIssueModal({ open, onOpenChange, onSuccess }: CreateIssueM
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto overflow-x-hidden sm:!max-w-4xl">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create Issue Note</DialogTitle>
             <DialogDescription>Issue goods from warehouse</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
+          <div className="space-y-6 py-4 overflow-x-hidden">
             {/* Sales Order Selection */}
             <div className="space-y-2">
               <Label htmlFor="salesOrder">Link to Sales Order (Optional)</Label>
@@ -215,14 +215,10 @@ export function CreateIssueModal({ open, onOpenChange, onSuccess }: CreateIssueM
                 onValueChange={(value) => {
                   const nextId = value === 'NONE' ? '' : value;
                   setSalesOrderId(nextId);
-
-                  if (nextId) {
-                    prefillItemsFromSalesOrder(nextId);
-                  }
                 }}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select sales order (optional)" />
+                <SelectTrigger className="w-full min-w-0">
+                  <SelectValue className="truncate" placeholder="Select sales order (optional)" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NONE">None (Direct Issue)</SelectItem>
@@ -272,16 +268,16 @@ export function CreateIssueModal({ open, onOpenChange, onSuccess }: CreateIssueM
                     return (
                       <div
                         key={index}
-                        className="flex gap-3 items-end p-4 border rounded-lg bg-slate-50 dark:bg-slate-900/50"
+                        className="flex gap-3 items-end p-4 border rounded-lg bg-slate-50 dark:bg-slate-900/50 min-w-0"
                       >
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <Label className="mb-2 block text-xs">Product</Label>
                           <Select
                             value={item.product_id}
                             onValueChange={(value) => updateItem(index, 'product_id', value)}
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select product" />
+                            <SelectTrigger className="w-full min-w-0">
+                              <SelectValue className="truncate" placeholder="Select product" />
                             </SelectTrigger>
                             <SelectContent>
                               {products.length === 0 ? (
