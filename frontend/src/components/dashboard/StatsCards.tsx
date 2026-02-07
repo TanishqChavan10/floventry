@@ -47,7 +47,7 @@ export default function StatsCards({ role, isLoading = false }: StatsCardsProps)
       roles: ['admin', 'manager', 'employee'],
     },
     {
-      title: 'Today\'s Sales',
+      title: "Today's Sales",
       value: '$3,450',
       icon: TrendingUp,
       description: '24 orders today',
@@ -99,16 +99,14 @@ export default function StatsCards({ role, isLoading = false }: StatsCardsProps)
       {filteredStats.map((stat, index) => (
         <Card key={index} className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               {stat.title}
             </CardTitle>
             <stat.icon className={`h-4 w-4 ${stat.color}`} />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stat.value}</div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              {stat.description}
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
           </CardContent>
         </Card>
       ))}

@@ -16,10 +16,20 @@ interface WarehouseOverviewProps {
 export function WarehouseOverview({ companySlug, data }: WarehouseOverviewProps) {
   const warehouses = data?.warehouseHealthSnapshot ?? [];
 
-  const getBadgeVariant = (riskBadge: string) => {
-    if (riskBadge === 'CRITICAL') return 'destructive' as const;
-    if (riskBadge === 'WARNING') return 'secondary' as const;
-    return 'outline' as const;
+  const getRisk = (riskBadge: string) => {
+    if (riskBadge === 'CRITICAL') {
+      return { label: 'Critical', variant: 'destructive' as const };
+    }
+    if (riskBadge === 'WARNING') {
+      return { label: 'At-risk', variant: 'secondary' as const };
+    }
+    return { label: 'Healthy', variant: 'outline' as const };
+  };
+
+  const getHint = (riskLabel: 'Healthy' | 'At-risk' | 'Critical') => {
+    if (riskLabel === 'Critical') return 'Needs attention today';
+    if (riskLabel === 'At-risk') return 'Review soon to avoid issues';
+    return 'No major risk signals';
   };
 
   return (
@@ -44,11 +54,19 @@ export function WarehouseOverview({ companySlug, data }: WarehouseOverviewProps)
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="text-2xl font-bold">{warehouse.okPercent}%</div>
-                  <Badge variant={getBadgeVariant(warehouse.riskBadge)}>
-                    {warehouse.riskBadge}
-                  </Badge>
+                  {(() => {
+                    const risk = getRisk(warehouse.riskBadge);
+                    return <Badge variant={risk.variant}>{risk.label}</Badge>;
+                  })()}
                 </div>
-                <p className="text-xs text-muted-foreground">OK stock coverage</p>
+                {(() => {
+                  const risk = getRisk(warehouse.riskBadge);
+                  return (
+                    <p className="text-xs text-muted-foreground">
+                      Healthy stock coverage • {getHint(risk.label)}
+                    </p>
+                  );
+                })()}
 
                 <div className="h-2 bg-muted rounded-full overflow-hidden">
                   <div
@@ -60,12 +78,12 @@ export function WarehouseOverview({ companySlug, data }: WarehouseOverviewProps)
                 {warehouse.warehouseSlug ? (
                   <Link href={`/${companySlug}/warehouses/${warehouse.warehouseSlug}`}>
                     <Button variant="outline" size="sm" className="w-full">
-                      Open Dashboard
+                      Open warehouse
                     </Button>
                   </Link>
                 ) : (
                   <Button variant="outline" size="sm" className="w-full" disabled>
-                    Open Dashboard
+                    Open warehouse
                   </Button>
                 )}
               </div>

@@ -8,6 +8,7 @@ import RoleGuard from '@/components/guards/RoleGuard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { CopyButton } from '@/components/common/CopyButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,21 +27,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { 
-  ArrowLeft, 
-  Edit, 
-  Send, 
-  XCircle, 
-  FileText, 
-  Package, 
-  CheckCircle, 
-  Building2, 
+  ArrowLeft,
+  Edit,
+  Send,
+  XCircle,
+  FileText,
+  Package,
+  CheckCircle,
+  Building2,
   Truck,
   Save,
   PackageCheck,
@@ -88,9 +84,17 @@ interface POItem {
 }
 
 // GRN Section Component
-function GRNSection({ poId, companySlug, warehouseSlug }: { poId: string; companySlug: string; warehouseSlug: string }) {
+function GRNSection({
+  poId,
+  companySlug,
+  warehouseSlug,
+}: {
+  poId: string;
+  companySlug: string;
+  warehouseSlug: string;
+}) {
   const router = useRouter();
-  
+
   // Fetch GRNs for this PO
   const { data: grnsData, loading: grnsLoading } = useQuery(GET_GRNS, {
     variables: {
@@ -177,7 +181,9 @@ function GRNSection({ poId, companySlug, warehouseSlug }: { poId: string; compan
                   <TableCell>{getGRNStatusBadge(grn.status)}</TableCell>
                   <TableCell className="text-right">{grn.items?.length || 0}</TableCell>
                   <TableCell className="text-right">
-                    <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn/${grn.id}`}>
+                    <Link
+                      href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn/${grn.id}`}
+                    >
                       <Button variant="ghost" size="icon">
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -223,7 +229,7 @@ function PurchaseOrderDetailContent() {
   const [editedSupplier, setEditedSupplier] = useState('');
   const [editedNotes, setEditedNotes] = useState('');
   const [editedItems, setEditedItems] = useState<POItem[]>([]);
-  
+
   // Dialog states
   const [showOrderDialog, setShowOrderDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -280,26 +286,32 @@ function PurchaseOrderDetailContent() {
     if (po && isEditing) {
       setEditedSupplier(po.supplier.id);
       setEditedNotes(po.notes || '');
-      setEditedItems(po.items.map((item: any) => ({
-        id: item.id,
-        product_id: item.product.id,
-        product: item.product,
-        ordered_quantity: item.ordered_quantity,
-        received_quantity: item.received_quantity,
-      })));
+      setEditedItems(
+        po.items.map((item: any) => ({
+          id: item.id,
+          product_id: item.product.id,
+          product: item.product,
+          ordered_quantity: item.ordered_quantity,
+          received_quantity: item.received_quantity,
+        })),
+      );
     }
   }, [po, isEditing]);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    }) + ' at ' + date.toLocaleTimeString('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return (
+      date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }) +
+      ' at ' +
+      date.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    );
   };
 
   const handleMarkOrdered = async () => {
@@ -350,13 +362,13 @@ function PurchaseOrderDetailContent() {
       toast.error('Please add at least one product');
       return;
     }
-    if (editedItems.some(item => item.ordered_quantity <= 0)) {
+    if (editedItems.some((item) => item.ordered_quantity <= 0)) {
       toast.error('All quantities must be greater than 0');
       return;
     }
-    
+
     // Check for duplicate products
-    const productIds = editedItems.map(item => item.product_id);
+    const productIds = editedItems.map((item) => item.product_id);
     if (new Set(productIds).size !== productIds.length) {
       toast.error('Duplicate products are not allowed');
       return;
@@ -369,7 +381,7 @@ function PurchaseOrderDetailContent() {
           input: {
             supplier_id: editedSupplier,
             notes: editedNotes || undefined,
-            items: editedItems.map(item => ({
+            items: editedItems.map((item) => ({
               product_id: item.product_id,
               ordered_quantity: parseFloat(item.ordered_quantity.toString()),
             })),
@@ -395,7 +407,7 @@ function PurchaseOrderDetailContent() {
   const updateItem = (index: number, field: keyof POItem, value: any) => {
     const updated = [...editedItems];
     updated[index] = { ...updated[index], [field]: value };
-    
+
     // Update product details when product_id changes
     if (field === 'product_id') {
       const stockItem = stock.find((s: any) => s.product.id === value);
@@ -403,7 +415,7 @@ function PurchaseOrderDetailContent() {
         updated[index].product = stockItem.product;
       }
     }
-    
+
     setEditedItems(updated);
   };
 
@@ -411,13 +423,14 @@ function PurchaseOrderDetailContent() {
   const userRole = user?.companies?.find((c: any) => c.slug === companySlug)?.role;
   const userWarehouses = user?.warehouses?.map((w: any) => w.warehouseId) || [];
   const isWarehouseAssigned = userWarehouses.includes(po?.warehouse?.id);
-  
+
   // Permission checks
   const isOwnerOrAdmin = userRole === 'OWNER' || userRole === 'ADMIN';
   const isManager = userRole === 'MANAGER';
   const isStaff = userRole === 'STAFF';
 
-  const canViewPO = isOwnerOrAdmin || (isManager && isWarehouseAssigned) || (isStaff && isWarehouseAssigned);
+  const canViewPO =
+    isOwnerOrAdmin || (isManager && isWarehouseAssigned) || (isStaff && isWarehouseAssigned);
   const canEdit = po?.status === 'DRAFT' && (isOwnerOrAdmin || (isManager && isWarehouseAssigned));
   const canMarkOrdered = canEdit;
   const canCancelDraft = canEdit;
@@ -505,8 +518,11 @@ function PurchaseOrderDetailContent() {
                   <p className="text-slate-600 dark:text-slate-400">
                     Created {formatDate(po.created_at)}
                     {po.user?.fullName && (
-                      <> by <span className="font-medium">{po.user.fullName}</span>
-                      {po.user_role && <span className="text-slate-500"> ({po.user_role})</span>}</>
+                      <>
+                        {' '}
+                        by <span className="font-medium">{po.user.fullName}</span>
+                        {po.user_role && <span className="text-slate-500"> ({po.user_role})</span>}
+                      </>
                     )}
                   </p>
                 </div>
@@ -534,7 +550,10 @@ function PurchaseOrderDetailContent() {
                     {canMarkOrdered && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button onClick={() => setShowOrderDialog(true)} disabled={orderingLoading}>
+                          <Button
+                            onClick={() => setShowOrderDialog(true)}
+                            disabled={orderingLoading}
+                          >
                             <Send className="h-4 w-4 mr-2" />
                             Mark as ORDERED
                           </Button>
@@ -557,8 +576,8 @@ function PurchaseOrderDetailContent() {
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          {po.status === 'DRAFT' 
-                            ? 'Cancel this purchase order' 
+                          {po.status === 'DRAFT'
+                            ? 'Cancel this purchase order'
                             : 'Only OWNER/ADMIN can cancel ORDERED POs'}
                         </TooltipContent>
                       </Tooltip>
@@ -589,7 +608,9 @@ function PurchaseOrderDetailContent() {
                   </div>
                   <div>
                     <p className="text-sm text-slate-600 dark:text-slate-400">Type</p>
-                    <p className="font-semibold">{po.warehouse.type?.replace(/_/g, ' ') || 'N/A'}</p>
+                    <p className="font-semibold">
+                      {po.warehouse.type?.replace(/_/g, ' ') || 'N/A'}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -692,7 +713,8 @@ function PurchaseOrderDetailContent() {
                           <SelectContent>
                             {stock.map((stockItem: any) => (
                               <SelectItem key={stockItem.product.id} value={stockItem.product.id}>
-                                {stockItem.product.name} ({stockItem.product.sku}) - Stock: {stockItem.quantity}
+                                {stockItem.product.name} ({stockItem.product.sku}) - Stock:{' '}
+                                {stockItem.quantity}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -704,7 +726,9 @@ function PurchaseOrderDetailContent() {
                           type="number"
                           min="1"
                           value={item.ordered_quantity}
-                          onChange={(e) => updateItem(index, 'ordered_quantity', parseInt(e.target.value) || 1)}
+                          onChange={(e) =>
+                            updateItem(index, 'ordered_quantity', parseInt(e.target.value) || 1)
+                          }
                         />
                       </div>
                       <Button
@@ -734,17 +758,31 @@ function PurchaseOrderDetailContent() {
                     {po.items.map((item: any) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.product.name}</TableCell>
-                        <TableCell className="font-mono text-sm">{item.product.sku}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          <div className="flex items-center gap-1">
+                            <span>{item.product.sku}</span>
+                            <CopyButton
+                              value={item.product.sku}
+                              ariaLabel="Copy SKU"
+                              successMessage="Copied SKU to clipboard"
+                              className="h-7 w-7 text-muted-foreground"
+                            />
+                          </div>
+                        </TableCell>
                         <TableCell>{item.product.unit || 'N/A'}</TableCell>
                         <TableCell className="text-right">
                           <span className="font-mono text-sm text-slate-600">
                             {stockMap.get(item.product.id)?.toString() ?? '-'}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right font-semibold">{item.ordered_quantity}</TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {item.ordered_quantity}
+                        </TableCell>
                         <TableCell className="text-right">
                           {item.received_quantity > 0 ? (
-                            <span className="text-green-600 font-semibold">{item.received_quantity}</span>
+                            <span className="text-green-600 font-semibold">
+                              {item.received_quantity}
+                            </span>
                           ) : (
                             <span className="text-slate-400">0</span>
                           )}
@@ -776,7 +814,12 @@ function PurchaseOrderDetailContent() {
                       {po.user?.fullName ? (
                         <>
                           {po.user.fullName}
-                          {po.user_role && <span className="text-sm text-slate-500 font-normal"> ({po.user_role})</span>}
+                          {po.user_role && (
+                            <span className="text-sm text-slate-500 font-normal">
+                              {' '}
+                              ({po.user_role})
+                            </span>
+                          )}
                         </>
                       ) : po.user_role ? (
                         po.user_role
@@ -809,8 +852,9 @@ function PurchaseOrderDetailContent() {
             <AlertDialogHeader>
               <AlertDialogTitle>Mark as ORDERED?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will mark the purchase order as sent to the supplier. The PO will become read-only and can no longer be edited.
-                No stock changes will occur until goods are received through a GRN.
+                This will mark the purchase order as sent to the supplier. The PO will become
+                read-only and can no longer be edited. No stock changes will occur until goods are
+                received through a GRN.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -828,12 +872,17 @@ function PurchaseOrderDetailContent() {
             <AlertDialogHeader>
               <AlertDialogTitle>Cancel Purchase Order?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. The purchase order will be marked as cancelled and no further actions can be taken.
+                This action cannot be undone. The purchase order will be marked as cancelled and no
+                further actions can be taken.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Keep PO</AlertDialogCancel>
-              <AlertDialogAction onClick={handleCancel} disabled={cancellingLoading} className="bg-red-600 hover:bg-red-700">
+              <AlertDialogAction
+                onClick={handleCancel}
+                disabled={cancellingLoading}
+                className="bg-red-600 hover:bg-red-700"
+              >
                 {cancellingLoading ? 'Cancelling...' : 'Cancel PO'}
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -851,7 +900,10 @@ function PurchaseOrderDetailContent() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Continue Editing</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDiscardChanges} className="bg-red-600 hover:bg-red-700">
+              <AlertDialogAction
+                onClick={handleDiscardChanges}
+                className="bg-red-600 hover:bg-red-700"
+              >
                 Discard Changes
               </AlertDialogAction>
             </AlertDialogFooter>

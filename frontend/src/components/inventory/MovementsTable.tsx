@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowDownLeft, ArrowUpRight, RefreshCw } from 'lucide-react';
 import { StockMovement, MovementType } from '@/types/stock';
 import { format } from 'date-fns';
+import { CopyButton } from '@/components/common/CopyButton';
 
 interface MovementsTableProps {
   movements: StockMovement[];
@@ -71,7 +72,10 @@ export default function MovementsTable({ movements, type }: MovementsTableProps)
         <TableBody>
           {movements.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={type === MovementType.ADJUSTMENT ? 8 : 7} className="h-24 text-center">
+              <TableCell
+                colSpan={type === MovementType.ADJUSTMENT ? 8 : 7}
+                className="h-24 text-center"
+              >
                 No movements found.
               </TableCell>
             </TableRow>
@@ -84,7 +88,15 @@ export default function MovementsTable({ movements, type }: MovementsTableProps)
                 <TableCell className="font-medium">
                   <div>
                     <div>{movement.product.name}</div>
-                    <div className="text-xs text-slate-500">{movement.product.sku}</div>
+                    <div className="flex items-center gap-1 text-xs text-slate-500">
+                      <span className="font-mono">{movement.product.sku}</span>
+                      <CopyButton
+                        value={movement.product.sku}
+                        ariaLabel="Copy SKU"
+                        successMessage="Copied SKU to clipboard"
+                        className="h-6 w-6 text-muted-foreground"
+                      />
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell>

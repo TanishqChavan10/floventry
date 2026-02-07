@@ -10,6 +10,7 @@ import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { CopyButton } from '@/components/common/CopyButton';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -527,7 +528,18 @@ function CreateTransferContent() {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell className="font-mono text-sm">{item.sku || '—'}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        <div className="flex items-center gap-1">
+                          <span>{item.sku || '—'}</span>
+                          <CopyButton
+                            value={item.sku ?? ''}
+                            ariaLabel="Copy SKU"
+                            successMessage="Copied SKU to clipboard"
+                            className="h-7 w-7 text-muted-foreground"
+                            disabled={!item.sku}
+                          />
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right font-semibold">
                         {item.available_stock !== undefined ? item.available_stock : '—'}
                       </TableCell>

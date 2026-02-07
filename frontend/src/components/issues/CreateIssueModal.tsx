@@ -28,6 +28,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { useWarehouse } from '@/context/warehouse-context';
+import { CopyButton } from '@/components/common/CopyButton';
 
 interface IssueItem {
   product_id: string;
@@ -118,7 +119,7 @@ export function CreateIssueModal({ open, onOpenChange, onSuccess }: CreateIssueM
 
       if (skippedCount > 0) {
         toast.info(
-          `${skippedCount} item(s) from the sales order are not currently in stock in this warehouse and were skipped.`
+          `${skippedCount} item(s) from the sales order are not currently in stock in this warehouse and were skipped.`,
         );
       }
 
@@ -260,7 +261,9 @@ export function CreateIssueModal({ open, onOpenChange, onSuccess }: CreateIssueM
 
               {items.length === 0 ? (
                 <div className="text-center py-8 text-slate-500 border border-dashed rounded-lg">
-                  <p className="text-sm">No items added yet. Click &quot;Add Item&quot; to get started</p>
+                  <p className="text-sm">
+                    No items added yet. Click &quot;Add Item&quot; to get started
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
@@ -297,6 +300,17 @@ export function CreateIssueModal({ open, onOpenChange, onSuccess }: CreateIssueM
                               )}
                             </SelectContent>
                           </Select>
+                          {product?.sku ? (
+                            <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                              <span className="font-mono">SKU: {product.sku}</span>
+                              <CopyButton
+                                value={product.sku}
+                                ariaLabel="Copy SKU"
+                                successMessage="Copied SKU to clipboard"
+                                className="h-6 w-6 text-muted-foreground"
+                              />
+                            </div>
+                          ) : null}
                         </div>
                         <div className="w-32">
                           <Label className="mb-2 block text-xs">Quantity</Label>

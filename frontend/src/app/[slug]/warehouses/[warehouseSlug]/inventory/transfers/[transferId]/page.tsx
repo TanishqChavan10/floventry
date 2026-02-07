@@ -9,6 +9,7 @@ import { useWarehouse } from '@/context/warehouse-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { CopyButton } from '@/components/common/CopyButton';
 import {
   Table,
   TableBody,
@@ -28,8 +29,21 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowLeft, Send, XCircle, AlertTriangle, FileText, CheckCircle, ArrowRight } from 'lucide-react';
-import { GET_WAREHOUSE_TRANSFER, POST_WAREHOUSE_TRANSFER, CANCEL_WAREHOUSE_TRANSFER, GET_WAREHOUSE_TRANSFERS } from '@/lib/graphql/transfers';
+import {
+  ArrowLeft,
+  Send,
+  XCircle,
+  AlertTriangle,
+  FileText,
+  CheckCircle,
+  ArrowRight,
+} from 'lucide-react';
+import {
+  GET_WAREHOUSE_TRANSFER,
+  POST_WAREHOUSE_TRANSFER,
+  CANCEL_WAREHOUSE_TRANSFER,
+  GET_WAREHOUSE_TRANSFERS,
+} from '@/lib/graphql/transfers';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -84,8 +98,10 @@ function TransferDetailContent() {
   const userRole = user?.companies?.find((c: any) => c.slug === companySlug)?.role;
 
   // Detect if this is an incoming transfer (destination warehouse view)
-  const isIncoming = transfer && activeWarehouse && transfer.destination_warehouse?.id === activeWarehouse.id;
-  const isOutgoing = transfer && activeWarehouse && transfer.source_warehouse?.id === activeWarehouse.id;
+  const isIncoming =
+    transfer && activeWarehouse && transfer.destination_warehouse?.id === activeWarehouse.id;
+  const isOutgoing =
+    transfer && activeWarehouse && transfer.source_warehouse?.id === activeWarehouse.id;
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -121,8 +137,12 @@ function TransferDetailContent() {
   };
 
   // Only source warehouse can post/cancel - destination warehouse is READ-ONLY
-  const canPost = isOutgoing && transfer?.status === 'DRAFT' && ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole || '');
-  const canCancel = isOutgoing && transfer?.status === 'DRAFT' && ['OWNER', 'ADMIN'].includes(userRole || '');
+  const canPost =
+    isOutgoing &&
+    transfer?.status === 'DRAFT' &&
+    ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole || '');
+  const canCancel =
+    isOutgoing && transfer?.status === 'DRAFT' && ['OWNER', 'ADMIN'].includes(userRole || '');
 
   if (loading) {
     return (
@@ -175,7 +195,10 @@ function TransferDetailContent() {
                   </h1>
                   {getStatusBadge(transfer.status)}
                   {isIncoming && (
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    <Badge
+                      variant="outline"
+                      className="bg-green-50 text-green-700 border-green-200"
+                    >
                       INCOMING
                     </Badge>
                   )}
@@ -196,7 +219,11 @@ function TransferDetailContent() {
               {canPost && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button onClick={() => setShowPostDialog(true)} disabled={posting} className="gap-2">
+                    <Button
+                      onClick={() => setShowPostDialog(true)}
+                      disabled={posting}
+                      className="gap-2"
+                    >
                       <Send className="h-4 w-4" />
                       Post Transfer
                     </Button>
@@ -207,7 +234,11 @@ function TransferDetailContent() {
               {canCancel && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="destructive" onClick={() => setShowCancelDialog(true)} disabled={cancelling}>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setShowCancelDialog(true)}
+                      disabled={cancelling}
+                    >
                       <XCircle className="h-4 w-4 mr-2" />
                       Cancel
                     </Button>
@@ -236,7 +267,10 @@ function TransferDetailContent() {
                     {transfer.source_warehouse.name}
                   </span>
                   {isOutgoing && (
-                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                    <Badge
+                      variant="outline"
+                      className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                    >
                       This Warehouse
                     </Badge>
                   )}
@@ -252,7 +286,10 @@ function TransferDetailContent() {
                     {transfer.destination_warehouse.name}
                   </span>
                   {isIncoming && (
-                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                    <Badge
+                      variant="outline"
+                      className="text-xs bg-green-50 text-green-700 border-green-200"
+                    >
                       This Warehouse
                     </Badge>
                   )}
@@ -268,7 +305,9 @@ function TransferDetailContent() {
             <CardContent className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-slate-600">Created By:</span>
-                <span className="font-medium">{transfer.user?.fullName || transfer.user_role || 'System'}</span>
+                <span className="font-medium">
+                  {transfer.user?.fullName || transfer.user_role || 'System'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-600">Created At:</span>
@@ -303,7 +342,17 @@ function TransferDetailContent() {
                 {transfer.items.map((item: any) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.product.name}</TableCell>
-                    <TableCell className="font-mono text-sm">{item.product.sku}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      <div className="flex items-center gap-1">
+                        <span>{item.product.sku}</span>
+                        <CopyButton
+                          value={item.product.sku}
+                          ariaLabel="Copy SKU"
+                          successMessage="Copied SKU to clipboard"
+                          className="h-7 w-7 text-muted-foreground"
+                        />
+                      </div>
+                    </TableCell>
                     <TableCell className="text-sm">{item.product.unit}</TableCell>
                     <TableCell className="text-right font-semibold text-indigo-600">
                       {item.quantity}
@@ -367,7 +416,11 @@ function TransferDetailContent() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep Transfer</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancel} disabled={cancelling} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction
+              onClick={handleCancel}
+              disabled={cancelling}
+              className="bg-red-600 hover:bg-red-700"
+            >
               {cancelling ? 'Cancelling...' : 'Cancel Transfer'}
             </AlertDialogAction>
           </AlertDialogFooter>

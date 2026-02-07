@@ -16,33 +16,25 @@ export function QuickActions({ companySlug }: QuickActionsProps) {
       icon: Package,
       label: 'Add Product',
       description: 'Create new inventory item',
-      href: `/${companySlug}/products/new`,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50 dark:bg-blue-950',
+      href: `/${companySlug}/catalog/products`,
     },
     {
       icon: ShoppingCart,
       label: 'Create Purchase Order',
       description: 'Order from supplier',
       href: `/${companySlug}/purchase-orders/new`,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50 dark:bg-green-950',
     },
     {
       icon: Building2,
       label: 'Add Warehouse',
       description: 'Create new location',
-      href: `/${companySlug}/warehouses/new`,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50 dark:bg-purple-950',
+      href: `/${companySlug}/warehouses`,
     },
     {
       icon: UserPlus,
       label: 'Invite Team Member',
       description: 'Add new user',
       href: `/${companySlug}/settings/team`,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50 dark:bg-orange-950',
     },
   ];
 
@@ -62,14 +54,12 @@ export function QuickActions({ companySlug }: QuickActionsProps) {
                   variant="outline"
                   className="w-full h-auto p-4 flex items-start gap-3 hover:bg-muted"
                 >
-                  <div className={`p-2 rounded-lg ${action.bgColor}`}>
-                    <Icon className={`h-5 w-5 ${action.color}`} />
+                  <div className="p-2 rounded-lg bg-muted">
+                    <Icon className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="flex-1 text-left">
-                    <div className="font-semibold text-sm">{action.label}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {action.description}
-                    </div>
+                    <div className="font-semibold text-sm text-foreground">{action.label}</div>
+                    <div className="text-xs text-muted-foreground">{action.description}</div>
                   </div>
                 </Button>
               </Link>

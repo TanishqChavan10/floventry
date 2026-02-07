@@ -5,6 +5,7 @@ import RoleGuard from '@/components/guards/RoleGuard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { CopyButton } from '@/components/common/CopyButton';
 import { AlertTriangle, Calendar, Download, Package } from 'lucide-react';
 import {
   Table,
@@ -163,8 +164,8 @@ function ExpiryReportsContent() {
                     Critical Expiry Alert
                   </h3>
                   <p className="text-sm text-red-700 dark:text-red-200 mt-1">
-                    {criticalCount} product batch{criticalCount > 1 ? 'es' : ''} will expire within 10
-                    days. Immediate action is required to prevent inventory loss.
+                    {criticalCount} product batch{criticalCount > 1 ? 'es' : ''} will expire within
+                    10 days. Immediate action is required to prevent inventory loss.
                   </p>
                 </div>
               </div>
@@ -195,7 +196,17 @@ function ExpiryReportsContent() {
                   .sort((a, b) => a.daysRemaining - b.daysRemaining)
                   .map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell className="font-mono text-sm">{item.sku}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        <div className="flex items-center gap-1">
+                          <span>{item.sku}</span>
+                          <CopyButton
+                            value={item.sku}
+                            ariaLabel="Copy SKU"
+                            successMessage="Copied SKU to clipboard"
+                            className="h-7 w-7 text-muted-foreground"
+                          />
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">{item.productName}</TableCell>
                       <TableCell>{item.warehouse}</TableCell>
                       <TableCell>{item.quantity.toLocaleString()}</TableCell>
@@ -205,8 +216,8 @@ function ExpiryReportsContent() {
                           item.status === 'critical'
                             ? 'text-red-600 font-semibold'
                             : item.status === 'warning'
-                            ? 'text-orange-600 font-semibold'
-                            : ''
+                              ? 'text-orange-600 font-semibold'
+                              : ''
                         }
                       >
                         {item.daysRemaining} days

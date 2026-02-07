@@ -277,7 +277,6 @@ export const REACTIVATE_WAREHOUSE = gql`
       id
       name
       status
-      deleted_at
     }
   }
 `;

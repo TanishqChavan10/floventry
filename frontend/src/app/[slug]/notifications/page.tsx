@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import CompanyGuard from '@/components/CompanyGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,18 +25,76 @@ interface Notification {
   entityId: string;
   title: string;
   message: string;
-  metadata: any;
+  metadata: unknown;
   readAt: string | null;
   createdAt: string;
 }
 
+type TabFilter = 'all' | 'unread' | 'critical';
+
 function NotificationsPageContent() {
-  const [filter, setFilter] = useState<'all' | 'unread' | 'critical'>('all');
-  const [page, setPage] = useState(0);
+  const [filter, setFilter] = useState<TabFilter>('all');
+  const [page] = useState(0);
   const pageSize = 50;
   const router = useRouter();
+  const searchParams = useSearchParams();
   const params = useParams();
   const companySlug = params?.slug as string;
+  const didInitFromQuery = useRef(false);
+
+  const queryFilters = useMemo(() => {
+    const severityRaw = (searchParams.get('severity') || '').toUpperCase();
+    const severity =
+      severityRaw === 'INFO' || severityRaw === 'WARNING' || severityRaw === 'CRITICAL'
+        ? (severityRaw as Notification['severity'])
+        : null;
+
+    const typeParam = searchParams.get('type');
+    const types = (typeParam || '')
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    const filterRaw = (searchParams.get('filter') || '').toLowerCase();
+    const tabFilter =
+      filterRaw === 'unread' || filterRaw === 'critical' || filterRaw === 'all'
+        ? (filterRaw as 'all' | 'unread' | 'critical')
+        : null;
+
+    return { severity, types, tabFilter };
+  }, [searchParams]);
+
+  const buildNotificationsUrl = (updates: Record<string, string | null>) => {
+    const sp = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === null || value === '') sp.delete(key);
+      else sp.set(key, value);
+    }
+    const qs = sp.toString();
+    return qs ? `/${companySlug}/notifications?${qs}` : `/${companySlug}/notifications`;
+  };
+
+  useEffect(() => {
+    if (didInitFromQuery.current) return;
+
+    // If the URL specifies a filter, or implies it via severity/type, initialize the UI state.
+    if (queryFilters.tabFilter) {
+      setFilter(queryFilters.tabFilter);
+      didInitFromQuery.current = true;
+      return;
+    }
+
+    if (queryFilters.severity === 'CRITICAL') {
+      setFilter('critical');
+      didInitFromQuery.current = true;
+      return;
+    }
+
+    if (queryFilters.types.length > 0 || queryFilters.severity) {
+      setFilter('all');
+      didInitFromQuery.current = true;
+    }
+  }, [queryFilters, searchParams]);
 
   // Fetch notifications (NO polling - load on demand only)
   const { data, loading, refetch } = useQuery(GET_NOTIFICATIONS, {
@@ -61,6 +119,8 @@ function NotificationsPageContent() {
   const filteredNotifications = notifications.filter((n) => {
     if (filter === 'unread') return !n.readAt;
     if (filter === 'critical') return n.severity === 'CRITICAL';
+    if (queryFilters.severity && n.severity !== queryFilters.severity) return false;
+    if (queryFilters.types.length > 0 && !queryFilters.types.includes(n.type)) return false;
     return true;
   });
 
@@ -144,7 +204,7 @@ function NotificationsPageContent() {
   };
 
   const getSeverityBadge = (severity: string) => {
-    const variants: Record<string, any> = {
+    const variants: Record<string, 'destructive' | 'secondary' | 'default'> = {
       CRITICAL: 'destructive',
       WARNING: 'secondary',
       INFO: 'default',
@@ -280,7 +340,15 @@ function NotificationsPageContent() {
         </div>
 
         {/* Tabs */}
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
+        <Tabs
+          value={filter}
+          onValueChange={(v) => {
+            const next: TabFilter = v === 'unread' || v === 'critical' || v === 'all' ? v : 'all';
+            setFilter(next);
+            // Keep tab selection reflected in the URL for shareable deep links.
+            router.replace(buildNotificationsUrl({ filter: next === 'all' ? null : next }));
+          }}
+        >
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="unread">
@@ -297,6 +365,31 @@ function NotificationsPageContent() {
           <TabsContent value={filter} className="mt-6">
             <Card>
               <CardContent className="p-0">
+                {(queryFilters.severity || queryFilters.types.length > 0) && (
+                  <div className="px-4 py-3 border-b flex flex-wrap items-center justify-between gap-2">
+                    <div className="text-xs text-muted-foreground">
+                      Filtered by{' '}
+                      {queryFilters.severity && (
+                        <span className="font-medium text-slate-700 dark:text-slate-200">
+                          severity: {queryFilters.severity}
+                        </span>
+                      )}
+                      {queryFilters.severity && queryFilters.types.length > 0 && <span> • </span>}
+                      {queryFilters.types.length > 0 && (
+                        <span className="font-medium text-slate-700 dark:text-slate-200">
+                          type: {queryFilters.types.join(', ')}
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => router.push(`/${companySlug}/notifications`)}
+                    >
+                      Clear filters
+                    </Button>
+                  </div>
+                )}
                 {loading ? (
                   <div className="p-12 text-center text-slate-500">Loading...</div>
                 ) : filteredNotifications.length === 0 ? (

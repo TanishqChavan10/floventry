@@ -14,35 +14,37 @@ export function ExpiryStatusBadge({ status, daysRemaining, className }: ExpirySt
     switch (status) {
       case 'EXPIRED':
         return {
-          variant: 'destructive' as const,
+          variant: 'outline' as const,
           text: 'Expired',
-          className: 'bg-red-600 hover:bg-red-700 text-white',
+          className:
+            'border-destructive/30 bg-destructive/10 text-destructive dark:text-foreground',
         };
       case 'EXPIRING_SOON':
         return {
-          variant: 'secondary' as const,
-          text: daysRemaining !== null && daysRemaining !== undefined && daysRemaining <= 7
-            ? `${daysRemaining}d left`
-            : 'Expiring Soon',
-          className: 'bg-orange-500 hover:bg-orange-600 text-white',
+          variant: 'outline' as const,
+          text:
+            daysRemaining !== null && daysRemaining !== undefined && daysRemaining <= 7
+              ? `${daysRemaining}d left`
+              : 'Expiring Soon',
+          className: 'border-border/50 bg-accent text-accent-foreground dark:text-foreground',
         };
       case 'OK':
         return {
-          variant: 'default' as const,
+          variant: 'outline' as const,
           text: 'OK',
-          className: 'bg-green-600 hover:bg-green-700 text-white',
+          className: 'border-primary/30 bg-primary/10 text-primary dark:text-foreground',
         };
       case 'NO_EXPIRY':
         return {
           variant: 'outline' as const,
           text: 'N/A',
-          className: 'text-muted-foreground',
+          className: 'border-border/50 bg-muted text-muted-foreground dark:text-foreground/80',
         };
       default:
         return {
           variant: 'outline' as const,
           text: 'Unknown',
-          className: '',
+          className: 'border-border/50 bg-muted text-muted-foreground dark:text-foreground/80',
         };
     }
   };

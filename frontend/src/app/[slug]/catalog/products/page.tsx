@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { CopyButton } from '@/components/common/CopyButton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -416,7 +417,17 @@ function CatalogProductsContent() {
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() => handleViewProduct(product)}
                         >
-                          <TableCell className="font-mono text-sm">{product.sku}</TableCell>
+                          <TableCell className="font-mono text-sm">
+                            <div className="flex items-center gap-1">
+                              <span>{product.sku}</span>
+                              <CopyButton
+                                value={product.sku}
+                                ariaLabel="Copy SKU"
+                                successMessage="Copied SKU to clipboard"
+                                className="h-7 w-7 text-muted-foreground"
+                              />
+                            </div>
+                          </TableCell>
                           <TableCell className="font-medium">{product.name}</TableCell>
                           <TableCell>{product.category?.name || '—'}</TableCell>
                           <TableCell>{product.supplier?.name || '—'}</TableCell>

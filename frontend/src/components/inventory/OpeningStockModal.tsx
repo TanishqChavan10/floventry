@@ -27,6 +27,8 @@ import { CREATE_OPENING_STOCK } from '@/lib/graphql/inventory';
 import { SafeBarcodeScanInput } from '@/components/barcode/SafeBarcodeScanInput';
 import { GET_WAREHOUSE_STOCK_HEALTH } from '@/lib/graphql/stock-health';
 
+import { CopyButton } from '@/components/common/CopyButton';
+
 import { GET_PRODUCTS } from '@/lib/graphql/catalog';
 
 interface OpeningStockModalProps {
@@ -49,9 +51,6 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
     product_id: '',
     quantity: '',
     expiry_date: '',
-    min_stock_level: '',
-    max_stock_level: '',
-    reorder_point: '',
     note: '',
   });
 
@@ -82,9 +81,6 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
         product_id: '',
         quantity: '',
         expiry_date: '',
-        min_stock_level: '',
-        max_stock_level: '',
-        reorder_point: '',
         note: '',
       });
       onClose();
@@ -141,13 +137,6 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
           warehouse_id: warehouseId,
           quantity: parseInt(formData.quantity),
           expiry_date: formData.expiry_date || undefined,
-          min_stock_level: formData.min_stock_level
-            ? parseInt(formData.min_stock_level)
-            : undefined,
-          max_stock_level: formData.max_stock_level
-            ? parseInt(formData.max_stock_level)
-            : undefined,
-          reorder_point: formData.reorder_point ? parseInt(formData.reorder_point) : undefined,
           note: formData.note || null,
         },
       },
@@ -196,7 +185,17 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
                   Product selected via barcode. Please confirm inputs.
                 </div>
                 <div className="mt-1 text-slate-600 dark:text-slate-300">
-                  Selected: {lastScan.productName} ({lastScan.sku})
+                  <div className="flex items-center gap-1">
+                    <span>
+                      Selected: {lastScan.productName} ({lastScan.sku})
+                    </span>
+                    <CopyButton
+                      value={lastScan.sku}
+                      ariaLabel="Copy SKU"
+                      successMessage="Copied SKU to clipboard"
+                      className="h-6 w-6 text-muted-foreground"
+                    />
+                  </div>
                 </div>
                 {(() => {
                   const health = stockHealthByProductId.get(lastScan.productId);
@@ -253,6 +252,22 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
                   ))}
                 </SelectContent>
               </Select>
+              {(() => {
+                const selectedProduct = products.find((p: any) => p.id === formData.product_id);
+                if (!selectedProduct?.sku) return null;
+
+                return (
+                  <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                    <span className="font-mono">SKU: {selectedProduct.sku}</span>
+                    <CopyButton
+                      value={selectedProduct.sku}
+                      ariaLabel="Copy SKU"
+                      successMessage="Copied SKU to clipboard"
+                      className="h-6 w-6 text-muted-foreground"
+                    />
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Expiry Date (Optional) */}
@@ -285,60 +300,6 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
                 placeholder="0"
                 required
               />
-            </div>
-
-            {/* Stock Levels Section */}
-            <div className="space-y-4 pt-2">
-              <h4 className="text-sm font-medium text-muted-foreground">Stock Levels (Optional)</h4>
-
-              {/* Min Stock Level */}
-              <div className="space-y-2">
-                <Label htmlFor="min_stock_level">Minimum Stock Level</Label>
-                <Input
-                  id="min_stock_level"
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={formData.min_stock_level}
-                  onChange={(e) => setFormData({ ...formData, min_stock_level: e.target.value })}
-                  placeholder="e.g., 50"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Alert when stock falls below this level
-                </p>
-              </div>
-
-              {/* Max Stock Level */}
-              <div className="space-y-2">
-                <Label htmlFor="max_stock_level">Maximum Stock Level</Label>
-                <Input
-                  id="max_stock_level"
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={formData.max_stock_level}
-                  onChange={(e) => setFormData({ ...formData, max_stock_level: e.target.value })}
-                  placeholder="e.g., 500"
-                />
-                <p className="text-xs text-muted-foreground">Maximum capacity for this warehouse</p>
-              </div>
-
-              {/* Reorder Point */}
-              <div className="space-y-2">
-                <Label htmlFor="reorder_point">Reorder Point</Label>
-                <Input
-                  id="reorder_point"
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={formData.reorder_point}
-                  onChange={(e) => setFormData({ ...formData, reorder_point: e.target.value })}
-                  placeholder="e.g., 100"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Trigger purchase orders at this level
-                </p>
-              </div>
             </div>
 
             {/* Note */}

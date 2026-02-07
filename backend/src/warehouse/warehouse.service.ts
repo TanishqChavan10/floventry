@@ -30,7 +30,7 @@ export class WarehouseService {
     @InjectRepository(StockMovement)
     private stockMovementRepository: Repository<StockMovement>,
     private dataSource: DataSource,
-  ) {}
+  ) { }
 
   async getKPIs(warehouseId: string): Promise<any> {
     const totalProducts = await this.stockRepository.count({
@@ -43,18 +43,14 @@ export class WarehouseService {
       .where('stock.warehouse_id = :warehouseId', { warehouseId })
       .getRawOne();
 
-    // Using query builder for low stock to handle the comparison properly if needed,
-    // but assuming simple logic: quantity <= reorder_point OR quantity <= min_stock_level
-    // The requirement says "Low Stock Items" -> Low Stock logic.
-    // Usually Low Stock means quantity <= reorder_point AND quantity > 0
-    // Out Of Stock means quantity = 0
-
+    // Low stock detection: Only trigger alerts if thresholds are explicitly set (> 0)
+    // Null or 0 means "alerts disabled" for that threshold
     const lowStockCount = await this.stockRepository
       .createQueryBuilder('stock')
       .where('stock.warehouse_id = :warehouseId', { warehouseId })
       .andWhere('stock.quantity > 0')
       .andWhere(
-        '(stock.quantity <= stock.reorder_point OR stock.quantity <= stock.min_stock_level)',
+        '((stock.reorder_point IS NOT NULL AND stock.reorder_point > 0 AND stock.quantity <= stock.reorder_point) OR (stock.min_stock_level IS NOT NULL AND stock.min_stock_level > 0 AND stock.quantity <= stock.min_stock_level))',
       )
       .getCount();
 
@@ -123,9 +119,9 @@ export class WarehouseService {
       .createQueryBuilder('stock')
       .leftJoinAndSelect('stock.product', 'product')
       .where('stock.warehouse_id = :warehouseId', { warehouseId })
-      .andWhere('stock.quantity > 0') // Exclude out of stock for this list? Or include? "Low Stock Snapshot" usually implies items running low but not empty. Let's assume low stock logic.
+      .andWhere('stock.quantity > 0')
       .andWhere(
-        '(stock.quantity <= stock.reorder_point OR stock.quantity <= stock.min_stock_level)',
+        '((stock.reorder_point IS NOT NULL AND stock.reorder_point > 0 AND stock.quantity <= stock.reorder_point) OR (stock.min_stock_level IS NOT NULL AND stock.min_stock_level > 0 AND stock.quantity <= stock.min_stock_level))',
       )
       .take(limit)
       .getMany();
@@ -149,14 +145,20 @@ export class WarehouseService {
   }
 
   // Helper for status calculation
+  // Null or 0 thresholds = alerts disabled
   private calculateStockStatus(stock: Stock): string {
     if (stock.quantity === 0) return 'CRITICAL'; // Out of stock
     if (
       stock.min_stock_level !== null &&
+      stock.min_stock_level > 0 &&
       stock.quantity <= stock.min_stock_level
     )
       return 'CRITICAL';
-    if (stock.reorder_point !== null && stock.quantity <= stock.reorder_point)
+    if (
+      stock.reorder_point !== null &&
+      stock.reorder_point > 0 &&
+      stock.quantity <= stock.reorder_point
+    )
       return 'WARNING';
     return 'OK';
   }
@@ -169,9 +171,8 @@ export class WarehouseService {
       .createQueryBuilder('stock')
       .leftJoinAndSelect('stock.product', 'product')
       .where('stock.warehouse_id = :warehouseId', { warehouseId })
-      //.andWhere('stock.quantity > 0') // "Low Stock Page" usually has <= reorder point.
       .andWhere(
-        '(stock.quantity <= stock.reorder_point OR stock.quantity <= stock.min_stock_level OR stock.quantity = 0)',
+        '((stock.reorder_point IS NOT NULL AND stock.reorder_point > 0 AND stock.quantity <= stock.reorder_point) OR (stock.min_stock_level IS NOT NULL AND stock.min_stock_level > 0 AND stock.quantity <= stock.min_stock_level) OR stock.quantity = 0)',
       )
       .orderBy('stock.quantity', 'ASC')
       .take(limit)

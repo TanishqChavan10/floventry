@@ -22,6 +22,7 @@ import {
 import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
 import { ExpiryStatusBadge } from '@/components/inventory/ExpiryStatusBadge';
 import { LotBreakdownModal } from '@/components/inventory/LotBreakdownModal';
+import { CopyButton } from '@/components/common/CopyButton';
 import {
   getExpiryStatus,
   getDaysUntilExpiry,
@@ -49,9 +50,7 @@ function ExpiryContent() {
   const [isLotModalOpen, setIsLotModalOpen] = useState(false);
 
   // Get warehouse ID
-  const activeWarehouse = user?.warehouses?.find(
-    (w: any) => w.warehouseSlug === warehouseSlug
-  );
+  const activeWarehouse = user?.warehouses?.find((w: any) => w.warehouseSlug === warehouseSlug);
   const warehouseId = activeWarehouse?.warehouseId;
 
   // Fetch stock with lots
@@ -64,8 +63,10 @@ function ExpiryContent() {
 
   // Process lots from all products
   const allLots = useMemo(() => {
-    const lots: Array<LotWithExpiry & { productName: string; productSku: string; productId: string }> = [];
-    
+    const lots: Array<
+      LotWithExpiry & { productName: string; productSku: string; productId: string }
+    > = [];
+
     stock.forEach((item: any) => {
       if (item.lots && item.lots.length > 0) {
         item.lots.forEach((lot: LotWithExpiry) => {
@@ -91,7 +92,7 @@ function ExpiryContent() {
 
     return allLots.filter((lot) => {
       const status = getExpiryStatus(lot.expiry_date);
-      
+
       if (selectedTab === 'expired') return status === 'EXPIRED';
       if (selectedTab === 'expiring_soon') return status === 'EXPIRING_SOON';
       if (selectedTab === 'critical') {
@@ -102,7 +103,7 @@ function ExpiryContent() {
         const days = getDaysUntilExpiry(lot.expiry_date);
         return days !== null && days > 7 && days <= 30;
       }
-      
+
       return false;
     });
   }, [allLots, selectedTab]);
@@ -111,7 +112,7 @@ function ExpiryContent() {
   const sortedLots = useMemo(() => {
     return [...filteredLots].sort((a, b) => {
       if (!a.expiry_date && !b.expiry_date) return 0;
-      if (!a. expiry_date) return 1;
+      if (!a.expiry_date) return 1;
       if (!b.expiry_date) return -1;
       return new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime();
     });
@@ -134,7 +135,9 @@ function ExpiryContent() {
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Expiry Risk Report</h1>
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+                Expiry Risk Report
+              </h1>
               <p className="text-slate-600 dark:text-slate-400 mt-2">
                 Monitor product expiration dates and manage expiring stock
               </p>
@@ -157,9 +160,7 @@ function ExpiryContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">{stats.expired}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Require immediate action
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Require immediate action</p>
             </CardContent>
           </Card>
 
@@ -170,9 +171,7 @@ function ExpiryContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">{stats.expiringSoon}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Within 30 days
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Within 30 days</p>
             </CardContent>
           </Card>
 
@@ -183,9 +182,7 @@ function ExpiryContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">{stats.ok}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                No immediate risk
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">No immediate risk</p>
             </CardContent>
           </Card>
 
@@ -196,9 +193,7 @@ function ExpiryContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                In this warehouse
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">In this warehouse</p>
             </CardContent>
           </Card>
         </div>
@@ -246,11 +241,21 @@ function ExpiryContent() {
                               status === 'EXPIRED'
                                 ? 'bg-red-50 dark:bg-red-950/20'
                                 : status === 'EXPIRING_SOON'
-                                ? 'bg-orange-50 dark:bg-orange-950/20'
-                                : ''
+                                  ? 'bg-orange-50 dark:bg-orange-950/20'
+                                  : ''
                             }
                           >
-                            <TableCell className="font-mono text-sm">{lot.productSku}</TableCell>
+                            <TableCell className="font-mono text-sm">
+                              <div className="flex items-center gap-1">
+                                <span>{lot.productSku}</span>
+                                <CopyButton
+                                  value={lot.productSku}
+                                  ariaLabel="Copy SKU"
+                                  successMessage="Copied SKU to clipboard"
+                                  className="h-7 w-7 text-muted-foreground"
+                                />
+                              </div>
+                            </TableCell>
                             <TableCell className="font-medium">{lot.productName}</TableCell>
                             <TableCell className="text-right">{lot.quantity.toFixed(2)}</TableCell>
                             <TableCell className="text-sm">
@@ -263,8 +268,8 @@ function ExpiryContent() {
                                 daysRemaining !== null && daysRemaining < 0
                                   ? 'text-red-600 font-semibold'
                                   : daysRemaining !== null && daysRemaining <= 30
-                                  ? 'text-orange-600 font-semibold'
-                                  : ''
+                                    ? 'text-orange-600 font-semibold'
+                                    : ''
                               }
                             >
                               {daysRemaining !== null

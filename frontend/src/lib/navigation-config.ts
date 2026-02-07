@@ -170,11 +170,6 @@ export function getWarehouseNavigation(
         {
             items: [
                 {
-                    label: 'Inventory',
-                    href: `${basePath}/inventory`,
-                    icon: IconClipboardList,
-                },
-                {
                     label: 'Stock',
                     href: `${basePath}/inventory/stock`,
                     icon: IconPackage,
@@ -197,8 +192,14 @@ export function getWarehouseNavigation(
                     roles: ['OWNER', 'ADMIN', 'MANAGER', 'STAFF'],
                 },
                 {
+                    label: 'Reports',
+                    href: `${basePath}/inventory/reports`,
+                    icon: IconFileText,
+                    roles: ['OWNER', 'ADMIN', 'MANAGER'],
+                },
+                {
                     label: 'Stock Movements',
-                    href: `${basePath}/stock-movements`,
+                    href: `${basePath}/inventory/stock-movements`,
                     icon: IconArrowsExchange,
                 },
                 {
@@ -213,7 +214,7 @@ export function getWarehouseNavigation(
             items: [
                 {
                     label: 'Transfers',
-                    href: `${basePath}/transfers`,
+                    href: `${basePath}/inventory/transfers`,
                     icon: IconTruckDelivery,
                 },
             ]

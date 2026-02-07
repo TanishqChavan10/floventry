@@ -28,6 +28,7 @@ import {
 import { StatusBadge } from '@/components/sales/StatusBadge';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
+import { CopyButton } from '@/components/common/CopyButton';
 import Link from 'next/link';
 
 export default function SalesOrderDetailPage() {
@@ -141,11 +142,7 @@ export default function SalesOrderDetailPage() {
                 </Button>
               )}
               {canCancel && (
-                <Button
-                  onClick={() => setCancelOpen(true)}
-                  variant="destructive"
-                  className="gap-2"
-                >
+                <Button onClick={() => setCancelOpen(true)} variant="destructive" className="gap-2">
                   <XCircle className="h-4 w-4" />
                   Cancel Order
                 </Button>
@@ -227,7 +224,17 @@ export default function SalesOrderDetailPage() {
                 {order.items?.map((item: any) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.product.name}</TableCell>
-                    <TableCell className="font-mono text-sm">{item.product.sku}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      <div className="flex items-center gap-1">
+                        <span>{item.product.sku}</span>
+                        <CopyButton
+                          value={item.product.sku}
+                          ariaLabel="Copy SKU"
+                          successMessage="Copied SKU to clipboard"
+                          className="h-7 w-7 text-muted-foreground"
+                        />
+                      </div>
+                    </TableCell>
                     <TableCell>{item.product.unit}</TableCell>
                     <TableCell className="text-right">{item.ordered_quantity}</TableCell>
                     <TableCell className="text-right text-blue-600 font-medium">
@@ -259,7 +266,9 @@ export default function SalesOrderDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {order.items?.reduce((sum: number, item: any) => sum + parseFloat(item.ordered_quantity), 0).toFixed(2)}
+                {order.items
+                  ?.reduce((sum: number, item: any) => sum + parseFloat(item.ordered_quantity), 0)
+                  .toFixed(2)}
               </div>
             </CardContent>
           </Card>
@@ -269,7 +278,9 @@ export default function SalesOrderDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">
-                {order.items?.reduce((sum: number, item: any) => sum + parseFloat(item.pending_quantity), 0).toFixed(2)}
+                {order.items
+                  ?.reduce((sum: number, item: any) => sum + parseFloat(item.pending_quantity), 0)
+                  .toFixed(2)}
               </div>
             </CardContent>
           </Card>
@@ -282,7 +293,8 @@ export default function SalesOrderDetailPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Sales Order?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will mark the order as confirmed and ready for fulfillment. You cannot edit the order after confirmation.
+              This will mark the order as confirmed and ready for fulfillment. You cannot edit the
+              order after confirmation.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

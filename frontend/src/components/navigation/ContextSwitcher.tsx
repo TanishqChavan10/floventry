@@ -49,34 +49,31 @@ export function ContextSwitcher() {
               className={cn(
                 'w-full flex items-center justify-between',
                 'px-3 py-2.5 rounded-lg',
-                'bg-white dark:bg-neutral-900',
-                'border border-neutral-200 dark:border-neutral-700',
-                'hover:bg-neutral-50 dark:hover:bg-neutral-800',
-                'transition-colors duration-200'
+                'bg-background',
+                'border border-border',
+                'hover:bg-muted',
+                'transition-colors duration-200',
               )}
             >
               <div className="flex items-center gap-2 min-w-0">
-                <IconBuilding className="h-4 w-4 text-neutral-600 dark:text-neutral-400 shrink-0" />
-                <span className="font-medium text-sm text-neutral-900 dark:text-neutral-100 truncate">
+                <IconBuilding className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="font-medium text-sm text-foreground truncate">
                   {activeCompany.name}
                 </span>
               </div>
-              <IconChevronDown className="h-4 w-4 text-neutral-500 shrink-0" />
+              <IconChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-[250px]">
-            <div className="px-2 py-1.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
               Switch Company
             </div>
             <DropdownMenuSeparator />
             {user?.companies?.map((company) => (
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 key={company.slug}
                 onClick={() => handleCompanySwitch(company.slug)}
-                className={cn(
-                  'cursor-pointer',
-                  company.slug === companySlug && 'bg-neutral-100 dark:bg-neutral-800'
-                )}
+                className={cn('cursor-pointer', company.slug === companySlug && 'bg-muted')}
               >
                 {company.name}
               </DropdownMenuItem>
@@ -97,13 +94,11 @@ export function ContextSwitcher() {
                   'bg-indigo-50 dark:bg-indigo-950/30',
                   'border border-indigo-200 dark:border-indigo-800',
                   'hover:bg-indigo-100 dark:hover:bg-indigo-900/30',
-                  'transition-colors duration-200'
+                  'transition-colors duration-200',
                 )}
               >
                 <div className="flex flex-col items-start min-w-0">
-                  <span className="text-xs text-neutral-600 dark:text-neutral-400">
-                    Current Warehouse
-                  </span>
+                  <span className="text-xs text-muted-foreground">Current Warehouse</span>
                   <span className="font-medium text-sm text-indigo-700 dark:text-indigo-300 truncate w-full">
                     {activeWarehouse.name}
                   </span>
@@ -112,7 +107,7 @@ export function ContextSwitcher() {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-[250px]">
-              <div className="px-2 py-1.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
                 Switch Warehouse
               </div>
               <DropdownMenuSeparator />
@@ -123,12 +118,12 @@ export function ContextSwitcher() {
                   className={cn(
                     'cursor-pointer',
                     warehouse.id === activeWarehouse.id &&
-                      'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300'
+                      'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300',
                   )}
                 >
                   <div className="flex flex-col">
                     <span className="font-medium">{warehouse.name}</span>
-                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                    <span className="text-xs text-muted-foreground">
                       {warehouse.type.replace(/_/g, ' ')}
                     </span>
                   </div>

@@ -8,6 +8,7 @@ import RoleGuard from '@/components/guards/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { CopyButton } from '@/components/common/CopyButton';
 import { Search, Package } from 'lucide-react';
 import {
   Table,
@@ -37,9 +38,7 @@ function WarehouseProductsContent() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   // Get warehouse ID from user context
-  const activeWarehouse = user?.warehouses?.find(
-    (w: any) => w.warehouseSlug === warehouseSlug
-  );
+  const activeWarehouse = user?.warehouses?.find((w: any) => w.warehouseSlug === warehouseSlug);
   const warehouseId = activeWarehouse?.warehouseId;
 
   // Fetch warehouse stock (includes product details via joins)
@@ -62,17 +61,14 @@ function WarehouseProductsContent() {
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesCategory =
-      categoryFilter === 'all' || product.category?.id === categoryFilter;
+    const matchesCategory = categoryFilter === 'all' || product.category?.id === categoryFilter;
 
     return matchesSearch && matchesCategory;
   });
 
   // Calculate stats
   const totalProducts = warehouseStock.length;
-  const inStockCount = warehouseStock.filter(
-    (item: any) => parseFloat(item.quantity) > 0
-  ).length;
+  const inStockCount = warehouseStock.filter((item: any) => parseFloat(item.quantity) > 0).length;
   const lowStockCount = warehouseStock.filter((item: any) => {
     const qty = parseFloat(item.quantity);
     return item.reorder_point && qty > 0 && qty <= parseFloat(item.reorder_point);
@@ -115,9 +111,7 @@ function WarehouseProductsContent() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <header className="border-b bg-white dark:bg-slate-900">
         <div className="container mx-auto px-6 py-6">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-            Warehouse Products
-          </h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Warehouse Products</h1>
           <p className="text-slate-600 dark:text-slate-400 mt-2">
             Products stocked in this warehouse
           </p>
@@ -204,8 +198,6 @@ function WarehouseProductsContent() {
                     <TableHead>Product Name</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead className="text-right">Stock Quantity</TableHead>
-                    <TableHead className="text-right">Min Stock</TableHead>
-                    <TableHead className="text-right">Reorder Point</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -215,17 +207,21 @@ function WarehouseProductsContent() {
                     const status = getStockStatus(stockItem);
                     return (
                       <TableRow key={stockItem.id}>
-                        <TableCell className="font-mono text-sm">{product.sku}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          <div className="flex items-center gap-1">
+                            <span>{product.sku}</span>
+                            <CopyButton
+                              value={product.sku}
+                              ariaLabel="Copy SKU"
+                              successMessage="Copied SKU to clipboard"
+                              className="h-7 w-7 text-muted-foreground"
+                            />
+                          </div>
+                        </TableCell>
                         <TableCell className="font-medium">{product.name}</TableCell>
                         <TableCell>{product.category?.name || '—'}</TableCell>
                         <TableCell className="text-right font-semibold">
                           {parseFloat(stockItem.quantity).toFixed(2)} {product.unit}
-                        </TableCell>
-                        <TableCell className="text-right text-sm text-muted-foreground">
-                          {stockItem.min_stock_level || '—'}
-                        </TableCell>
-                        <TableCell className="text-right text-sm text-muted-foreground">
-                          {stockItem.reorder_point || '—'}
                         </TableCell>
                         <TableCell>{getStatusBadge(status)}</TableCell>
                       </TableRow>

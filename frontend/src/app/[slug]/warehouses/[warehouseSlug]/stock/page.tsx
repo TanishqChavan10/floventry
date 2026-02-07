@@ -5,6 +5,7 @@ import RoleGuard from '@/components/guards/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Package, Download } from 'lucide-react';
+import { CopyButton } from '@/components/common/CopyButton';
 import {
   Table,
   TableBody,
@@ -79,7 +80,17 @@ function WarehouseStockContent() {
               <TableBody>
                 {mockStockData.map((item, index) => (
                   <TableRow key={index}>
-                    <TableCell className="font-mono text-sm">{item.sku}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      <div className="flex items-center gap-1">
+                        <span>{item.sku}</span>
+                        <CopyButton
+                          value={item.sku}
+                          ariaLabel="Copy SKU"
+                          successMessage="Copied SKU to clipboard"
+                          className="h-7 w-7 text-muted-foreground"
+                        />
+                      </div>
+                    </TableCell>
                     <TableCell className="font-medium">{item.product}</TableCell>
                     <TableCell>{item.currentStock}</TableCell>
                     <TableCell className="font-semibold">{item.value}</TableCell>

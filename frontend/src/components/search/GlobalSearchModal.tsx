@@ -175,20 +175,20 @@ export function GlobalSearchModal() {
     >
       <div
         ref={panelRef}
-        className="w-full max-w-2xl rounded-2xl border border-neutral-200 bg-white shadow-2xl overflow-hidden"
+        className="w-full max-w-2xl rounded-2xl border border-border bg-background shadow-2xl overflow-hidden"
       >
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-200">
-          <IconSearch className="h-4 w-4 text-neutral-500" />
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+          <IconSearch className="h-4 w-4 text-muted-foreground" />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search products, warehouses, GRNs, issues, transfers…"
-            className="flex-1 h-10 bg-transparent outline-none text-sm text-neutral-900 placeholder:text-neutral-500"
+            className="flex-1 h-10 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground"
             autoComplete="off"
             spellCheck={false}
           />
-          <div className="text-xs text-neutral-500 hidden sm:block">Esc</div>
+          <div className="text-xs text-muted-foreground hidden sm:block">Esc</div>
         </div>
 
         <div className="max-h-[60vh] overflow-y-auto">
@@ -215,7 +215,7 @@ export function GlobalSearchModal() {
           )}
         </div>
 
-        <div className="px-4 py-3 border-t border-neutral-200 text-xs text-neutral-500 flex items-center justify-between">
+        <div className="px-4 py-3 border-t border-border text-xs text-muted-foreground flex items-center justify-between">
           <span>↑/↓ to navigate • Enter to open</span>
           <span>Ctrl/⌘+K</span>
         </div>

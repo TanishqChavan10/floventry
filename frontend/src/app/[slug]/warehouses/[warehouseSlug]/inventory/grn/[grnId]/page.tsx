@@ -8,6 +8,7 @@ import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { CopyButton } from '@/components/common/CopyButton';
 import {
   Table,
   TableBody,
@@ -27,7 +28,15 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowLeft, Send, XCircle, AlertTriangle, FileText, CheckCircle, ExternalLink } from 'lucide-react';
+import {
+  ArrowLeft,
+  Send,
+  XCircle,
+  AlertTriangle,
+  FileText,
+  CheckCircle,
+  ExternalLink,
+} from 'lucide-react';
 import { GET_GRN, POST_GRN, CANCEL_GRN, GET_GRNS } from '@/lib/graphql/grn';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -178,7 +187,11 @@ function GRNDetailContent() {
               {canPost && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button onClick={() => setShowPostDialog(true)} disabled={posting} className="gap-2">
+                    <Button
+                      onClick={() => setShowPostDialog(true)}
+                      disabled={posting}
+                      className="gap-2"
+                    >
                       <Send className="h-4 w-4" />
                       Post GRN
                     </Button>
@@ -189,7 +202,11 @@ function GRNDetailContent() {
               {canCancel && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="destructive" onClick={() => setShowCancelDialog(true)} disabled={cancelling}>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setShowCancelDialog(true)}
+                      disabled={cancelling}
+                    >
                       <XCircle className="h-4 w-4 mr-2" />
                       Cancel
                     </Button>
@@ -238,7 +255,9 @@ function GRNDetailContent() {
             <CardContent className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-slate-600">Created By:</span>
-                <span className="font-medium">{grn.user?.fullName || grn.user_role || 'System'}</span>
+                <span className="font-medium">
+                  {grn.user?.fullName || grn.user_role || 'System'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-600">Created At:</span>
@@ -281,8 +300,20 @@ function GRNDetailContent() {
                 {grn.items.map((item: any) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.product.name}</TableCell>
-                    <TableCell className="font-mono text-sm">{item.product.sku}</TableCell>
-                    <TableCell className="text-right">{item.purchase_order_item.ordered_quantity}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      <div className="flex items-center gap-1">
+                        <span>{item.product.sku}</span>
+                        <CopyButton
+                          value={item.product.sku}
+                          ariaLabel="Copy SKU"
+                          successMessage="Copied SKU to clipboard"
+                          className="h-7 w-7 text-muted-foreground"
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {item.purchase_order_item.ordered_quantity}
+                    </TableCell>
                     <TableCell className="text-right">
                       {item.purchase_order_item.received_quantity - item.received_quantity}
                     </TableCell>
@@ -290,7 +321,8 @@ function GRNDetailContent() {
                       +{item.received_quantity}
                     </TableCell>
                     <TableCell className="text-right">
-                      {item.purchase_order_item.ordered_quantity - item.purchase_order_item.received_quantity}
+                      {item.purchase_order_item.ordered_quantity -
+                        item.purchase_order_item.received_quantity}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -354,7 +386,11 @@ function GRNDetailContent() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep GRN</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancel} disabled={cancelling} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction
+              onClick={handleCancel}
+              disabled={cancelling}
+              className="bg-red-600 hover:bg-red-700"
+            >
               {cancelling ? 'Cancelling...' : 'Cancel GRN'}
             </AlertDialogAction>
           </AlertDialogFooter>

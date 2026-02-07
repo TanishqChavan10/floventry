@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
 import { useAuth } from '@/context/auth-context';
 import {
@@ -37,12 +37,18 @@ import { TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { CREATE_INVENTORY_ADJUSTMENT } from '@/lib/graphql/adjustments';
 import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
 import { toast } from 'sonner';
+import { CopyButton } from '@/components/common/CopyButton';
 
 interface NewAdjustmentModalProps {
   warehouseId: string;
   warehouseName: string;
   open: boolean;
   onClose: () => void;
+  initialAdjustmentType?: 'IN' | 'OUT';
+  initialProductId?: string;
+  initialQuantity?: string;
+  initialReason?: string;
+  initialReference?: string;
 }
 
 export default function NewAdjustmentModal({
@@ -50,6 +56,11 @@ export default function NewAdjustmentModal({
   warehouseName,
   open,
   onClose,
+  initialAdjustmentType,
+  initialProductId,
+  initialQuantity,
+  initialReason,
+  initialReference,
 }: NewAdjustmentModalProps) {
   const { user } = useAuth();
 
@@ -59,6 +70,39 @@ export default function NewAdjustmentModal({
   const [reason, setReason] = useState('');
   const [reference, setReference] = useState('');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [hasPrefilled, setHasPrefilled] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setHasPrefilled(false);
+      return;
+    }
+    if (hasPrefilled) return;
+
+    if (initialAdjustmentType) setAdjustmentType(initialAdjustmentType);
+    if (initialProductId) setSelectedProductId(initialProductId);
+    if (initialQuantity) setQuantity(initialQuantity);
+    if (initialReason) setReason(initialReason);
+    if (initialReference) setReference(initialReference);
+
+    if (
+      initialAdjustmentType ||
+      initialProductId ||
+      initialQuantity ||
+      initialReason ||
+      initialReference
+    ) {
+      setHasPrefilled(true);
+    }
+  }, [
+    open,
+    hasPrefilled,
+    initialAdjustmentType,
+    initialProductId,
+    initialQuantity,
+    initialReason,
+    initialReference,
+  ]);
 
   // Fetch warehouse stock for product selection
   const { data: stockData, loading: loadingStock } = useQuery(GET_WAREHOUSE_STOCK, {
@@ -155,11 +199,7 @@ export default function NewAdjustmentModal({
                 className="grid grid-cols-2 gap-4"
               >
                 <div>
-                  <RadioGroupItem
-                    value="IN"
-                    id="type-in"
-                    className="peer sr-only"
-                  />
+                  <RadioGroupItem value="IN" id="type-in" className="peer sr-only" />
                   <Label
                     htmlFor="type-in"
                     className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-green-600 [&:has([data-state=checked])]:border-green-600 cursor-pointer"
@@ -174,11 +214,7 @@ export default function NewAdjustmentModal({
                   </Label>
                 </div>
                 <div>
-                  <RadioGroupItem
-                    value="OUT"
-                    id="type-out"
-                    className="peer sr-only"
-                  />
+                  <RadioGroupItem value="OUT" id="type-out" className="peer sr-only" />
                   <Label
                     htmlFor="type-out"
                     className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-red-600 [&:has([data-state=checked])]:border-red-600 cursor-pointer"
@@ -200,7 +236,9 @@ export default function NewAdjustmentModal({
               <Label htmlFor="product">Product *</Label>
               <Select value={selectedProductId} onValueChange={setSelectedProductId}>
                 <SelectTrigger id="product">
-                  <SelectValue placeholder={loadingStock ? "Loading products..." : "Select product"} />
+                  <SelectValue
+                    placeholder={loadingStock ? 'Loading products...' : 'Select product'}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {stock.map((item: any) => (
@@ -218,6 +256,14 @@ export default function NewAdjustmentModal({
               {selectedStock && (
                 <p className="text-sm text-muted-foreground">
                   Current stock: <span className="font-semibold">{availableStock}</span> units
+                  <span className="mx-2">•</span>
+                  <span className="font-mono">SKU: {selectedStock.product.sku}</span>
+                  <CopyButton
+                    value={selectedStock.product.sku}
+                    ariaLabel="Copy SKU"
+                    successMessage="Copied SKU to clipboard"
+                    className="ml-1 h-6 w-6 text-muted-foreground"
+                  />
                 </p>
               )}
             </div>
@@ -235,9 +281,7 @@ export default function NewAdjustmentModal({
                 placeholder="Enter quantity"
               />
               {adjustmentType === 'OUT' && selectedStock && (
-                <p className="text-sm text-muted-foreground">
-                  Maximum: {availableStock} units
-                </p>
+                <p className="text-sm text-muted-foreground">Maximum: {availableStock} units</p>
               )}
             </div>
 
@@ -304,8 +348,15 @@ export default function NewAdjustmentModal({
                   </div>
                   <div className="flex justify-between">
                     <span className="font-medium">Quantity:</span>
-                    <span className={adjustmentType === 'IN' ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
-                      {adjustmentType === 'IN' ? '+' : '-'}{quantity} units
+                    <span
+                      className={
+                        adjustmentType === 'IN'
+                          ? 'text-green-600 font-bold'
+                          : 'text-red-600 font-bold'
+                      }
+                    >
+                      {adjustmentType === 'IN' ? '+' : '-'}
+                      {quantity} units
                     </span>
                   </div>
                   <div className="flex justify-between">

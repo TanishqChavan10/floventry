@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { CopyButton } from '@/components/common/CopyButton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +39,7 @@ export default function IssueNoteDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  
+
   const issueId = params.issueId as string;
   const companySlug = params.slug as string;
   const warehouseSlug = params.warehouseSlug as string;
@@ -151,7 +152,9 @@ export default function IssueNoteDetailPage() {
       {isPosted && (
         <Alert className="border-green-200 bg-green-50 dark:bg-green-950">
           <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertTitle className="text-green-800 dark:text-green-200">Posted Successfully</AlertTitle>
+          <AlertTitle className="text-green-800 dark:text-green-200">
+            Posted Successfully
+          </AlertTitle>
           <AlertDescription className="text-green-700 dark:text-green-300">
             Stock has been updated successfully. This action cannot be undone.
           </AlertDescription>
@@ -207,9 +210,7 @@ export default function IssueNoteDetailPage() {
             <div>
               <label className="text-sm font-medium text-slate-600">Issued Date</label>
               <p className="mt-1">
-                {issue.issued_at
-                  ? format(new Date(issue.issued_at), 'dd MMM yyyy, HH:mm')
-                  : '-'}
+                {issue.issued_at ? format(new Date(issue.issued_at), 'dd MMM yyyy, HH:mm') : '-'}
               </p>
             </div>
             <div>
@@ -240,7 +241,18 @@ export default function IssueNoteDetailPage() {
               {issue.items?.map((item: any) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.product?.name}</TableCell>
-                  <TableCell className="font-mono text-sm">{item.product?.sku}</TableCell>
+                  <TableCell className="font-mono text-sm">
+                    <div className="flex items-center gap-1">
+                      <span>{item.product?.sku}</span>
+                      <CopyButton
+                        value={item.product?.sku ?? ''}
+                        ariaLabel="Copy SKU"
+                        successMessage="Copied SKU to clipboard"
+                        className="h-7 w-7 text-muted-foreground"
+                        disabled={!item.product?.sku}
+                      />
+                    </div>
+                  </TableCell>
                   <TableCell className="font-mono text-sm">
                     {item.stock_lot ? item.stock_lot.id.slice(0, 8) + '...' : '-'}
                   </TableCell>
@@ -268,12 +280,11 @@ export default function IssueNoteDetailPage() {
               Post Issue Note?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This will <strong>decrease stock immediately</strong> and create stock movement records.
+              This will <strong>decrease stock immediately</strong> and create stock movement
+              records.
               <br />
               <br />
-              <span className="text-orange-600 font-medium">
-                ⚠️ This action cannot be undone.
-              </span>
+              <span className="text-orange-600 font-medium">⚠️ This action cannot be undone.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

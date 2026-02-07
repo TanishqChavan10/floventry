@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { CopyButton } from '@/components/common/CopyButton';
 import { ArrowRight, MapPin } from 'lucide-react';
 import { useWarehouse } from '@/context/warehouse-context';
 
@@ -94,7 +95,15 @@ export default function InventoryTable({ role }: InventoryTableProps) {
                 >
                   <td className="px-4 py-3 font-medium">
                     <div>{item.name}</div>
-                    <div className="text-xs text-slate-500">{item.sku}</div>
+                    <div className="flex items-center gap-1 text-xs text-slate-500">
+                      <span className="font-mono">{item.sku}</span>
+                      <CopyButton
+                        value={item.sku}
+                        ariaLabel="Copy SKU"
+                        successMessage="Copied SKU to clipboard"
+                        className="h-6 w-6 text-muted-foreground"
+                      />
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-slate-500">{item.category}</td>
                   <td className="px-4 py-3 font-semibold">{item.qty}</td>

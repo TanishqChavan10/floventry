@@ -29,6 +29,7 @@ import { GET_SUPPLIERS } from '@/lib/graphql/catalog';
 import { GET_STOCK_BY_WAREHOUSE } from '@/lib/graphql/stock';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/auth-context';
+import { CopyButton } from '@/components/common/CopyButton';
 
 interface POItem {
   product_id: string;
@@ -117,15 +118,25 @@ export function CreatePurchaseOrderModal({
     if (initialProductId && products.length > 0) {
       const product = products.find((p: any) => p.product.id === initialProductId);
       if (product) {
-        setItems([{
-          product_id: product.product.id,
-          product_name: product.product.name,
-          ordered_quantity: 1,
-        }]);
+        setItems([
+          {
+            product_id: product.product.id,
+            product_name: product.product.name,
+            ordered_quantity: 1,
+          },
+        ]);
         setHasPrefilledData(true);
       }
     }
-  }, [initialWarehouseId, initialSupplierId, initialProductId, warehouses, suppliers, products, hasPrefilledData]);
+  }, [
+    initialWarehouseId,
+    initialSupplierId,
+    initialProductId,
+    warehouses,
+    suppliers,
+    products,
+    hasPrefilledData,
+  ]);
 
   const addItem = () => {
     setItems([...items, { product_id: '', ordered_quantity: 1 }]);
@@ -184,7 +195,10 @@ export function CreatePurchaseOrderModal({
       toast.error('Please select a supplier');
       return;
     }
-    if (items.length === 0 || items.some((item) => !item.product_id || item.ordered_quantity <= 0)) {
+    if (
+      items.length === 0 ||
+      items.some((item) => !item.product_id || item.ordered_quantity <= 0)
+    ) {
       toast.error('Please add at least one valid product');
       return;
     }
@@ -209,16 +223,16 @@ export function CreatePurchaseOrderModal({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Purchase Order</DialogTitle>
-          <DialogDescription>
-            Add products to create a new purchase order
-          </DialogDescription>
+          <DialogDescription>Add products to create a new purchase order</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* Warehouse & Supplier */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="warehouse">Warehouse <span className="text-red-500">*</span></Label>
+              <Label htmlFor="warehouse">
+                Warehouse <span className="text-red-500">*</span>
+              </Label>
               <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
                 <SelectTrigger id="warehouse">
                   <SelectValue placeholder="Select warehouse" />
@@ -234,7 +248,9 @@ export function CreatePurchaseOrderModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="supplier">Supplier <span className="text-red-500">*</span></Label>
+              <Label htmlFor="supplier">
+                Supplier <span className="text-red-500">*</span>
+              </Label>
               <Select value={selectedSupplier} onValueChange={handleSupplierChange}>
                 <SelectTrigger id="supplier">
                   <SelectValue placeholder="Select supplier" />
@@ -272,7 +288,10 @@ export function CreatePurchaseOrderModal({
             ) : (
               <div className="space-y-3 max-h-[250px] overflow-y-auto">
                 {items.map((item, index) => (
-                  <div key={index} className="flex gap-3 items-end p-3 border rounded-lg bg-slate-50 dark:bg-slate-900/50">
+                  <div
+                    key={index}
+                    className="flex gap-3 items-end p-3 border rounded-lg bg-slate-50 dark:bg-slate-900/50"
+                  >
                     <div className="flex-1 space-y-2">
                       <Label className="text-xs">Product *</Label>
                       <Select
@@ -293,6 +312,24 @@ export function CreatePurchaseOrderModal({
                           ))}
                         </SelectContent>
                       </Select>
+                      {(() => {
+                        const selectedStock = products.find(
+                          (s: any) => s.product?.id === item.product_id,
+                        );
+                        if (!selectedStock?.product?.sku) return null;
+
+                        return (
+                          <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                            <span className="font-mono">SKU: {selectedStock.product.sku}</span>
+                            <CopyButton
+                              value={selectedStock.product.sku}
+                              ariaLabel="Copy SKU"
+                              successMessage="Copied SKU to clipboard"
+                              className="h-6 w-6 text-muted-foreground"
+                            />
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="w-28 space-y-2">

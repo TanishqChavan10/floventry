@@ -1,10 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { StockHealthState } from '@/lib/graphql/stock-health';
 
 interface StockHealthBadgeProps {
@@ -14,31 +9,36 @@ interface StockHealthBadgeProps {
 
 const healthConfig: Record<
   StockHealthState,
-  { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string; className?: string }
+  {
+    variant: 'default' | 'secondary' | 'destructive' | 'outline';
+    label: string;
+    className?: string;
+  }
 > = {
   HEALTHY: {
-    variant: 'default',
+    variant: 'outline',
     label: 'Healthy',
-    className: 'bg-green-500 hover:bg-green-600',
+    className: 'border-primary/30 bg-primary/10 text-primary dark:text-foreground',
   },
   AT_RISK: {
     variant: 'outline',
     label: 'At Risk',
-    className: 'border-yellow-500 text-yellow-700 dark:text-yellow-400',
+    className: 'border-border/50 bg-accent text-accent-foreground dark:text-foreground',
   },
   LOW_STOCK: {
     variant: 'outline',
     label: 'Low Stock',
-    className: 'border-orange-500 text-orange-700 dark:text-orange-400',
+    className: 'border-border/50 bg-secondary text-secondary-foreground dark:text-foreground',
   },
   CRITICAL: {
-    variant: 'destructive',
+    variant: 'outline',
     label: 'Critical',
+    className: 'border-destructive/30 bg-destructive/10 text-destructive dark:text-foreground',
   },
   BLOCKED: {
-    variant: 'secondary',
+    variant: 'outline',
     label: 'Blocked',
-    className: 'bg-gray-500 hover:bg-gray-600',
+    className: 'border-border/50 bg-muted text-muted-foreground dark:text-foreground/80',
   },
 };
 

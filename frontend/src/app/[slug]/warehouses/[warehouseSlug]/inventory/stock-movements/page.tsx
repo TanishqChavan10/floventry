@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery } from '@apollo/client';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { CopyButton } from '@/components/common/CopyButton';
 import { ArrowUpDown, Loader2, AlertCircle, Filter, X, Calendar } from 'lucide-react';
 import {
   Table,
@@ -55,6 +56,36 @@ interface StockMovement {
   performedBy?: string;
   userRole?: string;
 }
+
+type WarehouseAccess = {
+  warehouseSlug: string;
+  warehouseId: string;
+  warehouseName: string;
+};
+
+type CompanyWarehouse = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+type WarehouseStockItem = {
+  id: string;
+  product: {
+    id: string;
+    name: string;
+    sku: string;
+  };
+};
+
+type StockMovementsFilters = {
+  fromDate: Date;
+  toDate: Date;
+  limit: number;
+  offset: number;
+  productId?: string;
+  types?: string[];
+};
 
 // Helper function to get badge variant for movement type
 function getMovementBadgeVariant(
@@ -115,18 +146,27 @@ function formatDateTime(dateString: string) {
 
 function StockMovementsContent() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const companySlug = params.slug as string;
   const warehouseSlug = params.warehouseSlug as string;
 
+  const productIdParam = searchParams.get('productId');
+
   // Filter state
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
-  const [selectedProduct, setSelectedProduct] = useState<string>('all');
+  const [selectedProduct, setSelectedProduct] = useState<string>(productIdParam || 'all');
   const [selectedType, setSelectedType] = useState<string>('all');
 
+  useEffect(() => {
+    if (!productIdParam) return;
+    setSelectedProduct(productIdParam);
+  }, [productIdParam]);
+
   // Get warehouse ID from context or user data
-  const activeWarehouse = user?.warehouses?.find((w: any) => w.warehouseSlug === warehouseSlug);
+  const userWarehouses = (user?.warehouses as WarehouseAccess[] | undefined) ?? [];
+  const activeWarehouse = userWarehouses.find((w) => w.warehouseSlug === warehouseSlug);
 
   // Get role from active company
   const activeCompany = user?.companies?.find((c) => c.id === user.activeCompanyId);
@@ -139,9 +179,8 @@ function StockMovementsContent() {
   });
 
   // Try to get warehouse from company data if not in user.warehouses
-  const warehouseFromCompany = companyData?.companyBySlug?.warehouses?.find(
-    (w: any) => w.slug === warehouseSlug,
-  );
+  const companyWarehouses: CompanyWarehouse[] = companyData?.companyBySlug?.warehouses ?? [];
+  const warehouseFromCompany = companyWarehouses.find((w) => w.slug === warehouseSlug);
 
   const warehouseId = activeWarehouse?.warehouseId || warehouseFromCompany?.id;
   const warehouseName = activeWarehouse?.warehouseName || warehouseFromCompany?.name;
@@ -163,7 +202,7 @@ function StockMovementsContent() {
 
   // Build filter object for GraphQL query - memoize to prevent infinite loops
   const filters = useMemo(() => {
-    const filterObj: any = {
+    const filterObj: StockMovementsFilters = {
       fromDate: fromDate ? new Date(fromDate) : defaultFromDate,
       toDate: toDate ? new Date(toDate) : defaultToDate,
       limit: 100,
@@ -191,7 +230,7 @@ function StockMovementsContent() {
   });
 
   const movements: StockMovement[] = data?.stockMovements?.items || [];
-  const stock = stockData?.stockByWarehouse || [];
+  const stock: WarehouseStockItem[] = stockData?.stockByWarehouse ?? [];
 
   // Calculate stats
   const totalMovements = movements.length;
@@ -329,7 +368,7 @@ function StockMovementsContent() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Products</SelectItem>
-                    {stock.map((item: any) => (
+                    {stock.map((item) => (
                       <SelectItem key={item.product.id} value={item.product.id}>
                         {item.product.name} ({item.product.sku})
                       </SelectItem>
@@ -427,7 +466,15 @@ function StockMovementsContent() {
                           </TableCell>
                           <TableCell className="font-medium">
                             <div>{movement.productName}</div>
-                            <div className="text-xs text-slate-500">{movement.sku}</div>
+                            <div className="flex items-center gap-1 text-xs text-slate-500">
+                              <span className="font-mono">{movement.sku}</span>
+                              <CopyButton
+                                value={movement.sku}
+                                ariaLabel="Copy SKU"
+                                successMessage="Copied SKU to clipboard"
+                                className="h-6 w-6 text-muted-foreground"
+                              />
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Badge variant={getMovementBadgeVariant(movement.type)}>

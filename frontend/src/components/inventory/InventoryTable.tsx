@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { CopyButton } from '@/components/common/CopyButton';
 import Link from 'next/link';
 
 interface InventoryItem {
@@ -82,7 +83,17 @@ export default function InventoryTable({ items, role, onDelete }: InventoryTable
             items.map((item) => (
               <TableRow key={item.id}>
                 <TableCell className="font-medium">{item.name}</TableCell>
-                <TableCell>{item.sku}</TableCell>
+                <TableCell className="font-mono text-sm">
+                  <div className="flex items-center gap-1">
+                    <span>{item.sku}</span>
+                    <CopyButton
+                      value={item.sku}
+                      ariaLabel="Copy SKU"
+                      successMessage="Copied SKU to clipboard"
+                      className="h-7 w-7 text-muted-foreground"
+                    />
+                  </div>
+                </TableCell>
                 <TableCell>{item.category}</TableCell>
                 <TableCell>
                   {item.quantity} {item.unit}

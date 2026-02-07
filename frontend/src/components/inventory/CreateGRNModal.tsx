@@ -46,6 +46,7 @@ import { AlertTriangle, Loader2 } from 'lucide-react';
 import { CREATE_GRN, POST_GRN, GET_GRNS } from '@/lib/graphql/grn';
 import { GET_PURCHASE_ORDERS } from '@/lib/graphql/purchase-orders';
 import { GET_WAREHOUSE_STOCK_HEALTH } from '@/lib/graphql/stock-health';
+import { CopyButton } from '@/components/common/CopyButton';
 import { toast } from 'sonner';
 import { SafeBarcodeScanInput } from '@/components/barcode/SafeBarcodeScanInput';
 
@@ -115,8 +116,18 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
     skip: !activeWarehouse?.id,
     fetchPolicy: 'cache-and-network',
   });
-
-  const stockHealthByProductId = useMemo(() => {
+                    <div className="mt-1 text-slate-600 dark:text-slate-300">
+                      <div className="flex items-center gap-1">
+                        <span>
+                          Selected: {lastScan.productName} ({lastScan.sku})
+                        </span>
+                        <CopyButton
+                          value={lastScan.sku}
+                          ariaLabel="Copy SKU"
+                          successMessage="Copied SKU to clipboard"
+                          className="h-6 w-6 text-muted-foreground"
+                        />
+                      </div>
     const rows = (stockHealthData?.warehouseStockHealth ?? []) as any[];
     const map = new Map<string, any>();
     for (const row of rows) {
@@ -340,7 +351,17 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
                       Product selected via barcode. Please confirm quantities.
                     </div>
                     <div className="mt-1 text-slate-600 dark:text-slate-300">
-                      Selected: {lastScan.productName} ({lastScan.sku})
+                      <div className="flex items-center gap-1">
+                        <span>
+                          Selected: {lastScan.productName} ({lastScan.sku})
+                        </span>
+                        <CopyButton
+                          value={lastScan.sku}
+                          ariaLabel="Copy SKU"
+                          successMessage="Copied SKU to clipboard"
+                          className="h-6 w-6 text-muted-foreground"
+                        />
+                      </div>
                     </div>
                     {(() => {
                       const health = stockHealthByProductId.get(lastScan.productId);
@@ -407,7 +428,15 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
                           <TableCell className="font-medium">
                             {item.product_name}{' '}
                             {item.sku ? (
-                              <span className="text-xs text-muted-foreground">({item.sku})</span>
+                              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                                <span>({item.sku})</span>
+                                <CopyButton
+                                  value={item.sku}
+                                  ariaLabel="Copy SKU"
+                                  successMessage="Copied SKU to clipboard"
+                                  className="h-6 w-6 text-muted-foreground"
+                                />
+                              </span>
                             ) : null}
                           </TableCell>
                           <TableCell className="text-right">{item.ordered_quantity}</TableCell>

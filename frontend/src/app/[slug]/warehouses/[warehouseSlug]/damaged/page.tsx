@@ -5,6 +5,7 @@ import RoleGuard from '@/components/guards/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { CopyButton } from '@/components/common/CopyButton';
 import { Plus, AlertCircle } from 'lucide-react';
 import {
   Table,
@@ -45,9 +46,7 @@ function DamagedContent() {
         <div className="container mx-auto px-6 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-                Damaged Stock
-              </h1>
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Damaged Stock</h1>
               <p className="text-slate-600 dark:text-slate-400 mt-2">
                 Report and track damaged inventory
               </p>
@@ -105,7 +104,17 @@ function DamagedContent() {
               <TableBody>
                 {mockDamagedItems.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-mono text-sm">{item.sku}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      <div className="flex items-center gap-1">
+                        <span>{item.sku}</span>
+                        <CopyButton
+                          value={item.sku}
+                          ariaLabel="Copy SKU"
+                          successMessage="Copied SKU to clipboard"
+                          className="h-7 w-7 text-muted-foreground"
+                        />
+                      </div>
+                    </TableCell>
                     <TableCell className="font-medium">{item.product}</TableCell>
                     <TableCell className="text-red-600">{item.quantity}</TableCell>
                     <TableCell className="text-slate-600 dark:text-slate-400">

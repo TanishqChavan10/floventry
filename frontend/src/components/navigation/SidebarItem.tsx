@@ -47,15 +47,15 @@ export function SidebarItem({ label, href, icon: Icon, onClick }: SidebarItemPro
         'relative flex items-center py-2.5 rounded-xl transition-all duration-300 ease-out group overflow-hidden',
         open ? 'gap-3 px-3 mx-2' : 'justify-center mx-1 px-0', // Adjusted spacing for collapsed state
         isActive
-          ? 'bg-neutral-50 text-neutral-900 border border-neutral-200'
-          : 'text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900',
+          ? 'bg-muted text-foreground border border-border'
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground',
       )}
     >
       {isActive && (
         <span
           aria-hidden
           className={cn(
-            'absolute top-2 bottom-2 w-1 rounded-full bg-[#E53935]',
+            'absolute top-2 bottom-2 w-1 rounded-full bg-primary',
             open ? 'left-1' : 'left-0.5',
           )}
         />
@@ -65,13 +65,13 @@ export function SidebarItem({ label, href, icon: Icon, onClick }: SidebarItemPro
       <div
         className={cn(
           'relative flex items-center justify-center p-0.5 rounded-md transition-all duration-300',
-          isActive ? 'bg-white border border-neutral-200 text-[#E53935]' : 'bg-transparent',
+          isActive ? 'bg-background border border-border text-primary' : 'bg-transparent',
         )}
       >
         <Icon
           className={cn(
-            'h-5 w-5 shrink-0 transition-transform duration-300 group-hover:scale-110',
-            isActive ? 'text-[#E53935]' : 'text-neutral-500 group-hover:text-neutral-700',
+            'h-6 w-6 shrink-0 transition-transform duration-300 group-hover:scale-110',
+            isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground',
           )}
         />
       </div>

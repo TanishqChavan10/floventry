@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { CopyButton } from '@/components/common/CopyButton';
 
 interface SalesOrderItem {
   product_id: string;
@@ -93,9 +94,7 @@ export function CreateSalesOrderModal({
       return;
     }
 
-    const validItems = items.filter(
-      (item) => item.product_id && item.ordered_quantity > 0
-    );
+    const validItems = items.filter((item) => item.product_id && item.ordered_quantity > 0);
 
     if (validItems.length === 0) {
       toast.error('At least one item is required');
@@ -119,9 +118,7 @@ export function CreateSalesOrderModal({
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create Sales Order</DialogTitle>
-            <DialogDescription>
-              Add a new customer order
-            </DialogDescription>
+            <DialogDescription>Add a new customer order</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
@@ -162,7 +159,10 @@ export function CreateSalesOrderModal({
 
               <div className="space-y-3 max-h-[250px] overflow-y-auto">
                 {items.map((item, index) => (
-                  <div key={index} className="flex gap-3 items-end p-3 border rounded-lg bg-slate-50 dark:bg-slate-900/50">
+                  <div
+                    key={index}
+                    className="flex gap-3 items-end p-3 border rounded-lg bg-slate-50 dark:bg-slate-900/50"
+                  >
                     <div className="flex-1 space-y-2">
                       <Label className="text-xs">Product *</Label>
                       <Select
@@ -180,6 +180,22 @@ export function CreateSalesOrderModal({
                           ))}
                         </SelectContent>
                       </Select>
+                      {(() => {
+                        const selectedProduct = products.find((p: any) => p.id === item.product_id);
+                        if (!selectedProduct) return null;
+
+                        return (
+                          <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                            <span className="font-mono">SKU: {selectedProduct.sku}</span>
+                            <CopyButton
+                              value={selectedProduct.sku}
+                              ariaLabel="Copy SKU"
+                              successMessage="Copied SKU to clipboard"
+                              className="h-6 w-6 text-muted-foreground"
+                            />
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="w-28 space-y-2">
                       <Label className="text-xs">Quantity *</Label>

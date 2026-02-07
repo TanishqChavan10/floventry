@@ -3,6 +3,7 @@
 import React from 'react';
 import type { GlobalSearchDocumentType, GlobalSearchResultsData } from './useGlobalSearch';
 import { cn } from '@/lib/utils';
+import { CopyButton } from '@/components/common/CopyButton';
 
 export type FlattenedSearchItem =
   | {
@@ -25,7 +26,7 @@ export type FlattenedSearchItem =
 
 function GroupHeader({ title }: { title: string }) {
   return (
-    <div className="px-4 pt-4 pb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
+    <div className="px-4 pt-4 pb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
       {title}
     </div>
   );
@@ -42,6 +43,9 @@ function ResultRow({
   onMouseEnter: () => void;
   onClick: () => void;
 }) {
+  const productSku =
+    item.kind === 'product' && item.subtitle ? item.subtitle.split(' • ')[0] : undefined;
+
   return (
     <button
       type="button"
@@ -50,20 +54,32 @@ function ResultRow({
       onClick={onClick}
       className={cn(
         'w-full text-left px-4 py-3 flex items-start gap-3',
-        'hover:bg-neutral-50',
-        active && 'bg-neutral-100',
+        'hover:bg-muted',
+        active && 'bg-muted',
       )}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <div className="text-sm font-medium text-neutral-900 truncate">{item.title}</div>
+          <div className="text-sm font-medium text-foreground truncate">{item.title}</div>
           {item.badge && (
-            <span className="text-[11px] px-2 py-0.5 rounded-full border border-neutral-200 bg-white text-neutral-700">
+            <span className="text-[11px] px-2 py-0.5 rounded-full border border-border bg-background text-muted-foreground">
               {item.badge}
             </span>
           )}
         </div>
-        {item.subtitle && <div className="text-xs text-neutral-600 truncate">{item.subtitle}</div>}
+        {item.subtitle && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground min-w-0">
+            <span className="truncate">{item.subtitle}</span>
+            {productSku ? (
+              <CopyButton
+                value={productSku}
+                ariaLabel="Copy SKU"
+                successMessage="Copied SKU to clipboard"
+                className="h-6 w-6 text-muted-foreground"
+              />
+            ) : null}
+          </div>
+        )}
       </div>
     </button>
   );
@@ -85,13 +101,13 @@ export function GlobalSearchResults({
   onSelect: (item: FlattenedSearchItem) => void;
 }) {
   if (loading && items.length === 0) {
-    return <div className="px-4 py-6 text-sm text-neutral-600">Searching…</div>;
+    return <div className="px-4 py-6 text-sm text-muted-foreground">Searching…</div>;
   }
 
   const hasAny = items.length > 0;
 
   if (!hasAny) {
-    return <div className="px-4 py-6 text-sm text-neutral-600">No results.</div>;
+    return <div className="px-4 py-6 text-sm text-muted-foreground">No results.</div>;
   }
 
   let indexCursor = 0;

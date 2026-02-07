@@ -1,5 +1,5 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export function ChartSkeleton() {
   return (
@@ -19,7 +19,7 @@ export function ChartSkeleton() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <div className="mb-6 p-4 bg-muted rounded-lg">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="text-center">

@@ -9,15 +9,34 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/context/auth-context';
 
 export default function CustomSignIn() {
   const { isLoaded, signIn, setActive } = useSignIn();
+  const { user, isAuthenticated, loading } = useAuth();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState('');
   const router = useRouter();
+
+  // Redirect authenticated users immediately
+  React.useEffect(() => {
+    if (!loading && isAuthenticated && user) {
+      router.replace('/auth-redirect');
+    }
+  }, [isAuthenticated, user, loading, router]);
+
+  // Helper to get redirect URL based on user's companies
+  const getRedirectUrl = () => {
+    if (!user || !user.companies || user.companies.length === 0) {
+      return '/onboarding/create-company';
+    }
+    const activeCompany = user.companies.find((c) => c.isActive);
+    const targetCompany = activeCompany || user.companies[0];
+    return `/${targetCompany.slug}/dashboard`;
+  };
 
   // Handle OAuth sign in
   const signInWith = (strategy: 'oauth_google') => {
@@ -26,7 +45,7 @@ export default function CustomSignIn() {
     return signIn.authenticateWithRedirect({
       strategy,
       redirectUrl: '/sso-callback',
-      redirectUrlComplete: '/',
+      redirectUrlComplete: '/auth-redirect',
     });
   };
 
@@ -45,7 +64,10 @@ export default function CustomSignIn() {
 
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
-        router.push('/');
+        // Wait a bit for auth context to update, then redirect
+        setTimeout(() => {
+          router.push('/auth-redirect');
+        }, 500);
       } else {
         setError('Something went wrong. Please try again.');
       }
@@ -54,7 +76,7 @@ export default function CustomSignIn() {
         err.errors?.[0]?.longMessage || err.message || 'Invalid email or password';
 
       if (errorMessage.toLowerCase().includes('already signed in')) {
-        router.push('/');
+        router.push('/auth-redirect');
         return;
       }
 

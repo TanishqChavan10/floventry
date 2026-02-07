@@ -40,10 +40,6 @@ function isHrefActive(pathname: string | null, href: string): boolean {
   return pathname.startsWith(href + '/');
 }
 
-function flattenSections(sections: NavigationSection[]): NavigationItem[] {
-  return sections.flatMap((section) => section.items);
-}
-
 export function IconRail() {
   const pathname = usePathname();
   const params = useParams();
@@ -89,8 +85,6 @@ export function IconRail() {
       .filter((section) => section.items.length > 0);
   }
 
-  const items = flattenSections(filteredSections);
-
   const logoHref = warehouseSlug
     ? `/${companySlug}/warehouses/${warehouseSlug}`
     : `/${companySlug}/dashboard`;
@@ -111,7 +105,7 @@ export function IconRail() {
 
   return (
     <TooltipProvider delayDuration={100}>
-      <div className="hidden md:flex w-20 shrink-0 bg-[#E53935] text-white flex-col items-center py-4">
+      <div className="hidden md:flex w-20 shrink-0 bg-primary text-primary-foreground flex-col items-center py-4">
         <Link
           href={logoHref}
           className={cn(
@@ -128,35 +122,57 @@ export function IconRail() {
         </Link>
 
         <div className="mt-4 flex-1 w-full flex flex-col items-center gap-3 overflow-y-auto px-2">
-          {items.map((item) => {
-            const active = isHrefActive(pathname, item.href);
-            const Icon = item.icon;
+          {filteredSections.flatMap((section, sectionIndex) => {
+            const nodes = section.items.map((item) => {
+              const active = isHrefActive(pathname, item.href);
+              const Icon = item.icon;
 
-            return (
-              <Tooltip key={item.href}>
-                <TooltipTrigger asChild>
-                  <Link
-                    href={item.href}
-                    onClick={
-                      isWarehousesListPage ? handleNavWithoutSelection(item.href) : undefined
-                    }
-                    className={cn(
-                      'h-10 w-10 rounded-xl flex items-center justify-center',
-                      'transition-colors',
-                      active
-                        ? 'bg-white text-[#E53935]'
-                        : 'text-white/85 hover:bg-white/10 hover:text-white',
-                    )}
-                    aria-label={item.label}
+              return (
+                <Tooltip key={item.href}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      href={item.href}
+                      onClick={
+                        isWarehousesListPage ? handleNavWithoutSelection(item.href) : undefined
+                      }
+                      className={cn(
+                        'h-10 w-10 rounded-xl flex items-center justify-center',
+                        'transition-colors',
+                        active
+                          ? 'bg-primary-foreground text-primary'
+                          : 'text-primary-foreground/85 hover:bg-primary-foreground/10 hover:text-primary-foreground',
+                      )}
+                      aria-label={item.label}
+                    >
+                      <Icon
+                        className={cn(
+                          'h-6 w-6',
+                          active ? 'text-primary' : 'text-primary-foreground',
+                        )}
+                      />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="bg-foreground text-background border-none"
                   >
-                    <Icon className={cn('h-5 w-5', active ? 'text-[#E53935]' : 'text-white')} />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="bg-neutral-900 text-white border-none">
-                  {item.label}
-                </TooltipContent>
-              </Tooltip>
-            );
+                    {item.label}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            });
+
+            if (sectionIndex === 0) {
+              nodes.push(
+                <div
+                  key="__section_divider__"
+                  aria-hidden
+                  className="my-2 h-px w-10 bg-primary-foreground/15"
+                />,
+              );
+            }
+
+            return nodes;
           })}
         </div>
 

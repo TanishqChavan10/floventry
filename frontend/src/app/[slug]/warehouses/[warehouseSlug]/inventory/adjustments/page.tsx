@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@apollo/client';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useWarehouse } from '@/context/warehouse-context';
 import { useAuth } from '@/context/auth-context';
 import CompanyGuard from '@/components/CompanyGuard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { CopyButton } from '@/components/common/CopyButton';
 import {
   Table,
   TableBody,
@@ -22,21 +23,51 @@ import { GET_STOCK_MOVEMENTS_BY_WAREHOUSE } from '@/lib/graphql/adjustments';
 import { formatDistanceToNow } from 'date-fns';
 import NewAdjustmentModal from '@/components/inventory/NewAdjustmentModal';
 
+type AdjustmentMovement = {
+  id: string;
+  type: 'ADJUSTMENT_IN' | 'ADJUSTMENT_OUT' | string;
+  quantity: number;
+  previousQuantity?: number | null;
+  newQuantity?: number | null;
+  referenceId?: string | null;
+  reason?: string | null;
+  createdAt: string;
+  productName: string;
+  sku: string;
+  performedBy?: string | null;
+  userRole?: string | null;
+};
+
 function AdjustmentsPageContent() {
-  const params = useParams();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const { activeWarehouse } = useWarehouse();
-  const companySlug = params.slug as string;
-  const warehouseSlug = params.warehouseSlug as string;
 
   const [isNewAdjustmentOpen, setIsNewAdjustmentOpen] = useState(false);
+  const [hasHandledPrefill, setHasHandledPrefill] = useState(false);
 
   // Get user role
-  const activeCompany = user?.companies?.find(c => c.id === user.activeCompanyId);
+  const activeCompany = user?.companies?.find((c) => c.id === user.activeCompanyId);
   const userRole = activeCompany?.role;
-  
+
   // Can create adjustments: OWNER, ADMIN, MANAGER only
   const canCreate = userRole ? ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole) : false;
+
+  const prefillNew = searchParams.get('new') === '1';
+  const prefillProductId = searchParams.get('productId') || '';
+  const prefillType = (searchParams.get('type') || '').toUpperCase();
+  const prefillQuantity = searchParams.get('quantity') || '';
+  const prefillReason = searchParams.get('reason') || '';
+  const prefillReference = searchParams.get('reference') || '';
+
+  useEffect(() => {
+    if (!canCreate) return;
+    if (hasHandledPrefill) return;
+    if (!prefillNew) return;
+
+    setIsNewAdjustmentOpen(true);
+    setHasHandledPrefill(true);
+  }, [canCreate, hasHandledPrefill, prefillNew]);
 
   // Memoize date range to prevent infinite re-renders
   const dateRange = useMemo(() => {
@@ -64,7 +95,7 @@ function AdjustmentsPageContent() {
     fetchPolicy: 'cache-and-network',
   });
 
-  const adjustments = data?.stockMovements?.items || [];
+  const adjustments: AdjustmentMovement[] = data?.stockMovements?.items ?? [];
 
   if (loading) {
     return (
@@ -82,19 +113,21 @@ function AdjustmentsPageContent() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-3">
           <p className="text-sm text-red-600">Failed to load adjustments</p>
-          <Button onClick={() => refetch()} variant="outline">Retry</Button>
+          <Button onClick={() => refetch()} variant="outline">
+            Retry
+          </Button>
         </div>
       </div>
     );
   }
 
   const totalIn = adjustments
-    .filter((a: any) => a.type === 'ADJUSTMENT_IN')
-    .reduce((sum: number, a: any) => sum + a.quantity, 0);
+    .filter((a) => a.type === 'ADJUSTMENT_IN')
+    .reduce((sum, a) => sum + a.quantity, 0);
 
   const totalOut = adjustments
-    .filter((a: any) => a.type === 'ADJUSTMENT_OUT')
-    .reduce((sum: number, a: any) => sum + a.quantity, 0);
+    .filter((a) => a.type === 'ADJUSTMENT_OUT')
+    .reduce((sum, a) => sum + a.quantity, 0);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -195,7 +228,7 @@ function AdjustmentsPageContent() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {adjustments.map((adjustment: any) => (
+                    {adjustments.map((adjustment) => (
                       <TableRow key={adjustment.id}>
                         <TableCell>
                           <div className="flex flex-col">
@@ -203,21 +236,32 @@ function AdjustmentsPageContent() {
                               {new Date(adjustment.createdAt).toLocaleDateString()}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {formatDistanceToNow(new Date(adjustment.createdAt), { addSuffix: true })}
+                              {formatDistanceToNow(new Date(adjustment.createdAt), {
+                                addSuffix: true,
+                              })}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">{adjustment.productName}</span>
-                            <span className="text-xs text-muted-foreground font-mono">
-                              {adjustment.sku}
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
+                              <span>{adjustment.sku}</span>
+                              <CopyButton
+                                value={adjustment.sku}
+                                ariaLabel="Copy SKU"
+                                successMessage="Copied SKU to clipboard"
+                                className="h-6 w-6 text-muted-foreground"
+                              />
                             </span>
                           </div>
                         </TableCell>
                         <TableCell>
                           {adjustment.type === 'ADJUSTMENT_IN' ? (
-                            <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                            <Badge
+                              variant="default"
+                              className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
+                            >
                               <TrendingUp className="h-3 w-3 mr-1" />
                               IN
                             </Badge>
@@ -229,8 +273,15 @@ function AdjustmentsPageContent() {
                           )}
                         </TableCell>
                         <TableCell className="text-right font-bold">
-                          <span className={adjustment.type === 'ADJUSTMENT_IN' ? 'text-green-600' : 'text-red-600'}>
-                            {adjustment.type === 'ADJUSTMENT_IN' ? '+' : '-'}{adjustment.quantity}
+                          <span
+                            className={
+                              adjustment.type === 'ADJUSTMENT_IN'
+                                ? 'text-green-600'
+                                : 'text-red-600'
+                            }
+                          >
+                            {adjustment.type === 'ADJUSTMENT_IN' ? '+' : '-'}
+                            {adjustment.quantity}
                           </span>
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">
@@ -252,7 +303,9 @@ function AdjustmentsPageContent() {
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="text-sm">{adjustment.performedBy || 'Unknown'}</span>
-                            <span className="text-xs text-muted-foreground">{adjustment.userRole}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {adjustment.userRole}
+                            </span>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -270,6 +323,13 @@ function AdjustmentsPageContent() {
         <NewAdjustmentModal
           warehouseId={activeWarehouse.id}
           warehouseName={activeWarehouse.name}
+          initialAdjustmentType={
+            prefillType === 'IN' ? 'IN' : prefillType === 'OUT' ? 'OUT' : undefined
+          }
+          initialProductId={prefillProductId || undefined}
+          initialQuantity={prefillQuantity || undefined}
+          initialReason={prefillReason || undefined}
+          initialReference={prefillReference || undefined}
           open={isNewAdjustmentOpen}
           onClose={() => {
             setIsNewAdjustmentOpen(false);

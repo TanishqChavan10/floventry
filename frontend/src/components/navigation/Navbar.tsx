@@ -75,7 +75,7 @@ export function Navbar() {
   if (!activeCompany) return null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-neutral-200/70 bg-white/80 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
       <div className="h-16 px-4 flex items-center gap-3">
         {/* Left Side: Switchers */}
         <div className="flex items-center gap-2 shrink-0">
@@ -85,19 +85,18 @@ export function Navbar() {
               <button
                 className={cn(
                   'h-9 flex items-center gap-2 px-3 rounded-lg',
-                  'bg-white',
-                  'border border-neutral-200',
-                  'hover:bg-neutral-50',
-                  'shadow-sm',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E53935]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+                  'bg-background',
+                  'border border-border',
+                  'hover:bg-muted',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                   'transition-colors duration-200',
                 )}
               >
-                <IconBuilding className="h-4 w-4 text-[#E53935]" />
-                <span className="font-medium text-sm text-neutral-900 max-w-[150px] truncate">
+                <IconBuilding className="h-4 w-4 text-primary" />
+                <span className="font-medium text-sm text-foreground max-w-[150px] truncate">
                   {activeCompany.name}
                 </span>
-                <IconChevronDown className="h-4 w-4 text-neutral-500" />
+                <IconChevronDown className="h-4 w-4 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-[220px]">
@@ -107,7 +106,7 @@ export function Navbar() {
                 <DropdownMenuItem
                   key={company.slug}
                   onClick={() => handleCompanySwitch(company.slug)}
-                  className={cn('cursor-pointer', company.slug === companySlug && 'bg-neutral-100')}
+                  className={cn('cursor-pointer', company.slug === companySlug && 'bg-muted')}
                 >
                   {company.name}
                 </DropdownMenuItem>
@@ -115,13 +114,13 @@ export function Navbar() {
 
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleCreateCompany} className="cursor-pointer">
-                <IconPlus className="h-4 w-4 mr-2 text-neutral-600" />
+                <IconPlus className="h-4 w-4 mr-2 text-muted-foreground" />
                 Create company
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <div className="hidden sm:block h-6 w-px bg-neutral-200" />
+          <div className="hidden sm:block h-6 w-px bg-border" />
 
           {/* Warehouse Switcher - Always visible for all roles */}
           <DropdownMenu>
@@ -129,23 +128,22 @@ export function Navbar() {
               <button
                 className={cn(
                   'h-9 flex items-center gap-2 px-3 rounded-lg',
-                  'bg-white',
-                  'border border-neutral-200',
-                  'hover:bg-neutral-50',
-                  'shadow-sm',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E53935]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+                  'bg-background',
+                  'border border-border',
+                  'hover:bg-muted',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                   'transition-colors duration-200',
                 )}
               >
-                <IconHome className="h-4 w-4 text-[#E53935]" />
-                <span className="font-medium text-sm text-neutral-900 max-w-[150px] truncate">
+                <IconHome className="h-4 w-4 text-primary" />
+                <span className="font-medium text-sm text-foreground max-w-[150px] truncate">
                   {displayWarehouse
                     ? displayWarehouse.name
                     : warehouses.length > 0
                       ? 'Select Warehouse'
                       : 'No Warehouses'}
                 </span>
-                <IconChevronDown className="h-4 w-4 text-neutral-500" />
+                <IconChevronDown className="h-4 w-4 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-[250px]">
@@ -160,19 +158,19 @@ export function Navbar() {
                       'cursor-pointer',
                       displayWarehouse &&
                         warehouse.id === displayWarehouse.id &&
-                        'bg-neutral-50 text-neutral-900',
+                        'bg-muted text-foreground',
                     )}
                   >
                     <div className="flex flex-col">
                       <span className="font-medium">{warehouse.name}</span>
-                      <span className="text-xs text-neutral-500">
+                      <span className="text-xs text-muted-foreground">
                         {warehouse.type.replace(/_/g, ' ')}
                       </span>
                     </div>
                   </DropdownMenuItem>
                 ))
               ) : (
-                <div className="px-2 py-6 text-center text-sm text-neutral-500">
+                <div className="px-2 py-6 text-center text-sm text-muted-foreground">
                   No warehouses available
                 </div>
               )}
@@ -181,7 +179,7 @@ export function Navbar() {
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleCreateWarehouse} className="cursor-pointer">
-                    <IconPlus className="h-4 w-4 mr-2 text-neutral-600" />
+                    <IconPlus className="h-4 w-4 mr-2 text-muted-foreground" />
                     Create warehouse
                   </DropdownMenuItem>
                 </>
@@ -198,18 +196,17 @@ export function Navbar() {
               onClick={openPalette}
               className={cn(
                 'relative w-full h-9 pl-9 pr-3 text-sm rounded-lg',
-                'bg-white',
-                'border border-neutral-200',
-                'shadow-sm',
-                'hover:bg-neutral-50',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E53935]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+                'bg-background',
+                'border border-border',
+                'hover:bg-muted',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                 'flex items-center justify-between',
               )}
               aria-label="Open global search"
             >
-              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
-              <span className="text-neutral-500">Search…</span>
-              <span className="text-[11px] text-neutral-600 border border-neutral-200 bg-neutral-50 rounded-md px-2 py-0.5">
+              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Search…</span>
+              <span className="text-[11px] text-muted-foreground border border-border bg-muted rounded-md px-2 py-0.5">
                 Ctrl/⌘ K
               </span>
             </button>
@@ -220,13 +217,13 @@ export function Navbar() {
             onClick={openPalette}
             className={cn(
               'md:hidden h-9 w-9 inline-flex items-center justify-center rounded-lg',
-              'border border-neutral-200 bg-white shadow-sm',
-              'hover:bg-neutral-50',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E53935]/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
+              'border border-border bg-background',
+              'hover:bg-muted',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
             )}
             aria-label="Open global search"
           >
-            <IconSearch className="h-4 w-4 text-neutral-600" />
+            <IconSearch className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
 
@@ -234,9 +231,9 @@ export function Navbar() {
         <div className="flex items-center gap-3 shrink-0">
           <NotificationBell />
 
-          <div className="hidden md:flex items-center h-9 px-2.5 rounded-lg border border-neutral-200 bg-white shadow-sm">
-            <IconShield className="h-3.5 w-3.5 mr-1 text-neutral-500" />
-            <span className="text-xs font-medium text-neutral-600 uppercase">
+          <div className="hidden md:flex items-center h-9 px-2.5 rounded-lg border border-border bg-background">
+            <IconShield className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground uppercase">
               {activeCompany.role}
             </span>
           </div>
@@ -246,7 +243,7 @@ export function Navbar() {
               appearance={{
                 elements: {
                   avatarBox: 'h-9 w-9',
-                  userButtonPopoverCard: 'shadow-none border border-neutral-200',
+                  userButtonPopoverCard: 'shadow-none border border-border',
                 },
               }}
               afterSignOutUrl="/auth/sign-in"

@@ -10,9 +10,10 @@ export const metadata: Metadata = {
 
 export default async function SignInPage() {
   const { userId } = await auth();
-
+  
+  // If user is already authenticated, redirect them immediately
   if (userId) {
-    redirect('/');
+    redirect('/auth-redirect');
   }
 
   return (

@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertCircle, CheckCircle, Loader2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { CopyButton } from '@/components/common/CopyButton';
 
 interface DeliveryItem {
   id: string;
@@ -181,7 +182,17 @@ export default function DeliveryForm({
                 {items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.itemName}</TableCell>
-                    <TableCell className="font-mono text-sm text-slate-500">{item.sku}</TableCell>
+                    <TableCell className="font-mono text-sm text-slate-500">
+                      <div className="flex items-center gap-1">
+                        <span>{item.sku}</span>
+                        <CopyButton
+                          value={item.sku}
+                          ariaLabel="Copy SKU"
+                          successMessage="Copied SKU to clipboard"
+                          className="h-7 w-7 text-muted-foreground"
+                        />
+                      </div>
+                    </TableCell>
                     <TableCell className="text-center font-semibold">{item.poQty}</TableCell>
                     <TableCell>
                       <Input

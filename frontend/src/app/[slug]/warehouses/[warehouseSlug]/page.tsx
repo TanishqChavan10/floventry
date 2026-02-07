@@ -6,16 +6,7 @@ import Link from 'next/link';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Package,
-  TrendingUp,
-  AlertTriangle,
-  ArrowUpDown,
-  RefreshCw,
-  AlertCircle,
-  FileText,
-  Activity,
-} from 'lucide-react';
+import { ArrowDown, ArrowUp, AlertCircle, Activity } from 'lucide-react';
 import { useWarehouse, type Warehouse } from '@/context/warehouse-context';
 import { useQuery } from '@apollo/client';
 import { GET_WAREHOUSE_DASHBOARD } from '@/lib/graphql/warehouse-dashboard';
@@ -23,6 +14,20 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+
+type RecentMovement = {
+  type?: string | null;
+  product?: { name?: string | null } | null;
+  performedBy?: { name?: string | null } | null;
+  createdAt?: string | null;
+  quantity?: number | null;
+};
+
+type LowStockItem = {
+  quantity?: number | null;
+  status?: string | null;
+  product?: { name?: string | null; sku?: string | null } | null;
+};
 
 function WarehouseDashboardData({
   companySlug,
@@ -33,17 +38,11 @@ function WarehouseDashboardData({
   warehouseSlug: string;
   activeWarehouse: Warehouse;
 }) {
-  const [lastUpdatedAt, setLastUpdatedAt] = React.useState<Date | null>(null);
-
-  const { data, loading, error, refetch } = useQuery(GET_WAREHOUSE_DASHBOARD, {
+  const { data, loading, error } = useQuery(GET_WAREHOUSE_DASHBOARD, {
     variables: { warehouseId: activeWarehouse.id },
     pollInterval: 30000, // Real-time-ish update
     errorPolicy: 'all', // Continue even if there are errors
   });
-
-  React.useEffect(() => {
-    if (data) setLastUpdatedAt(new Date());
-  }, [data]);
 
   const kpis = data?.warehouseKPIs || {
     totalProducts: 0,
@@ -61,10 +60,10 @@ function WarehouseDashboardData({
     return (
       <div className="container mx-auto px-6 py-8">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-slate-200 rounded w-1/3"></div>
+          <div className="h-8 bg-muted rounded w-1/3"></div>
           <div className="grid gap-6 md:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-32 bg-slate-200 rounded"></div>
+              <div key={i} className="h-32 bg-muted rounded"></div>
             ))}
           </div>
         </div>
@@ -75,7 +74,7 @@ function WarehouseDashboardData({
   if (error) {
     return (
       <div className="container mx-auto px-6 py-8">
-        <div className="p-4 bg-red-50 text-red-500 rounded-lg">
+        <div className="p-4 bg-destructive/10 text-destructive rounded-lg">
           Error loading dashboard: {error.message}
         </div>
       </div>
@@ -83,243 +82,166 @@ function WarehouseDashboardData({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950/50">
+    <div className="min-h-screen bg-background">
       <main className="container mx-auto px-6 py-8 space-y-8">
         {/* Page Header */}
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="space-y-1">
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                {activeWarehouse.name} Overview
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400 max-w-2xl">
-                Real-time snapshot of inventory health and daily operations.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="h-7">
-                Live • 30s
-              </Badge>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-7 px-2.5 text-xs"
-                onClick={() => refetch()}
-              >
-                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                Refresh
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-xs text-muted-foreground">
-              {lastUpdatedAt ? `Last updated ${lastUpdatedAt.toLocaleTimeString()}` : '—'}
-            </div>
-
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
-              <Link
-                href={`/${companySlug}/warehouses/${warehouseSlug}/inventory`}
-                className="shrink-0"
-              >
-                <Button variant="outline" className="h-8 px-3 text-xs">
-                  Inventory
-                </Button>
-              </Link>
-              <Link
-                href={`/${companySlug}/warehouses/${warehouseSlug}/expiry`}
-                className="shrink-0"
-              >
-                <Button variant="outline" className="h-8 px-3 text-xs">
-                  Expiry
-                </Button>
-              </Link>
-              <Link
-                href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/low-stock`}
-                className="shrink-0"
-              >
-                <Button variant="outline" className="h-8 px-3 text-xs">
-                  Low Stock
-                </Button>
-              </Link>
-              <Link
-                href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn`}
-                className="shrink-0"
-              >
-                <Button variant="outline" className="h-8 px-3 text-xs">
-                  GRN
-                </Button>
-              </Link>
-            </div>
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              {activeWarehouse.name} Overview
+            </h1>
           </div>
         </div>
 
-        {/* KPI Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Products
-              </CardTitle>
-              <Package className="h-4 w-4 text-slate-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{kpis.totalProducts}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {(kpis.totalQuantity ?? 0).toLocaleString()} total units
-              </p>
-            </CardContent>
-          </Card>
-
-          <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/low-stock`}>
-            <Card className="hover:border-orange-200 dark:hover:border-orange-900 transition-colors cursor-pointer h-full">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Attention Needed
-                </CardTitle>
-                <AlertTriangle className="h-4 w-4 text-orange-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-baseline gap-2">
-                  <div className="text-2xl font-bold text-orange-600 dark:text-orange-500">
-                    {kpis.lowStockCount}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Low Stock</div>
-                </div>
-                {kpis.outOfStockCount > 0 && (
-                  <p className="text-xs text-red-600 font-medium mt-1">
-                    {kpis.outOfStockCount} Out of Stock
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </Link>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:col-span-2">
-            <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/adjustments`}>
-              <Card className="hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors cursor-pointer h-full">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Adjustments (Today)
-                  </CardTitle>
-                  <Activity className="h-4 w-4 text-slate-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{kpis.adjustmentsToday}</div>
-                </CardContent>
-              </Card>
-            </Link>
-
-            <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/transfers`}>
-              <Card className="hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors cursor-pointer h-full">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Transfers (Today)
-                  </CardTitle>
-                  <RefreshCw className="h-4 w-4 text-slate-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{kpis.transfersToday}</div>
-                </CardContent>
-              </Card>
-            </Link>
-          </div>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-7">
+        <div className="grid gap-6 md:grid-cols-12">
           {/* Recent Activity Feed */}
-          <Card className="md:col-span-4 lg:col-span-5 h-[500px] flex flex-col">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-slate-500" />
+          <Card className="md:col-span-7 h-[420px] flex flex-col">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                <Activity className="h-4 w-4 text-muted-foreground" />
                 Recent Activity
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden p-0">
-              <ScrollArea className="h-full px-6 pb-6">
-                <div className="space-y-4">
+              <ScrollArea className="h-full px-5 pb-5">
+                <div className="space-y-3">
                   {recentMovements.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">No recent activity</div>
                   ) : (
-                    recentMovements.map((movement: any, index: number) => (
-                      <div
-                        key={index}
-                        className="flex items-start justify-between border-b pb-4 last:border-0 last:pb-0"
-                      >
-                        <div className="flex gap-4">
+                    recentMovements.map((movement: RecentMovement, index: number) =>
+                      (() => {
+                        const movementType = movement.type ?? '';
+                        const isInbound = [
+                          'GRN',
+                          'ADJUSTMENT_IN',
+                          'TRANSFER_IN',
+                          'IN',
+                          'OPENING',
+                        ].includes(movementType);
+
+                        const badgeClass = isInbound
+                          ? 'bg-[var(--chart-2)]/15 text-[var(--chart-2)]'
+                          : 'bg-destructive/10 text-destructive';
+
+                        const BadgeIcon = isInbound ? ArrowDown : ArrowUp;
+
+                        return (
                           <div
-                            className={`mt-1 p-2 rounded-full hidden sm:block ${
-                              ['GRN', 'ADJUSTMENT_IN', 'TRANSFER_IN', 'IN'].includes(movement.type)
-                                ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                                : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-                            }`}
+                            key={index}
+                            className="flex items-start justify-between border-b pb-3 last:border-0 last:pb-0"
                           >
-                            <ArrowUpDown className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-slate-900 dark:text-slate-100">
-                              {/* Better formatting for type */}
-                              {movement.type?.replace(/_/g, ' ') || 'Unknown'}
-                            </p>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">
-                              {movement.product?.name || 'Unknown Product'}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                              <span>by {movement.performedBy?.name || 'System'}</span>
-                              <span>•</span>
-                              <span>
-                                {movement.createdAt
-                                  ? format(new Date(movement.createdAt), 'MMM d, h:mm a')
-                                  : 'N/A'}
-                              </span>
+                            <div className="flex gap-4">
+                              <div
+                                className={`mt-0.5 h-9 w-9 rounded-full hidden sm:flex items-center justify-center ${badgeClass}`}
+                              >
+                                <BadgeIcon className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-foreground">
+                                  {/* Better formatting for type */}
+                                  {movement.type?.replace(/_/g, ' ') || 'Unknown'}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {movement.product?.name || 'Unknown Product'}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                  <span>by {movement.performedBy?.name || 'System'}</span>
+                                  <span>•</span>
+                                  <span>
+                                    {movement.createdAt
+                                      ? format(new Date(movement.createdAt), 'MMM d, h:mm a')
+                                      : 'N/A'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div
+                              className={`font-mono font-semibold ${
+                                (movement.quantity ?? 0) > 0
+                                  ? 'text-[var(--chart-2)]'
+                                  : 'text-destructive'
+                              }`}
+                            >
+                              {(movement.quantity ?? 0) > 0 ? '+' : ''}
+                              {movement.quantity ?? 0}
                             </div>
                           </div>
-                        </div>
-                        <div
-                          className={`font-mono font-semibold ${
-                            (movement.quantity ?? 0) > 0
-                              ? 'text-green-600 dark:text-green-400'
-                              : 'text-red-600 dark:text-red-400'
-                          }`}
-                        >
-                          {(movement.quantity ?? 0) > 0 ? '+' : ''}
-                          {movement.quantity ?? 0}
-                        </div>
-                      </div>
-                    ))
+                        );
+                      })(),
+                    )
                   )}
                 </div>
               </ScrollArea>
             </CardContent>
           </Card>
 
+          {/* Insights */}
+          <Card className="md:col-span-2 h-[420px] flex flex-col">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold">At a glance</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1">
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <div className="text-xs text-muted-foreground">Total products</div>
+                  <div className="text-lg font-semibold text-foreground">{kpis.totalProducts}</div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-xs text-muted-foreground">Out of stock</div>
+                  <div className="text-lg font-semibold text-destructive">
+                    {kpis.outOfStockCount}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-xs text-muted-foreground">Low stock</div>
+                  <div className="text-lg font-semibold text-[var(--chart-4)]">
+                    {kpis.lowStockCount}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-xs text-muted-foreground">Adjustments today</div>
+                  <div className="text-lg font-semibold text-foreground">
+                    {kpis.adjustmentsToday}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-xs text-muted-foreground">Transfers today</div>
+                  <div className="text-lg font-semibold text-foreground">{kpis.transfersToday}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Low Stock Snapshot */}
-          <Card className="md:col-span-3 lg:col-span-2 h-[500px] flex flex-col">
+          <Card className="md:col-span-3 h-[420px] flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-base font-semibold">Low Stock Alert</CardTitle>
               <Link
                 href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/low-stock`}
-                className="text-xs text-blue-600 hover:underline"
+                className="text-xs text-primary hover:underline"
               >
                 View All
               </Link>
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden p-0">
-              <ScrollArea className="h-full px-6 pb-6">
+              <ScrollArea className="h-full px-5 pb-5">
                 <div className="space-y-4">
                   {lowStock.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground text-sm">
                       Everything looks good!
                     </div>
                   ) : (
-                    lowStock.map((item: any, i: number) => (
+                    lowStock.map((item: LowStockItem, i: number) => (
                       <div
                         key={i}
                         className="flex items-center justify-between py-2 border-b last:border-0"
                       >
                         <div className="min-w-0 flex-1 pr-4">
-                          <p className="truncate font-medium text-sm text-slate-900 dark:text-slate-100">
+                          <p className="truncate font-medium text-sm text-foreground">
                             {item?.product?.name || 'Unknown Product'}
                           </p>
                           <p className="text-xs text-muted-foreground">
@@ -327,7 +249,7 @@ function WarehouseDashboardData({
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-mono text-sm font-bold text-orange-600">
+                          <p className="font-mono text-sm font-bold text-[var(--chart-4)]">
                             {item?.quantity ?? 0}
                           </p>
                           <Badge
@@ -346,38 +268,40 @@ function WarehouseDashboardData({
           </Card>
         </div>
 
-        {/* Navigation / Shortcuts (Replacements for Quick Actions) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory`}>
-            <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-900 rounded-lg border hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group">
-              <Package className="h-6 w-6 text-blue-500 group-hover:scale-110 transition-transform mb-2" />
-              <span className="text-sm font-medium">Inventory</span>
-            </div>
-          </Link>
-          <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/low-stock`}>
-            <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-900 rounded-lg border hover:border-orange-500 hover:shadow-md transition-all cursor-pointer group">
-              <AlertCircle className="h-6 w-6 text-orange-500 group-hover:scale-110 transition-transform mb-2" />
-              <span className="text-sm font-medium">Low Stock</span>
-            </div>
-          </Link>
-          <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn`}>
-            <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-900 rounded-lg border hover:border-green-500 hover:shadow-md transition-all cursor-pointer group">
-              <FileText className="h-6 w-6 text-green-500 group-hover:scale-110 transition-transform mb-2" />
-              <span className="text-sm font-medium">GRN</span>
-            </div>
-          </Link>
-          <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/transfers`}>
-            <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-900 rounded-lg border hover:border-indigo-500 hover:shadow-md transition-all cursor-pointer group">
-              <RefreshCw className="h-6 w-6 text-indigo-500 group-hover:scale-110 transition-transform mb-2" />
-              <span className="text-sm font-medium">Transfers</span>
-            </div>
-          </Link>
-          <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/adjustments`}>
-            <div className="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-900 rounded-lg border hover:border-slate-500 hover:shadow-md transition-all cursor-pointer group">
-              <Activity className="h-6 w-6 text-slate-500 group-hover:scale-110 transition-transform mb-2" />
-              <span className="text-sm font-medium">Adjustments</span>
-            </div>
-          </Link>
+        {/* Quick Actions */}
+        <div className="space-y-3">
+          <div className="text-sm font-semibold text-foreground">Quick actions</div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <Link
+              href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/reports`}
+              className="shrink-0"
+            >
+              <Button variant="outline" className="w-full justify-start">
+                Reports
+              </Button>
+            </Link>
+            <Link href={`/${companySlug}/warehouses/${warehouseSlug}/expiry`} className="shrink-0">
+              <Button variant="outline" className="w-full justify-start">
+                Expiry
+              </Button>
+            </Link>
+            <Link
+              href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/low-stock`}
+              className="shrink-0"
+            >
+              <Button variant="outline" className="w-full justify-start">
+                Low Stock
+              </Button>
+            </Link>
+            <Link
+              href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn`}
+              className="shrink-0"
+            >
+              <Button variant="outline" className="w-full justify-start">
+                Receiving
+              </Button>
+            </Link>
+          </div>
         </div>
       </main>
     </div>
@@ -392,19 +316,17 @@ function WarehouseDashboardContent() {
 
   if (!activeWarehouse) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="max-w-md mx-auto text-center space-y-4">
-          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto">
-            <AlertCircle className="h-8 w-8 text-slate-600 dark:text-slate-300" />
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+            <AlertCircle className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            No warehouse selected
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400">
+          <h1 className="text-2xl font-bold text-foreground">No warehouse selected</h1>
+          <p className="text-muted-foreground">
             Select a warehouse from the switcher to view warehouse-specific pages.
           </p>
           <div className="flex justify-center">
-            <Link href={`/${companySlug}/warehouses`} className="text-indigo-600 hover:underline">
+            <Link href={`/${companySlug}/warehouses`} className="text-primary hover:underline">
               Go to warehouses
             </Link>
           </div>

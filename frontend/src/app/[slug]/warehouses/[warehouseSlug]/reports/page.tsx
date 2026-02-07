@@ -4,7 +4,11 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useWarehouse } from '@/context/warehouse-context';
 import { useQuery } from '@apollo/client';
-import { GET_STOCK_SNAPSHOT, GET_STOCK_MOVEMENTS, GET_ADJUSTMENT_REPORT } from '@/lib/graphql/warehouse-reports';
+import {
+  GET_STOCK_SNAPSHOT,
+  GET_STOCK_MOVEMENTS,
+  GET_ADJUSTMENT_REPORT,
+} from '@/lib/graphql/warehouse-reports';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -18,6 +22,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { CopyButton } from '@/components/common/CopyButton';
 import { format, subDays } from 'date-fns';
 import { FileText, Activity, AlertTriangle, Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -53,38 +58,40 @@ function WarehouseReportsContent() {
   });
 
   // Stock Movements Query (HISTORICAL - requires date range)
-  const { data: movementsData, loading: movementsLoading, refetch: refetchMovements } = useQuery(
-    GET_STOCK_MOVEMENTS,
-    {
-      variables: {
-        warehouseId: activeWarehouse?.id,
-        filters: {
-          fromDate: new Date(movementsDateRange.fromDate),
-          toDate: new Date(movementsDateRange.toDate),
-          limit: 100,
-          offset: 0,
-        },
+  const {
+    data: movementsData,
+    loading: movementsLoading,
+    refetch: refetchMovements,
+  } = useQuery(GET_STOCK_MOVEMENTS, {
+    variables: {
+      warehouseId: activeWarehouse?.id,
+      filters: {
+        fromDate: new Date(movementsDateRange.fromDate),
+        toDate: new Date(movementsDateRange.toDate),
+        limit: 100,
+        offset: 0,
       },
-      skip: !activeWarehouse?.id,
-    }
-  );
+    },
+    skip: !activeWarehouse?.id,
+  });
 
   // Adjustments Report Query (HISTORICAL - requires date range)
-  const { data: adjustmentsData, loading: adjustmentsLoading, refetch: refetchAdjustments } = useQuery(
-    GET_ADJUSTMENT_REPORT,
-    {
-      variables: {
-        warehouseId: activeWarehouse?.id,
-        filters: {
-          fromDate: new Date(adjustmentsDateRange.fromDate),
-          toDate: new Date(adjustmentsDateRange.toDate),
-          limit: 100,
-          offset: 0,
-        },
+  const {
+    data: adjustmentsData,
+    loading: adjustmentsLoading,
+    refetch: refetchAdjustments,
+  } = useQuery(GET_ADJUSTMENT_REPORT, {
+    variables: {
+      warehouseId: activeWarehouse?.id,
+      filters: {
+        fromDate: new Date(adjustmentsDateRange.fromDate),
+        toDate: new Date(adjustmentsDateRange.toDate),
+        limit: 100,
+        offset: 0,
       },
-      skip: !activeWarehouse?.id,
-    }
-  );
+    },
+    skip: !activeWarehouse?.id,
+  });
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'destructive' | 'secondary'> = {
@@ -98,7 +105,10 @@ function WarehouseReportsContent() {
   const getMovementTypeBadge = (type: string) => {
     const isIncoming = ['GRN', 'ADJUSTMENT_IN', 'TRANSFER_IN'].includes(type);
     return (
-      <Badge variant={isIncoming ? 'default' : 'secondary'} className={isIncoming ? 'bg-green-600' : 'bg-red-600'}>
+      <Badge
+        variant={isIncoming ? 'default' : 'secondary'}
+        className={isIncoming ? 'bg-green-600' : 'bg-red-600'}
+      >
         {type.replace(/_/g, ' ')}
       </Badge>
     );
@@ -162,7 +172,17 @@ function WarehouseReportsContent() {
                     {snapshotData?.stockSnapshot?.items?.map((item: any) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.productName}</TableCell>
-                        <TableCell className="font-mono text-sm">{item.sku}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          <div className="flex items-center gap-1">
+                            <span>{item.sku}</span>
+                            <CopyButton
+                              value={item.sku}
+                              ariaLabel="Copy SKU"
+                              successMessage="Copied SKU to clipboard"
+                              className="h-7 w-7 text-muted-foreground"
+                            />
+                          </div>
+                        </TableCell>
                         <TableCell>{item.categoryName || '-'}</TableCell>
                         <TableCell className="text-right font-mono">{item.quantity}</TableCell>
                         <TableCell>{item.unit || '-'}</TableCell>
@@ -197,7 +217,9 @@ function WarehouseReportsContent() {
                     id="movements-from"
                     type="date"
                     value={movementsDateRange.fromDate}
-                    onChange={(e) => setMovementsDateRange({ ...movementsDateRange, fromDate: e.target.value })}
+                    onChange={(e) =>
+                      setMovementsDateRange({ ...movementsDateRange, fromDate: e.target.value })
+                    }
                   />
                 </div>
                 <div className="flex-1">
@@ -206,7 +228,9 @@ function WarehouseReportsContent() {
                     id="movements-to"
                     type="date"
                     value={movementsDateRange.toDate}
-                    onChange={(e) => setMovementsDateRange({ ...movementsDateRange, toDate: e.target.value })}
+                    onChange={(e) =>
+                      setMovementsDateRange({ ...movementsDateRange, toDate: e.target.value })
+                    }
                   />
                 </div>
                 <Button onClick={() => refetchMovements()}>
@@ -237,16 +261,29 @@ function WarehouseReportsContent() {
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">{item.productName}</div>
-                          <div className="text-xs text-muted-foreground font-mono">{item.sku}</div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
+                            <span>{item.sku}</span>
+                            <CopyButton
+                              value={item.sku}
+                              ariaLabel="Copy SKU"
+                              successMessage="Copied SKU to clipboard"
+                              className="h-6 w-6 text-muted-foreground"
+                            />
+                          </div>
                         </TableCell>
                         <TableCell>{getMovementTypeBadge(item.type)}</TableCell>
-                        <TableCell className={`text-right font-mono font-semibold ${
-                          item.quantity > 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {item.quantity > 0 ? '+' : ''}{item.quantity}
+                        <TableCell
+                          className={`text-right font-mono font-semibold ${
+                            item.quantity > 0 ? 'text-green-600' : 'text-red-600'
+                          }`}
+                        >
+                          {item.quantity > 0 ? '+' : ''}
+                          {item.quantity}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {item.referenceId ? `${item.referenceType || ''} #${item.referenceId.slice(0, 8)}` : '-'}
+                          {item.referenceId
+                            ? `${item.referenceType || ''} #${item.referenceId.slice(0, 8)}`
+                            : '-'}
                         </TableCell>
                         <TableCell className="text-sm">
                           {item.performedBy}
@@ -281,7 +318,9 @@ function WarehouseReportsContent() {
                     id="adjustments-from"
                     type="date"
                     value={adjustmentsDateRange.fromDate}
-                    onChange={(e) => setAdjustmentsDateRange({ ...adjustmentsDateRange, fromDate: e.target.value })}
+                    onChange={(e) =>
+                      setAdjustmentsDateRange({ ...adjustmentsDateRange, fromDate: e.target.value })
+                    }
                   />
                 </div>
                 <div className="flex-1">
@@ -290,7 +329,9 @@ function WarehouseReportsContent() {
                     id="adjustments-to"
                     type="date"
                     value={adjustmentsDateRange.toDate}
-                    onChange={(e) => setAdjustmentsDateRange({ ...adjustmentsDateRange, toDate: e.target.value })}
+                    onChange={(e) =>
+                      setAdjustmentsDateRange({ ...adjustmentsDateRange, toDate: e.target.value })
+                    }
                   />
                 </div>
                 <Button onClick={() => refetchAdjustments()}>
@@ -321,13 +362,24 @@ function WarehouseReportsContent() {
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">{item.productName}</div>
-                          <div className="text-xs text-muted-foreground font-mono">{item.sku}</div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
+                            <span>{item.sku}</span>
+                            <CopyButton
+                              value={item.sku}
+                              ariaLabel="Copy SKU"
+                              successMessage="Copied SKU to clipboard"
+                              className="h-6 w-6 text-muted-foreground"
+                            />
+                          </div>
                         </TableCell>
                         <TableCell>{getMovementTypeBadge(item.adjustmentType)}</TableCell>
-                        <TableCell className={`text-right font-mono font-semibold ${
-                          item.quantity > 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {item.quantity > 0 ? '+' : ''}{item.quantity}
+                        <TableCell
+                          className={`text-right font-mono font-semibold ${
+                            item.quantity > 0 ? 'text-green-600' : 'text-red-600'
+                          }`}
+                        >
+                          {item.quantity > 0 ? '+' : ''}
+                          {item.quantity}
                         </TableCell>
                         <TableCell className="max-w-xs truncate">{item.reason || '-'}</TableCell>
                         <TableCell className="text-sm">

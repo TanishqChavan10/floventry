@@ -1,6 +1,5 @@
 'use client';
 
-import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -36,9 +35,16 @@ import {
 
 const formSchema = z.object({
   name: z.string().min(1, 'Warehouse name is required'),
-  slug: z.string().min(1, 'Slug is required').regex(/^[a-z0-9-]+$/, 'Slug can only contain lowercase letters, numbers, and hyphens'),
   type: z.string().optional(),
 });
+
+function slugifyWarehouseName(name: string) {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
 
 interface CreateWarehouseDialogProps {
   open: boolean;
@@ -46,7 +52,11 @@ interface CreateWarehouseDialogProps {
   companySlug: string;
 }
 
-export function CreateWarehouseDialog({ open, onOpenChange, companySlug }: CreateWarehouseDialogProps) {
+export function CreateWarehouseDialog({
+  open,
+  onOpenChange,
+  companySlug,
+}: CreateWarehouseDialogProps) {
   const [createWarehouse, { loading }] = useMutation(CREATE_WAREHOUSE, {
     refetchQueries: [{ query: GET_WAREHOUSES_BY_COMPANY, variables: { slug: companySlug } }],
   });
@@ -55,30 +65,23 @@ export function CreateWarehouseDialog({ open, onOpenChange, companySlug }: Creat
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      slug: '',
       type: 'Central',
     },
   });
 
-  // Auto-generate slug from name
-  const watchName = form.watch('name');
-  React.useEffect(() => {
-    if (watchName && !form.formState.dirtyFields.slug) {
-      const generatedSlug = watchName
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
-      form.setValue('slug', generatedSlug);
-    }
-  }, [watchName, form]);
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
+      const slug = slugifyWarehouseName(values.name);
+      if (!slug) {
+        toast.error('Please enter a warehouse name');
+        return;
+      }
+
       await createWarehouse({
         variables: {
           input: {
             name: values.name,
-            slug: values.slug,
+            slug,
             type: values.type || 'Central',
           },
         },
@@ -97,9 +100,7 @@ export function CreateWarehouseDialog({ open, onOpenChange, companySlug }: Creat
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Create New Warehouse</DialogTitle>
-          <DialogDescription>
-            Add a new warehouse location to your company.
-          </DialogDescription>
+          <DialogDescription>Add a new warehouse location to your company.</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -113,26 +114,7 @@ export function CreateWarehouseDialog({ open, onOpenChange, companySlug }: Creat
                   <FormControl>
                     <Input placeholder="Mumbai Central Warehouse" {...field} />
                   </FormControl>
-                  <FormDescription>
-                    Display name used across the UI
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="slug"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Warehouse Slug *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="mumbai-central" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Used in URL. Must be unique per company.
-                  </FormDescription>
+                  <FormDescription>Display name used across the UI</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -145,8 +127,8 @@ export function CreateWarehouseDialog({ open, onOpenChange, companySlug }: Creat
                 <FormItem>
                   <FormLabel>Warehouse Type</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
+                    <FormControl className="w-full">
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select warehouse type" />
                       </SelectTrigger>
                     </FormControl>

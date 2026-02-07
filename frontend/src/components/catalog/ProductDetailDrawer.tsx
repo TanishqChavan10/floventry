@@ -12,6 +12,7 @@ import { GenerateBarcodeLabelsButton } from '@/components/barcode/GenerateBarcod
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Edit, Package, Tag, Building2, Ruler, IndianRupee } from 'lucide-react';
+import { CopyButton } from '@/components/common/CopyButton';
 
 interface ProductDetailDrawerProps {
   product: any;
@@ -35,7 +36,17 @@ export default function ProductDetailDrawer({
           <div className="flex items-start justify-between gap-3 pr-10">
             <div className="space-y-1">
               <SheetTitle className="text-2xl">{product.name}</SheetTitle>
-              <SheetDescription className="font-mono text-sm">SKU: {product.sku}</SheetDescription>
+              <SheetDescription className="font-mono text-sm">
+                <div className="flex items-center gap-1">
+                  <span>SKU: {product.sku}</span>
+                  <CopyButton
+                    value={product.sku}
+                    ariaLabel="Copy SKU"
+                    successMessage="Copied SKU to clipboard"
+                    className="h-7 w-7 text-muted-foreground"
+                  />
+                </div>
+              </SheetDescription>
             </div>
             <Badge className="shrink-0 mt-1" variant={product.is_active ? 'default' : 'secondary'}>
               {product.is_active ? 'Active' : 'Archived'}

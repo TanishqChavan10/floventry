@@ -33,7 +33,7 @@ export default function DashboardHeader() {
   const isWarehouseContext = !!warehouseSlug;
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white dark:bg-slate-950 px-6 shadow-sm">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-background px-6">
       <CompanySwitcher />
 
       <div className="hidden md:block">
@@ -48,11 +48,11 @@ export default function DashboardHeader() {
 
       <div className="flex items-center gap-2 ml-auto">
         <div className="relative hidden sm:block">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Search inventory..."
-            className="w-[200px] lg:w-[300px] pl-9 bg-slate-50 dark:bg-slate-900"
+            className="w-[200px] lg:w-[300px] pl-9 bg-muted"
           />
         </div>
 
@@ -91,7 +91,8 @@ export default function DashboardHeader() {
               </a>
             </DropdownMenuItem>
             {(() => {
-              const isOwnerOrAdmin = role?.toLowerCase() === 'owner' || role?.toLowerCase() === 'admin';
+              const isOwnerOrAdmin =
+                role?.toLowerCase() === 'owner' || role?.toLowerCase() === 'admin';
               console.log('🔍 Units visibility check:', { role, isOwnerOrAdmin });
               return isOwnerOrAdmin;
             })() && (

@@ -35,12 +35,12 @@ function BottomSection() {
   if (!user) return null;
 
   return (
-    <div className="border-t border-neutral-200 pt-2">
+    <div className="border-t border-border pt-2">
       <div
         className={cn(
           'flex items-center rounded-xl transition-all duration-300 ease-out group',
           open ? 'gap-3 px-3 mx-2 py-2.5' : 'justify-center mx-1 px-0 py-2.5',
-          'hover:bg-neutral-50',
+          'hover:bg-muted',
         )}
       >
         {/* Clerk UserButton with custom appearance */}
@@ -49,7 +49,7 @@ function BottomSection() {
             appearance={{
               elements: {
                 avatarBox: 'h-9 w-9',
-                userButtonPopoverCard: 'shadow-none border border-neutral-200',
+                userButtonPopoverCard: 'shadow-none border border-border',
               },
             }}
             afterSignOutUrl="/auth/sign-in"
@@ -67,10 +67,10 @@ function BottomSection() {
         {/* User Info - Only visible when sidebar is open */}
         {open && (
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-neutral-900 truncate">
+            <p className="text-sm font-medium text-foreground truncate">
               {user.firstName} {user.lastName}
             </p>
-            <p className="text-xs text-neutral-500 truncate">{user.email}</p>
+            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
           </div>
         )}
       </div>
@@ -164,8 +164,8 @@ function AppSidebarContent() {
         {/* Logo/Brand (optional) */}
         <div className="mb-6 px-3">
           <Link href={logoHref}>
-            <h1 className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-              Flowventory<span className="text-[#E53935]">.</span>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              Flowventory<span className="text-primary">.</span>
             </h1>
           </Link>
         </div>
@@ -173,17 +173,22 @@ function AppSidebarContent() {
         {/* Main Navigation Sections */}
         <div className="flex-1">
           {filteredSections.map((section, index) => (
-            <SidebarSection key={index} title={section.title}>
-              {section.items.map((item) => (
-                <SidebarItem
-                  key={item.href}
-                  {...item}
-                  onClick={
-                    isWarehousesListPage ? handleWarehouseNavWithoutSelection(item.href) : undefined
-                  }
-                />
-              ))}
-            </SidebarSection>
+            <React.Fragment key={index}>
+              <SidebarSection title={section.title}>
+                {section.items.map((item) => (
+                  <SidebarItem
+                    key={item.href}
+                    {...item}
+                    onClick={
+                      isWarehousesListPage
+                        ? handleWarehouseNavWithoutSelection(item.href)
+                        : undefined
+                    }
+                  />
+                ))}
+              </SidebarSection>
+              {index === 0 && <div className="my-3 mx-4 h-px bg-border" />}
+            </React.Fragment>
           ))}
         </div>
 

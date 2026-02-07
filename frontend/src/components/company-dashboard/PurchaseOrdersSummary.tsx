@@ -56,20 +56,26 @@ export function PurchaseOrdersSummary() {
   const getStatusBadge = (status: PurchaseOrder['status']) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-          <Clock className="h-3 w-3 mr-1" />
-          Pending
-        </Badge>;
+        return (
+          <Badge variant="outline" className="bg-muted/40 border-border text-foreground">
+            <Clock className="h-3 w-3 mr-1 text-[var(--chart-4)]" />
+            Pending
+          </Badge>
+        );
       case 'partial':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-          <AlertCircle className="h-3 w-3 mr-1" />
-          Partial
-        </Badge>;
+        return (
+          <Badge variant="outline" className="bg-muted/40 border-border text-foreground">
+            <AlertCircle className="h-3 w-3 mr-1 text-[var(--chart-3)]" />
+            Partial
+          </Badge>
+        );
       case 'received':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Received
-        </Badge>;
+        return (
+          <Badge variant="outline" className="bg-muted/40 border-border text-foreground">
+            <CheckCircle className="h-3 w-3 mr-1 text-[var(--chart-2)]" />
+            Received
+          </Badge>
+        );
     }
   };
 
@@ -82,7 +88,7 @@ export function PurchaseOrdersSummary() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-600" />
+            <Clock className="h-4 w-4 text-[var(--chart-4)]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{SUMMARY_STATS.pending}</div>
@@ -93,7 +99,7 @@ export function PurchaseOrdersSummary() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Received</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-[var(--chart-2)]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{SUMMARY_STATS.received}</div>
@@ -104,12 +110,10 @@ export function PurchaseOrdersSummary() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-blue-600" />
+            <ShoppingCart className="h-4 w-4 text-[var(--chart-3)]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ${SUMMARY_STATS.totalValue.toLocaleString()}
-            </div>
+            <div className="text-2xl font-bold">${SUMMARY_STATS.totalValue.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Active POs</p>
           </CardContent>
         </Card>
@@ -139,7 +143,9 @@ export function PurchaseOrdersSummary() {
                 </div>
                 <div className="text-right">
                   <div className="font-semibold">${po.totalValue.toLocaleString()}</div>
-                  <div className="text-xs text-muted-foreground">{new Date(po.date).toLocaleDateString()}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(po.date).toLocaleDateString()}
+                  </div>
                 </div>
               </div>
             ))}

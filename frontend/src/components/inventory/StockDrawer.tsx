@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
+import { useRouter } from 'next/navigation';
 import {
   Package,
   Building2,
@@ -43,17 +44,68 @@ import {
   GET_WAREHOUSE_STOCK,
 } from '@/lib/graphql/inventory';
 
+type StockDrawerStock = {
+  id: string;
+  import { CopyButton } from '@/components/common/CopyButton';
+  quantity: string | number;
+  min_stock_level?: number | null;
+  max_stock_level?: number | null;
+  reorder_point?: number | null;
+  created_at: string;
+  updated_at: string;
+  product: {
+    id: string;
+    name: string;
+    sku: string;
+    unit?: string | null;
+    supplier?: {
+      id: string;
+      name: string;
+    } | null;
+  };
+  warehouse: {
+    id: string;
+    name: string;
+  };
+};
+
+type StockMovementItem = {
+  id: string;
+  type: string;
+  quantity: number;
+  reason?: string | null;
+  createdAt?: string | null;
+  created_at?: string | null;
+  performedBy?: string | null;
+  userRole?: string | null;
+  previousQuantity?: number | null;
+  newQuantity?: number | null;
+  previous_quantity?: number | null;
+  new_quantity?: number | null;
+};
+
 interface StockDrawerProps {
-  stock: any;
+  stock: StockDrawerStock | null;
   open: boolean;
   onClose: () => void;
   canModify?: boolean;
+  companySlug?: string;
+  warehouseSlug?: string;
 }
 
-export default function StockDrawer({ stock, open, onClose, canModify = false }: StockDrawerProps) {
+export default function StockDrawer({
+  stock,
+  open,
+  onClose,
+  canModify = false,
+  companySlug,
+  warehouseSlug,
+}: StockDrawerProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [isEditingLevels, setIsEditingLevels] = useState(false);
   const [isAdjusting, setIsAdjusting] = useState(false);
+  const [showLevels, setShowLevels] = useState(false); // Collapsed by default
 
   const [levelForm, setLevelForm] = useState({
     min_stock_level: stock?.min_stock_level ? stock.min_stock_level.toString() : '',
@@ -132,7 +184,7 @@ export default function StockDrawer({ stock, open, onClose, canModify = false }:
       productId: stock?.product?.id,
       fromDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
       toDate: new Date().toISOString(),
-      limit: 5,
+      limit: 10,
       offset: 0,
     }),
     [stock?.product?.id],
@@ -148,7 +200,21 @@ export default function StockDrawer({ stock, open, onClose, canModify = false }:
     notifyOnNetworkStatusChange: false,
   });
 
-  const recentMovements = movementsData?.stockMovements?.items || [];
+  const recentMovements: StockMovementItem[] = movementsData?.stockMovements?.items ?? [];
+  const drawerMovements = recentMovements.slice(0, 2);
+
+  const handleSeeMoreMovements = () => {
+    if (!companySlug || !warehouseSlug) return;
+    if (!stock?.product?.id) return;
+
+    const params = new URLSearchParams();
+    params.set('productId', stock.product.id);
+
+    onClose();
+    router.push(
+      `/${companySlug}/warehouses/${warehouseSlug}/inventory/stock-movements?${params.toString()}`,
+    );
+  };
 
   if (!stock) return null;
 
@@ -192,6 +258,15 @@ export default function StockDrawer({ stock, open, onClose, canModify = false }:
   const currentQuantity = parseFloat(stock.quantity);
   const isLowStock = stock.reorder_point && currentQuantity <= parseFloat(stock.reorder_point);
 
+  const handleCancelEditLevels = () => {
+    setLevelForm({
+      min_stock_level: stock?.min_stock_level ? stock.min_stock_level.toString() : '',
+      max_stock_level: stock?.max_stock_level ? stock.max_stock_level.toString() : '',
+      reorder_point: stock?.reorder_point ? stock.reorder_point.toString() : '',
+    });
+    setIsEditingLevels(false);
+  };
+
   return (
     <Sheet open={open} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
@@ -200,7 +275,15 @@ export default function StockDrawer({ stock, open, onClose, canModify = false }:
             <div className="space-y-1">
               <SheetTitle className="text-2xl">{stock.product.name}</SheetTitle>
               <SheetDescription className="font-mono text-sm">
-                SKU: {stock.product.sku}
+                <div className="flex items-center gap-1">
+                  <span>SKU: {stock.product.sku}</span>
+                  <CopyButton
+                    value={stock.product.sku}
+                    ariaLabel="Copy SKU"
+                    successMessage="Copied SKU to clipboard"
+                    className="h-7 w-7 text-muted-foreground"
+                  />
+                </div>
               </SheetDescription>
             </div>
             {isLowStock && (
@@ -257,102 +340,151 @@ export default function StockDrawer({ stock, open, onClose, canModify = false }:
 
           <Separator />
 
-          {/* Stock Levels */}
+          {/* Stock Alert Thresholds (Optional) */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-muted-foreground">Stock Thresholds</h3>
+              <div className="space-y-1">
+                <h3 className="font-semibold text-sm text-muted-foreground">
+                  Stock Alert Thresholds (Optional)
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Stock levels are optional alert thresholds. They help Floventory warn you early —
+                  they never affect stock movement.
+                </p>
+              </div>
               {canModify && !isEditingLevels && !isAdjusting && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsEditingLevels(true)}
+                  onClick={() => setShowLevels(!showLevels)}
                   className="gap-2"
                 >
-                  <Edit className="h-3 w-3" />
-                  Edit
+                  {showLevels ? 'Hide' : 'Show'}
                 </Button>
               )}
             </div>
 
-            {isEditingLevels ? (
+            {showLevels && (
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="min_stock">Minimum Stock Level</Label>
-                  <Input
-                    id="min_stock"
-                    type="number"
-                    step="1"
-                    value={levelForm.min_stock_level}
-                    onChange={(e) =>
-                      setLevelForm({ ...levelForm, min_stock_level: e.target.value })
-                    }
-                    placeholder="e.g., 50"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="max_stock">Maximum Stock Level</Label>
-                  <Input
-                    id="max_stock"
-                    type="number"
-                    step="1"
-                    value={levelForm.max_stock_level}
-                    onChange={(e) =>
-                      setLevelForm({ ...levelForm, max_stock_level: e.target.value })
-                    }
-                    placeholder="e.g., 500"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reorder">Reorder Point</Label>
-                  <Input
-                    id="reorder"
-                    type="number"
-                    step="1"
-                    value={levelForm.reorder_point}
-                    onChange={(e) => setLevelForm({ ...levelForm, reorder_point: e.target.value })}
-                    placeholder="e.g., 100"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleUpdateLevels}
-                    disabled={updatingLevels}
-                    className="flex-1 gap-2"
-                  >
-                    <Save className="h-4 w-4" />
-                    {updatingLevels ? 'Saving...' : 'Save'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsEditingLevels(false)}
-                    disabled={updatingLevels}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <TrendingDown className="h-3 w-3 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">Min Level</p>
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-muted-foreground">
+                    {isEditingLevels ? 'Editing thresholds' : 'Thresholds'}
                   </div>
-                  <p className="text-lg font-bold">{stock.min_stock_level || '—'}</p>
+                  {canModify && !isAdjusting && (
+                    <div className="flex items-center gap-2">
+                      {!isEditingLevels ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsEditingLevels(true)}
+                          className="gap-2"
+                        >
+                          <Edit className="h-3 w-3" />
+                          Edit
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={handleUpdateLevels}
+                            disabled={updatingLevels}
+                            className="gap-2"
+                          >
+                            <Save className="h-3 w-3" />
+                            {updatingLevels ? 'Saving...' : 'Save'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCancelEditLevels}
+                            disabled={updatingLevels}
+                            className="gap-2"
+                          >
+                            <X className="h-3 w-3" />
+                            Cancel
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-3 w-3 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">Max Level</p>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <TrendingDown className="h-3 w-3 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">Min Level</p>
+                    </div>
+                    {isEditingLevels ? (
+                      <div className="space-y-1">
+                        <Label htmlFor="min_stock" className="sr-only">
+                          Minimum Stock Level
+                        </Label>
+                        <Input
+                          id="min_stock"
+                          type="number"
+                          step="1"
+                          value={levelForm.min_stock_level}
+                          onChange={(e) =>
+                            setLevelForm({ ...levelForm, min_stock_level: e.target.value })
+                          }
+                          placeholder="Disabled"
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-lg font-bold">{stock.min_stock_level || '—'}</p>
+                    )}
                   </div>
-                  <p className="text-lg font-bold">{stock.max_stock_level || '—'}</p>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-3 w-3 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">Reorder</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-3 w-3 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">Max Level</p>
+                    </div>
+                    {isEditingLevels ? (
+                      <div className="space-y-1">
+                        <Label htmlFor="max_stock" className="sr-only">
+                          Maximum Stock Level
+                        </Label>
+                        <Input
+                          id="max_stock"
+                          type="number"
+                          step="1"
+                          value={levelForm.max_stock_level}
+                          onChange={(e) =>
+                            setLevelForm({ ...levelForm, max_stock_level: e.target.value })
+                          }
+                          placeholder="Disabled"
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-lg font-bold">{stock.max_stock_level || '—'}</p>
+                    )}
                   </div>
-                  <p className="text-lg font-bold">{stock.reorder_point || '—'}</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-3 w-3 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">Reorder</p>
+                    </div>
+                    {isEditingLevels ? (
+                      <div className="space-y-1">
+                        <Label htmlFor="reorder" className="sr-only">
+                          Reorder Point
+                        </Label>
+                        <Input
+                          id="reorder"
+                          type="number"
+                          step="1"
+                          value={levelForm.reorder_point}
+                          onChange={(e) =>
+                            setLevelForm({ ...levelForm, reorder_point: e.target.value })
+                          }
+                          placeholder="Disabled"
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-lg font-bold">{stock.reorder_point || '—'}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -458,15 +590,22 @@ export default function StockDrawer({ stock, open, onClose, canModify = false }:
           {/* Recent Movements */}
           <Separator />
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <History className="h-4 w-4 text-muted-foreground" />
-              <h3 className="font-semibold text-sm text-muted-foreground">Recent Movements</h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <History className="h-4 w-4 text-muted-foreground" />
+                <h3 className="font-semibold text-sm text-muted-foreground">Recent Movements</h3>
+              </div>
+              {companySlug && warehouseSlug && stock?.product?.id && (
+                <Button type="button" variant="ghost" size="sm" onClick={handleSeeMoreMovements}>
+                  See more
+                </Button>
+              )}
             </div>
             {recentMovements.length === 0 ? (
               <div className="text-center py-6 text-sm text-muted-foreground">No movements yet</div>
             ) : (
               <div className="space-y-2">
-                {recentMovements.map((movement: any) => {
+                {drawerMovements.map((movement: StockMovementItem) => {
                   const movementType = String(movement.type ?? '');
                   const isOut =
                     movementType === 'OUT' ||

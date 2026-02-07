@@ -3,10 +3,8 @@
 import { useQuery } from '@apollo/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, XCircle, CheckCircle } from 'lucide-react';
+import { AlertTriangle, XCircle } from 'lucide-react';
 import { GET_COMPANY_STOCK_HEALTH, CompanyStockHealth } from '@/lib/graphql/stock-health';
-import Link from 'next/link';
 
 interface StockHealthWidgetProps {
   companySlug: string;
@@ -36,8 +34,9 @@ export function StockHealthWidget({ companySlug }: StockHealthWidgetProps) {
   const atRisk = healthData.filter((p) => p.state === 'AT_RISK').length;
   const blocked = healthData.filter((p) => p.state === 'BLOCKED').length;
   const lowStock = healthData.filter((p) => p.state === 'LOW_STOCK').length;
+  const healthy = healthData.filter((p) => p.state === 'HEALTHY').length;
 
-  const hasIssues = critical > 0 || atRisk > 0 || blocked > 0 || lowStock > 0;
+  const flagged = critical + atRisk + blocked + lowStock;
 
   return (
     <Card>
@@ -49,52 +48,76 @@ export function StockHealthWidget({ companySlug }: StockHealthWidgetProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-3">
-          {critical > 0 && (
-            <div className="flex justify-between items-center p-2 rounded-lg bg-destructive/10">
-              <span className="text-sm flex items-center gap-2">
-                <XCircle className="h-4 w-4 text-destructive" />
-                <span className="font-medium">Critical Products</span>
-              </span>
-              <Badge variant="destructive">{critical}</Badge>
-            </div>
-          )}
-          {blocked > 0 && (
-            <div className="flex justify-between items-center p-2 rounded-lg bg-secondary/50">
-              <span className="text-sm flex items-center gap-2">
-                <XCircle className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">Blocked (Expired)</span>
-              </span>
-              <Badge variant="secondary">{blocked}</Badge>
-            </div>
-          )}
-          {lowStock > 0 && (
-            <div className="flex justify-between items-center p-2 rounded-lg bg-orange-50 dark:bg-orange-950/20">
-              <span className="text-sm flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-orange-500" />
-                <span className="font-medium">Low Stock</span>
-              </span>
-              <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-400">
-                {lowStock}
-              </Badge>
-            </div>
-          )}
-          {atRisk > 0 && (
-            <div className="flex justify-between items-center p-2 rounded-lg bg-yellow-50 dark:bg-yellow-950/20">
-              <span className="text-sm flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                <span className="font-medium">At Risk (Expiring)</span>
-              </span>
-              <Badge variant="outline" className="border-yellow-500 text-yellow-700 dark:text-yellow-400">
-                {atRisk}
-              </Badge>
-            </div>
-          )}
-          {!hasIssues && (
-            <div className="flex items-center justify-center gap-2 p-4 rounded-lg bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400">
-              <CheckCircle className="h-5 w-5" />
-              <span className="text-sm font-medium">All stock levels are healthy</span>
-            </div>
-          )}
+          <div
+            className={
+              critical > 0
+                ? 'flex justify-between items-center p-2 rounded-lg bg-destructive/10'
+                : 'flex justify-between items-center p-2 rounded-lg border bg-muted/40'
+            }
+          >
+            <span className="text-sm flex items-center gap-2">
+              <XCircle
+                className={
+                  critical > 0 ? 'h-4 w-4 text-destructive' : 'h-4 w-4 text-muted-foreground'
+                }
+              />
+              <span className="font-medium">Critical Products</span>
+            </span>
+            <Badge variant={critical > 0 ? 'destructive' : 'secondary'}>{critical}</Badge>
+          </div>
+
+          <div
+            className={
+              blocked > 0
+                ? 'flex justify-between items-center p-2 rounded-lg bg-secondary/50'
+                : 'flex justify-between items-center p-2 rounded-lg border bg-muted/40'
+            }
+          >
+            <span className="text-sm flex items-center gap-2">
+              <XCircle className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">Blocked (Expired)</span>
+            </span>
+            <Badge
+              variant={blocked > 0 ? 'secondary' : 'outline'}
+              className={blocked > 0 ? undefined : 'border-border text-foreground'}
+            >
+              {blocked}
+            </Badge>
+          </div>
+
+          <div className="flex justify-between items-center p-2 rounded-lg border bg-muted/40">
+            <span className="text-sm flex items-center gap-2">
+              <AlertTriangle
+                className={
+                  lowStock > 0 ? 'h-4 w-4 text-[var(--chart-4)]' : 'h-4 w-4 text-muted-foreground'
+                }
+              />
+              <span className="font-medium">Low Stock</span>
+            </span>
+            <Badge variant="outline" className="border-border text-foreground">
+              {lowStock}
+            </Badge>
+          </div>
+
+          <div className="flex justify-between items-center p-2 rounded-lg border bg-muted/40">
+            <span className="text-sm flex items-center gap-2">
+              <AlertTriangle
+                className={
+                  atRisk > 0 ? 'h-4 w-4 text-[var(--chart-4)]' : 'h-4 w-4 text-muted-foreground'
+                }
+              />
+              <span className="font-medium">At Risk (Expiring)</span>
+            </span>
+            <Badge variant="outline" className="border-border text-foreground">
+              {atRisk}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="text-xs text-muted-foreground">
+          {flagged === 0
+            ? `All clear — no flagged products right now. Healthy products: ${healthy}.`
+            : `Flagged products: ${flagged} · Healthy products: ${healthy}`}
         </div>
       </CardContent>
     </Card>

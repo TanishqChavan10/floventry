@@ -1,5 +1,6 @@
-import { ApolloClient, InMemoryCache, from, ApolloLink, Observable } from "@apollo/client";
+import { ApolloClient, InMemoryCache, from } from "@apollo/client";
 import { onError } from "@apollo/client/link/error";
+import { setContext } from "@apollo/client/link/context";
 import { HttpLink } from "@apollo/client/link/http";
 import { GRAPHQL_URL } from "@/config/env";
 
@@ -22,29 +23,34 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
   }
 });
 
-// Auth link that gets token from window (set by ApolloAppProvider)
-const authLink = new ApolloLink((operation, forward) => {
-  const token = typeof window !== 'undefined'
-    ? (window as any).__clerk_session_token
-    : null;
-
-  operation.setContext(({ headers = {} }) => ({
-    headers: {
-      ...headers,
-      Authorization: token ? `Bearer ${token}` : "",
-    }
-  }));
-
-  return forward(operation);
-});
-
 const httpLink = new HttpLink({
   uri: GRAPHQL_URL,
 });
 
-const client = new ApolloClient({
-  link: from([errorLink, authLink, httpLink]),
-  cache: new InMemoryCache(),
-});
+export type GetAuthToken = () => Promise<string | null | undefined>;
 
-export default client;
+export function createApolloClient(getAuthToken: GetAuthToken) {
+  const authLink = setContext(async (_, { headers }) => {
+    try {
+      const token = await getAuthToken();
+      return {
+        headers: {
+          ...headers,
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      };
+    } catch {
+      return {
+        headers: {
+          ...headers,
+          Authorization: "",
+        },
+      };
+    }
+  });
+
+  return new ApolloClient({
+    link: from([errorLink, authLink, httpLink]),
+    cache: new InMemoryCache(),
+  });
+}
