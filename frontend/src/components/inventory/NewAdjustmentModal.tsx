@@ -181,7 +181,7 @@ export default function NewAdjustmentModal({
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Inventory Adjustment</DialogTitle>
             <DialogDescription>
@@ -196,7 +196,7 @@ export default function NewAdjustmentModal({
               <RadioGroup
                 value={adjustmentType}
                 onValueChange={(value) => setAdjustmentType(value as 'IN' | 'OUT')}
-                className="grid grid-cols-2 gap-4"
+                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
               >
                 <div>
                   <RadioGroupItem value="IN" id="type-in" className="peer sr-only" />

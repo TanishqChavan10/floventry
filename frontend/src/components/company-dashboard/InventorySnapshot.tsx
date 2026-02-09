@@ -183,108 +183,112 @@ export function InventorySnapshot({ companySlug, data }: InventorySnapshotProps)
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <CardTitle>Today’s Focus</CardTitle>
-              <CardDescription>What should I worry about today?</CardDescription>
-            </div>
-            <Link href={buildNotificationsHref(companySlug, { filter: 'unread' })}>
-              <Button size="sm" variant="outline">
-                View unread
-              </Button>
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {!hasAnyData ? (
-            <div className="text-sm">
-              <div className="font-medium">No data yet</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Add warehouses/products or import stock to see health signals.
+      <div className="grid gap-3 lg:grid-cols-12">
+        <Card className="lg:col-span-4 h-full flex flex-col">
+          <CardHeader className="pb-2">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle>Today’s Focus</CardTitle>
+                <CardDescription>What should I worry about today?</CardDescription>
               </div>
+              <Link href={buildNotificationsHref(companySlug, { filter: 'unread' })}>
+                <Button size="sm" variant="outline">
+                  View unread
+                </Button>
+              </Link>
             </div>
-          ) : todayFocus.length === 0 ? (
-            <div className="text-sm">
-              <div className="font-medium">All clear</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                No critical or at-risk signals right now.
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col">
+            {!hasAnyData ? (
+              <div className="text-sm">
+                <div className="font-medium">No data yet</div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  Add warehouses/products or import stock to see health signals.
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {todayFocus.map((item) => (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  className="flex items-center justify-between gap-3 rounded-md px-2 py-2 -mx-2 hover:bg-muted"
-                >
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">
-                      {item.title} ({item.count.toLocaleString()})
+            ) : todayFocus.length === 0 ? (
+              <div className="text-sm">
+                <div className="font-medium">All clear</div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  No critical or at-risk signals right now.
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col justify-between">
+                {todayFocus.map((item) => (
+                  <Link
+                    key={item.key}
+                    href={item.href}
+                    className="flex items-center justify-between gap-3 rounded-md px-2 py-2 -mx-2 hover:bg-muted"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">
+                        {item.title} ({item.count.toLocaleString()})
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">{item.subtitle}</div>
                     </div>
-                    <div className="text-xs text-muted-foreground truncate">{item.subtitle}</div>
-                  </div>
-                  <div className="shrink-0 text-xs text-muted-foreground">Open</div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total SKUs</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalSkus.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active products</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Warehouses</CardTitle>
-            <Warehouse className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.warehouses.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">Locations</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Stock Units</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpis.totalStockUnits.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">Total quantity on hand</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">At-risk Units</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-[var(--chart-4)]" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[var(--chart-4)]">
-              {kpis.stockAtRisk.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Low/critical stock + expiring soon</p>
-            {kpis.expiredStockUnits > 0 && (
-              <p className="text-xs text-destructive font-medium mt-1">
-                {kpis.expiredStockUnits.toLocaleString()} expired units
-              </p>
+                    <div className="shrink-0 text-xs text-muted-foreground">Open</div>
+                  </Link>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
+
+        <div className="grid gap-3 md:grid-cols-2 lg:col-span-8 lg:grid-cols-2 lg:grid-rows-2 h-full">
+          <Card className="h-full">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+              <CardTitle className="text-sm font-medium">Total SKUs</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="text-xl font-bold">{kpis.totalSkus.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground mt-0.5">Active products</p>
+            </CardContent>
+          </Card>
+
+          <Card className="h-full">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+              <CardTitle className="text-sm font-medium">Warehouses</CardTitle>
+              <Warehouse className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="text-xl font-bold">{kpis.warehouses.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground mt-0.5">Locations</p>
+            </CardContent>
+          </Card>
+
+          <Card className="h-full">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+              <CardTitle className="text-sm font-medium">Stock Units</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="text-xl font-bold">{kpis.totalStockUnits.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground mt-0.5">Total quantity on hand</p>
+            </CardContent>
+          </Card>
+
+          <Card className="h-full">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
+              <CardTitle className="text-sm font-medium">At-risk Units</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-[var(--chart-4)]" />
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="text-xl font-bold text-[var(--chart-4)]">
+                {kpis.stockAtRisk.toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Low/critical stock + expiring soon
+              </p>
+              {kpis.expiredStockUnits > 0 && (
+                <p className="text-xs text-destructive font-medium mt-0.5">
+                  {kpis.expiredStockUnits.toLocaleString()} expired units
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

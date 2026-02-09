@@ -136,34 +136,44 @@ export function RecentActivity({ data }: RecentActivityProps) {
                 return (
                   <div
                     key={`${event.eventType}-${event.referenceNumber ?? 'na'}-${event.occurredAt}-${idx}`}
-                    className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0"
+                    className="flex items-start gap-3 py-3 border-b last:border-0"
                   >
-                    <Avatar className="h-9 w-9">
+                    <Avatar className="h-8 w-8 shrink-0">
                       <AvatarFallback className="text-xs">
                         {getInitials(event.performedBy || 'System')}
                       </AvatarFallback>
                     </Avatar>
 
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
-                        {meta.icon}
-                        <p className="text-sm font-medium leading-none">
-                          {meta.label}
-                          {event.referenceNumber ? ` • ${event.referenceNumber}` : ''}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{event.performedBy || 'System'}</span>
-                        {event.warehouseName && (
-                          <>
-                            <span>•</span>
-                            <span>{event.warehouseName}</span>
-                          </>
-                        )}
-                        <span>•</span>
-                        <span>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {meta.icon}
+                            <p className="text-sm font-medium leading-none truncate">{meta.label}</p>
+                          </div>
+                          {event.referenceNumber ? (
+                            <p
+                              className="mt-1 text-xs text-muted-foreground truncate"
+                              title={event.referenceNumber}
+                            >
+                              {event.referenceNumber}
+                            </p>
+                          ) : null}
+                        </div>
+
+                        <span className="shrink-0 text-xs text-muted-foreground">
                           {formatDistanceToNow(new Date(event.occurredAt), { addSuffix: true })}
                         </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                        <span className="truncate">{event.performedBy || 'System'}</span>
+                        {event.warehouseName ? (
+                          <>
+                            <span className="shrink-0">•</span>
+                            <span className="truncate">{event.warehouseName}</span>
+                          </>
+                        ) : null}
                       </div>
                     </div>
                   </div>

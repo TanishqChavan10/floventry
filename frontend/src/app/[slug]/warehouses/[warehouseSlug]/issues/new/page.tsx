@@ -24,6 +24,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { useWarehouse } from '@/context/warehouse-context';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { SafeBarcodeScanInput } from '@/components/barcode/SafeBarcodeScanInput';
 
 interface IssueItem {
@@ -275,236 +276,238 @@ export default function NewIssueNotePage() {
   }, [activeWarehouse?.id, items, loading]);
 
   return (
-    <div className="space-y-8 p-6">
-      <div className="flex items-center gap-4">
-        <Link href={`/${companySlug}/warehouses/${warehouseSlug}/issues`}>
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div>
-          <h3 className="text-3xl font-bold tracking-tight">Create Issue Note</h3>
-          <p className="text-slate-600 dark:text-slate-400 mt-2">Issue goods from warehouse</p>
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Issue Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="salesOrder">Link to Sales Order (Optional)</Label>
-              <Select
-                value={salesOrderId || 'NONE'}
-                onValueChange={(value) => {
-                  const nextId = value === 'NONE' ? '' : value;
-                  setSalesOrderId(nextId);
-                }}
-              >
-                <SelectTrigger className="mt-2">
-                  <SelectValue placeholder="Select sales order (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="NONE">None (Direct Issue)</SelectItem>
-                  {salesOrders
-                    .filter((so) => so.status === 'CONFIRMED')
-                    .map((so) => (
-                      <SelectItem key={so.id} value={so.id}>
-                        {so.customer_name} - {so.id.slice(0, 8)}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-              {!salesOrderId && (
-                <p className="text-sm text-slate-500 mt-2">
-                  Direct issue (not linked to a sales order)
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* FEFO Info Alert */}
-        <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/30">
-          <Info className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-blue-800 dark:text-blue-200">
-            <strong>Automatic Lot Selection (FEFO):</strong> Lots will be automatically selected
-            based on earliest expiry date. No manual lot selection needed!
-          </AlertDescription>
-        </Alert>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Issue Items</CardTitle>
-              <Button type="button" onClick={addItem} variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Item
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <SafeBarcodeScanInput
-              context="ISSUE"
-              label="Scan barcode to select product"
-              description="Scan selects a product only — you still confirm quantity and submit."
-              onProductResolved={(product, scannedBarcode) => {
-                setLastScan({
-                  barcode: scannedBarcode,
-                  productId: product.id,
-                  productName: product.name,
-                  sku: product.sku,
-                });
-                selectProductFromBarcode(product.id);
-              }}
-              onError={(message) =>
-                toast({
-                  title: 'Barcode scan failed',
-                  description: message,
-                  variant: 'destructive',
-                })
-              }
-            />
-
-            {lastScan ? (
-              <Alert className="border-slate-200 bg-slate-50 dark:bg-slate-900/40">
-                <Info className="h-4 w-4 text-slate-700 dark:text-slate-200" />
-                <AlertDescription className="text-slate-700 dark:text-slate-200">
-                  <div className="font-medium">
-                    Product selected via barcode. Please confirm quantity.
-                  </div>
-                  <div className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                    <div>
-                      <span className="font-medium">Selected:</span> {lastScan.productName} (
-                      {lastScan.sku})
-                    </div>
-                    {(() => {
-                      const health = stockHealthByProductId.get(lastScan.productId);
-                      if (!health) return null;
-                      const usableStock = Number(health.usableStock ?? 0);
-                      const nearestExpiryDate = health.nearestExpiryDate
-                        ? new Date(health.nearestExpiryDate)
-                        : null;
-                      const daysToExpiry = nearestExpiryDate
-                        ? differenceInCalendarDays(nearestExpiryDate, new Date())
-                        : null;
-
-                      const expiryLabel = nearestExpiryDate
-                        ? `${format(nearestExpiryDate, 'dd MMM yyyy')}${
-                            typeof daysToExpiry === 'number' ? ` (${daysToExpiry}d)` : ''
-                          }`
-                        : '—';
-
-                      const hasExpiryWarning = Number(health.expiringSoonQty ?? 0) > 0;
-
-                      return (
-                        <div className="mt-2 grid gap-1">
-                          <div>
-                            <span className="font-medium">Usable stock:</span> {usableStock}
-                          </div>
-                          <div>
-                            <span className="font-medium">Nearest expiry:</span> {expiryLabel}{' '}
-                            {hasExpiryWarning ? (
-                              <span className="ml-1 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
-                                expiring soon
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </AlertDescription>
-              </Alert>
-            ) : null}
-
-            {items.length === 0 ? (
-              <div className="text-center py-12 text-slate-500">
-                <p className="text-lg font-medium">No items added yet</p>
-                <p className="text-sm text-slate-400 mt-1">
-                  Click &quot;Add Item&quot; to get started
-                </p>
-              </div>
-            ) : (
-              items.map((item, index) => {
-                return (
-                  <div
-                    key={index}
-                    id={`issue-item-${index}`}
-                    className={
-                      `flex gap-4 items-end p-6 border rounded-lg bg-slate-50 dark:bg-slate-900/50 ` +
-                      (highlightIndex === index ? 'ring-2 ring-indigo-500 border-indigo-300' : '')
-                    }
-                  >
-                    <div className="flex-1">
-                      <Label className="mb-2 block">Product</Label>
-                      <Select
-                        value={item.product_id}
-                        onValueChange={(value) => updateItem(index, 'product_id', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select product" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {products.length === 0 ? (
-                            <div className="px-3 py-2 text-sm text-muted-foreground">
-                              No products with stock in this warehouse
-                            </div>
-                          ) : (
-                            products.map((product) => (
-                              <SelectItem key={product.id} value={product.id}>
-                                {product.name} ({product.sku})
-                                {typeof product.availableQty === 'number'
-                                  ? ` — ${product.availableQty}`
-                                  : ''}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="w-32">
-                      <Label className="mb-2 block">Quantity</Label>
-                      <Input
-                        id={`issue-item-qty-${index}`}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.quantity}
-                        onChange={(e) =>
-                          updateItem(index, 'quantity', parseFloat(e.target.value) || 0)
-                        }
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeItem(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-end gap-3 pt-4">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-6 py-8 space-y-8">
+        <div className="flex items-center gap-4">
           <Link href={`/${companySlug}/warehouses/${warehouseSlug}/issues`}>
-            <Button type="button" variant="outline" size="lg">
-              Cancel
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <Button type="submit" disabled={!canSubmit} size="lg">
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Create Issue Note
-          </Button>
+          <div>
+            <h3 className="text-3xl font-bold tracking-tight">Create Issue Note</h3>
+            <p className="text-muted-foreground mt-2">Issue goods from warehouse</p>
+          </div>
         </div>
-      </form>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Issue Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="salesOrder">Link to Sales Order (Optional)</Label>
+                <Select
+                  value={salesOrderId || 'NONE'}
+                  onValueChange={(value) => {
+                    const nextId = value === 'NONE' ? '' : value;
+                    setSalesOrderId(nextId);
+                  }}
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue placeholder="Select sales order (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NONE">None (Direct Issue)</SelectItem>
+                    {salesOrders
+                      .filter((so) => so.status === 'CONFIRMED')
+                      .map((so) => (
+                        <SelectItem key={so.id} value={so.id}>
+                          {so.customer_name} - {so.id.slice(0, 8)}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                {!salesOrderId && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Direct issue (not linked to a sales order)
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* FEFO Info */}
+          <Alert>
+            <Info className="h-4 w-4 text-muted-foreground" />
+            <AlertDescription>
+              <strong>Automatic Lot Selection (FEFO):</strong> Lots will be automatically selected
+              based on earliest expiry date. No manual lot selection needed.
+            </AlertDescription>
+          </Alert>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Issue Items</CardTitle>
+                <Button type="button" onClick={addItem} variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Item
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <SafeBarcodeScanInput
+                context="ISSUE"
+                label="Scan barcode to select product"
+                description="Scan selects a product only — you still confirm quantity and submit."
+                onProductResolved={(product, scannedBarcode) => {
+                  setLastScan({
+                    barcode: scannedBarcode,
+                    productId: product.id,
+                    productName: product.name,
+                    sku: product.sku,
+                  });
+                  selectProductFromBarcode(product.id);
+                }}
+                onError={(message) =>
+                  toast({
+                    title: 'Barcode scan failed',
+                    description: message,
+                    variant: 'destructive',
+                  })
+                }
+              />
+
+              {lastScan ? (
+                <Alert>
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                  <AlertDescription>
+                    <div className="font-medium">
+                      Product selected via barcode. Please confirm quantity.
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      <div>
+                        <span className="font-medium">Selected:</span> {lastScan.productName} (
+                        {lastScan.sku})
+                      </div>
+                      {(() => {
+                        const health = stockHealthByProductId.get(lastScan.productId);
+                        if (!health) return null;
+                        const usableStock = Number(health.usableStock ?? 0);
+                        const nearestExpiryDate = health.nearestExpiryDate
+                          ? new Date(health.nearestExpiryDate)
+                          : null;
+                        const daysToExpiry = nearestExpiryDate
+                          ? differenceInCalendarDays(nearestExpiryDate, new Date())
+                          : null;
+
+                        const expiryLabel = nearestExpiryDate
+                          ? `${format(nearestExpiryDate, 'dd MMM yyyy')}${
+                              typeof daysToExpiry === 'number' ? ` (${daysToExpiry}d)` : ''
+                            }`
+                          : '—';
+
+                        const hasExpiryWarning = Number(health.expiringSoonQty ?? 0) > 0;
+
+                        return (
+                          <div className="mt-2 grid gap-1">
+                            <div>
+                              <span className="font-medium">Usable stock:</span> {usableStock}
+                            </div>
+                            <div>
+                              <span className="font-medium">Nearest expiry:</span> {expiryLabel}{' '}
+                              {hasExpiryWarning ? (
+                                <Badge variant="secondary" className="ml-1">
+                                  Expiring soon
+                                </Badge>
+                              ) : null}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+
+              {items.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p className="text-lg font-medium">No items added yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Click &quot;Add Item&quot; to get started
+                  </p>
+                </div>
+              ) : (
+                items.map((item, index) => {
+                  return (
+                    <div
+                      key={index}
+                      id={`issue-item-${index}`}
+                      className={
+                        `flex gap-4 items-end p-6 border rounded-lg bg-muted/30 ` +
+                        (highlightIndex === index ? 'ring-2 ring-ring' : '')
+                      }
+                    >
+                      <div className="flex-1">
+                        <Label className="mb-2 block">Product</Label>
+                        <Select
+                          value={item.product_id}
+                          onValueChange={(value) => updateItem(index, 'product_id', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select product" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {products.length === 0 ? (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">
+                                No products with stock in this warehouse
+                              </div>
+                            ) : (
+                              products.map((product) => (
+                                <SelectItem key={product.id} value={product.id}>
+                                  {product.name} ({product.sku})
+                                  {typeof product.availableQty === 'number'
+                                    ? ` — ${product.availableQty}`
+                                    : ''}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="w-32">
+                        <Label className="mb-2 block">Quantity</Label>
+                        <Input
+                          id={`issue-item-qty-${index}`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.quantity}
+                          onChange={(e) =>
+                            updateItem(index, 'quantity', parseFloat(e.target.value) || 0)
+                          }
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeItem(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Link href={`/${companySlug}/warehouses/${warehouseSlug}/issues`}>
+              <Button type="button" variant="outline" size="lg">
+                Cancel
+              </Button>
+            </Link>
+            <Button type="submit" disabled={!canSubmit} size="lg">
+              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Create Issue Note
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

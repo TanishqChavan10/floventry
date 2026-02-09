@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { CopyButton } from '@/components/common/CopyButton';
+import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -338,9 +339,9 @@ function CreateTransferContent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-white dark:bg-slate-900">
+      <header className="border-b bg-background">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center gap-4">
             <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/transfers`}>
@@ -349,10 +350,8 @@ function CreateTransferContent() {
               </Button>
             </Link>
             <div className="space-y-1">
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Create Warehouse Transfer
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400">
+              <h1 className="text-3xl font-bold tracking-tight">Create Warehouse Transfer</h1>
+              <p className="text-muted-foreground">
                 Move stock from {activeWarehouse?.name} to another warehouse
               </p>
             </div>
@@ -435,11 +434,11 @@ function CreateTransferContent() {
               />
 
               {lastScan ? (
-                <div className="rounded-md border bg-slate-50 px-4 py-3 text-sm text-slate-700 dark:bg-slate-900/40 dark:text-slate-200">
+                <div className="rounded-md border bg-muted/30 px-4 py-3 text-sm text-foreground">
                   <div className="font-medium">
                     Product selected via barcode. Please confirm quantity.
                   </div>
-                  <div className="mt-1 text-slate-600 dark:text-slate-300">
+                  <div className="mt-1 text-muted-foreground">
                     Selected: {lastScan.productName} ({lastScan.sku})
                   </div>
                   {(() => {
@@ -465,9 +464,9 @@ function CreateTransferContent() {
                         <div>
                           Nearest expiry: {expiryLabel}
                           {hasExpiryWarning ? (
-                            <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                            <Badge className="ml-2" variant="secondary">
                               expiring soon
-                            </span>
+                            </Badge>
                           ) : null}
                         </div>
                       </div>
@@ -499,7 +498,7 @@ function CreateTransferContent() {
                       id={`transfer-item-${index}`}
                       className={
                         highlightIndex === index
-                          ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-background'
+                          ? 'ring-2 ring-ring ring-offset-2 ring-offset-background'
                           : undefined
                       }
                     >
@@ -605,7 +604,7 @@ function CreateTransferContent() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <AlertTriangle className="h-5 w-5 text-muted-foreground" />
               Post Warehouse Transfer?
             </AlertDialogTitle>
             <AlertDialogDescription asChild>

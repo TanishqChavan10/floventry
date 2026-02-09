@@ -205,7 +205,7 @@ export function getWarehouseNavigation(
                 {
                     label: 'Issues',
                     href: `${basePath}/issues`,
-                    icon: IconTruckDelivery,
+                    icon: IconInfoCircle,
                     roles: ['OWNER', 'ADMIN', 'MANAGER', 'STAFF'],
                 },
             ]

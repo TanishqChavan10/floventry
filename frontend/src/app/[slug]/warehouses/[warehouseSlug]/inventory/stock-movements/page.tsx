@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CopyButton } from '@/components/common/CopyButton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowUpDown, Loader2, AlertCircle, Filter, X, Calendar } from 'lucide-react';
+import { ArrowUpDown, Loader2, AlertCircle, X, Calendar } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -304,11 +304,11 @@ function StockMovementsContent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <header className="bg-white dark:bg-slate-900">
+    <div className="min-h-screen bg-background">
+      <header className="bg-white">
         <div className="container mx-auto px-6 py-6">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Stock Movements</h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-2">
+          <h1 className="text-3xl font-bold tracking-tight">Stock Movements</h1>
+          <p className="text-muted-foreground mt-2">
             Track all stock in/out transactions for {warehouseName || 'this warehouse'}
           </p>
         </div>
@@ -444,10 +444,8 @@ function StockMovementsContent() {
             {/* Loading State */}
             {loading && (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
-                <span className="ml-3 text-slate-600 dark:text-slate-400">
-                  Loading movements...
-                </span>
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <span className="ml-3 text-muted-foreground">Loading movements...</span>
               </div>
             )}
 
@@ -467,11 +465,9 @@ function StockMovementsContent() {
             {/* Empty State */}
             {!loading && !error && movements.length === 0 && (
               <div className="text-center py-12">
-                <ArrowUpDown className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
-                  No movements found
-                </h3>
-                <p className="text-slate-600 dark:text-slate-400">
+                <ArrowUpDown className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No movements found</h3>
+                <p className="text-muted-foreground">
                   Stock movements will appear here when you post GRNs, transfers, issues, or make
                   adjustments.
                 </p>
@@ -503,11 +499,11 @@ function StockMovementsContent() {
                         <TableRow key={movement.id}>
                           <TableCell className="font-mono text-sm">
                             <div>{date}</div>
-                            <div className="text-xs text-slate-500">{time}</div>
+                            <div className="text-xs text-muted-foreground">{time}</div>
                           </TableCell>
                           <TableCell className="font-medium">
                             <div>{movement.productName}</div>
-                            <div className="flex items-center gap-1 text-xs text-slate-500">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
                               <span className="font-mono">{movement.sku}</span>
                               <CopyButton
                                 value={movement.sku}
@@ -530,10 +526,12 @@ function StockMovementsContent() {
                           <TableCell className="text-right">
                             <QuantityDelta quantity={movement.quantity} direction={direction} />
                           </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-400">
+                          <TableCell className="text-muted-foreground">
                             {userName}
                             {movement.userRole && (
-                              <div className="text-xs text-slate-500">{movement.userRole}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {movement.userRole}
+                              </div>
                             )}
                           </TableCell>
                           <TableCell className="max-w-xs">
@@ -542,7 +540,7 @@ function StockMovementsContent() {
                                 <PopoverTrigger asChild>
                                   <button
                                     type="button"
-                                    className="block w-full text-left truncate text-sm text-slate-600 dark:text-slate-400 hover:underline"
+                                    className="block w-full text-left truncate text-sm text-muted-foreground hover:underline"
                                     title={movement.reason ?? undefined}
                                     onClick={(e) => e.stopPropagation()}
                                   >
@@ -560,7 +558,7 @@ function StockMovementsContent() {
                                 </PopoverContent>
                               </Popover>
                             ) : (
-                              <span className="text-sm text-slate-600 dark:text-slate-400">-</span>
+                              <span className="text-sm text-muted-foreground">-</span>
                             )}
                           </TableCell>
                         </TableRow>

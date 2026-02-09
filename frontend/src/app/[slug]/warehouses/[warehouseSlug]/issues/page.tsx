@@ -56,16 +56,13 @@ export default function IssueNotesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-900">
+    <div className="min-h-screen bg-background">
+      <header className="bg-white">
         <div className="container mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Issue Notes
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold tracking-tight">Issue Notes</h1>
+              <p className="text-muted-foreground">
                 Track goods issued from {activeWarehouse?.name || 'warehouse'}
               </p>
             </div>
@@ -77,7 +74,6 @@ export default function IssueNotesPage() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-6 py-8 space-y-6">
         {/* Issue Notes Table with Filters */}
         <Card>
@@ -112,29 +108,26 @@ export default function IssueNotesPage() {
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                <span className="ml-3 text-slate-600 dark:text-slate-400">
-                  Loading issue notes...
-                </span>
+                <span className="ml-3 text-muted-foreground">Loading issue notes...</span>
               </div>
             ) : error ? (
               <div className="text-center space-y-3 py-12">
-                <p className="text-sm text-red-600">Failed to load issue notes</p>
+                <p className="text-sm text-destructive">Failed to load issue notes</p>
                 <Button onClick={() => refetch()} variant="outline">
                   Retry
                 </Button>
               </div>
             ) : filteredNotes.length === 0 ? (
               <div className="text-center py-12">
-                <div className="rounded-full bg-slate-100 dark:bg-slate-800 p-6 w-fit mx-auto mb-4">
-                  <ArrowUpDown className="h-12 w-12 text-slate-400" />
+                <div className="rounded-full bg-muted p-6 w-fit mx-auto mb-4">
+                  <ArrowUpDown className="h-12 w-12 text-muted-foreground" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">No issue notes found</h3>
-                <p className="text-slate-600 dark:text-slate-400">
+                <p className="text-muted-foreground">
                   Create an issue note to start tracking goods issued.
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -149,7 +142,7 @@ export default function IssueNotesPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredNotes.map((note: any) => (
-                      <TableRow key={note.id} className="hover:bg-slate-50 dark:hover:bg-slate-900">
+                      <TableRow key={note.id} className="hover:bg-muted/50">
                         <TableCell className="font-mono text-sm font-semibold pl-2">
                           {note.issue_number}
                         </TableCell>
@@ -157,13 +150,13 @@ export default function IssueNotesPage() {
                           {note.sales_order ? (
                             <Link
                               href={`/${companySlug}/sales/orders/${note.sales_order.id}`}
-                              className="text-blue-600 hover:underline font-medium"
+                              className="text-primary hover:underline underline-offset-4 font-medium"
                             >
                               {note.sales_order.order_number || note.sales_order.customer_name}
                             </Link>
                           ) : (
                             <Badge variant="outline" className="gap-1">
-                              📦 Direct Issue
+                              Direct issue
                             </Badge>
                           )}
                         </TableCell>
@@ -192,7 +185,6 @@ export default function IssueNotesPage() {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
             )}
           </CardContent>
         </Card>

@@ -49,7 +49,6 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
     unit: '',
     cost_price: '',
     selling_price: '',
-    image_url: '',
     description: '',
   });
 
@@ -102,7 +101,6 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
         unit: product.unit || '',
         cost_price: product.cost_price?.toString() || '',
         selling_price: product.selling_price?.toString() || '',
-        image_url: product.image_url || '',
         description: product.description || '',
       });
     }
@@ -120,7 +118,6 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
       unit: formData.unit,
       cost_price: formData.cost_price ? parseFloat(formData.cost_price) : null,
       selling_price: formData.selling_price ? parseFloat(formData.selling_price) : null,
-      image_url: formData.image_url || null,
       description: formData.description || null,
     };
 
@@ -287,18 +284,6 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
                 />
               </div>
 
-              {/* Image URL */}
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="image_url">Image URL</Label>
-                <Input
-                  id="image_url"
-                  type="url"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                />
-              </div>
-
               {/* Description */}
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="description">Description</Label>
@@ -312,7 +297,7 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
               </div>
             </div>
 
-            <div className="sticky bottom-0 -mx-6 mt-6 border-t bg-background/95 px-6 py-4 backdrop-blur">
+            <div className=" -mx-6 mt-6 bg-background px-6 py-4">
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
                   Cancel

@@ -91,7 +91,7 @@ export default function IssueNoteDetailPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
           <p className="text-sm text-muted-foreground">Loading issue note...</p>
         </div>
       </div>
@@ -102,7 +102,7 @@ export default function IssueNoteDetailPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-3">
-          <p className="text-sm text-red-600">Failed to load issue note</p>
+          <p className="text-sm text-destructive">Failed to load issue note</p>
           <Button onClick={() => refetch()} variant="outline">
             Retry
           </Button>
@@ -117,11 +117,10 @@ export default function IssueNoteDetailPage() {
   const isPosted = issue.status === 'POSTED';
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-900">
+    <div className="min-h-screen bg-background">
+      <header className="bg-background">
         <div className="container mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <Link href={`/${companySlug}/warehouses/${warehouseSlug}/issues`}>
                 <Button variant="ghost" size="icon">
@@ -129,12 +128,10 @@ export default function IssueNoteDetailPage() {
                 </Button>
               </Link>
               <div className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                <h1 className="text-3xl font-bold tracking-tight">
                   Issue Note #{issue.issue_number || issue.id.slice(0, 8)}
                 </h1>
-                <p className="text-slate-600 dark:text-slate-400">
-                  {issue.warehouse?.name || 'Warehouse'}
-                </p>
+                <p className="text-muted-foreground">{issue.warehouse?.name || 'Warehouse'}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -162,12 +159,10 @@ export default function IssueNoteDetailPage() {
       <main className="container mx-auto px-6 py-8 space-y-6">
         {/* Success Alert (if posted) */}
         {isPosted && (
-          <Alert className="border-green-200 bg-green-50 dark:bg-green-950">
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-            <AlertTitle className="text-green-800 dark:text-green-200">
-              Posted Successfully
-            </AlertTitle>
-            <AlertDescription className="text-green-700 dark:text-green-300">
+          <Alert>
+            <CheckCircle2 className="h-4 w-4 text-[var(--chart-2)]" />
+            <AlertTitle>Posted successfully</AlertTitle>
+            <AlertDescription>
               Stock has been updated successfully. This action cannot be undone.
             </AlertDescription>
           </Alert>
@@ -181,30 +176,32 @@ export default function IssueNoteDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-slate-600">Status</label>
+                <label className="text-sm font-medium text-muted-foreground">Status</label>
                 <div className="mt-1">
                   <StatusBadge status={issue.status} />
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-600">Linked Sales Order</label>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Linked Sales Order
+                </label>
                 <div className="mt-1">
                   {issue.sales_order ? (
                     <Link
                       href={`/${companySlug}/sales/orders/${issue.sales_order.id}`}
-                      className="text-blue-600 hover:underline"
+                      className="text-primary hover:underline underline-offset-4"
                     >
                       {issue.sales_order.customer_name}
                     </Link>
                   ) : (
                     <Badge variant="outline" className="gap-1">
-                      📦 Direct Issue
+                      Direct issue
                     </Badge>
                   )}
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-600">Warehouse</label>
+                <label className="text-sm font-medium text-muted-foreground">Warehouse</label>
                 <p className="mt-1">{issue.warehouse?.name}</p>
               </div>
             </CardContent>
@@ -216,17 +213,17 @@ export default function IssueNoteDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-slate-600">Issued By</label>
+                <label className="text-sm font-medium text-muted-foreground">Issued By</label>
                 <p className="mt-1">{issue.issuer?.fullName || 'Not posted yet'}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-600">Issued Date</label>
+                <label className="text-sm font-medium text-muted-foreground">Issued Date</label>
                 <p className="mt-1">
                   {issue.issued_at ? format(new Date(issue.issued_at), 'dd MMM yyyy, HH:mm') : '-'}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-600">Created Date</label>
+                <label className="text-sm font-medium text-muted-foreground">Created Date</label>
                 <p className="mt-1">{format(new Date(issue.created_at), 'dd MMM yyyy, HH:mm')}</p>
               </div>
             </CardContent>
@@ -239,7 +236,7 @@ export default function IssueNoteDetailPage() {
             <CardTitle>Issued Items</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-lg border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -290,7 +287,7 @@ export default function IssueNoteDetailPage() {
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-orange-600" />
+                <AlertTriangle className="h-5 w-5 text-muted-foreground" />
                 Post Issue Note?
               </AlertDialogTitle>
               <AlertDialogDescription>
@@ -298,16 +295,14 @@ export default function IssueNoteDetailPage() {
                 records.
                 <br />
                 <br />
-                <span className="text-orange-600 font-medium">
-                  ⚠️ This action cannot be undone.
-                </span>
+                <strong>This action cannot be undone.</strong>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => postIssue({ variables: { id: issueId } })}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 POST Issue
               </AlertDialogAction>
@@ -328,7 +323,7 @@ export default function IssueNoteDetailPage() {
               <AlertDialogCancel>Go Back</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => cancelIssue({ variables: { id: issueId } })}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 Cancel Issue
               </AlertDialogAction>

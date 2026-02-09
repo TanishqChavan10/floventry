@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { CopyButton } from '@/components/common/CopyButton';
 import {
   Select,
   SelectContent,
@@ -308,7 +307,7 @@ export function CreateTransferModal({
   return (
     <>
       <Dialog open={open && !showPostDialog} onOpenChange={handleClose}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:w-[900px] sm:max-w-[900px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle>Create Warehouse Transfer</DialogTitle>
             <DialogDescription>
@@ -319,11 +318,11 @@ export function CreateTransferModal({
           <div className="space-y-6 py-4">
             {/* Warehouse Selection */}
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <Label>From Warehouse</Label>
                 <Input value={activeWarehouse?.name || ''} disabled />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <Label>
                   To Warehouse <span className="text-red-500">*</span>
                 </Label>
@@ -332,8 +331,9 @@ export function CreateTransferModal({
                   onValueChange={setDestinationWarehouseId}
                   disabled={loadingWarehouses || warehouses.length === 0}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full min-w-0">
                     <SelectValue
+                      className="truncate"
                       placeholder={
                         loadingWarehouses
                           ? 'Loading warehouses...'
@@ -378,7 +378,7 @@ export function CreateTransferModal({
                   No items added yet. Click &quot;Add Item&quot; to begin.
                 </div>
               ) : (
-                <div className="border rounded-lg">
+                <div className="border rounded-lg overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -405,8 +405,8 @@ export function CreateTransferModal({
                               value={item.product_id}
                               onValueChange={(value) => updateItem(index, 'product_id', value)}
                             >
-                              <SelectTrigger className="w-[250px]">
-                                <SelectValue placeholder="Select product" />
+                              <SelectTrigger className="w-[250px] min-w-[250px] max-w-[250px]">
+                                <SelectValue className="truncate" placeholder="Select product" />
                               </SelectTrigger>
                               <SelectContent>
                                 {stock.map((s: any) => (
@@ -425,18 +425,7 @@ export function CreateTransferModal({
                               </SelectContent>
                             </Select>
                           </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            <div className="flex items-center gap-1">
-                              <span>{item.sku || '—'}</span>
-                              <CopyButton
-                                value={item.sku ?? ''}
-                                ariaLabel="Copy SKU"
-                                successMessage="Copied SKU to clipboard"
-                                className="h-7 w-7 text-muted-foreground"
-                                disabled={!item.sku}
-                              />
-                            </div>
-                          </TableCell>
+                          <TableCell className="font-mono text-sm">{item.sku || '—'}</TableCell>
                           <TableCell className="text-right font-semibold">
                             {item.available_stock !== undefined ? item.available_stock : '—'}
                           </TableCell>

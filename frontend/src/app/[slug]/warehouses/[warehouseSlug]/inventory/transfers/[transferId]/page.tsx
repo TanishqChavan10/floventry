@@ -146,10 +146,10 @@ function TransferDetailContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto" />
-          <p className="text-slate-600 dark:text-slate-400">Loading transfer...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+          <p className="text-muted-foreground">Loading transfer...</p>
         </div>
       </div>
     );
@@ -157,17 +157,17 @@ function TransferDetailContent() {
 
   if (error || !transfer) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
-              <XCircle className="h-12 w-12 text-red-500 mx-auto" />
+              <XCircle className="h-12 w-12 text-destructive mx-auto" />
               <h3 className="text-lg font-semibold">Transfer not found</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
+              <p className="text-sm text-muted-foreground">
                 {error?.message || 'The transfer you are looking for does not exist.'}
               </p>
               <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/transfers`}>
-                <Button>Back to Transfers</Button>
+                <Button variant="outline">Back to Transfers</Button>
               </Link>
             </div>
           </CardContent>
@@ -177,9 +177,9 @@ function TransferDetailContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-white dark:bg-slate-900">
+      <header className="border-b bg-background">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -190,25 +190,12 @@ function TransferDetailContent() {
               </Link>
               <div className="space-y-1">
                 <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    {transfer.transfer_number}
-                  </h1>
+                  <h1 className="text-3xl font-bold tracking-tight">{transfer.transfer_number}</h1>
                   {getStatusBadge(transfer.status)}
-                  {isIncoming && (
-                    <Badge
-                      variant="outline"
-                      className="bg-green-50 text-green-700 border-green-200"
-                    >
-                      INCOMING
-                    </Badge>
-                  )}
-                  {isOutgoing && (
-                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                      OUTGOING
-                    </Badge>
-                  )}
+                  {isIncoming && <Badge variant="outline">INCOMING</Badge>}
+                  {isOutgoing && <Badge variant="outline">OUTGOING</Badge>}
                 </div>
-                <p className="text-slate-600 dark:text-slate-400">
+                <p className="text-muted-foreground">
                   {isIncoming && `Received from ${transfer.source_warehouse.name} • `}
                   Created {formatDate(transfer.created_at)}
                 </p>
@@ -261,35 +248,27 @@ function TransferDetailContent() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <span className="text-sm text-slate-600">From Warehouse</span>
+                <span className="text-sm text-muted-foreground">From Warehouse</span>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className={`font-semibold text-lg ${isOutgoing ? 'text-blue-600' : ''}`}>
-                    {transfer.source_warehouse.name}
-                  </span>
+                  <span className="font-semibold text-lg">{transfer.source_warehouse.name}</span>
                   {isOutgoing && (
-                    <Badge
-                      variant="outline"
-                      className="text-xs bg-blue-50 text-blue-700 border-blue-200"
-                    >
+                    <Badge variant="outline" className="text-xs">
                       This Warehouse
                     </Badge>
                   )}
                 </div>
               </div>
-              <div className="flex items-center justify-center text-slate-400">
+              <div className="flex items-center justify-center text-muted-foreground">
                 <ArrowRight className="h-6 w-6" />
               </div>
               <div>
-                <span className="text-sm text-slate-600">To Warehouse</span>
+                <span className="text-sm text-muted-foreground">To Warehouse</span>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className={`font-semibold text-lg ${isIncoming ? 'text-green-600' : ''}`}>
+                  <span className="font-semibold text-lg">
                     {transfer.destination_warehouse.name}
                   </span>
                   {isIncoming && (
-                    <Badge
-                      variant="outline"
-                      className="text-xs bg-green-50 text-green-700 border-green-200"
-                    >
+                    <Badge variant="outline" className="text-xs">
                       This Warehouse
                     </Badge>
                   )}
@@ -304,18 +283,18 @@ function TransferDetailContent() {
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-slate-600">Created By:</span>
+                <span className="text-muted-foreground">Created By:</span>
                 <span className="font-medium">
                   {transfer.user?.fullName || transfer.user_role || 'System'}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-600">Created At:</span>
+                <span className="text-muted-foreground">Created At:</span>
                 <span className="text-sm">{formatDate(transfer.created_at)}</span>
               </div>
               {transfer.status === 'POSTED' && (
                 <div className="flex justify-between pt-2 border-t">
-                  <span className="text-slate-600">Updated At:</span>
+                  <span className="text-muted-foreground">Updated At:</span>
                   <span className="text-sm">{formatDate(transfer.updated_at)}</span>
                 </div>
               )}
@@ -354,9 +333,7 @@ function TransferDetailContent() {
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">{item.product.unit}</TableCell>
-                    <TableCell className="text-right font-semibold text-indigo-600">
-                      {item.quantity}
-                    </TableCell>
+                    <TableCell className="text-right font-semibold">{item.quantity}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -371,7 +348,7 @@ function TransferDetailContent() {
               <CardTitle>Notes</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-slate-700 dark:text-slate-300">{transfer.notes}</p>
+              <p className="text-foreground">{transfer.notes}</p>
             </CardContent>
           </Card>
         )}
@@ -382,7 +359,7 @@ function TransferDetailContent() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <AlertTriangle className="h-5 w-5 text-muted-foreground" />
               Post Warehouse Transfer?
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -419,7 +396,7 @@ function TransferDetailContent() {
             <AlertDialogAction
               onClick={handleCancel}
               disabled={cancelling}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {cancelling ? 'Cancelling...' : 'Cancel Transfer'}
             </AlertDialogAction>

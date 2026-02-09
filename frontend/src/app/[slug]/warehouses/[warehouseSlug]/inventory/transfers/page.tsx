@@ -55,7 +55,7 @@ function TransferListContent() {
   const { activeWarehouse } = useWarehouse();
 
   // Get user role for RBAC
-  const activeCompany = user?.companies?.find(c => c.id === user.activeCompanyId);
+  const activeCompany = user?.companies?.find((c) => c.id === user.activeCompanyId);
   const userRole = activeCompany?.role;
   const canCreateTransfer = userRole ? ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole) : false;
 
@@ -65,9 +65,6 @@ function TransferListContent() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Fetch transfers
-  console.log('[TRANSFERS] Active warehouse:', activeWarehouse);
-  console.log('[TRANSFERS] Fetching transfers for warehouse:', activeWarehouse?.id);
-  
   const { data, loading, error } = useQuery(GET_WAREHOUSE_TRANSFERS, {
     variables: {
       filters: {
@@ -81,17 +78,16 @@ function TransferListContent() {
     fetchPolicy: 'cache-and-network',
   });
 
-  console.log('[TRANSFERS] Query result:', { data, loading, error });
-  
   const allTransfers = data?.warehouseTransfers || [];
   const refetch = () => {
     // Refetch handled by GraphQL cache
   };
-  
+
   // Filter to show only transfers involving the current warehouse (source OR destination)
-  const warehouseTransfers = allTransfers.filter((transfer: any) => 
-    transfer.source_warehouse?.id === activeWarehouse?.id || 
-    transfer.destination_warehouse?.id === activeWarehouse?.id
+  const warehouseTransfers = allTransfers.filter(
+    (transfer: any) =>
+      transfer.source_warehouse?.id === activeWarehouse?.id ||
+      transfer.destination_warehouse?.id === activeWarehouse?.id,
   );
 
   // Further filter by direction
@@ -133,27 +129,27 @@ function TransferListContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto" />
-          <p className="text-slate-600 dark:text-slate-400">Loading transfers...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+          <p className="text-muted-foreground">Loading transfers...</p>
         </div>
       </div>
     );
   }
 
   if (error) {
-    console.error('[TRANSFERS] GraphQL Error:', error);
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
-              <XCircle className="h-12 w-12 text-red-500 mx-auto" />
+              <XCircle className="h-12 w-12 text-destructive mx-auto" />
               <h3 className="text-lg font-semibold">Failed to load transfers</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">{error.message}</p>
-              <p className="text-xs text-slate-500 font-mono">{JSON.stringify(error.graphQLErrors, null, 2)}</p>
-              <Button onClick={() => window.location.reload()}>Retry</Button>
+              <p className="text-sm text-muted-foreground">{error.message}</p>
+              <Button onClick={() => window.location.reload()} variant="outline">
+                Retry
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -162,16 +158,14 @@ function TransferListContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-white dark:bg-slate-900">
+      <header className="bg-white">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Warehouse Transfers
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400">
+              <h1 className="text-3xl font-bold tracking-tight">Warehouse Transfers</h1>
+              <p className="text-muted-foreground">
                 Move stock between warehouses within your company
               </p>
             </div>
@@ -201,30 +195,34 @@ function TransferListContent() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Draft</CardTitle>
-              <FileText className="h-4 w-4 text-amber-500" />
+              <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-amber-600">{draftCount}</div>
+              <div className="text-2xl font-bold">{draftCount}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Posted</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{postedCount}</div>
+              <div className="text-2xl font-bold">{postedCount}</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Filters */}
+        {/* Filters + Transfers Table */}
         <Card>
-          <CardContent className="pt-6">
+          <CardHeader>
+            <CardTitle>Transfers ({filteredTransfers.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Filters */}
             <div className="flex gap-4 flex-wrap">
               <div className="flex-1 min-w-[200px]">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search by transfer number, warehouse..."
                     className="pl-9"
@@ -255,20 +253,13 @@ function TransferListContent() {
                 </SelectContent>
               </Select>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Transfers Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Transfers ({filteredTransfers.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
+            {/* Table Content */}
             {filteredTransfers.length === 0 ? (
               <div className="text-center py-12">
-                <ArrowRightLeft className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                <ArrowRightLeft className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No transfers found</h3>
-                <p className="text-slate-600 dark:text-slate-400 mb-4">
+                <p className="text-muted-foreground mb-4">
                   {searchQuery || statusFilter !== 'all'
                     ? 'Try adjusting your filters'
                     : 'Create your first transfer to move stock between warehouses'}
@@ -299,23 +290,15 @@ function TransferListContent() {
                   {filteredTransfers.map((transfer: any) => {
                     const isOutgoing = transfer.source_warehouse?.id === activeWarehouse?.id;
                     const isIncoming = transfer.destination_warehouse?.id === activeWarehouse?.id;
-                    
+
                     return (
-                      <TableRow key={transfer.id}>
+                      <TableRow key={transfer.id} className="hover:bg-muted/50">
                         <TableCell className="font-mono text-sm font-medium">
                           {transfer.transfer_number}
                         </TableCell>
                         <TableCell>
-                          {isOutgoing && (
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                              OUTGOING
-                            </Badge>
-                          )}
-                          {isIncoming && (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                              INCOMING
-                            </Badge>
-                          )}
+                          {isOutgoing && <Badge variant="outline">OUTGOING</Badge>}
+                          {isIncoming && <Badge variant="outline">INCOMING</Badge>}
                         </TableCell>
                         <TableCell className={isOutgoing ? 'font-semibold' : ''}>
                           {transfer.source_warehouse?.name || 'N/A'}
@@ -325,7 +308,7 @@ function TransferListContent() {
                         </TableCell>
                         <TableCell>{transfer.items?.length || 0}</TableCell>
                         <TableCell>{formatDate(transfer.created_at)}</TableCell>
-                        <TableCell className="text-slate-600 dark:text-slate-400">
+                        <TableCell className="text-muted-foreground">
                           {transfer.user?.fullName || transfer.user_role || 'System'}
                         </TableCell>
                         <TableCell>{getStatusBadge(transfer.status)}</TableCell>

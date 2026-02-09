@@ -224,16 +224,14 @@ function CatalogProductsContent() {
   const isEmpty = products.length === 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-white dark:bg-slate-900">
+      <header className="bg-white">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Products
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">Products</h1>
+              <p className="text-muted-foreground">
                 Manage company-wide product definitions and pricing
               </p>
             </div>
@@ -331,11 +329,11 @@ function CatalogProductsContent() {
 
             {/* Filters */}
             <Card>
-              <CardContent className="pt-6">
+              <CardContent className="space-y-6">
                 <div className="flex flex-col gap-4 md:flex-row">
                   <div className="flex-1">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Search by name, SKU, or barcode..."
                         className="pl-9"
@@ -381,15 +379,7 @@ function CatalogProductsContent() {
                     </SelectContent>
                   </Select>
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Products Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Products ({filteredProducts.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
                 {filteredProducts.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     No products match your filters
