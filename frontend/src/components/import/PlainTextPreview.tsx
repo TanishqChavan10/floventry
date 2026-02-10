@@ -33,11 +33,16 @@ export function ImportPreview({ type, rows, existingKeys = new Set() }: ImportPr
 
   const getKeyField = () => {
     switch (type) {
-      case 'categories': return 'name';
-      case 'products': return 'sku';
-      case 'suppliers': return 'name';
-      case 'units': return 'name';
-      default: return 'name';
+      case 'categories':
+        return 'name';
+      case 'products':
+        return 'sku';
+      case 'suppliers':
+        return 'name';
+      case 'units':
+        return 'name';
+      default:
+        return 'name';
     }
   };
 
@@ -91,7 +96,14 @@ export function ImportPreview({ type, rows, existingKeys = new Set() }: ImportPr
 
   const errorCount = rows.length - validCount;
 
-  const entityLabel = type === 'categories' ? 'categories' : type === 'products' ? 'products' : type === 'suppliers' ? 'suppliers' : 'units';
+  const entityLabel =
+    type === 'categories'
+      ? 'categories'
+      : type === 'products'
+        ? 'products'
+        : type === 'suppliers'
+          ? 'suppliers'
+          : 'units';
 
   return (
     <div className="space-y-3">
@@ -102,8 +114,8 @@ export function ImportPreview({ type, rows, existingKeys = new Set() }: ImportPr
             <span>
               <strong>Preview:</strong> {rows.length} {entityLabel} detected
             </span>
-            <span className="text-green-600">✓ {validCount} valid</span>
-            {errorCount > 0 && <span className="text-red-600">⚠ {errorCount} issues</span>}
+            <span className="text-primary">✓ {validCount} valid</span>
+            {errorCount > 0 && <span className="text-destructive">⚠ {errorCount} issues</span>}
           </div>
         </AlertDescription>
       </Alert>
@@ -113,7 +125,7 @@ export function ImportPreview({ type, rows, existingKeys = new Set() }: ImportPr
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">Status</TableHead>
-              {columns.map(col => (
+              {columns.map((col) => (
                 <TableHead key={col.key}>{col.label}</TableHead>
               ))}
             </TableRow>
@@ -132,30 +144,30 @@ export function ImportPreview({ type, rows, existingKeys = new Set() }: ImportPr
 
               if (isEmpty) {
                 statusIcon = <XCircle className="h-4 w-4" />;
-                statusColor = 'text-red-600';
+                statusColor = 'text-destructive';
                 statusMessage = 'Missing required field';
               } else if (isExisting) {
                 statusIcon = <AlertCircle className="h-4 w-4" />;
-                statusColor = 'text-orange-600';
+                statusColor = 'text-muted-foreground';
                 statusMessage = 'Already exists';
               } else if (isDuplicate) {
                 statusIcon = <AlertCircle className="h-4 w-4" />;
-                statusColor = 'text-orange-600';
+                statusColor = 'text-muted-foreground';
                 statusMessage = 'Duplicate';
               } else {
                 statusIcon = <CheckCircle className="h-4 w-4" />;
-                statusColor = 'text-green-600';
+                statusColor = 'text-primary';
                 statusMessage = 'Valid';
               }
 
               return (
-                <TableRow key={index} className={!isValid ? 'bg-red-50 dark:bg-red-950/10' : ''}>
+                <TableRow key={index} className={!isValid ? 'bg-destructive/10' : ''}>
                   <TableCell>
                     <div className={`flex items-center gap-1 ${statusColor}`} title={statusMessage}>
                       {statusIcon}
                     </div>
                   </TableCell>
-                  {columns.map(col => {
+                  {columns.map((col) => {
                     const value = row.data[col.key];
                     // Handle different value types
                     let displayValue;
@@ -168,11 +180,17 @@ export function ImportPreview({ type, rows, existingKeys = new Set() }: ImportPr
                     } else {
                       displayValue = String(value);
                     }
-                    
+
                     return (
-                      <TableCell 
+                      <TableCell
                         key={col.key}
-                        className={col.key === keyField && isEmpty ? 'text-red-600 font-medium' : col.key === keyField ? 'font-medium' : 'text-muted-foreground'}
+                        className={
+                          col.key === keyField && isEmpty
+                            ? 'text-destructive font-medium'
+                            : col.key === keyField
+                              ? 'font-medium'
+                              : 'text-muted-foreground'
+                        }
                       >
                         {displayValue}
                       </TableCell>

@@ -7,12 +7,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Supplier } from './supplier.entity';
 import { CreateSupplierInput, UpdateSupplierInput } from './dto/supplier.input';
+import { Product } from '../inventory/entities/product.entity';
 
 @Injectable()
 export class SupplierService {
   constructor(
     @InjectRepository(Supplier)
     private supplierRepository: Repository<Supplier>,
+    @InjectRepository(Product)
+    private productRepository: Repository<Product>,
   ) {}
 
   async create(
@@ -119,5 +122,18 @@ export class SupplierService {
 
     const products = await supplier.products;
     return products ? products.length : 0;
+  }
+
+  async getProductsBySupplierId(supplierId: string): Promise<Product[]> {
+    return this.productRepository.find({
+      where: { supplier_id: supplierId },
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        unit: true,
+      },
+      order: { name: 'ASC' },
+    });
   }
 }

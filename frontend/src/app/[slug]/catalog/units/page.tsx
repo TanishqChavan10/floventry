@@ -176,18 +176,16 @@ function UnitsContent() {
   const isEmpty = units.length === 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-white dark:bg-slate-900">
+      <header className="bg-white">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">
                 Units of Measurement
               </h1>
-              <p className="text-slate-600 dark:text-slate-400">
-                Define units used across your products
-              </p>
+              <p className="text-muted-foreground">Define units used across your products</p>
             </div>
             {!isEmpty && (
               <div className="flex items-center gap-2">
@@ -215,8 +213,8 @@ function UnitsContent() {
           /* Empty State */
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
-              <div className="rounded-full bg-slate-100 dark:bg-slate-800 p-6">
-                <PackagePlus className="h-12 w-12 text-slate-400" />
+              <div className="rounded-full bg-muted p-6">
+                <PackagePlus className="h-12 w-12 text-muted-foreground" />
               </div>
               <div className="text-center space-y-2">
                 <h3 className="text-lg font-semibold">No units defined yet</h3>
@@ -266,11 +264,12 @@ function UnitsContent() {
               </Card>
             </div>
 
-            {/* Search */}
+            {/* Units Table */}
             <Card>
-              <CardContent className="pt-6">
+             
+              <CardContent className="space-y-6">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search units..."
                     className="pl-9"
@@ -278,15 +277,7 @@ function UnitsContent() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Units Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Units ({filteredUnits.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
                 {filteredUnits.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     No units match your search
@@ -326,7 +317,7 @@ function UnitsContent() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => handleDeleteUnit(unit.id)}
+                                onClick={() => handleDeleteUnit(unit)}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -353,7 +344,7 @@ function UnitsContent() {
 
       {/* Unit Modal */}
       <Dialog open={isUnitModalOpen} onOpenChange={(open) => !open && handleCloseModal()}>
-        <DialogContent>
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{selectedUnit ? 'Edit Unit' : 'Add New Unit'}</DialogTitle>
             <DialogDescription>
@@ -391,9 +382,7 @@ function UnitsContent() {
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
                 <Label htmlFor="isDefault">Set as default unit</Label>
-                <p className="text-sm text-muted-foreground">
-                  Only one unit can be default
-                </p>
+                <p className="text-sm text-muted-foreground">Only one unit can be default</p>
               </div>
               <Switch
                 id="isDefault"
@@ -412,11 +401,7 @@ function UnitsContent() {
                 Cancel
               </Button>
               <Button type="submit" disabled={creating || updating}>
-                {creating || updating
-                  ? 'Saving...'
-                  : selectedUnit
-                  ? 'Update Unit'
-                  : 'Create Unit'}
+                {creating || updating ? 'Saving...' : selectedUnit ? 'Update Unit' : 'Create Unit'}
               </Button>
             </DialogFooter>
           </form>
@@ -429,13 +414,19 @@ function UnitsContent() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Unit?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{unitToDelete?.name} ({unitToDelete?.shortCode})</strong>? 
-              This action cannot be undone. Units in use by products cannot be deleted.
+              Are you sure you want to delete{' '}
+              <strong>
+                {unitToDelete?.name} ({unitToDelete?.shortCode})
+              </strong>
+              ? This action cannot be undone. Units in use by products cannot be deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
               Delete Unit
             </AlertDialogAction>
           </AlertDialogFooter>

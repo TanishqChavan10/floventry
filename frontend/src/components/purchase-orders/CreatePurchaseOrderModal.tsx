@@ -220,7 +220,7 @@ export function CreatePurchaseOrderModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Purchase Order</DialogTitle>
           <DialogDescription>Add products to create a new purchase order</DialogDescription>
@@ -231,10 +231,10 @@ export function CreatePurchaseOrderModal({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="warehouse">
-                Warehouse <span className="text-red-500">*</span>
+                Warehouse <span className="text-destructive">*</span>
               </Label>
               <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
-                <SelectTrigger id="warehouse">
+                <SelectTrigger id="warehouse" className="w-full">
                   <SelectValue placeholder="Select warehouse" />
                 </SelectTrigger>
                 <SelectContent>
@@ -249,10 +249,10 @@ export function CreatePurchaseOrderModal({
 
             <div className="space-y-2">
               <Label htmlFor="supplier">
-                Supplier <span className="text-red-500">*</span>
+                Supplier <span className="text-destructive">*</span>
               </Label>
               <Select value={selectedSupplier} onValueChange={handleSupplierChange}>
-                <SelectTrigger id="supplier">
+                <SelectTrigger id="supplier" className="w-full">
                   <SelectValue placeholder="Select supplier" />
                 </SelectTrigger>
                 <SelectContent>
@@ -264,7 +264,7 @@ export function CreatePurchaseOrderModal({
                 </SelectContent>
               </Select>
               {supplierAutoFilled && (
-                <p className="text-xs text-slate-600 dark:text-slate-400">
+                <p className="text-xs text-muted-foreground">
                   Auto-selected from the chosen product — you can change it.
                 </p>
               )}
@@ -282,7 +282,7 @@ export function CreatePurchaseOrderModal({
             </div>
 
             {!selectedWarehouse ? (
-              <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-4 border border-dashed rounded-lg">
+              <p className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-lg">
                 Select a warehouse first to add products
               </p>
             ) : (
@@ -290,10 +290,10 @@ export function CreatePurchaseOrderModal({
                 {items.map((item, index) => (
                   <div
                     key={index}
-                    className="flex gap-3 items-end p-3 border rounded-lg bg-slate-50 dark:bg-slate-900/50"
+                    className="grid grid-cols-[minmax(0,1fr)_7rem_auto] grid-rows-[auto_auto_auto] gap-x-3 gap-y-2 p-3 border rounded-lg bg-muted/30"
                   >
-                    <div className="flex-1 space-y-2">
-                      <Label className="text-xs">Product *</Label>
+                    <Label className="text-xs col-start-1 row-start-1">Product *</Label>
+                    <div className="col-start-1 row-start-2 min-w-0">
                       <Select
                         value={item.product_id}
                         onValueChange={(value) => {
@@ -301,7 +301,7 @@ export function CreatePurchaseOrderModal({
                           autoSelectSupplierForProduct(value);
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full min-w-0">
                           <SelectValue placeholder="Select product" />
                         </SelectTrigger>
                         <SelectContent>
@@ -312,28 +312,28 @@ export function CreatePurchaseOrderModal({
                           ))}
                         </SelectContent>
                       </Select>
-                      {(() => {
-                        const selectedStock = products.find(
-                          (s: any) => s.product?.id === item.product_id,
-                        );
-                        if (!selectedStock?.product?.sku) return null;
-
-                        return (
-                          <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                            <span className="font-mono">SKU: {selectedStock.product.sku}</span>
-                            <CopyButton
-                              value={selectedStock.product.sku}
-                              ariaLabel="Copy SKU"
-                              successMessage="Copied SKU to clipboard"
-                              className="h-6 w-6 text-muted-foreground"
-                            />
-                          </div>
-                        );
-                      })()}
                     </div>
+                    {(() => {
+                      const selectedStock = products.find(
+                        (s: any) => s.product?.id === item.product_id,
+                      );
+                      if (!selectedStock?.product?.sku) return null;
 
-                    <div className="w-28 space-y-2">
-                      <Label className="text-xs">Quantity *</Label>
+                      return (
+                        <div className="col-start-1 row-start-3 flex items-center gap-1 text-xs text-muted-foreground">
+                          <span className="font-mono">SKU: {selectedStock.product.sku}</span>
+                          <CopyButton
+                            value={selectedStock.product.sku}
+                            ariaLabel="Copy SKU"
+                            successMessage="Copied SKU to clipboard"
+                            className="h-6 w-6 text-muted-foreground"
+                          />
+                        </div>
+                      );
+                    })()}
+
+                    <Label className="text-xs col-start-2 row-start-1">Quantity *</Label>
+                    <div className="col-start-2 row-start-2">
                       <Input
                         type="number"
                         min="1"
@@ -344,14 +344,16 @@ export function CreatePurchaseOrderModal({
                       />
                     </div>
 
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeItem(index)}
-                      disabled={items.length === 1}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    <div className="col-start-3 row-start-2 flex items-end">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeItem(index)}
+                        disabled={items.length === 1}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

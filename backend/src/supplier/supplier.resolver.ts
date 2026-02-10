@@ -11,6 +11,7 @@ import { UseGuards, BadRequestException } from '@nestjs/common';
 import { SupplierService } from './supplier.service';
 import { Supplier } from './supplier.entity';
 import { CreateSupplierInput, UpdateSupplierInput } from './dto/supplier.input';
+import { SupplierProduct } from './dto/supplier-product.model';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -113,5 +114,10 @@ export class SupplierResolver {
   @ResolveField(() => Int, { name: 'productsCount' })
   async productsCount(@Parent() supplier: Supplier): Promise<number> {
     return this.supplierService.getProductCount(supplier.id);
+  }
+
+  @ResolveField(() => [SupplierProduct], { name: 'products' })
+  async products(@Parent() supplier: Supplier): Promise<SupplierProduct[]> {
+    return this.supplierService.getProductsBySupplierId(supplier.id);
   }
 }

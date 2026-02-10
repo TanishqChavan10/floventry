@@ -48,7 +48,7 @@ export default function Navbar({ isMenuOpen, setIsMenuOpen }: NavbarProps) {
     <nav className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white">
       <div className="mx-auto flex h-24 max-w-[1200px] items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2">
-          <img src="/logo.svg" alt="Floventory" className="h-12" />
+          <img src="/pic3.png" alt="Floventory" className="h-60 w-auto" />
         </Link>
 
         <div className="hidden items-center gap-3 md:flex">

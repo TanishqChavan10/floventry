@@ -44,7 +44,13 @@ import {
   EXECUTE_OPENING_STOCK_IMPORT,
   EXECUTE_UNIT_IMPORT,
 } from '@/lib/graphql/import';
-import { parsePlainTextCategories, parsePlainTextProducts, parsePlainTextSuppliers, parsePlainTextUnits, detectInputFormat } from '@/lib/utils/plainTextParser';
+import {
+  parsePlainTextCategories,
+  parsePlainTextProducts,
+  parsePlainTextSuppliers,
+  parsePlainTextUnits,
+  detectInputFormat,
+} from '@/lib/utils/plainTextParser';
 import { parseCsvForPreview } from '@/lib/utils/csvParser';
 import { ImportPreview } from '@/components/import/PlainTextPreview';
 
@@ -135,7 +141,8 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
   const [csvContent, setCsvContent] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
   const supportsPaste: boolean = type !== 'opening_stock';
-  const supportsPlainText: boolean = type === 'categories' || type === 'products' || type === 'suppliers' || type === 'units';
+  const supportsPlainText: boolean =
+    type === 'categories' || type === 'products' || type === 'suppliers' || type === 'units';
   const [inputMethod, setInputMethod] = useState<InputMethod>('upload');
   const [pastedText, setPastedText] = useState<string>('');
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
@@ -221,13 +228,14 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
   const resolveCsvContentForValidation = (): { content: string; name: string } => {
     if (supportsPlainText && inputMethod === 'plaintext') {
       const trimmed = pastedText.trim();
-      const parsed = type === 'categories'
-        ? parsePlainTextCategories(trimmed)
-        : type === 'products'
-        ? parsePlainTextProducts(trimmed)
-        : type === 'suppliers'
-        ? parsePlainTextSuppliers(trimmed)
-        : parsePlainTextUnits(trimmed);
+      const parsed =
+        type === 'categories'
+          ? parsePlainTextCategories(trimmed)
+          : type === 'products'
+            ? parsePlainTextProducts(trimmed)
+            : type === 'suppliers'
+              ? parsePlainTextSuppliers(trimmed)
+              : parsePlainTextUnits(trimmed);
       return { content: parsed.csvContent, name: 'plaintext.csv' };
     }
     if (supportsPaste && inputMethod === 'paste') {
@@ -364,16 +372,17 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
     if (inputMethod === 'plaintext' && pastedText.trim()) {
       const format = detectInputFormat(pastedText);
       setDetectedFormat(format);
-      
-      const parsed = type === 'categories'
-        ? parsePlainTextCategories(pastedText)
-        : type === 'products'
-        ? parsePlainTextProducts(pastedText)
-        : type === 'suppliers'
-        ? parsePlainTextSuppliers(pastedText)
-        : type === 'units'
-        ? parsePlainTextUnits(pastedText)
-        : { categories: [], csvContent: '', hasErrors: true };
+
+      const parsed =
+        type === 'categories'
+          ? parsePlainTextCategories(pastedText)
+          : type === 'products'
+            ? parsePlainTextProducts(pastedText)
+            : type === 'suppliers'
+              ? parsePlainTextSuppliers(pastedText)
+              : type === 'units'
+                ? parsePlainTextUnits(pastedText)
+                : { categories: [], csvContent: '', hasErrors: true };
       setPlainTextPreview(parsed);
       setCsvPreview(null);
     }
@@ -389,8 +398,7 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
       const parsed = parseCsvForPreview(csvContent);
       setCsvPreview(parsed);
       setPlainTextPreview(null);
-    }
-    else {
+    } else {
       setDetectedFormat(null);
       setPlainTextPreview(null);
       setCsvPreview(null);
@@ -403,49 +411,49 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
       <div className="w-full overflow-x-auto">
         <div className="flex items-center gap-3 min-w-[520px] pr-2">
           <div
-            className={`flex items-center gap-2 ${step === 'upload' ? 'text-blue-600' : 'text-slate-600'}`}
+            className={`flex items-center gap-2 ${step === 'upload' ? 'text-primary' : 'text-muted-foreground'}`}
           >
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'upload' ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'upload' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
             >
               1
             </div>
             <span className="font-medium">Upload</span>
           </div>
 
-          <div className="hidden sm:block w-10 h-px bg-slate-300" />
+          <div className="hidden sm:block w-10 h-px bg-border" />
 
           <div
-            className={`flex items-center gap-2 ${step === 'validate' ? 'text-blue-600' : 'text-slate-600'}`}
+            className={`flex items-center gap-2 ${step === 'validate' ? 'text-primary' : 'text-muted-foreground'}`}
           >
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'validate' || step === 'confirm' || step === 'complete' ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'validate' || step === 'confirm' || step === 'complete' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
             >
               2
             </div>
             <span className="font-medium">Validate</span>
           </div>
 
-          <div className="hidden sm:block w-10 h-px bg-slate-300" />
+          <div className="hidden sm:block w-10 h-px bg-border" />
 
           <div
-            className={`flex items-center gap-2 ${step === 'confirm' ? 'text-blue-600' : 'text-slate-600'}`}
+            className={`flex items-center gap-2 ${step === 'confirm' ? 'text-primary' : 'text-muted-foreground'}`}
           >
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'confirm' || step === 'complete' ? 'bg-blue-600 text-white' : 'bg-slate-200'}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'confirm' || step === 'complete' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
             >
               3
             </div>
             <span className="font-medium">Confirm</span>
           </div>
 
-          <div className="hidden sm:block w-10 h-px bg-slate-300" />
+          <div className="hidden sm:block w-10 h-px bg-border" />
 
           <div
-            className={`flex items-center gap-2 ${step === 'complete' ? 'text-green-600' : 'text-slate-600'}`}
+            className={`flex items-center gap-2 ${step === 'complete' ? 'text-primary' : 'text-muted-foreground'}`}
           >
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'complete' ? 'bg-green-600 text-white' : 'bg-slate-200'}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'complete' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
             >
               ✓
             </div>
@@ -544,13 +552,13 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label>
-                    {type === 'categories' 
-                      ? 'Paste categories (one per line)' 
+                    {type === 'categories'
+                      ? 'Paste categories (one per line)'
                       : type === 'products'
-                      ? 'Paste products (one per line)'
-                      : type === 'suppliers'
-                      ? 'Paste suppliers (one per line)'
-                      : 'Paste units (one per line)'}
+                        ? 'Paste products (one per line)'
+                        : type === 'suppliers'
+                          ? 'Paste suppliers (one per line)'
+                          : 'Paste units (one per line)'}
                   </Label>
                   <Textarea
                     value={pastedText}
@@ -559,75 +567,106 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
                       type === 'categories'
                         ? `Fruits & Vegetables - Fresh produce items\nDairy & Bakery - Milk and baked goods\nSnacks & Confectionery\nBeverages - Drinks and refreshments`
                         : type === 'products'
-                        ? `PROD-001 | Laptop | pcs | High-performance laptop\nPROD-002 | Mouse | pcs | Wireless mouse\nPROD-003 | Keyboard | pcs`
-                        : type === 'suppliers'
-                        ? `ABC Suppliers Ltd | sales@abc.com | +91-9876543210 | 123 Business Street\nXYZ Corp - contact@xyz.com - +91-9876543211 - 456 Trade Park\nGlobal Traders`
-                        : `Piece | pcs\nKilogram | kg\nLiter | L | default\nMeter | m`
+                          ? `PROD-001 | Laptop | pcs | High-performance laptop\nPROD-002 | Mouse | pcs | Wireless mouse\nPROD-003 | Keyboard | pcs`
+                          : type === 'suppliers'
+                            ? `ABC Suppliers Ltd | sales@abc.com | +91-9876543210 | 123 Business Street\nXYZ Corp - contact@xyz.com - +91-9876543211 - 456 Trade Park\nGlobal Traders`
+                            : `Piece | pcs\nKilogram | kg\nLiter | L | default\nMeter | m`
                     }
                     className="min-h-[180px]"
                   />
                   <p className="text-sm text-muted-foreground">
                     {type === 'categories' ? (
                       <>
-                        Optional description after <code className="bg-muted px-1 py-0.5 rounded">-</code>
+                        Optional description after{' '}
+                        <code className="bg-muted px-1 py-0.5 rounded">-</code>
                         <br />
-                        Example: <code className="bg-muted px-1 py-0.5 rounded text-xs">Fruits & Vegetables - Fresh produce items</code>
+                        Example:{' '}
+                        <code className="bg-muted px-1 py-0.5 rounded text-xs">
+                          Fruits & Vegetables - Fresh produce items
+                        </code>
                       </>
                     ) : type === 'products' ? (
                       <>
-                        <strong>Simple:</strong> <code className="bg-muted px-1 py-0.5 rounded text-xs">SKU | Name | Unit | Description</code>
+                        <strong>Simple:</strong>{' '}
+                        <code className="bg-muted px-1 py-0.5 rounded text-xs">
+                          SKU | Name | Unit | Description
+                        </code>
                         <br />
-                        <strong>Extended:</strong> <code className="bg-muted px-1 py-0.5 rounded text-xs">SKU | Name | Unit | Barcode | Category | Supplier | Cost | Selling | Description</code>
+                        <strong>Extended:</strong>{' '}
+                        <code className="bg-muted px-1 py-0.5 rounded text-xs">
+                          SKU | Name | Unit | Barcode | Category | Supplier | Cost | Selling |
+                          Description
+                        </code>
                       </>
                     ) : type === 'suppliers' ? (
                       <>
-                        Format: <code className="bg-muted px-1 py-0.5 rounded">Name | Email | Phone | Address</code> or <code className="bg-muted px-1 py-0.5 rounded">Name - Email - Phone - Address</code>
+                        Format:{' '}
+                        <code className="bg-muted px-1 py-0.5 rounded">
+                          Name | Email | Phone | Address
+                        </code>{' '}
+                        or{' '}
+                        <code className="bg-muted px-1 py-0.5 rounded">
+                          Name - Email - Phone - Address
+                        </code>
                         <br />
-                        Example: <code className="bg-muted px-1 py-0.5 rounded text-xs">ABC Suppliers Ltd | sales@abc.com | +91-9876543210 | 123 Business Street</code>
+                        Example:{' '}
+                        <code className="bg-muted px-1 py-0.5 rounded text-xs">
+                          ABC Suppliers Ltd | sales@abc.com | +91-9876543210 | 123 Business Street
+                        </code>
                       </>
                     ) : (
                       <>
-                        Format: <code className="bg-muted px-1 py-0.5 rounded">Name | Short Code | Default (optional)</code>
+                        Format:{' '}
+                        <code className="bg-muted px-1 py-0.5 rounded">
+                          Name | Short Code | Default (optional)
+                        </code>
                         <br />
-                        Example: <code className="bg-muted px-1 py-0.5 rounded text-xs">Piece | pcs</code> or <code className="bg-muted px-1 py-0.5 rounded text-xs">Kilogram | kg | default</code>
+                        Example:{' '}
+                        <code className="bg-muted px-1 py-0.5 rounded text-xs">
+                          Piece | pcs
+                        </code> or{' '}
+                        <code className="bg-muted px-1 py-0.5 rounded text-xs">
+                          Kilogram | kg | default
+                        </code>
                       </>
                     )}
                   </p>
                 </div>
-                
+
                 {plainTextPreview && plainTextPreview.categories.length > 0 && (
-                  <ImportPreview 
+                  <ImportPreview
                     type={type as any}
                     rows={plainTextPreview.categories.map((c: any) => ({
                       data: c,
                       lineNumber: c.lineNumber,
-                      isEmpty: c.isEmpty
+                      isEmpty: c.isEmpty,
                     }))}
                   />
                 )}
 
                 {csvPreview && csvPreview.rows.length > 0 && (
-                  <ImportPreview 
-                    type={type as any}
-                    rows={csvPreview.rows}
-                  />
+                  <ImportPreview type={type as any} rows={csvPreview.rows} />
                 )}
               </div>
             )}
 
             {(fileName ||
               (supportsPaste && inputMethod === 'paste' && pastedText.trim().length > 0) ||
-              (supportsPlainText && inputMethod === 'plaintext' && plainTextPreview && plainTextPreview.categories.length > 0 && !plainTextPreview.hasErrors)) && (
-              <div className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-900">
+              (supportsPlainText &&
+                inputMethod === 'plaintext' &&
+                plainTextPreview &&
+                plainTextPreview.categories.length > 0 &&
+                !plainTextPreview.hasErrors)) && (
+              <div className="p-4 border rounded-lg bg-muted/40">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-blue-600" />
+                    <FileText className="h-5 w-5 text-primary" />
                     <span className="font-medium">
                       {inputMethod === 'plaintext'
                         ? `${plainTextPreview?.categories.length || 0} ${type === 'categories' ? 'categories' : type === 'products' ? 'products' : type === 'suppliers' ? 'suppliers' : 'units'} ready`
                         : supportsPaste && inputMethod === 'paste'
-                        ? 'Pasted data'
-                        : fileName}
+                          ? 'Pasted data'
+                          : fileName}
                     </span>
                   </div>
                   <Button onClick={handleValidate} disabled={validating}>
@@ -658,25 +697,25 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
             <div className="grid grid-cols-3 gap-4">
               <div className="p-4 border rounded-lg">
                 <div className="text-2xl font-bold">{validationResult.totalRows}</div>
-                <div className="text-sm text-slate-600">Total Rows</div>
+                <div className="text-sm text-muted-foreground">Total Rows</div>
               </div>
               <div className="p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold text-primary">
                   {validationResult.validRows.length}
                 </div>
-                <div className="text-sm text-slate-600">Valid Rows</div>
+                <div className="text-sm text-muted-foreground">Valid Rows</div>
               </div>
               <div className="p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-red-600">
+                <div className="text-2xl font-bold text-destructive">
                   {validationResult.errorRows.length}
                 </div>
-                <div className="text-sm text-slate-600">Error Rows</div>
+                <div className="text-sm text-muted-foreground">Error Rows</div>
               </div>
             </div>
 
             {validationResult.errorRows.length > 0 && (
               <div>
-                <h4 className="font-medium mb-2 text-red-600">Errors Found</h4>
+                <h4 className="font-medium mb-2 text-destructive">Errors Found</h4>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -691,14 +730,14 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
                         <TableRow key={`${row.rowNumber}-${idx}`}>
                           <TableCell>{error.rowNumber}</TableCell>
                           <TableCell className="font-mono">{error.field}</TableCell>
-                          <TableCell className="text-red-600">{error.message}</TableCell>
+                          <TableCell className="text-destructive">{error.message}</TableCell>
                         </TableRow>
                       )),
                     )}
                   </TableBody>
                 </Table>
                 {validationResult.errorRows.length > 10 && (
-                  <p className="text-sm text-slate-600 mt-2">
+                  <p className="text-sm text-muted-foreground mt-2">
                     ... and {validationResult.errorRows.length - 10} more errors
                   </p>
                 )}
@@ -778,7 +817,7 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+              <CheckCircle className="h-6 w-6 text-primary" />
               Import Complete
             </CardTitle>
             <CardDescription>Your data has been successfully imported</CardDescription>
@@ -786,13 +825,15 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{importResult.successCount}</div>
-                <div className="text-sm text-slate-600">Successfully Imported</div>
+                <div className="text-2xl font-bold text-primary">{importResult.successCount}</div>
+                <div className="text-sm text-muted-foreground">Successfully Imported</div>
               </div>
               {importResult.failureCount > 0 && (
                 <div className="p-4 border rounded-lg">
-                  <div className="text-2xl font-bold text-red-600">{importResult.failureCount}</div>
-                  <div className="text-sm text-slate-600">Failed</div>
+                  <div className="text-2xl font-bold text-destructive">
+                    {importResult.failureCount}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Failed</div>
                 </div>
               )}
             </div>

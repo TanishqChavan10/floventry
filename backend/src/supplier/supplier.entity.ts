@@ -12,6 +12,7 @@ import {
 } from 'typeorm';
 import { Company } from '../company/company.entity';
 import { Company as CompanyModel } from '../company/company.model';
+import { SupplierProduct } from './dto/supplier-product.model';
 
 @ObjectType()
 @Entity('suppliers')
@@ -52,6 +53,7 @@ export class Supplier {
   isActive: boolean;
 
   // Relationship to products supplied by this supplier
+  @Field(() => [SupplierProduct], { nullable: 'itemsAndList' })
   @OneToMany('Product', 'supplier', { lazy: true })
   products: Promise<any[]>;
 

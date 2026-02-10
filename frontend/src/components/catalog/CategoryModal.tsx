@@ -120,29 +120,29 @@ export function CategoryModal({ open, onOpenChange, category, onSuccess }: Categ
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>{isEditing ? 'Edit Category' : 'Add Category'}</DialogTitle>
             <DialogDescription>
-              {isEditing ? 'Update category details below.' : 'Create a new category for organizing products.'}
+              {isEditing
+                ? 'Update category details below.'
+                : 'Create a new category for organizing products.'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">
-                Category Name <span className="text-red-500">*</span>
+                Category Name <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="name"
                 placeholder="e.g., Electronics"
                 {...register('name')}
-                className={errors.name ? 'border-red-500' : ''}
+                className={errors.name ? 'border-destructive' : ''}
               />
-              {errors.name && (
-                <p className="text-sm text-red-500">{errors.name.message}</p>
-              )}
+              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -151,11 +151,11 @@ export function CategoryModal({ open, onOpenChange, category, onSuccess }: Categ
                 id="description"
                 placeholder="Optional description..."
                 {...register('description')}
-                className={`resize-none ${errors.description ? 'border-red-500' : ''}`}
+                className={`resize-none ${errors.description ? 'border-destructive' : ''}`}
                 rows={3}
               />
               {errors.description && (
-                <p className="text-sm text-red-500">{errors.description.message}</p>
+                <p className="text-sm text-destructive">{errors.description.message}</p>
               )}
             </div>
           </div>
@@ -169,7 +169,7 @@ export function CategoryModal({ open, onOpenChange, category, onSuccess }: Categ
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading} className="bg-indigo-600 hover:bg-indigo-700">
+            <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEditing ? 'Update' : 'Create'} Category
             </Button>

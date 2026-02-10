@@ -28,7 +28,6 @@ import {
 import { StatusBadge } from '@/components/sales/StatusBadge';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
-import { CopyButton } from '@/components/common/CopyButton';
 import Link from 'next/link';
 
 export default function SalesOrderDetailPage() {
@@ -208,7 +207,7 @@ export default function SalesOrderDetailPage() {
           <CardHeader>
             <CardTitle>Order Items</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-3">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -224,17 +223,7 @@ export default function SalesOrderDetailPage() {
                 {order.items?.map((item: any) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.product.name}</TableCell>
-                    <TableCell className="font-mono text-sm">
-                      <div className="flex items-center gap-1">
-                        <span>{item.product.sku}</span>
-                        <CopyButton
-                          value={item.product.sku}
-                          ariaLabel="Copy SKU"
-                          successMessage="Copied SKU to clipboard"
-                          className="h-7 w-7 text-muted-foreground"
-                        />
-                      </div>
-                    </TableCell>
+                    <TableCell className="font-mono text-sm">{item.product.sku}</TableCell>
                     <TableCell>{item.product.unit}</TableCell>
                     <TableCell className="text-right">{item.ordered_quantity}</TableCell>
                     <TableCell className="text-right text-blue-600 font-medium">
@@ -319,7 +308,7 @@ export default function SalesOrderDetailPage() {
             <AlertDialogCancel>Go Back</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => cancelOrder({ variables: { id: orderId } })}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive text-white hover:bg-destructive/90"
             >
               Cancel Order
             </AlertDialogAction>

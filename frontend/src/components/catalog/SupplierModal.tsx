@@ -132,29 +132,29 @@ export function SupplierModal({ open, onOpenChange, supplier, onSuccess }: Suppl
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>{isEditing ? 'Edit Supplier' : 'Add Supplier'}</DialogTitle>
             <DialogDescription>
-              {isEditing ? 'Update supplier information below.' : 'Add a new supplier to your catalog.'}
+              {isEditing
+                ? 'Update supplier information below.'
+                : 'Add a new supplier to your catalog.'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">
-                Supplier Name <span className="text-red-500">*</span>
+                Supplier Name <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="name"
                 placeholder="e.g., Acme Corp"
                 {...register('name')}
-                className={errors.name ? 'border-red-500' : ''}
+                className={errors.name ? 'border-destructive' : ''}
               />
-              {errors.name && (
-                <p className="text-sm text-red-500">{errors.name.message}</p>
-              )}
+              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -165,11 +165,9 @@ export function SupplierModal({ open, onOpenChange, supplier, onSuccess }: Suppl
                   type="email"
                   placeholder="sales@example.com"
                   {...register('email')}
-                  className={errors.email ? 'border-red-500' : ''}
+                  className={errors.email ? 'border-destructive' : ''}
                 />
-                {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email.message}</p>
-                )}
+                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -179,11 +177,9 @@ export function SupplierModal({ open, onOpenChange, supplier, onSuccess }: Suppl
                   type="tel"
                   placeholder="+1 234 567 8900"
                   {...register('phone')}
-                  className={errors.phone ? 'border-red-500' : ''}
+                  className={errors.phone ? 'border-destructive' : ''}
                 />
-                {errors.phone && (
-                  <p className="text-sm text-red-500">{errors.phone.message}</p>
-                )}
+                {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
               </div>
             </div>
 
@@ -193,11 +189,11 @@ export function SupplierModal({ open, onOpenChange, supplier, onSuccess }: Suppl
                 id="address"
                 placeholder="Street address, city, state, zip code"
                 {...register('address')}
-                className={`resize-none ${errors.address ? 'border-red-500' : ''}`}
+                className={`resize-none ${errors.address ? 'border-destructive' : ''}`}
                 rows={3}
               />
               {errors.address && (
-                <p className="text-sm text-red-500">{errors.address.message}</p>
+                <p className="text-sm text-destructive">{errors.address.message}</p>
               )}
             </div>
           </div>
@@ -211,7 +207,7 @@ export function SupplierModal({ open, onOpenChange, supplier, onSuccess }: Suppl
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading} className="bg-indigo-600 hover:bg-indigo-700">
+            <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEditing ? 'Update' : 'Create'} Supplier
             </Button>

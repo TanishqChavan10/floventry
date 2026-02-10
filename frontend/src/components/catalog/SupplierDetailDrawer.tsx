@@ -1,5 +1,6 @@
 'use client';
 
+import { useQuery } from '@apollo/client';
 import {
   Sheet,
   SheetContent,
@@ -10,7 +11,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Edit, Building2, Mail, Phone, MapPin, Package, Calendar } from 'lucide-react';
+import { Edit, Building2, Mail, Phone, MapPin, Package, Calendar, Loader2 } from 'lucide-react';
+import { GET_SUPPLIER } from '@/lib/graphql/catalog';
 
 interface SupplierDetailDrawerProps {
   supplier: any;
@@ -26,6 +28,14 @@ export default function SupplierDetailDrawer({
   onEdit,
 }: SupplierDetailDrawerProps) {
   if (!supplier) return null;
+
+  const { data, loading } = useQuery(GET_SUPPLIER, {
+    variables: { id: supplier.id },
+    skip: !open,
+    fetchPolicy: 'cache-and-network',
+  });
+
+  const linkedProducts = data?.supplier?.products ?? [];
 
   return (
     <Sheet open={open} onOpenChange={(open) => !open && onClose()}>
@@ -109,6 +119,33 @@ export default function SupplierDetailDrawer({
                 </p>
               </div>
             </div>
+
+            {loading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading linked products...
+              </div>
+            ) : linkedProducts.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No linked products</div>
+            ) : (
+              <div className="max-h-56 overflow-y-auto">
+                <div className="space-y-2">
+                  {linkedProducts.map((p: any) => (
+                    <div key={p.id} className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium">{p.name}</div>
+                        <div className="truncate text-xs text-muted-foreground font-mono">
+                          {p.sku}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="shrink-0">
+                        {p.unit}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <Separator />

@@ -173,7 +173,7 @@ function CatalogCategoriesContent() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Header */}
-      <header className="border-b bg-white dark:bg-slate-900">
+      <header className="bg-white dark:bg-slate-900">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
@@ -279,9 +279,9 @@ function CatalogCategoriesContent() {
               </Card>
             </div>
 
-            {/* Search & Filters */}
+            {/* Categories Table */}
             <Card>
-              <CardContent className="pt-6">
+              <CardContent className="space-y-6">
                 <div className="flex flex-col gap-4 md:flex-row">
                   <div className="flex-1">
                     <div className="relative">
@@ -305,15 +305,7 @@ function CatalogCategoriesContent() {
                     </SelectContent>
                   </Select>
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Categories Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Categories ({filteredCategories.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
                 {filteredCategories.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     {statusFilter === 'archived'

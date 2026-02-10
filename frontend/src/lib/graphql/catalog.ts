@@ -197,6 +197,12 @@ export const GET_SUPPLIER = gql`
       address
       isActive
       productsCount
+      products {
+        id
+        name
+        sku
+        unit
+      }
       created_at
       updated_at
     }

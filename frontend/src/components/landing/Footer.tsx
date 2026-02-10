@@ -4,15 +4,15 @@ export default function Footer() {
   return (
     <footer className="border-t border-neutral-800 bg-neutral-950 py-24 text-neutral-400">
       <div className="mx-auto max-w-[1200px] px-6">
-        <div className="grid grid-cols-2 gap-12 md:grid-cols-4">
-          <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2 text-white">
-              <img src="/logo.svg" alt="Floventory" className="h-10 brightness-0 invert" />
+        <div className="grid grid-cols-1 items-start gap-12 md:grid-cols-4">
+          <div>
+            <div className="flex items-start gap-2 text-white">
+              <img
+                src="/pic2.png"
+                alt="Floventory"
+                className="h-20 md:h-80 w-auto brightness-0 invert"
+              />
             </div>
-            <p className="mt-4 text-sm leading-relaxed">
-              Smart inventory management for the modern business. Built for speed, designed for
-              growth.
-            </p>
           </div>
           <div>
             <h4 className="text-sm font-semibold text-white">Product</h4>

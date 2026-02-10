@@ -1181,8 +1181,16 @@ type Supplier {
   isActive: Boolean!
   name: String!
   phone: String
+  products: [SupplierProduct]
   productsCount: Int!
   updated_at: DateTime!
+}
+
+type SupplierProduct {
+  id: ID!
+  name: String!
+  sku: String!
+  unit: String!
 }
 
 type SwitchCompanyResponse {

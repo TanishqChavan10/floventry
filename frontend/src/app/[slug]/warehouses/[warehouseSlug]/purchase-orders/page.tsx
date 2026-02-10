@@ -38,17 +38,13 @@ const mockPOs = [
 
 function WarehousePurchaseOrdersContent() {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <header className="border-b bg-white dark:bg-slate-900">
+    <div className="min-h-screen bg-background">
+      <header className="bg-background">
         <div className="container mx-auto px-6 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-                Purchase Orders
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400 mt-2">
-                Orders for this warehouse
-              </p>
+              <h1 className="text-3xl font-bold text-foreground">Purchase Orders</h1>
+              <p className="text-muted-foreground mt-2">Orders for this warehouse</p>
             </div>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
@@ -84,34 +80,36 @@ function WarehousePurchaseOrdersContent() {
             <CardTitle>Purchase Orders</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>PO Number</TableHead>
-                  <TableHead>Supplier</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockPOs.map((po) => (
-                  <TableRow key={po.id}>
-                    <TableCell className="font-mono text-sm">{po.poNumber}</TableCell>
-                    <TableCell className="font-medium">{po.supplier}</TableCell>
-                    <TableCell>{po.items} items</TableCell>
-                    <TableCell className="font-semibold">{po.amount}</TableCell>
-                    <TableCell>{po.date}</TableCell>
-                    <TableCell>
-                      <Badge variant={po.status === 'approved' ? 'default' : 'secondary'}>
-                        {po.status}
-                      </Badge>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>PO Number</TableHead>
+                    <TableHead>Supplier</TableHead>
+                    <TableHead>Items</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {mockPOs.map((po) => (
+                    <TableRow key={po.id}>
+                      <TableCell className="font-mono text-sm">{po.poNumber}</TableCell>
+                      <TableCell className="font-medium">{po.supplier}</TableCell>
+                      <TableCell>{po.items} items</TableCell>
+                      <TableCell className="font-semibold">{po.amount}</TableCell>
+                      <TableCell>{po.date}</TableCell>
+                      <TableCell>
+                        <Badge variant={po.status === 'approved' ? 'default' : 'secondary'}>
+                          {po.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </main>

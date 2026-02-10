@@ -54,7 +54,12 @@ function SuppliersContent() {
   const { toast } = useToast();
 
   const includeArchived = statusFilter !== 'active';
-  const { data: suppliersData, loading, error, refetch } = useQuery(GET_SUPPLIERS, {
+  const {
+    data: suppliersData,
+    loading,
+    error,
+    refetch,
+  } = useQuery(GET_SUPPLIERS, {
     variables: { includeArchived },
   });
 
@@ -93,9 +98,9 @@ function SuppliersContent() {
   });
 
   // Get role from active company (role is company-specific)
-  const activeCompany = user?.companies?.find(c => c.id === user.activeCompanyId);
+  const activeCompany = user?.companies?.find((c) => c.id === user.activeCompanyId);
   const userRole = activeCompany?.role;
-  
+
   const isOwnerOrAdmin = userRole === 'OWNER' || userRole === 'ADMIN';
   const canEdit = isOwnerOrAdmin; // Only Owner/Admin can edit/create suppliers
   const canArchive = isOwnerOrAdmin; // Only Owner/Admin can archive suppliers
@@ -183,7 +188,7 @@ function SuppliersContent() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Header */}
-      <header className="border-b bg-white dark:bg-slate-900">
+      <header className="bg-white dark:bg-slate-900">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
@@ -286,41 +291,35 @@ function SuppliersContent() {
               </Card>
             </div>
 
-            {/* Filters */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex flex-col gap-4 md:flex-row">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Input
-                        placeholder="Search by name, email, or phone..."
-                        className="pl-9"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full md:w-[160px]">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="archived">Archived</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Suppliers Table */}
+            {/* Suppliers */}
             <Card>
               <CardHeader>
-                <CardTitle>
-                  Suppliers ({filteredSuppliers.length})
-                </CardTitle>
+                <div className="space-y-4">
+                  <CardTitle>Suppliers ({filteredSuppliers.length})</CardTitle>
+                  <div className="flex flex-col gap-4 md:flex-row">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by name, email, or phone..."
+                          className="pl-9"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-full md:w-[160px]">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 {filteredSuppliers.length === 0 ? (
@@ -328,73 +327,78 @@ function SuppliersContent() {
                     No suppliers match your filters
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Supplier Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Phone</TableHead>
-                        <TableHead>Products</TableHead>
-                        <TableHead>Status</TableHead>
-                        {canEdit && <TableHead className="text-right">Actions</TableHead>}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredSuppliers.map((supplier: any) => (
-                        <TableRow
-                          key={supplier.id}
-                          className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => handleViewSupplier(supplier)}
-                        >
-                          <TableCell className="font-medium">{supplier.name}</TableCell>
-                          <TableCell>{supplier.email || '—'}</TableCell>
-                          <TableCell>{supplier.phone || '—'}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {supplier.productsCount || 0} products
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={supplier.isActive ? 'default' : 'secondary'}>
-                              {supplier.isActive ? 'Active' : 'Archived'}
-                            </Badge>
-                          </TableCell>
-                          {canEdit && (
-                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEditSupplier(supplier)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                {canArchive && supplier.isActive && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleArchiveSupplier(supplier)}
-                                  >
-                                    <Archive className="h-4 w-4" />
-                                  </Button>
-                                )}
-                                {canArchive && !supplier.isActive && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleUnarchiveSupplier(supplier)}
-                                    title="Restore supplier"
-                                  >
-                                    <Archive className="h-4 w-4 text-green-600" />
-                                  </Button>
-                                )}
-                              </div>
-                            </TableCell>
-                          )}
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Supplier Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Phone</TableHead>
+                          <TableHead>Products</TableHead>
+                          <TableHead>Status</TableHead>
+                          {canEdit && <TableHead className="text-right">Actions</TableHead>}
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredSuppliers.map((supplier: any) => (
+                          <TableRow
+                            key={supplier.id}
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleViewSupplier(supplier)}
+                          >
+                            <TableCell className="font-medium">{supplier.name}</TableCell>
+                            <TableCell>{supplier.email || '—'}</TableCell>
+                            <TableCell>{supplier.phone || '—'}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {supplier.productsCount || 0} products
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={supplier.isActive ? 'default' : 'secondary'}>
+                                {supplier.isActive ? 'Active' : 'Archived'}
+                              </Badge>
+                            </TableCell>
+                            {canEdit && (
+                              <TableCell
+                                className="text-right"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleEditSupplier(supplier)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  {canArchive && supplier.isActive && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleArchiveSupplier(supplier)}
+                                    >
+                                      <Archive className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  {canArchive && !supplier.isActive && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleUnarchiveSupplier(supplier)}
+                                      title="Restore supplier"
+                                    >
+                                      <Archive className="h-4 w-4 text-green-600" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -427,10 +431,14 @@ function SuppliersContent() {
             setIsDetailDrawerOpen(false);
             setSelectedSupplier(null);
           }}
-          onEdit={canEdit ? () => {
-            setIsDetailDrawerOpen(false);
-            handleEditSupplier(selectedSupplier);
-          } : undefined}
+          onEdit={
+            canEdit
+              ? () => {
+                  setIsDetailDrawerOpen(false);
+                  handleEditSupplier(selectedSupplier);
+                }
+              : undefined
+          }
         />
       )}
 
@@ -440,17 +448,15 @@ function SuppliersContent() {
           <AlertDialogHeader>
             <AlertDialogTitle>Archive Supplier?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to archive <strong>{supplierToArchive?.name}</strong>? 
-              This supplier will be moved to the archived list and won't appear in active lists.
-              Products linked to this supplier will remain unchanged.
-              You can restore it later by filtering for archived suppliers.
+              Are you sure you want to archive <strong>{supplierToArchive?.name}</strong>? This
+              supplier will be moved to the archived list and won't appear in active lists. Products
+              linked to this supplier will remain unchanged. You can restore it later by filtering
+              for archived suppliers.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmArchive}>
-              Archive Supplier
-            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmArchive}>Archive Supplier</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

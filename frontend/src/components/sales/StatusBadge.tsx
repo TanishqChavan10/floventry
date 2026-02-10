@@ -7,11 +7,12 @@ interface StatusBadgeProps {
 export function StatusBadge({ status }: StatusBadgeProps) {
   const config = {
     DRAFT: {
-      variant: 'secondary' as const,
+      variant: 'outline' as const,
       label: 'Draft',
+      className: 'text-muted-foreground',
     },
     CONFIRMED: {
-      variant: 'default' as const,
+      variant: 'secondary' as const,
       label: 'Confirmed',
     },
     POSTED: {
@@ -21,6 +22,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
     CLOSED: {
       variant: 'outline' as const,
       label: 'Closed',
+      className: 'text-muted-foreground',
     },
     CANCELLED: {
       variant: 'destructive' as const,
@@ -28,7 +30,11 @@ export function StatusBadge({ status }: StatusBadgeProps) {
     },
   };
 
-  const { variant, label } = config[status];
+  const { variant, label, className } = config[status];
 
-  return <Badge variant={variant}>{label}</Badge>;
+  return (
+    <Badge variant={variant} className={className}>
+      {label}
+    </Badge>
+  );
 }

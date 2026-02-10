@@ -93,7 +93,7 @@ export default function CustomSignIn() {
         <div className="mx-auto w-full max-w-[440px]">
           {/* Logo */}
           <Link href="/" className="mb-12 inline-block">
-            <img src="/logo.svg" alt="Floventory" className="h-10" />
+            <img src="/pic2.png" alt="Floventory" className="h-60" />
           </Link>
 
           {/* Header */}
@@ -217,7 +217,10 @@ export default function CustomSignIn() {
           {/* Sign up link */}
           <p className="mt-8 text-center text-sm text-neutral-600">
             Don't have an account?{' '}
-            <Link href="/auth/sign-up" className="font-semibold text-neutral-900 hover:text-neutral-700">
+            <Link
+              href="/auth/sign-up"
+              className="font-semibold text-neutral-900 hover:text-neutral-700"
+            >
               Sign up
             </Link>
           </p>
@@ -227,11 +230,7 @@ export default function CustomSignIn() {
       {/* Right Column - Illustration */}
       <div className="hidden lg:flex lg:items-center lg:justify-center lg:p-16">
         <div className="max-w-lg">
-          <img 
-            src="/signin-illustration.jpg" 
-            alt="Inventory Management" 
-            className="w-full h-auto rounded-2xl"
-          />
+          <img src="/signin-illustration.jpg" alt="Inventory Management" className="w-full h-auto rounded-2xl" />
         </div>
       </div>
     </div>

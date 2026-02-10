@@ -207,9 +207,9 @@ function CreatePurchaseOrderContent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-white dark:bg-slate-900">
+      <header className="bg-background">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center gap-4">
             <Link href={`/${companySlug}/purchase-orders`}>
@@ -218,12 +218,10 @@ function CreatePurchaseOrderContent() {
               </Button>
             </Link>
             <div className="space-y-1">
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">
                 Create Purchase Order
               </h1>
-              <p className="text-slate-600 dark:text-slate-400">
-                Add products to create a new purchase order
-              </p>
+              <p className="text-muted-foreground">Add products to create a new purchase order</p>
             </div>
           </div>
         </div>
@@ -270,7 +268,7 @@ function CreatePurchaseOrderContent() {
                     </SelectContent>
                   </Select>
                   {supplierAutoFilled && (
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                    <p className="text-xs text-muted-foreground">
                       Auto-selected from the chosen product — you can change it.
                     </p>
                   )}
@@ -301,15 +299,18 @@ function CreatePurchaseOrderContent() {
             </CardHeader>
             <CardContent className="space-y-4">
               {!selectedWarehouse && (
-                <p className="text-sm text-slate-600 dark:text-slate-400 text-center py-4">
+                <p className="text-sm text-muted-foreground text-center py-4">
                   Select a warehouse first to add products
                 </p>
               )}
 
               {selectedWarehouse &&
                 items.map((item, index) => (
-                  <div key={index} className="flex gap-4 items-end">
-                    <div className="flex-1 space-y-2">
+                  <div
+                    key={index}
+                    className="grid grid-cols-[minmax(0,1fr)_8rem_auto] gap-4 items-end"
+                  >
+                    <div className="min-w-0 space-y-2">
                       <Label>Product *</Label>
                       <Select
                         value={item.product_id}
@@ -318,7 +319,7 @@ function CreatePurchaseOrderContent() {
                           autoSelectSupplierForProduct(value);
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full min-w-0">
                           <SelectValue placeholder="Select product" />
                         </SelectTrigger>
                         <SelectContent>
@@ -331,7 +332,7 @@ function CreatePurchaseOrderContent() {
                       </Select>
                     </div>
 
-                    <div className="w-32 space-y-2">
+                    <div className="space-y-2">
                       <Label>Quantity *</Label>
                       <Input
                         type="number"

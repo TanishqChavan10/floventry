@@ -307,8 +307,8 @@ function getEntityHref(companySlug: string, log: AuditLogItem): string | undefin
 }
 
 const roleBadgeClasses: Record<string, string> = {
-  OWNER: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
-  ADMIN: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  OWNER: 'border border-primary/30 bg-primary/10 text-primary',
+  ADMIN: 'border border-border bg-muted/50 text-foreground',
 };
 
 function AuditLogContent() {
@@ -359,7 +359,6 @@ function AuditLogContent() {
     data: auditData,
     loading,
     error,
-    refetch,
   } = useQuery<AuditLogResponse>(GET_COMPANY_AUDIT_LOGS, {
     variables: {
       filters,
@@ -392,218 +391,213 @@ function AuditLogContent() {
   };
 
   return (
-    <div>
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-8 space-y-6">
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Audit Log
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400">
-              A complete history of critical actions across your company.
-            </p>
-          </div>
-          <Button className="gap-2" variant="outline" onClick={() => refetch()}>
-            Refresh
-          </Button>
-        </div>
-
-        {/* Sticky Filter Bar */}
-        <div className="sticky top-0 z-10 -mx-6 px-6 py-3 bg-slate-50/90 backdrop-blur supports-[backdrop-filter]:bg-slate-50/70 dark:bg-slate-950/80 border-b border-slate-200/60 dark:border-slate-800/60">
-          <div className="flex flex-wrap items-center gap-3">
-            <DatePickerWithRange date={dateRange} setDate={setDateRange} />
-
-            <Select value={action} onValueChange={setAction}>
-              <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder="Action type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All actions</SelectItem>
-                {Object.keys(ACTION_LABELS).map((key) => (
-                  <SelectItem key={key} value={key}>
-                    {ACTION_LABELS[key]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={entityType} onValueChange={setEntityType}>
-              <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder="Entity type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All entities</SelectItem>
-                {Object.keys(ENTITY_LABELS).map((key) => (
-                  <SelectItem key={key} value={key}>
-                    {ENTITY_LABELS[key]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={actorUserId} onValueChange={setActorUserId}>
-              <SelectTrigger className="w-[260px]">
-                <SelectValue placeholder="Actor (user)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All users</SelectItem>
-                {actorOptions.map((m) => (
-                  <SelectItem key={m.user_id} value={m.user_id}>
-                    {m.user.email} ({m.role})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Page size" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="25">25 / page</SelectItem>
-                <SelectItem value="50">50 / page</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="ml-auto text-sm text-slate-600 dark:text-slate-400">
-              {pageInfo ? (
-                <span>
-                  {pageInfo.total.toLocaleString()} results • Page {pageInfo.page} / {totalPages}
-                </span>
-              ) : (
-                <span>—</span>
-              )}
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="bg-background">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">Audit Log</h1>
+              <p className="text-muted-foreground">
+                A complete history of critical actions across your company.
+              </p>
             </div>
           </div>
         </div>
+      </header>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-          </div>
-        ) : error ? (
-          <div className="p-8 text-center text-red-500">
-            {String(error.message).toLowerCase().includes('access') ||
-            String(error.message).toLowerCase().includes('forbidden')
-              ? 'You don’t have access to audit logs.'
-              : `Failed to load audit logs: ${error.message}`}
-          </div>
-        ) : items.length === 0 ? (
-          <div className="p-10 text-center text-slate-600 dark:text-slate-400">
-            No audit events found for the selected filters.
-            <div className="mt-2 text-sm">Try adjusting your filters.</div>
-          </div>
-        ) : (
-          <>
-            {/* Audit Log Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Company Audit Log</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date &amp; Time</TableHead>
-                      <TableHead>Actor</TableHead>
-                      <TableHead>Action</TableHead>
-                      <TableHead>Entity</TableHead>
-                      <TableHead>Context / Summary</TableHead>
-                      <TableHead className="w-[120px]">Details</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((log) => {
-                      const dt = new Date(log.created_at);
-                      const entityText = getEntityDisplay(log);
-                      const href = getEntityHref(companySlug, log);
-                      const summary = buildSummary(log.action, log.entity_type, log.metadata);
-                      const isExpanded = expanded.has(log.id);
+      {/* Main Content */}
+      <main className="container mx-auto px-6 py-8 space-y-6">
+        <Card>
+          <CardHeader>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
+                <DatePickerWithRange date={dateRange} setDate={setDateRange} />
 
-                      const actorEmail = safeString(log.actor_email) ?? 'Deleted User';
-                      const actorRole = safeString(log.actor_role) ?? 'UNKNOWN';
+                <Select value={action} onValueChange={setAction}>
+                  <SelectTrigger className="w-full md:w-[220px]">
+                    <SelectValue placeholder="Action type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All actions</SelectItem>
+                    {Object.keys(ACTION_LABELS).map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {ACTION_LABELS[key]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-                      const badgeClass =
-                        roleBadgeClasses[actorRole] ??
-                        'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+                <Select value={entityType} onValueChange={setEntityType}>
+                  <SelectTrigger className="w-full md:w-[220px]">
+                    <SelectValue placeholder="Entity type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All entities</SelectItem>
+                    {Object.keys(ENTITY_LABELS).map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {ENTITY_LABELS[key]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-                      const sanitized = sanitizeMetadata(log.metadata ?? null);
-                      const hasMetadata =
-                        sanitized !== null &&
-                        sanitized !== undefined &&
-                        (typeof sanitized !== 'object' ||
-                          (typeof sanitized === 'object' &&
-                            Object.keys(sanitized as Record<string, unknown>).length > 0));
+                <Select value={actorUserId} onValueChange={setActorUserId}>
+                  <SelectTrigger className="w-full md:w-[260px]">
+                    <SelectValue placeholder="Actor (user)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All users</SelectItem>
+                    {actorOptions.map((m) => (
+                      <SelectItem key={m.user_id} value={m.user_id}>
+                        {m.user.email} ({m.role})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-                      const metadataText = hasMetadata ? JSON.stringify(sanitized, null, 2) : '';
+                <Select value={String(limit)} onValueChange={(v) => setLimit(Number(v))}>
+                  <SelectTrigger className="w-full md:w-[140px]">
+                    <SelectValue placeholder="Page size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25">25 / page</SelectItem>
+                    <SelectItem value="50">50 / page</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                      return (
-                        <React.Fragment key={log.id}>
-                          <TableRow>
-                            <TableCell className="font-mono text-xs">
-                              {format(dt, 'dd MMM yyyy, HH:mm')}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <span className="text-sm">{actorEmail}</span>
-                                <div className="mt-1">
-                                  <Badge className={badgeClass}>{actorRole}</Badge>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {getActionLabel(String(log.action))}
-                            </TableCell>
-                            <TableCell className="text-sm text-slate-700 dark:text-slate-300">
-                              <div className="flex flex-col">
-                                {href ? (
-                                  <Link
-                                    href={href}
-                                    className="text-indigo-600 hover:underline dark:text-indigo-400"
-                                  >
-                                    {entityText}
-                                  </Link>
-                                ) : (
-                                  <span>{entityText}</span>
-                                )}
-                                <span className="text-xs text-slate-500 dark:text-slate-400">
-                                  {getEntityTypeLabel(String(log.entity_type))}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm text-slate-600 dark:text-slate-400">
-                              {summary}
-                            </TableCell>
-                            <TableCell>
-                              {hasMetadata ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => toggleExpanded(log.id)}
-                                >
-                                  {isExpanded ? 'Hide' : 'View'}
-                                </Button>
-                              ) : (
-                                <span className="text-sm text-slate-500">—</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                          {hasMetadata && isExpanded ? (
+              <div className="text-sm text-muted-foreground">
+                {pageInfo ? (
+                  <span>
+                    {pageInfo.total.toLocaleString()} results • Page {pageInfo.page} / {totalPages}
+                  </span>
+                ) : (
+                  <span>—</span>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : error ? (
+              <div className="p-8 text-center text-destructive">
+                {String(error.message).toLowerCase().includes('access') ||
+                String(error.message).toLowerCase().includes('forbidden')
+                  ? 'You don’t have access to audit logs.'
+                  : `Failed to load audit logs: ${error.message}`}
+              </div>
+            ) : items.length === 0 ? (
+              <div className="p-10 text-center text-muted-foreground">
+                No audit events found for the selected filters.
+                <div className="mt-2 text-sm">Try adjusting your filters.</div>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date &amp; Time</TableHead>
+                        <TableHead>Actor</TableHead>
+                        <TableHead>Action</TableHead>
+                        <TableHead>Entity</TableHead>
+                        <TableHead>Context / Summary</TableHead>
+                        <TableHead className="w-[120px]">Details</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {items.map((log) => {
+                        const dt = new Date(log.created_at);
+                        const entityText = getEntityDisplay(log);
+                        const href = getEntityHref(companySlug, log);
+                        const summary = buildSummary(log.action, log.entity_type, log.metadata);
+                        const isExpanded = expanded.has(log.id);
+
+                        const actorEmail = safeString(log.actor_email) ?? 'Deleted User';
+                        const actorRole = safeString(log.actor_role) ?? 'UNKNOWN';
+
+                        const badgeClass =
+                          roleBadgeClasses[actorRole] ??
+                          'border border-border bg-muted/50 text-foreground';
+
+                        const sanitized = sanitizeMetadata(log.metadata ?? null);
+                        const hasMetadata =
+                          sanitized !== null &&
+                          sanitized !== undefined &&
+                          (typeof sanitized !== 'object' ||
+                            (typeof sanitized === 'object' &&
+                              Object.keys(sanitized as Record<string, unknown>).length > 0));
+
+                        const metadataText = hasMetadata ? JSON.stringify(sanitized, null, 2) : '';
+
+                        return (
+                          <React.Fragment key={log.id}>
                             <TableRow>
-                              <TableCell colSpan={6} className="bg-slate-50 dark:bg-slate-900/40">
-                                <pre className="text-xs leading-relaxed whitespace-pre-wrap break-words p-3 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
-                                  {metadataText}
-                                </pre>
+                              <TableCell className="font-mono text-xs">
+                                {format(dt, 'dd MMM yyyy, HH:mm')}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <span className="text-sm">{actorEmail}</span>
+                                  <div className="mt-1">
+                                    <Badge className={badgeClass}>{actorRole}</Badge>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {getActionLabel(String(log.action))}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                <div className="flex flex-col">
+                                  {href ? (
+                                    <Link href={href} className="text-primary hover:underline">
+                                      {entityText}
+                                    </Link>
+                                  ) : (
+                                    <span>{entityText}</span>
+                                  )}
+                                  <span className="text-xs text-muted-foreground">
+                                    {getEntityTypeLabel(String(log.entity_type))}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {summary}
+                              </TableCell>
+                              <TableCell>
+                                {hasMetadata ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => toggleExpanded(log.id)}
+                                  >
+                                    {isExpanded ? 'Hide' : 'View'}
+                                  </Button>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">—</span>
+                                )}
                               </TableCell>
                             </TableRow>
-                          ) : null}
-                        </React.Fragment>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                            {hasMetadata && isExpanded ? (
+                              <TableRow>
+                                <TableCell colSpan={6} className="bg-muted/30">
+                                  <pre className="text-xs leading-relaxed whitespace-pre-wrap break-words p-3 rounded-md border border-border bg-background">
+                                    {metadataText}
+                                  </pre>
+                                </TableCell>
+                              </TableRow>
+                            ) : null}
+                          </React.Fragment>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
 
                 {pageInfo ? (
                   <div className="pt-6">
@@ -653,10 +647,10 @@ function AuditLogContent() {
                     </Pagination>
                   </div>
                 ) : null}
-              </CardContent>
-            </Card>
-          </>
-        )}
+              </>
+            )}
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

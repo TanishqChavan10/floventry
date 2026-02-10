@@ -114,7 +114,7 @@ export function CreateSalesOrderModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create Sales Order</DialogTitle>
@@ -126,7 +126,7 @@ export function CreateSalesOrderModal({
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="customer">
-                  Customer Name <span className="text-red-500">*</span>
+                  Customer Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="customer"
@@ -161,15 +161,15 @@ export function CreateSalesOrderModal({
                 {items.map((item, index) => (
                   <div
                     key={index}
-                    className="flex gap-3 items-end p-3 border rounded-lg bg-slate-50 dark:bg-slate-900/50"
+                    className="grid gap-3 items-start p-3 border rounded-lg bg-muted/40 sm:grid-cols-[minmax(0,1fr)_7rem_auto]"
                   >
-                    <div className="flex-1 space-y-2">
+                    <div className="min-w-0 space-y-2">
                       <Label className="text-xs">Product *</Label>
                       <Select
                         value={item.product_id}
                         onValueChange={(value) => updateItem(index, 'product_id', value)}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="min-w-0">
                           <SelectValue placeholder="Select product" />
                         </SelectTrigger>
                         <SelectContent>
@@ -197,7 +197,7 @@ export function CreateSalesOrderModal({
                         );
                       })()}
                     </div>
-                    <div className="w-28 space-y-2">
+                    <div className="space-y-2">
                       <Label className="text-xs">Quantity *</Label>
                       <Input
                         type="number"
@@ -216,6 +216,7 @@ export function CreateSalesOrderModal({
                       size="icon"
                       onClick={() => removeItem(index)}
                       disabled={items.length === 1}
+                      className="sm:self-end"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
