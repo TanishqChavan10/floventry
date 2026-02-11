@@ -1,4 +1,4 @@
-# 📦 Flowventory - Smart Inventory Management System
+# 📦 Floventry - Smart Inventory Management System
 
 This is the **frontend** for Flowventory built with:
 
