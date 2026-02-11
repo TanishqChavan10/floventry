@@ -6,11 +6,11 @@ export default function Footer() {
       <div className="mx-auto max-w-[1200px] px-6">
         <div className="grid grid-cols-1 items-start gap-12 md:grid-cols-4">
           <div>
-            <div className="flex items-start gap-2 text-white">
+            <div className="flex items-start gap-2 text-white md:pt-1">
               <img
-                src="/pic2.png"
+                src="/3.svg"
                 alt="Floventory"
-                className="h-20 md:h-80 w-auto brightness-0 invert"
+                className="h-14 md:h-16 w-auto brightness-0 invert"
               />
             </div>
           </div>

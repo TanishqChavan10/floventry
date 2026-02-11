@@ -1,11 +1,19 @@
-import { Badge } from '@/components/ui/badge';
+import { Badge, badgeVariants } from '@/components/ui/badge';
+import type { VariantProps } from 'class-variance-authority';
 
 interface StatusBadgeProps {
   status: 'DRAFT' | 'CONFIRMED' | 'CLOSED' | 'CANCELLED' | 'POSTED';
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  const config = {
+  type BadgeVariant = Exclude<VariantProps<typeof badgeVariants>['variant'], null | undefined>;
+  type StatusConfig = {
+    variant: BadgeVariant;
+    label: string;
+    className?: string;
+  };
+
+  const config: Record<StatusBadgeProps['status'], StatusConfig> = {
     DRAFT: {
       variant: 'outline' as const,
       label: 'Draft',
