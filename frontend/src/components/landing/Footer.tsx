@@ -6,15 +6,15 @@ export default function Footer() {
       <div className="mx-auto max-w-[1200px] px-6">
         <div className="grid grid-cols-1 items-start gap-12 md:grid-cols-4">
           <div>
-            <div className="flex items-start gap-2 text-white md:pt-1">
+            <div className="flex items-end gap-2 text-white md:pt-1">
               <img
-                src="/3.svg"
+                src="/2.svg"
                 alt="Floventory"
-                className="h-14 md:h-16 w-auto brightness-0 invert"
+                className="h-10 block w-auto brightness-0 invert"
               />
             </div>
           </div>
-          <div>
+          <div className="items-center">
             <h4 className="text-sm font-semibold text-white">Product</h4>
             <ul className="mt-4 space-y-2 text-sm">
               <li>
@@ -82,7 +82,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-neutral-800 pt-8 text-sm md:flex-row">
-          <p>© 2024 Flowventory Inc. Made with precision.</p>
+          <p>© 2026 Flowventory Inc. Made with precision.</p>
           <div className="flex gap-6">
             <Link href="#" className="hover:text-white">
               Twitter

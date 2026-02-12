@@ -54,7 +54,7 @@ function BottomSection() {
                 userButtonPopoverCard: 'shadow-none border border-border',
               },
             }}
-            afterSignOutUrl="/auth/sign-in"
+            afterSignOutUrl="/"
           >
             <UserButton.MenuItems>
               <UserButton.Link

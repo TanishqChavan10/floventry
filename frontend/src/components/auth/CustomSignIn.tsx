@@ -93,7 +93,7 @@ export default function CustomSignIn() {
         <div className="mx-auto w-full max-w-[440px]">
           {/* Logo */}
           <Link href="/" className="mb-12 inline-block">
-            <img src="/pic2.png" alt="Floventory" className="h-60" />
+            <img src="/2.svg" alt="Floventory" className="h-10 w-auto" />
           </Link>
 
           {/* Header */}
@@ -230,7 +230,11 @@ export default function CustomSignIn() {
       {/* Right Column - Illustration */}
       <div className="hidden lg:flex lg:items-center lg:justify-center lg:p-16">
         <div className="max-w-lg">
-          <img src="/signin-illustration.jpg" alt="Inventory Management" className="w-full h-auto rounded-2xl" />
+          <img
+            src="/signin-illustration.jpg"
+            alt="Inventory Management"
+            className="w-full h-auto rounded-2xl"
+          />
         </div>
       </div>
     </div>

@@ -46,8 +46,14 @@ export function IconRail() {
   const { user } = useAuth();
   const permissions = usePermissions();
 
-  const companySlug = params?.slug as string | undefined;
+  const companySlugFromParams = params?.slug as string | undefined;
   const warehouseSlug = params?.warehouseSlug as string | undefined;
+
+  const fallbackCompanySlug = user?.activeCompanyId
+    ? user?.companies?.find((c) => c.id === user.activeCompanyId)?.slug
+    : user?.companies?.[0]?.slug;
+
+  const companySlug = companySlugFromParams ?? fallbackCompanySlug;
 
   if (!user || !companySlug) return null;
 
