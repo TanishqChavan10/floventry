@@ -191,23 +191,48 @@ function CreateTransferContent() {
     setItems(updated);
   };
 
-  const selectProductFromBarcode = (productId: string) => {
+  const selectProductFromBarcode = (productId: string, suggestedQuantity?: number) => {
     const stockItem = stock.find((s: any) => s.product?.id === productId);
     if (!stockItem) {
       toast.error('Not available in this warehouse');
       return;
     }
 
+    const available = Number(stockItem.quantity ?? 0);
+    const rawSuggested =
+      typeof suggestedQuantity === 'number' && Number.isFinite(suggestedQuantity)
+        ? suggestedQuantity
+        : undefined;
+    const qtyToApply =
+      typeof rawSuggested === 'number' && rawSuggested > 0
+        ? Math.min(rawSuggested, available)
+        : undefined;
+
     const existingIndex = items.findIndex((i) => i.product_id === productId);
     if (existingIndex >= 0) {
       setHighlightIndex(existingIndex);
-      toast.error('That product is already in the transfer list');
+      if (typeof qtyToApply === 'number') {
+        const current = Number(items[existingIndex]?.quantity ?? 0);
+        const lineAvailable = Number(items[existingIndex]?.available_stock ?? available);
+        const nextQty = Math.min(current + qtyToApply, lineAvailable);
+        updateItem(existingIndex, 'quantity', nextQty);
+        toast(
+          nextQty !== current + qtyToApply
+            ? `Quantity increased (capped at ${lineAvailable})`
+            : 'Quantity increased',
+        );
+      } else {
+        toast.error('That product is already in the transfer list');
+      }
       return;
     }
 
     const emptyIndex = items.findIndex((i) => !i.product_id);
     if (emptyIndex >= 0) {
       updateItem(emptyIndex, 'product_id', productId);
+      if (typeof qtyToApply === 'number') {
+        updateItem(emptyIndex, 'quantity', qtyToApply);
+      }
       setHighlightIndex(emptyIndex);
       return;
     }
@@ -217,7 +242,7 @@ function CreateTransferContent() {
         ...prev,
         {
           product_id: stockItem.product.id,
-          quantity: 0,
+          quantity: typeof qtyToApply === 'number' ? qtyToApply : 0,
           product_name: stockItem.product.name,
           available_stock: Number(stockItem.quantity),
           sku: stockItem.product.sku,
@@ -419,16 +444,23 @@ function CreateTransferContent() {
               <SafeBarcodeScanInput
                 context="TRANSFER"
                 label="Scan barcode to select product"
-                description="Scan selects a product only — you still confirm quantity and submit."
+                description="Scan selects a product. Pack barcodes can auto-fill quantity."
                 disabled={!activeWarehouse?.id || loadingStock}
-                onProductResolved={(product, scannedBarcode) => {
+                mode="details"
+                onProductResolved={(product, scannedBarcode, scanMeta) => {
                   setLastScan({
                     barcode: scannedBarcode,
                     productId: product.id,
                     productName: product.name,
                     sku: product.sku,
                   });
-                  selectProductFromBarcode(product.id);
+                  const suggested =
+                    typeof scanMeta?.quantity === 'number'
+                      ? scanMeta.quantity
+                      : typeof scanMeta?.quantity_multiplier === 'number'
+                        ? scanMeta.quantity_multiplier
+                        : undefined;
+                  selectProductFromBarcode(product.id, suggested);
                 }}
                 onError={(message) => toast.error(message)}
               />

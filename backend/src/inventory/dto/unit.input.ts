@@ -25,4 +25,9 @@ export class UpdateUnitInput extends CreateUnitInput {
   @IsNotEmpty()
   @IsString()
   id: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }

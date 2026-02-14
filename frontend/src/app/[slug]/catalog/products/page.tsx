@@ -9,7 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { CopyButton } from '@/components/common/CopyButton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,7 +43,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Search, Edit, Archive, Package, PackagePlus, FileDown } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Edit,
+  Archive,
+  Package,
+  PackagePlus,
+  FileDown,
+  Printer,
+  Copy,
+  MoreHorizontal,
+} from 'lucide-react';
+import { saveAs } from 'file-saver';
 import { useAuth } from '@/context/auth-context';
 import {
   GET_PRODUCTS,
@@ -47,7 +67,12 @@ import {
 import ProductModal from '@/components/catalog/ProductModal';
 import ProductDetailDrawer from '@/components/catalog/ProductDetailDrawer';
 import { BulkEntryModal } from '@/components/catalog/BulkEntryModal';
-import { GenerateBarcodeLabelsButton } from '@/components/barcode/GenerateBarcodeLabelsButton';
+import { downloadBarcodesCsv } from '@/lib/api/barcodes-export';
+import {
+  copyThermalLabelsZplToClipboard,
+  downloadThermalLabelsZpl,
+} from '@/lib/api/thermal-labels';
+import { GENERATE_BARCODE_LABELS } from '@/lib/graphql/barcode';
 
 function CatalogProductsContent() {
   const { slug } = useParams();
@@ -62,6 +87,8 @@ function CatalogProductsContent() {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
   const [productToArchive, setProductToArchive] = useState<any>(null);
+  const [downloadingLabelForId, setDownloadingLabelForId] = useState<string | null>(null);
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const { data: productsData, loading, error, refetch } = useQuery(GET_PRODUCTS);
@@ -102,6 +129,59 @@ function CatalogProductsContent() {
     },
   });
 
+  const [generateBarcodeLabels] = useMutation(GENERATE_BARCODE_LABELS);
+
+  const handleDownloadBarcodeLabelPdf = async (product: any) => {
+    if (!product?.id) return;
+    if (!product?.barcode) {
+      toast({
+        title: 'No barcode',
+        description: 'This product has no barcode to print',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setDownloadingLabelForId(product.id);
+    try {
+      const { data } = await generateBarcodeLabels({
+        variables: {
+          input: {
+            productIds: [product.id],
+          },
+        },
+      });
+
+      const payload = (data as any)?.generateBarcodeLabels;
+      const base64Data = payload?.pdfData as string | undefined;
+      if (!base64Data) throw new Error('No PDF data returned');
+
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+      const filename =
+        typeof payload?.filename === 'string' && payload.filename.trim()
+          ? payload.filename
+          : `barcode-label_${product.sku || product.id}.pdf`;
+
+      saveAs(blob, filename);
+      toast({ title: 'Downloaded', description: 'Barcode label PDF downloaded' });
+    } catch (e: any) {
+      toast({
+        title: 'Failed',
+        description: e?.message || 'Failed to generate barcode labels',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloadingLabelForId(null);
+    }
+  };
+
   // Get role from active company (role is company-specific)
   const activeCompany = user?.companies?.find((c) => c.id === user.activeCompanyId);
   const userRole = activeCompany?.role;
@@ -113,6 +193,165 @@ function CatalogProductsContent() {
   const products = productsData?.products || [];
   const categories = categoriesData?.categories || [];
   const suppliers = suppliersData?.suppliers || [];
+
+  const selectedProducts = products.filter(
+    (p: any) => p?.id && selectedProductIds.has(p.id as string),
+  );
+  const selectedCount = selectedProducts.length;
+
+  const selectedIdsWithBarcode = selectedProducts
+    .filter((p: any) => typeof p?.barcode === 'string' && p.barcode.trim().length > 0)
+    .map((p: any) => p.id as string);
+
+  const selectedIdsAll = selectedProducts.map((p: any) => p.id as string);
+
+  const handleExportSelectedCsv = async () => {
+    if (!selectedIdsAll.length) return;
+    try {
+      await downloadBarcodesCsv({
+        productIds: selectedIdsAll,
+        filename: 'barcodes-export_selected.csv',
+      });
+      toast({
+        title: 'Export started',
+        description: `Downloaded CSV (${selectedIdsAll.length} products)`,
+      });
+    } catch (e: any) {
+      toast({
+        title: 'Export failed',
+        description: e?.message || 'Failed to export CSV',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCopyThermalSelected = async () => {
+    if (!selectedIdsAll.length) return;
+    if (!selectedIdsWithBarcode.length) {
+      toast({
+        title: 'No barcodes',
+        description: 'Selected products have no barcode to print',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await copyThermalLabelsZplToClipboard({
+        productIds: selectedIdsWithBarcode,
+        copies: 1,
+        labelSize: '4x6',
+      });
+      const skipped = selectedIdsAll.length - selectedIdsWithBarcode.length;
+      toast({
+        title: 'Copied',
+        description:
+          skipped > 0
+            ? `Thermal ZPL copied (${selectedIdsWithBarcode.length} with barcodes, ${skipped} skipped)`
+            : `Thermal ZPL copied (${selectedIdsWithBarcode.length} products)`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Failed',
+        description: err?.message || 'Failed to copy thermal code',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDownloadThermalSelected = async () => {
+    if (!selectedIdsAll.length) return;
+    if (!selectedIdsWithBarcode.length) {
+      toast({
+        title: 'No barcodes',
+        description: 'Selected products have no barcode to print',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await downloadThermalLabelsZpl({
+        productIds: selectedIdsWithBarcode,
+        filename: 'thermal-labels_selected.zpl',
+        copies: 1,
+        labelSize: '4x6',
+      });
+      const skipped = selectedIdsAll.length - selectedIdsWithBarcode.length;
+      toast({
+        title: 'Downloaded',
+        description:
+          skipped > 0
+            ? `Thermal ZPL downloaded (${selectedIdsWithBarcode.length} with barcodes, ${skipped} skipped)`
+            : `Thermal ZPL downloaded (${selectedIdsWithBarcode.length} products)`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Failed',
+        description: err?.message || 'Failed to download thermal code',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDownloadLabelPdfForSelected = async () => {
+    if (!selectedIdsAll.length) return;
+    if (!selectedIdsWithBarcode.length) {
+      toast({
+        title: 'No barcodes',
+        description: 'Selected products have no barcode to print',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setDownloadingLabelForId('__selected__');
+    try {
+      const { data } = await generateBarcodeLabels({
+        variables: {
+          input: {
+            productIds: selectedIdsWithBarcode,
+          },
+        },
+      });
+
+      const payload = (data as any)?.generateBarcodeLabels;
+      const base64Data = payload?.pdfData as string | undefined;
+      if (!base64Data) throw new Error('No PDF data returned');
+
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+      const filename =
+        typeof payload?.filename === 'string' && payload.filename.trim()
+          ? payload.filename
+          : 'barcode-labels_selected.pdf';
+
+      saveAs(blob, filename);
+
+      const skipped = selectedIdsAll.length - selectedIdsWithBarcode.length;
+      toast({
+        title: 'Downloaded',
+        description:
+          skipped > 0
+            ? `Label PDF downloaded (${selectedIdsWithBarcode.length} with barcodes, ${skipped} skipped)`
+            : `Label PDF downloaded (${selectedIdsWithBarcode.length} products)`,
+      });
+    } catch (e: any) {
+      toast({
+        title: 'Failed',
+        description: e?.message || 'Failed to generate barcode labels',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloadingLabelForId(null);
+    }
+  };
 
   const openedFromUrlRef = useRef<string | null>(null);
 
@@ -135,7 +374,11 @@ function CatalogProductsContent() {
       searchTerm === '' ||
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase()));
+      (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (Array.isArray(product.alternate_barcodes) &&
+        product.alternate_barcodes.some(
+          (b: any) => typeof b === 'string' && b.toLowerCase().includes(searchTerm.toLowerCase()),
+        ));
 
     const matchesCategory = categoryFilter === 'all' || product.category?.id === categoryFilter;
 
@@ -150,6 +393,36 @@ function CatalogProductsContent() {
   });
 
   const activeProducts = products.filter((p: any) => p.is_active).length;
+
+  const visibleProductIds = filteredProducts
+    .map((p: any) => p?.id as string | undefined)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0);
+
+  const visibleSelectedCount = visibleProductIds.filter((id) => selectedProductIds.has(id)).length;
+  const allVisibleSelected =
+    visibleProductIds.length > 0 && visibleSelectedCount === visibleProductIds.length;
+  const someVisibleSelected = visibleSelectedCount > 0 && !allVisibleSelected;
+
+  const toggleSelected = (productId: string, nextChecked: boolean) => {
+    setSelectedProductIds((prev) => {
+      const next = new Set(prev);
+      if (nextChecked) next.add(productId);
+      else next.delete(productId);
+      return next;
+    });
+  };
+
+  const toggleSelectAllVisible = (nextChecked: boolean) => {
+    setSelectedProductIds((prev) => {
+      const next = new Set(prev);
+      if (nextChecked) {
+        for (const id of visibleProductIds) next.add(id);
+      } else {
+        for (const id of visibleProductIds) next.delete(id);
+      }
+      return next;
+    });
+  };
 
   const handleEditProduct = (product: any) => {
     setSelectedProduct(product);
@@ -238,13 +511,9 @@ function CatalogProductsContent() {
             {!isEmpty && (
               <div className="flex items-center gap-2">
                 {isOwnerOrAdmin && (
-                  <Button
-                    variant="outline"
-                    className="gap-2"
-                    onClick={() => setIsBulkEntryOpen(true)}
-                  >
+                  <Button className="gap-2" onClick={() => setIsBulkEntryOpen(true)}>
                     <PackagePlus className="h-4 w-4" />
-                    Bulk Add Products
+                    Bulk Import
                   </Button>
                 )}
                 {canEdit && (
@@ -279,13 +548,9 @@ function CatalogProductsContent() {
               {canEdit && (
                 <div className="flex items-center gap-2">
                   {isOwnerOrAdmin && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsBulkEntryOpen(true)}
-                      className="gap-2"
-                    >
+                    <Button onClick={() => setIsBulkEntryOpen(true)} className="gap-2">
                       <PackagePlus className="h-4 w-4" />
-                      Bulk Add Products
+                      Bulk Import
                     </Button>
                   )}
                   <Button onClick={handleAddProduct} className="gap-2">
@@ -330,6 +595,8 @@ function CatalogProductsContent() {
             {/* Filters */}
             <Card>
               <CardContent className="space-y-6">
+               
+
                 <div className="flex flex-col gap-4 md:flex-row">
                   <div className="flex-1">
                     <div className="relative">
@@ -378,6 +645,67 @@ function CatalogProductsContent() {
                       <SelectItem value="archived">Archived</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {selectedCount > 1 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="gap-2 w-full md:w-auto">
+                          Actions
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            void handleExportSelectedCsv();
+                          }}
+                        >
+                          <FileDown className="h-4 w-4" />
+                          Export Barcode CSV
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          disabled={
+                            selectedIdsWithBarcode.length === 0 ||
+                            downloadingLabelForId === '__selected__'
+                          }
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            void handleDownloadLabelPdfForSelected();
+                          }}
+                        >
+                          <FileDown className="h-4 w-4" />
+                          {downloadingLabelForId === '__selected__'
+                            ? 'Downloading label…'
+                            : 'Download Label PDF'}
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                          disabled={selectedIdsWithBarcode.length === 0}
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            void handleCopyThermalSelected();
+                          }}
+                        >
+                          <Copy className="h-4 w-4" />
+                          Copy Thermal Code
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          disabled={selectedIdsWithBarcode.length === 0}
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            void handleDownloadThermalSelected();
+                          }}
+                        >
+                          <Printer className="h-4 w-4" />
+                          Download Thermal Code
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
 
                 {filteredProducts.length === 0 ? (
@@ -388,6 +716,24 @@ function CatalogProductsContent() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-[44px]">
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              aria-label="Select all visible products"
+                              checked={
+                                allVisibleSelected
+                                  ? true
+                                  : someVisibleSelected
+                                    ? 'indeterminate'
+                                    : false
+                              }
+                              onCheckedChange={(checked) => {
+                                const next = checked === true;
+                                toggleSelectAllVisible(next);
+                              }}
+                            />
+                          </div>
+                        </TableHead>
                         <TableHead>SKU</TableHead>
                         <TableHead>Product Name</TableHead>
                         <TableHead>Category</TableHead>
@@ -396,8 +742,7 @@ function CatalogProductsContent() {
                         <TableHead>Cost Price</TableHead>
                         <TableHead>Selling Price</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Label</TableHead>
-                        {canEdit && <TableHead className="text-right">Actions</TableHead>}
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -407,6 +752,16 @@ function CatalogProductsContent() {
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() => handleViewProduct(product)}
                         >
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              aria-label={`Select ${product?.name ?? 'product'}`}
+                              checked={!!product?.id && selectedProductIds.has(product.id)}
+                              onCheckedChange={(checked) => {
+                                if (!product?.id) return;
+                                toggleSelected(product.id, checked === true);
+                              }}
+                            />
+                          </TableCell>
                           <TableCell className="font-mono text-sm">
                             <div className="flex items-center gap-1">
                               <span>{product.sku}</span>
@@ -437,52 +792,139 @@ function CatalogProductsContent() {
                               {product.is_active ? 'Active' : 'Archived'}
                             </Badge>
                           </TableCell>
-                          <TableCell onClick={(e) => e.stopPropagation()}>
-                            {product.barcode ? (
-                              <GenerateBarcodeLabelsButton
-                                productIds={[product.id]}
-                                filename={`barcode-label_${product.sku || product.id}.pdf`}
-                                variant="ghost"
-                                size="icon"
-                              >
-                                <FileDown className="h-4 w-4" />
-                              </GenerateBarcodeLabelsButton>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                          {canEdit && (
-                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex justify-end gap-2">
+                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
                                 <Button
+                                  type="button"
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => handleEditProduct(product)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  aria-label="Actions"
                                 >
-                                  <Edit className="h-4 w-4" />
+                                  <MoreHorizontal className="h-4 w-4" />
                                 </Button>
-                                {canDelete && product.is_active && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleArchiveProduct(product)}
-                                  >
-                                    <Archive className="h-4 w-4" />
-                                  </Button>
+                              </DropdownMenuTrigger>
+
+                              <DropdownMenuContent align="end">
+                                {product.barcode ? (
+                                  <>
+                                    <DropdownMenuItem
+                                      disabled={downloadingLabelForId === product.id}
+                                      onSelect={(e) => {
+                                        e.preventDefault();
+                                        void handleDownloadBarcodeLabelPdf(product);
+                                      }}
+                                    >
+                                      <FileDown className="h-4 w-4" />
+                                      {downloadingLabelForId === product.id
+                                        ? 'Downloading label…'
+                                        : 'Download Label PDF'}
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuItem
+                                      onSelect={(e) => {
+                                        e.preventDefault();
+                                        void (async () => {
+                                          try {
+                                            await downloadThermalLabelsZpl({
+                                              productIds: [product.id],
+                                              filename: `thermal-label_${product.sku || product.id}.zpl`,
+                                              copies: 1,
+                                              labelSize: '4x6',
+                                            });
+                                            toast({
+                                              title: 'Downloaded',
+                                              description: 'Thermal ZPL downloaded',
+                                            });
+                                          } catch (err: any) {
+                                            toast({
+                                              title: 'Failed',
+                                              description: err?.message || 'Failed to generate ZPL',
+                                              variant: 'destructive',
+                                            });
+                                          }
+                                        })();
+                                      }}
+                                    >
+                                      <Printer className="h-4 w-4" />
+                                      Download Thermal ZPL (4×6)
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuItem
+                                      onSelect={(e) => {
+                                        e.preventDefault();
+                                        void (async () => {
+                                          try {
+                                            await copyThermalLabelsZplToClipboard({
+                                              productIds: [product.id],
+                                              copies: 1,
+                                              labelSize: '4x6',
+                                            });
+                                            toast({
+                                              title: 'Copied',
+                                              description: 'Thermal ZPL copied to clipboard',
+                                            });
+                                          } catch (err: any) {
+                                            toast({
+                                              title: 'Failed',
+                                              description: err?.message || 'Failed to copy ZPL',
+                                              variant: 'destructive',
+                                            });
+                                          }
+                                        })();
+                                      }}
+                                    >
+                                      <Copy className="h-4 w-4" />
+                                      Copy Thermal ZPL (4×6)
+                                    </DropdownMenuItem>
+                                  </>
+                                ) : (
+                                  <DropdownMenuItem disabled>No barcode to print</DropdownMenuItem>
                                 )}
-                                {canDelete && !product.is_active && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleUnarchiveProduct(product)}
-                                    title="Restore product"
-                                  >
-                                    <Archive className="h-4 w-4 text-green-600" />
-                                  </Button>
-                                )}
-                              </div>
-                            </TableCell>
-                          )}
+
+                                {canEdit ? (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onSelect={(e) => {
+                                        e.preventDefault();
+                                        handleEditProduct(product);
+                                      }}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+
+                                    {canDelete && product.is_active ? (
+                                      <DropdownMenuItem
+                                        variant="destructive"
+                                        onSelect={(e) => {
+                                          e.preventDefault();
+                                          handleArchiveProduct(product);
+                                        }}
+                                      >
+                                        <Archive className="h-4 w-4" />
+                                        Archive
+                                      </DropdownMenuItem>
+                                    ) : null}
+
+                                    {canDelete && !product.is_active ? (
+                                      <DropdownMenuItem
+                                        onSelect={(e) => {
+                                          e.preventDefault();
+                                          handleUnarchiveProduct(product);
+                                        }}
+                                      >
+                                        <Archive className="h-4 w-4" />
+                                        Restore
+                                      </DropdownMenuItem>
+                                    ) : null}
+                                  </>
+                                ) : null}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

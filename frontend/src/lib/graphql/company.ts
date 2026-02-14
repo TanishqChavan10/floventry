@@ -79,6 +79,7 @@ export const GET_COMPANY_BY_SLUG = gql`
       }
       settings {
         id
+        is_premium
         currency
         timezone
         language

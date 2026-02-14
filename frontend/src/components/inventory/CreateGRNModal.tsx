@@ -315,9 +315,9 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
                 <SafeBarcodeScanInput
                   context="GRN"
                   label="Scan barcode to find PO item"
-                  description="Scan only highlights the matching PO line. Quantity and expiry stay manual."
+                  description="Scan highlights the matching PO line. If expiry is encoded, it will auto-fill the expiry date."
                   disabled={!selectedPO}
-                  onProductResolved={(product, scannedBarcode) => {
+                  onProductResolved={(product, scannedBarcode, scanMeta) => {
                     setLastScan({
                       barcode: scannedBarcode,
                       productId: product.id,
@@ -330,6 +330,12 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
                       toast.error('Scanned product is not in this purchase order');
                       return;
                     }
+
+                    if (scanMeta?.expiryDate) {
+                      updateItemExpiryDate(idx, scanMeta.expiryDate);
+                      toast.success('Expiry auto-filled from scan');
+                    }
+
                     setHighlightIndex(idx);
                   }}
                   onError={(message) => toast.error(message)}

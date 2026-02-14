@@ -36,6 +36,11 @@ import { BarcodeLabelController } from './barcode-label.controller';
 import { BarcodeLabelService } from './barcode-label.service';
 import { BarcodeLabelResolver } from './barcode-label.resolver';
 import { AuditModule } from '../audit/audit.module';
+import { ThermalLabelController } from './thermal-label.controller';
+import { BarcodeThermalLabelService } from './barcode-thermal-label.service';
+import { BarcodesController } from './barcodes.controller';
+import { BarcodeHistory } from './entities/barcode-history.entity';
+import { ProductBarcodeUnit } from './entities/product-barcode-unit.entity';
 
 @Module({
   imports: [
@@ -46,6 +51,8 @@ import { AuditModule } from '../audit/audit.module';
       Stock,
       StockLot,
       StockMovement,
+      BarcodeHistory,
+      ProductBarcodeUnit,
       GoodsReceiptNote,
       GRNItem,
       WarehouseTransfer,
@@ -61,11 +68,12 @@ import { AuditModule } from '../audit/audit.module';
     StockHealthModule, // Stock health intelligence
     AuditModule, // Company audit logs
   ],
-  controllers: [BarcodeLabelController],
+  controllers: [BarcodeLabelController, ThermalLabelController, BarcodesController],
   providers: [
     BarcodeService,
     BarcodeLabelService,
     BarcodeLabelResolver,
+    BarcodeThermalLabelService,
     InventoryService,
     CategoryResolver,
     ProductResolver,

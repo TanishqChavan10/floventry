@@ -202,13 +202,9 @@ function CatalogSuppliersContent() {
             {!isEmpty && (
               <div className="flex items-center gap-2">
                 {isOwnerOrAdmin && (
-                  <Button
-                    variant="outline"
-                    className="gap-2"
-                    onClick={() => setIsBulkEntryOpen(true)}
-                  >
+                  <Button className="gap-2" onClick={() => setIsBulkEntryOpen(true)}>
                     <UserPlus className="h-4 w-4" />
-                    Bulk Add Suppliers
+                    Bulk Import
                   </Button>
                 )}
                 {canEdit && (
@@ -243,13 +239,9 @@ function CatalogSuppliersContent() {
               {canEdit && (
                 <div className="flex items-center gap-2">
                   {isOwnerOrAdmin && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsBulkEntryOpen(true)}
-                      className="gap-2"
-                    >
+                    <Button onClick={() => setIsBulkEntryOpen(true)} className="gap-2">
                       <UserPlus className="h-4 w-4" />
-                      Bulk Add Suppliers
+                      Bulk Import
                     </Button>
                   )}
                   <Button onClick={handleAddSupplier} className="gap-2">

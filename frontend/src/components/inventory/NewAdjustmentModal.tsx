@@ -38,6 +38,7 @@ import { CREATE_INVENTORY_ADJUSTMENT } from '@/lib/graphql/adjustments';
 import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
 import { toast } from 'sonner';
 import { CopyButton } from '@/components/common/CopyButton';
+import { SafeBarcodeScanInput } from '@/components/barcode/SafeBarcodeScanInput';
 
 interface NewAdjustmentModalProps {
   warehouseId: string;
@@ -71,6 +72,9 @@ export default function NewAdjustmentModal({
   const [reference, setReference] = useState('');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [hasPrefilled, setHasPrefilled] = useState(false);
+  const [extraProducts, setExtraProducts] = useState<
+    Array<{ id: string; name: string; sku: string }>
+  >([]);
 
   useEffect(() => {
     if (!open) {
@@ -123,6 +127,16 @@ export default function NewAdjustmentModal({
   const stock = stockData?.stockByWarehouse || [];
   const selectedStock = stock.find((s: any) => s.product.id === selectedProductId);
   const availableStock = selectedStock ? Number(selectedStock.quantity) : 0;
+
+  const stockOptions: Array<{
+    product: { id: string; name: string; sku: string };
+    quantity: number;
+  }> = [
+    ...extraProducts
+      .filter((p) => !stock.some((s: any) => s?.product?.id === p.id))
+      .map((p) => ({ product: p, quantity: 0 })),
+    ...stock.map((s: any) => ({ product: s.product, quantity: Number(s.quantity ?? 0) })),
+  ];
 
   const handleSubmit = () => {
     // Validation
@@ -234,6 +248,39 @@ export default function NewAdjustmentModal({
             {/* Product Selection */}
             <div className="space-y-2">
               <Label htmlFor="product">Product *</Label>
+
+              <SafeBarcodeScanInput
+                context="ADJUSTMENT"
+                label="Scan barcode"
+                description="Scan to select a product. Pack barcodes can auto-fill quantity."
+                disabled={loadingStock}
+                mode="details"
+                onProductResolved={(product, _scannedBarcode, scanMeta) => {
+                  setSelectedProductId(product.id);
+
+                  const suggested =
+                    typeof scanMeta?.quantity === 'number'
+                      ? scanMeta.quantity
+                      : typeof scanMeta?.quantity_multiplier === 'number'
+                        ? scanMeta.quantity_multiplier
+                        : undefined;
+
+                  if (typeof suggested === 'number' && suggested > 0) {
+                    // Only auto-fill when empty to avoid surprising overwrites.
+                    if (!quantity || Number(quantity) === 0) {
+                      setQuantity(String(suggested));
+                      toast.message('Quantity auto-filled from barcode');
+                    }
+                  }
+
+                  setExtraProducts((prev) => {
+                    if (prev.some((p) => p.id === product.id)) return prev;
+                    return [...prev, { id: product.id, name: product.name, sku: product.sku }];
+                  });
+                }}
+                onError={(message) => toast.error(message)}
+              />
+
               <Select value={selectedProductId} onValueChange={setSelectedProductId}>
                 <SelectTrigger id="product">
                   <SelectValue
@@ -241,7 +288,7 @@ export default function NewAdjustmentModal({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {stock.map((item: any) => (
+                  {stockOptions.map((item) => (
                     <SelectItem key={item.product.id} value={item.product.id}>
                       <div className="flex items-center justify-between w-full">
                         <span>{item.product.name}</span>

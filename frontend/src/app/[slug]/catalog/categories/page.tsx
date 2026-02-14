@@ -32,7 +32,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, Edit, Archive, FolderTree, PackagePlus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Plus, Search, Edit, Archive, FolderTree, PackagePlus, MoreHorizontal } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { GET_CATEGORIES, DELETE_CATEGORY, UPDATE_CATEGORY } from '@/lib/graphql/catalog';
 import { CategoryModal } from '@/components/catalog/CategoryModal';
@@ -48,6 +55,9 @@ function CatalogCategoriesContent() {
   const [isBulkEntryOpen, setIsBulkEntryOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [categoryToArchive, setCategoryToArchive] = useState<any>(null);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
+  const [bulkArchiveCategoryIds, setBulkArchiveCategoryIds] = useState<string[] | null>(null);
+  const [bulkRestoreCategoryIds, setBulkRestoreCategoryIds] = useState<string[] | null>(null);
 
   const { data, loading, error, refetch } = useQuery(GET_CATEGORIES);
   const [deleteCategory] = useMutation(DELETE_CATEGORY, {
@@ -72,6 +82,8 @@ function CatalogCategoriesContent() {
     },
   });
 
+  const [archiveCategoryQuiet] = useMutation(DELETE_CATEGORY);
+
   const [updateCategory] = useMutation(UPDATE_CATEGORY, {
     onCompleted: () => {
       toast({
@@ -89,6 +101,8 @@ function CatalogCategoriesContent() {
     },
   });
 
+  const [restoreCategoryQuiet] = useMutation(UPDATE_CATEGORY);
+
   // Get role from active company (role is company-specific, not user-level)
   const activeCompany = user?.companies?.find((c) => c.id === user.activeCompanyId);
   const userRole = activeCompany?.role;
@@ -97,6 +111,8 @@ function CatalogCategoriesContent() {
   const canEdit = isOwnerOrAdmin;
 
   const categories = data?.categories || [];
+
+  const selectedCount = selectedCategoryIds.size;
 
   // Filter categories by search and status
   const filteredCategories = categories.filter((category: any) => {
@@ -113,6 +129,34 @@ function CatalogCategoriesContent() {
 
     return matchesSearch && matchesStatus;
   });
+
+  const visibleCategoryIds = filteredCategories.map((c: any) => c.id).filter(Boolean);
+  const visibleSelectedCount = visibleCategoryIds.filter((id: string) =>
+    selectedCategoryIds.has(id),
+  ).length;
+  const allVisibleSelected =
+    visibleCategoryIds.length > 0 && visibleSelectedCount === visibleCategoryIds.length;
+  const someVisibleSelected = visibleSelectedCount > 0 && !allVisibleSelected;
+
+  const toggleSelected = (id: string, selected: boolean) => {
+    setSelectedCategoryIds((prev) => {
+      const next = new Set(prev);
+      if (selected) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllVisible = (selected: boolean) => {
+    setSelectedCategoryIds((prev) => {
+      const next = new Set(prev);
+      for (const id of visibleCategoryIds) {
+        if (selected) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  };
 
   const activeCategories = categories.filter((c: any) => c.isActive).length;
   const archivedCategories = categories.length - activeCategories;
@@ -141,6 +185,114 @@ function CatalogCategoriesContent() {
     if (categoryToArchive) {
       await deleteCategory({ variables: { id: categoryToArchive.id } });
       setCategoryToArchive(null);
+    }
+  };
+
+  const handleArchiveSelected = () => {
+    const selectedActiveIds = Array.from(selectedCategoryIds).filter((id) => {
+      const category = categories.find((c: any) => c.id === id);
+      return category?.isActive;
+    });
+
+    if (selectedActiveIds.length === 0) return;
+    setBulkArchiveCategoryIds(selectedActiveIds);
+  };
+
+  const handleRestoreSelected = () => {
+    const selectedArchivedIds = Array.from(selectedCategoryIds).filter((id) => {
+      const category = categories.find((c: any) => c.id === id);
+      return category && category.isActive === false;
+    });
+
+    if (selectedArchivedIds.length === 0) return;
+    setBulkRestoreCategoryIds(selectedArchivedIds);
+  };
+
+  const confirmBulkRestore = async () => {
+    const ids = bulkRestoreCategoryIds;
+    if (!ids || ids.length === 0) return;
+
+    let restored = 0;
+    let failed = 0;
+
+    for (const id of ids) {
+      const category = categories.find((c: any) => c.id === id);
+      if (!category) {
+        failed += 1;
+        continue;
+      }
+
+      try {
+        await restoreCategoryQuiet({
+          variables: {
+            input: {
+              id: category.id,
+              name: category.name,
+              description: category.description || '',
+            },
+          },
+        });
+        restored += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+
+    setBulkRestoreCategoryIds(null);
+    setSelectedCategoryIds(new Set());
+    await refetch();
+
+    if (restored > 0) {
+      toast({
+        title: 'Categories restored',
+        description:
+          failed > 0
+            ? `Restored ${restored}. Failed ${failed}.`
+            : `Restored ${restored} categories.`,
+      });
+    } else {
+      toast({
+        title: 'Cannot restore categories',
+        description: 'No categories were restored.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const confirmBulkArchive = async () => {
+    const ids = bulkArchiveCategoryIds;
+    if (!ids || ids.length === 0) return;
+
+    let archived = 0;
+    let failed = 0;
+
+    for (const id of ids) {
+      try {
+        await archiveCategoryQuiet({ variables: { id } });
+        archived += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+
+    setBulkArchiveCategoryIds(null);
+    setSelectedCategoryIds(new Set());
+    await refetch();
+
+    if (archived > 0) {
+      toast({
+        title: 'Categories archived',
+        description:
+          failed > 0
+            ? `Archived ${archived}. Failed ${failed}.`
+            : `Archived ${archived} categories.`,
+      });
+    } else {
+      toast({
+        title: 'Cannot archive categories',
+        description: 'No categories were archived.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -187,13 +339,9 @@ function CatalogCategoriesContent() {
             {!isEmpty && (
               <div className="flex items-center gap-2">
                 {isOwnerOrAdmin && (
-                  <Button
-                    variant="outline"
-                    className="gap-2"
-                    onClick={() => setIsBulkEntryOpen(true)}
-                  >
+                  <Button className="gap-2" onClick={() => setIsBulkEntryOpen(true)}>
                     <PackagePlus className="h-4 w-4" />
-                    Bulk Add Categories
+                    Bulk Import
                   </Button>
                 )}
                 {canEdit && (
@@ -228,13 +376,9 @@ function CatalogCategoriesContent() {
               {canEdit && (
                 <div className="flex items-center gap-2">
                   {isOwnerOrAdmin && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsBulkEntryOpen(true)}
-                      className="gap-2"
-                    >
+                    <Button onClick={() => setIsBulkEntryOpen(true)} className="gap-2">
                       <PackagePlus className="h-4 w-4" />
-                      Bulk Add Categories
+                      Bulk Import
                     </Button>
                   )}
                   <Button onClick={handleAddCategory} className="gap-2">
@@ -304,6 +448,50 @@ function CatalogCategoriesContent() {
                       <SelectItem value="all">All Categories</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {canEdit && selectedCount > 1 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="gap-2 w-full md:w-auto">
+                          <MoreHorizontal className="h-4 w-4" />
+                          Selected Actions ({selectedCount})
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          disabled={
+                            Array.from(selectedCategoryIds).filter((id) => {
+                              const category = categories.find((c: any) => c.id === id);
+                              return category?.isActive;
+                            }).length === 0
+                          }
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            handleArchiveSelected();
+                          }}
+                        >
+                          <Archive className="h-4 w-4" />
+                          Archive Selected
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          disabled={
+                            Array.from(selectedCategoryIds).filter((id) => {
+                              const category = categories.find((c: any) => c.id === id);
+                              return category && category.isActive === false;
+                            }).length === 0
+                          }
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            handleRestoreSelected();
+                          }}
+                        >
+                          <Archive className="h-4 w-4 text-green-600" />
+                          Restore Selected
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
 
                 {filteredCategories.length === 0 ? (
@@ -316,6 +504,24 @@ function CatalogCategoriesContent() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-[44px]">
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              aria-label="Select all visible categories"
+                              checked={
+                                allVisibleSelected
+                                  ? true
+                                  : someVisibleSelected
+                                    ? 'indeterminate'
+                                    : false
+                              }
+                              onCheckedChange={(checked) => {
+                                const next = checked === true;
+                                toggleSelectAllVisible(next);
+                              }}
+                            />
+                          </div>
+                        </TableHead>
                         <TableHead>Category Name</TableHead>
                         <TableHead>Description</TableHead>
                         <TableHead>Product Count</TableHead>
@@ -328,6 +534,16 @@ function CatalogCategoriesContent() {
                         const productCount = category.products?.length || 0;
                         return (
                           <TableRow key={category.id}>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                aria-label={`Select ${category?.name ?? 'category'}`}
+                                checked={!!category?.id && selectedCategoryIds.has(category.id)}
+                                onCheckedChange={(checked) => {
+                                  if (!category?.id) return;
+                                  toggleSelected(category.id, checked === true);
+                                }}
+                              />
+                            </TableCell>
                             <TableCell className="font-medium">{category.name}</TableCell>
                             <TableCell className="text-slate-600 dark:text-slate-400">
                               {category.description || '—'}
@@ -437,6 +653,46 @@ function CatalogCategoriesContent() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmArchive}>Archive Category</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Archive Confirmation Dialog */}
+      <AlertDialog
+        open={!!bulkArchiveCategoryIds && bulkArchiveCategoryIds.length > 0}
+        onOpenChange={() => setBulkArchiveCategoryIds(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive Categories?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to archive {bulkArchiveCategoryIds?.length ?? 0} selected
+              categories? Archived categories will be hidden from selection.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBulkArchive}>Archive Categories</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Restore Confirmation Dialog */}
+      <AlertDialog
+        open={!!bulkRestoreCategoryIds && bulkRestoreCategoryIds.length > 0}
+        onOpenChange={() => setBulkRestoreCategoryIds(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore Categories?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to restore {bulkRestoreCategoryIds?.length ?? 0} selected
+              categories?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBulkRestore}>Restore Categories</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

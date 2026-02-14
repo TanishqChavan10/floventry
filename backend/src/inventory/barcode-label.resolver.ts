@@ -26,6 +26,7 @@ export class BarcodeLabelResolver {
     const pdfBuffer = await this.barcodeLabelService.generateLabelsPdf({
       companyId,
       productIds: input.productIds,
+      layout: input.layout,
     });
 
     // Convert buffer to base64

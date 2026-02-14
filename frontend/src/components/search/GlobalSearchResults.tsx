@@ -9,7 +9,7 @@ export type FlattenedSearchItem =
   | {
       key: string;
       kind: 'action';
-      id: 'create-warehouse' | 'create-company';
+      id: 'create-warehouse' | 'create-company' | 'scan-barcode';
       title: string;
       subtitle?: string;
       badge?: string;

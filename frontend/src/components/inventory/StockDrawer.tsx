@@ -278,7 +278,7 @@ export default function StockDrawer({
             <div className="space-y-1">
               <SheetTitle className="text-2xl">{stock.product.name}</SheetTitle>
               <SheetDescription className="font-mono text-sm">
-                <div className="flex items-center gap-1">
+                <span className="inline-flex items-center gap-1">
                   <span>SKU: {stock.product.sku}</span>
                   <CopyButton
                     value={stock.product.sku}
@@ -286,7 +286,7 @@ export default function StockDrawer({
                     successMessage="Copied SKU to clipboard"
                     className="h-7 w-7 text-muted-foreground"
                   />
-                </div>
+                </span>
               </SheetDescription>
             </div>
             {isLowStock && (

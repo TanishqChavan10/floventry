@@ -160,15 +160,26 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
             <SafeBarcodeScanInput
               context="OPENING_STOCK"
               label="Scan barcode to select product"
-              description="Scan only selects the product. Quantity and expiry stay manual."
-              onProductResolved={(product, scannedBarcode) => {
+              description="Scan selects the product. If expiry is encoded, it will auto-fill the expiry date."
+              onProductResolved={(product, scannedBarcode, scanMeta) => {
                 setLastScan({
                   barcode: scannedBarcode,
                   productId: product.id,
                   productName: product.name,
                   sku: product.sku,
                 });
-                setFormData((prev) => ({ ...prev, product_id: product.id }));
+                setFormData((prev) => ({
+                  ...prev,
+                  product_id: product.id,
+                  ...(scanMeta?.expiryDate ? { expiry_date: scanMeta.expiryDate } : {}),
+                }));
+
+                if (scanMeta?.expiryDate) {
+                  toast({
+                    title: 'Expiry auto-filled',
+                    description: 'Expiry date was parsed from the scan payload',
+                  });
+                }
               }}
               onError={(message) =>
                 toast({

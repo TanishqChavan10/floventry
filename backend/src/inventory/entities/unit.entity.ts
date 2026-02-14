@@ -43,6 +43,10 @@ export class Unit {
   isDefault: boolean;
 
   @Field()
+  @Column({ default: true })
+  isActive: boolean;
+
+  @Field()
   @CreateDateColumn()
   created_at: Date;
 

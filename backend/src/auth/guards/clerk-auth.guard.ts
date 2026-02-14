@@ -64,6 +64,21 @@ export class ClerkAuthGuard implements CanActivate {
         activeRole?: string;
       };
 
+      // Prefer DB as the source of truth (membership-validated by switchCompany/createCompany).
+      // Clerk metadata can be temporarily stale (or fail to update), which would cause company-
+      // scoped queries (like products) to return empty arrays.
+      const activeCompanyId =
+        (internalUser as any)?.activeCompanyId ?? metadata.activeCompanyId;
+
+      const dbRoleForActiveCompany = activeCompanyId
+        ? (internalUser as any)?.userCompanies?.find(
+            (uc: any) => uc.company_id === activeCompanyId,
+          )?.role
+        : undefined;
+
+      const activeRole =
+        (dbRoleForActiveCompany ?? metadata.activeRole) || undefined;
+
       //-------------------------------------------------------
       // 4️⃣ Attach the CORRECT user object for RolesGuard
       //-------------------------------------------------------
@@ -74,13 +89,16 @@ export class ClerkAuthGuard implements CanActivate {
         userId: internalUser?.id,
         clerkId: clerkId,
         sessionId: payload.sid,
-        activeCompanyId: metadata.activeCompanyId,
-        role: metadata.activeRole,
+        activeCompanyId,
+        role:
+          typeof activeRole === 'string'
+            ? activeRole.toUpperCase()
+            : activeRole,
         email: clerkUser.emailAddresses[0]?.emailAddress,
       };
 
       // Keep compatibility with older code
-      request.role = metadata.activeRole;
+      request.role = request.user.role;
 
       return true;
     } catch (error) {

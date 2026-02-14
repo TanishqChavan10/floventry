@@ -79,6 +79,9 @@ import {
   determineStockHealthState,
 } from './stock-health/stock-health.utils';
 import { BarcodeService } from './barcode.service';
+import { BarcodeHistory, BarcodeHistoryChangeType } from './entities/barcode-history.entity';
+import { ProductBarcodeUnit, ProductBarcodeUnitType } from './entities/product-barcode-unit.entity';
+import { UpsertProductBarcodeUnitInput } from './dto/product-barcode-unit.input';
 
 @Injectable()
 export class InventoryService {
@@ -88,6 +91,10 @@ export class InventoryService {
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
     private readonly barcodeService: BarcodeService,
+    @InjectRepository(BarcodeHistory)
+    private readonly barcodeHistoryRepository: Repository<BarcodeHistory>,
+    @InjectRepository(ProductBarcodeUnit)
+    private readonly productBarcodeUnitRepository: Repository<ProductBarcodeUnit>,
     @InjectRepository(Unit)
     private unitRepository: Repository<Unit>,
     private readonly stockHealthService: StockHealthService,
@@ -100,6 +107,111 @@ export class InventoryService {
     @InjectDataSource()
     private dataSource: DataSource,
   ) {}
+
+  // --- Packaging/Multi-unit barcodes ---
+
+  async getProductBarcodeUnits(params: {
+    companyId: string;
+    productId: string;
+  }): Promise<ProductBarcodeUnit[]> {
+    return this.productBarcodeUnitRepository.find({
+      where: { company_id: params.companyId, product_id: params.productId },
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async upsertProductBarcodeUnit(params: {
+    companyId: string;
+    input: UpsertProductBarcodeUnitInput;
+  }): Promise<ProductBarcodeUnit> {
+    const product = await this.productRepository.findOne({
+      where: { id: params.input.product_id, company_id: params.companyId },
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    const normalized = this.barcodeService.normalizeBarcode(params.input.barcode_value);
+    if (!normalized) {
+      throw new BadRequestException('Barcode is required');
+    }
+
+    const primary = this.barcodeService.normalizeBarcode(product.barcode) ?? null;
+    const alternates = Array.isArray((product as any).alternate_barcodes)
+      ? ((product as any).alternate_barcodes as any[])
+          .map((v) => (typeof v === 'string' ? this.barcodeService.normalizeBarcode(v) : null))
+          .filter((v): v is string => typeof v === 'string' && v.length > 0)
+      : [];
+
+    if (primary && primary === normalized) {
+      throw new BadRequestException('Packaging barcode cannot equal the primary product barcode');
+    }
+
+    if (alternates.includes(normalized)) {
+      throw new BadRequestException('Packaging barcode cannot equal an alternate product barcode');
+    }
+
+    await this.barcodeService.assertCompanyBarcodeUniqueness({
+      companyId: params.companyId,
+      barcodes: [normalized],
+      excludeProductId: product.id,
+      excludeBarcodeUnitId: params.input.id,
+    });
+
+    let entity: ProductBarcodeUnit;
+
+    if (params.input.id) {
+      const existing = await this.productBarcodeUnitRepository.findOne({
+        where: { id: params.input.id, company_id: params.companyId },
+      });
+      if (!existing) {
+        throw new NotFoundException('Packaging barcode unit not found');
+      }
+      if (existing.product_id !== params.input.product_id) {
+        throw new ForbiddenException('Cannot move barcode unit between products');
+      }
+
+      entity = this.productBarcodeUnitRepository.merge(existing, {
+        barcode_value: normalized,
+        unit_type: params.input.unit_type,
+        quantity_multiplier: params.input.quantity_multiplier,
+        is_primary: params.input.is_primary,
+      });
+    } else {
+      entity = this.productBarcodeUnitRepository.create({
+        company_id: params.companyId,
+        product_id: params.input.product_id,
+        barcode_value: normalized,
+        unit_type: params.input.unit_type,
+        quantity_multiplier: params.input.quantity_multiplier,
+        is_primary: params.input.is_primary,
+      });
+    }
+
+    if (entity.is_primary) {
+      await this.productBarcodeUnitRepository.update(
+        { company_id: params.companyId, product_id: entity.product_id },
+        { is_primary: false },
+      );
+    }
+
+    return this.productBarcodeUnitRepository.save(entity);
+  }
+
+  async removeProductBarcodeUnit(params: {
+    companyId: string;
+    id: string;
+  }): Promise<boolean> {
+    const existing = await this.productBarcodeUnitRepository.findOne({
+      where: { id: params.id, company_id: params.companyId },
+    });
+    if (!existing) {
+      throw new NotFoundException('Packaging barcode unit not found');
+    }
+
+    await this.productBarcodeUnitRepository.remove(existing);
+    return true;
+  }
 
   // --- Categories ---
 
@@ -167,10 +279,18 @@ export class InventoryService {
     input: CreateProductInput,
     companyId: string,
   ): Promise<Product> {
+    const barcodeRaw =
+      typeof input?.barcode === 'string' && input.barcode.trim().length > 0
+        ? input.barcode
+        : null;
+
+    const generatedBarcode =
+      barcodeRaw === null ? await this.barcodeService.generateUniqueBarcode(companyId) : null;
+
     const normalized = await this.barcodeService.normalizeAndValidateForCompany(
       {
         companyId,
-        barcode: input.barcode,
+        barcode: generatedBarcode ?? barcodeRaw,
         alternateBarcodes: (input as any).alternate_barcodes,
       },
     );
@@ -181,6 +301,10 @@ export class InventoryService {
       company_id: companyId,
     });
     return this.productRepository.save(product);
+  }
+
+  async generateCompanyBarcode(companyId: string): Promise<string> {
+    return this.barcodeService.generateUniqueBarcode(companyId);
   }
 
   async findAllProducts(companyId: string): Promise<Product[]> {
@@ -206,12 +330,30 @@ export class InventoryService {
   async updateProduct(
     input: UpdateProductInput,
     companyId: string,
+    changedByUserId?: string,
   ): Promise<Product> {
     const product = await this.findOneProduct(input.id, companyId);
 
-    const nextBarcode =
+    const prevBarcode = product.barcode ?? null;
+    const prevAlternate = Array.isArray((product as any).alternate_barcodes)
+      ? ((product as any).alternate_barcodes as string[])
+      : null;
+
+    const barcodeCandidateRaw =
       input.barcode !== undefined ? input.barcode : product.barcode;
-    const nextAlternate =
+
+    const nextBarcodeRaw =
+      typeof barcodeCandidateRaw === 'string'
+        ? barcodeCandidateRaw.trim().length > 0
+          ? barcodeCandidateRaw
+          : null
+        : barcodeCandidateRaw ?? null;
+
+    const ensuredBarcode =
+      nextBarcodeRaw === null
+        ? await this.barcodeService.generateUniqueBarcode(companyId)
+        : nextBarcodeRaw;
+    const nextAlternateRaw =
       (input as any).alternate_barcodes !== undefined
         ? (input as any).alternate_barcodes
         : product.alternate_barcodes;
@@ -219,8 +361,8 @@ export class InventoryService {
     const normalized = await this.barcodeService.normalizeAndValidateForCompany(
       {
         companyId,
-        barcode: nextBarcode,
-        alternateBarcodes: nextAlternate,
+        barcode: ensuredBarcode,
+        alternateBarcodes: nextAlternateRaw,
         excludeProductId: product.id,
       },
     );
@@ -229,7 +371,72 @@ export class InventoryService {
     Object.assign(product, normalized);
     // Restoring product when updating
     product.is_active = true;
-    return this.productRepository.save(product);
+
+    const saved = await this.productRepository.save(product);
+
+    // --- Barcode history ---
+    const savedBarcode = saved.barcode ?? null;
+    const savedAlternate = Array.isArray((saved as any).alternate_barcodes)
+      ? ((saved as any).alternate_barcodes as string[])
+      : null;
+
+    if (prevBarcode !== savedBarcode) {
+      await this.barcodeHistoryRepository.save(
+        this.barcodeHistoryRepository.create({
+          company_id: companyId,
+          product_id: saved.id,
+          change_type: BarcodeHistoryChangeType.PRIMARY_CHANGED,
+          old_value: prevBarcode,
+          new_value: savedBarcode,
+          changed_by_user_id: changedByUserId ?? null,
+          reason: null,
+        }),
+      );
+    }
+
+    const prevList = (prevAlternate ?? []).filter(
+      (v): v is string => typeof v === 'string' && v.trim().length > 0,
+    );
+    const nextList = (savedAlternate ?? []).filter(
+      (v): v is string => typeof v === 'string' && v.trim().length > 0,
+    );
+
+    const prevSet = new Set<string>(prevList);
+    const nextSet = new Set<string>(nextList);
+
+    for (const added of Array.from(nextSet)) {
+      if (!prevSet.has(added)) {
+        await this.barcodeHistoryRepository.save(
+          this.barcodeHistoryRepository.create({
+            company_id: companyId,
+            product_id: saved.id,
+            change_type: BarcodeHistoryChangeType.ALTERNATE_ADDED,
+            old_value: null,
+            new_value: added,
+            changed_by_user_id: changedByUserId ?? null,
+            reason: null,
+          }),
+        );
+      }
+    }
+
+    for (const removed of Array.from(prevSet)) {
+      if (!nextSet.has(removed)) {
+        await this.barcodeHistoryRepository.save(
+          this.barcodeHistoryRepository.create({
+            company_id: companyId,
+            product_id: saved.id,
+            change_type: BarcodeHistoryChangeType.ALTERNATE_REMOVED,
+            old_value: removed,
+            new_value: null,
+            changed_by_user_id: changedByUserId ?? null,
+            reason: null,
+          }),
+        );
+      }
+    }
+
+    return saved;
   }
 
   async findProductByBarcode(
@@ -237,6 +444,44 @@ export class InventoryService {
     companyId: string,
   ): Promise<Product> {
     return this.barcodeService.findProductByBarcode({ companyId, barcode });
+  }
+
+  async findProductByBarcodeDetails(params: {
+    barcode: string;
+    companyId: string;
+  }): Promise<{
+    product: Product;
+    barcode_value: string;
+    unit_type: ProductBarcodeUnitType;
+    quantity_multiplier: number;
+  }> {
+    const resolved = await this.barcodeService.resolveBarcodeWithUnit({
+      companyId: params.companyId,
+      barcode: params.barcode,
+    });
+
+    if (!resolved) {
+      throw new NotFoundException('Barcode not found');
+    }
+
+    return {
+      product: resolved.product,
+      barcode_value: resolved.barcode_value,
+      unit_type: resolved.unit_type as unknown as ProductBarcodeUnitType,
+      quantity_multiplier: resolved.quantity_multiplier,
+    };
+  }
+
+
+
+  async getBarcodeHistory(params: {
+    companyId: string;
+    productId: string;
+  }): Promise<BarcodeHistory[]> {
+    return this.barcodeHistoryRepository.find({
+      where: { company_id: params.companyId, product_id: params.productId },
+      order: { changed_at: 'DESC' },
+    });
   }
 
   async removeProduct(id: string, companyId: string): Promise<boolean> {
@@ -268,13 +513,16 @@ export class InventoryService {
     const unit: Unit = this.unitRepository.create({
       ...input,
       company_id: companyId,
+      isActive: true,
     } as unknown as Unit);
     return this.unitRepository.save(unit);
   }
 
-  async findAllUnits(companyId: string): Promise<Unit[]> {
+  async findAllUnits(companyId: string, includeArchived = false): Promise<Unit[]> {
     return this.unitRepository.find({
-      where: { company_id: companyId },
+      where: includeArchived
+        ? { company_id: companyId }
+        : { company_id: companyId, isActive: true },
       order: { name: 'ASC' },
     });
   }
@@ -297,11 +545,14 @@ export class InventoryService {
   }
 
   async removeUnit(id: string, companyId: string): Promise<boolean> {
-    const result = await this.unitRepository.delete({
-      id,
-      company_id: companyId,
+    const unit = await this.unitRepository.findOne({
+      where: { id, company_id: companyId },
     });
-    if (result.affected === 0) throw new NotFoundException(`Unit not found`);
+    if (!unit) throw new NotFoundException(`Unit not found`);
+
+    unit.isActive = false;
+    unit.isDefault = false;
+    await this.unitRepository.save(unit);
     return true;
   }
 

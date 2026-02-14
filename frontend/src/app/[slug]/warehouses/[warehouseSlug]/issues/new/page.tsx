@@ -201,7 +201,7 @@ export default function NewIssueNotePage() {
     setItems(updated);
   };
 
-  const selectProductFromBarcode = (productId: string) => {
+  const selectProductFromBarcode = (productId: string, suggestedQuantity?: number) => {
     if (!availableProductIds.has(productId)) {
       toast({
         title: 'Not available in this warehouse',
@@ -211,25 +211,54 @@ export default function NewIssueNotePage() {
       return;
     }
 
+    const usableStock = Number(stockHealthByProductId.get(productId)?.usableStock ?? 0);
+    const rawSuggested =
+      typeof suggestedQuantity === 'number' && Number.isFinite(suggestedQuantity)
+        ? suggestedQuantity
+        : undefined;
+    const qtyToApply =
+      typeof rawSuggested === 'number' && rawSuggested > 0
+        ? Math.min(rawSuggested, usableStock || rawSuggested)
+        : undefined;
+
     const existingIndex = items.findIndex((i) => i.product_id === productId);
     if (existingIndex >= 0) {
       setHighlightIndex(existingIndex);
-      toast({
-        title: 'Already added',
-        description: 'That product is already in the issue list.',
-      });
+      if (typeof qtyToApply === 'number') {
+        const current = Number(items[existingIndex]?.quantity ?? 0);
+        const nextQty = Math.min(current + qtyToApply, usableStock || current + qtyToApply);
+        updateItem(existingIndex, 'quantity', nextQty);
+        toast({
+          title: 'Quantity updated',
+          description:
+            usableStock && nextQty !== current + qtyToApply
+              ? `Increased (capped at usable stock: ${usableStock})`
+              : 'Increased quantity for existing line',
+        });
+      } else {
+        toast({
+          title: 'Already added',
+          description: 'That product is already in the issue list.',
+        });
+      }
       return;
     }
 
     const emptyIndex = items.findIndex((i) => !i.product_id);
     if (emptyIndex >= 0) {
       updateItem(emptyIndex, 'product_id', productId);
+      if (typeof qtyToApply === 'number') {
+        updateItem(emptyIndex, 'quantity', qtyToApply);
+      }
       setHighlightIndex(emptyIndex);
       return;
     }
 
     setItems((prev) => {
-      const next = [...prev, { product_id: productId, quantity: 0 }];
+      const next = [
+        ...prev,
+        { product_id: productId, quantity: typeof qtyToApply === 'number' ? qtyToApply : 0 },
+      ];
       setHighlightIndex(next.length - 1);
       return next;
     });
@@ -351,15 +380,22 @@ export default function NewIssueNotePage() {
               <SafeBarcodeScanInput
                 context="ISSUE"
                 label="Scan barcode to select product"
-                description="Scan selects a product only — you still confirm quantity and submit."
-                onProductResolved={(product, scannedBarcode) => {
+                description="Scan selects a product. Pack barcodes can auto-fill quantity."
+                mode="details"
+                onProductResolved={(product, scannedBarcode, scanMeta) => {
                   setLastScan({
                     barcode: scannedBarcode,
                     productId: product.id,
                     productName: product.name,
                     sku: product.sku,
                   });
-                  selectProductFromBarcode(product.id);
+                  const suggested =
+                    typeof scanMeta?.quantity === 'number'
+                      ? scanMeta.quantity
+                      : typeof scanMeta?.quantity_multiplier === 'number'
+                        ? scanMeta.quantity_multiplier
+                        : undefined;
+                  selectProductFromBarcode(product.id, suggested);
                 }}
                 onError={(message) =>
                   toast({

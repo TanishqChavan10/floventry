@@ -125,6 +125,13 @@ export class GlobalSearchService {
 
           if (isPremium) {
             sub.orWhere('p.barcode ILIKE :q', { q: `%${params.query}%` });
+
+            // Alternate barcodes are stored as a text[] in Postgres.
+            // Use unnest() to allow ILIKE (partial match) search.
+            sub.orWhere(
+              'EXISTS (SELECT 1 FROM unnest(p.alternate_barcodes) AS ab WHERE ab ILIKE :q)',
+              { q: `%${params.query}%` },
+            );
           }
         }),
       )

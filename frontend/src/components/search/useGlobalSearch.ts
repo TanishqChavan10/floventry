@@ -49,7 +49,7 @@ export type GlobalSearchContextValue = {
   closePalette: () => void;
   navigateToResult: (item:
     | { kind: 'product' | 'warehouse' | 'document'; id: string; type?: GlobalSearchDocumentType }
-    | { kind: 'action'; id: 'create-warehouse' | 'create-company' }) => void;
+    | { kind: 'action'; id: 'create-warehouse' | 'create-company' | 'scan-barcode' }) => void;
 };
 
 export const GlobalSearchContext = createContext<GlobalSearchContextValue | null>(null);

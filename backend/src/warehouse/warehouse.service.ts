@@ -30,7 +30,7 @@ export class WarehouseService {
     @InjectRepository(StockMovement)
     private stockMovementRepository: Repository<StockMovement>,
     private dataSource: DataSource,
-  ) { }
+  ) {}
 
   async getKPIs(warehouseId: string): Promise<any> {
     const totalProducts = await this.stockRepository.count({

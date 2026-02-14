@@ -10,6 +10,7 @@ import { Stock } from '../inventory/entities/stock.entity';
 import { Warehouse } from '../warehouse/warehouse.entity';
 import { LotSourceType } from '../inventory/entities/stock-lot.entity';
 import * as Papa from 'papaparse';
+import { BarcodeService } from '../inventory/barcode.service';
 import {
   isExpiryInPastEndOfDay,
   normalizeExpiryToEndOfDayUTC,
@@ -55,6 +56,7 @@ export class ImportService {
     private stockLotRepository: Repository<StockLot>,
     @InjectRepository(Stock)
     private stockRepository: Repository<Stock>,
+    private readonly barcodeService: BarcodeService,
     private dataSource: DataSource,
   ) {}
 
@@ -154,7 +156,7 @@ export class ImportService {
 
     // Get existing units to validate references
     const existingUnits = await this.unitRepository.find({
-      where: { company_id: companyId },
+      where: { company_id: companyId, isActive: true },
       select: ['shortCode', 'name'],
     });
     // Create a set that includes both short codes and names for flexible matching
@@ -325,6 +327,14 @@ export class ImportService {
     let successCount = 0;
     const errors: ValidationError[] = [];
 
+    // Ensure uniqueness within this import batch (the DB uniqueness check won't see uncommitted inserts).
+    const reservedBarcodes = new Set<string>();
+    const normalizeReserved = (value: string) => this.barcodeService.normalizeBarcode(value) ?? '';
+
+    // Seed sequence once to reduce DB round-trips for auto-generated barcodes.
+    let nextAutoSequence: number | null = null;
+    const autoPrefix = 'FLO';
+
     try {
       for (const row of validatedRows) {
         try {
@@ -362,13 +372,89 @@ export class ImportService {
           }
 
           // Create product
+          let nextBarcodeRaw: string | null = null;
+
+          const inputBarcodeRaw =
+            typeof row.data.barcode === 'string' && row.data.barcode.trim().length > 0
+              ? row.data.barcode
+              : null;
+
+          if (inputBarcodeRaw) {
+            const normalized = await this.barcodeService.normalizeAndValidateForCompany({
+              companyId,
+              barcode: inputBarcodeRaw,
+              alternateBarcodes: null,
+            });
+
+            const canonical = normalized.barcode;
+            if (canonical) {
+              const key = normalizeReserved(canonical);
+              if (key && reservedBarcodes.has(key)) {
+                throw new BadRequestException('Duplicate barcode within import batch');
+              }
+              if (key) reservedBarcodes.add(key);
+              nextBarcodeRaw = canonical;
+            }
+          } else {
+            // Auto-generate readable company barcode (FLO-000001)
+            if (nextAutoSequence === null) {
+              // Start from current max in DB (BarcodeService handles both products + packaging barcodes).
+              const first = await this.barcodeService.generateUniqueBarcode(companyId, autoPrefix);
+              // Parse the numeric tail and continue sequentially for the batch.
+              const m = /^(?:[A-Z0-9]{1,6})-(\d{6})$/.exec(first);
+              if (!m) {
+                // Fallback: just reserve the first and then call generator per row.
+                const key = normalizeReserved(first);
+                if (key) reservedBarcodes.add(key);
+                nextBarcodeRaw = first;
+              } else {
+                nextAutoSequence = Number(m[1]);
+                nextBarcodeRaw = first;
+                const key = normalizeReserved(first);
+                if (key) reservedBarcodes.add(key);
+              }
+            } else {
+              // Continue sequentially; still validate uniqueness against DB + reserved set.
+              for (let attempt = 0; attempt < 250; attempt++) {
+                const candidateSeq = nextAutoSequence + 1 + attempt;
+                const candidate = `${autoPrefix}-${String(candidateSeq).padStart(6, '0')}`;
+
+                const normalized = await this.barcodeService.normalizeAndValidateForCompany({
+                  companyId,
+                  barcode: candidate,
+                  alternateBarcodes: null,
+                });
+
+                const canonical = normalized.barcode;
+                const key = canonical ? normalizeReserved(canonical) : '';
+                if (canonical && key && !reservedBarcodes.has(key)) {
+                  reservedBarcodes.add(key);
+                  nextBarcodeRaw = canonical;
+                  nextAutoSequence = candidateSeq;
+                  break;
+                }
+              }
+
+              if (!nextBarcodeRaw) {
+                // Final fallback if the sequential slot is exhausted.
+                const generated = await this.barcodeService.generateUniqueBarcode(companyId, autoPrefix);
+                const key = normalizeReserved(generated);
+                if (key && reservedBarcodes.has(key)) {
+                  throw new BadRequestException('Failed to auto-generate unique barcode');
+                }
+                if (key) reservedBarcodes.add(key);
+                nextBarcodeRaw = generated;
+              }
+            }
+          }
+
           const product = queryRunner.manager.create(Product, {
             company_id: companyId,
             category_id: category?.id || undefined,
             supplier_id: supplier?.id || undefined,
             sku: row.data.sku,
             name: row.data.name,
-            barcode: row.data.barcode || null,
+            barcode: nextBarcodeRaw,
             unit: unitValue,
             cost_price: row.data.cost_price
               ? parseFloat(row.data.cost_price)
@@ -908,7 +994,7 @@ export class ImportService {
 
     // Get existing units
     const existingUnits = await this.unitRepository.find({
-      where: { company_id: companyId },
+      where: { company_id: companyId, isActive: true },
       select: ['name', 'shortCode'],
     });
     const existingNames = new Set(

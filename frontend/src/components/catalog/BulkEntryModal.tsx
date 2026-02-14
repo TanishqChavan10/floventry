@@ -13,19 +13,19 @@ type BulkEntryType = 'products' | 'categories' | 'suppliers' | 'units';
 
 const TITLES: Record<BulkEntryType, { title: string; description: string }> = {
   products: {
-    title: 'Bulk Add Products',
+    title: 'Bulk Import Products',
     description: 'Create many products at once using CSV upload or paste from Sheets.',
   },
   categories: {
-    title: 'Bulk Add Categories',
+    title: 'Bulk Import Categories',
     description: 'Create many categories at once using CSV upload or paste from Sheets.',
   },
   suppliers: {
-    title: 'Bulk Add Suppliers',
+    title: 'Bulk Import Suppliers',
     description: 'Create many suppliers at once using CSV upload or paste from Sheets.',
   },
   units: {
-    title: 'Bulk Add Units',
+    title: 'Bulk Import Units',
     description: 'Create many units at once using CSV upload or paste from Sheets.',
   },
 };

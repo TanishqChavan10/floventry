@@ -11,6 +11,7 @@ export const GET_PRODUCTS = gql`
       name
       sku
       barcode
+      alternate_barcodes
       unit
       cost_price
       selling_price
@@ -37,6 +38,7 @@ export const GET_PRODUCT = gql`
       name
       sku
       barcode
+      alternate_barcodes
       unit
       cost_price
       selling_price
@@ -67,6 +69,8 @@ export const CREATE_PRODUCT = gql`
       id
       name
       sku
+      barcode
+      alternate_barcodes
       unit
       category {
         id
@@ -80,12 +84,20 @@ export const CREATE_PRODUCT = gql`
   }
 `;
 
+export const GENERATE_COMPANY_BARCODE = gql`
+  mutation GenerateCompanyBarcode {
+    generateCompanyBarcode
+  }
+`;
+
 export const UPDATE_PRODUCT = gql`
   mutation UpdateProduct($input: UpdateProductInput!) {
     updateProduct(input: $input) {
       id
       name
       sku
+      barcode
+      alternate_barcodes
       unit
       cost_price
       selling_price
@@ -264,12 +276,13 @@ export const DELETE_SUPPLIER = gql`
 // ============================================
 
 export const GET_UNITS = gql`
-  query GetUnits {
-    units {
+  query GetUnits($includeArchived: Boolean = false) {
+    units(includeArchived: $includeArchived) {
       id
       name
       shortCode
       isDefault
+      isActive
       created_at
       updated_at
     }
@@ -307,6 +320,7 @@ export const UPDATE_UNIT = gql`
       name
       shortCode
       isDefault
+      isActive
     }
   }
 `;

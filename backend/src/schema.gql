@@ -136,10 +136,43 @@ type AuditLogResponse {
   pageInfo: AuditLogPageInfo!
 }
 
+type BarcodeHistory {
+  change_type: BarcodeHistoryChangeType!
+  changed_at: DateTime!
+  changed_by_user_id: String
+  company_id: ID!
+  id: ID!
+  new_value: String
+  old_value: String
+  product_id: ID!
+  reason: String
+}
+
+"""Type of barcode change recorded for audit/history"""
+enum BarcodeHistoryChangeType {
+  ALTERNATE_ADDED
+  ALTERNATE_REMOVED
+  PRIMARY_CHANGED
+}
+
+enum BarcodeLabelLayout {
+  A4_2X4
+  A4_3X8
+  A4_SINGLE
+  THERMAL_50X25
+}
+
 type BarcodeLabelResult {
   filename: String!
   mimeType: String!
   pdfData: String!
+}
+
+type BarcodeLookupResult {
+  barcode_value: String!
+  product: Product!
+  quantity_multiplier: Float!
+  unit_type: ProductBarcodeUnitType!
 }
 
 type Category {
@@ -262,6 +295,7 @@ type CompanySettings {
   enable_expiry_tracking: Boolean
   expiry_warning_days: Int
   id: ID!
+  is_premium: Boolean
   language: String
   low_stock_threshold: Int
   notify_expiry: Boolean
@@ -512,6 +546,7 @@ enum GRNStatus {
 }
 
 input GenerateBarcodeLabelsInput {
+  layout: BarcodeLabelLayout
   productIds: [ID!]!
 }
 
@@ -709,6 +744,7 @@ type Mutation {
   exportStockMovements(filters: ExportFiltersInput, warehouseId: String!): String!
   exportStockSnapshot(filters: ExportFiltersInput, warehouseId: String!): String!
   generateBarcodeLabels(input: GenerateBarcodeLabelsInput!): BarcodeLabelResult!
+  generateCompanyBarcode: String!
   markAllNotificationsAsRead: Int!
   markNotificationAsRead(id: String!): Notification!
   markPurchaseOrderOrdered(id: String!): PurchaseOrder!
@@ -719,6 +755,7 @@ type Mutation {
   removeCategory(id: String!): Boolean!
   removeMemberValidated(membershipId: String!): Boolean!
   removeProduct(id: String!): Boolean!
+  removeProductBarcodeUnit(id: String!): Boolean!
   removeUnit(id: String!): Boolean!
   removeUser(membershipId: String!): Boolean!
   removeUserFromWarehouse(userId: ID!, warehouseId: ID!): Boolean!
@@ -745,6 +782,7 @@ type Mutation {
   updateWarehouse(id: String!, input: UpdateWarehouseInput!): Warehouse!
   updateWarehouseSettings(input: UpdateWarehouseSettingsInput!, warehouseId: String!): WarehouseSettings!
   updateWarehouseTransfer(id: String!, input: UpdateTransferInput!): WarehouseTransfer!
+  upsertProductBarcodeUnit(input: UpsertProductBarcodeUnitInput!): ProductBarcodeUnit!
   validateCategoryImport(csvContent: String!): String!
   validateOpeningStockImport(csvContent: String!, warehouseId: String!): String!
   validateProductImport(csvContent: String!): String!
@@ -813,6 +851,24 @@ type Product {
   updated_at: DateTime!
 }
 
+type ProductBarcodeUnit {
+  barcode_value: String!
+  company_id: ID!
+  created_at: DateTime!
+  id: ID!
+  is_primary: Boolean!
+  product_id: ID!
+  quantity_multiplier: Float!
+  unit_type: ProductBarcodeUnitType!
+}
+
+"""Packaging unit type associated with a barcode"""
+enum ProductBarcodeUnitType {
+  CARTON
+  PACK
+  PIECE
+}
+
 type ProductPreview {
   name: String!
   sku: String!
@@ -871,6 +927,7 @@ type Query {
   adjustmentsByUser(days: Float = 30, limit: Float = 10): [AdjustmentByUser!]!
   adjustmentsByWarehouse(days: Float = 30): [AdjustmentByWarehouse!]!
   allStock: [Stock!]!
+  barcodeHistory(productId: String!): [BarcodeHistory!]!
   categories: [Category!]!
   companies: [Company!]!
   company(id: String!): Company!
@@ -902,7 +959,9 @@ type Query {
   myPendingInvites: [Invite!]!
   notifications(limit: Int = 50, offset: Int = 0): [Notification!]!
   product(id: String!): Product!
+  productBarcodeUnits(productId: String!): [ProductBarcodeUnit!]!
   productByBarcode(barcode: String!): Product!
+  productByBarcodeDetails(barcode: String!): BarcodeLookupResult!
   products: [Product!]!
   purchaseOrder(id: String!): PurchaseOrder
   purchaseOrders(filters: PurchaseOrderFilterInput!): [PurchaseOrder!]!
@@ -918,7 +977,7 @@ type Query {
   supplier(id: String!): Supplier!
   suppliers(includeArchived: Boolean = false): [Supplier!]!
   topStockProducts(limit: Float = 10): [TopStockProduct!]!
-  units: [Unit!]!
+  units(includeArchived: Boolean): [Unit!]!
   unreadNotificationCount: Int!
   usersInCompany: [UserCompany!]!
   validateInvite(token: String!): ValidateInviteResponse!
@@ -1232,6 +1291,7 @@ type Unit {
   company_id: String!
   created_at: DateTime!
   id: ID!
+  isActive: Boolean!
   isDefault: Boolean!
   name: String!
   shortCode: String!
@@ -1363,6 +1423,7 @@ input UpdateTransferInput {
 
 input UpdateUnitInput {
   id: String!
+  isActive: Boolean
   isDefault: Boolean
   name: String!
   shortCode: String!
@@ -1392,6 +1453,15 @@ input UpdateWarehouseSettingsInput {
   expiry_warning_days: Float
   low_stock_threshold: Float
   require_transfer_approval: Boolean
+}
+
+input UpsertProductBarcodeUnitInput {
+  barcode_value: String!
+  id: ID
+  is_primary: Boolean! = false
+  product_id: ID!
+  quantity_multiplier: Float!
+  unit_type: ProductBarcodeUnitType!
 }
 
 type User {

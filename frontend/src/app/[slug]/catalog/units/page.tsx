@@ -26,7 +26,23 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, Edit, Trash2, Ruler, PackagePlus, CheckCircle2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Plus,
+  Search,
+  Edit,
+  Archive,
+  Ruler,
+  PackagePlus,
+  CheckCircle2,
+  MoreHorizontal,
+} from 'lucide-react';
 import { GET_UNITS, CREATE_UNIT, UPDATE_UNIT, DELETE_UNIT } from '@/lib/graphql/catalog';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -37,6 +53,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { BulkEntryModal } from '@/components/catalog/BulkEntryModal';
@@ -44,17 +67,24 @@ import { BulkEntryModal } from '@/components/catalog/BulkEntryModal';
 function UnitsContent() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('active'); // active, archived, all
   const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<any>(null);
+  const [selectedUnitIds, setSelectedUnitIds] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     name: '',
     shortCode: '',
     isDefault: false,
   });
-  const [unitToDelete, setUnitToDelete] = useState<any>(null);
+  const [unitToArchive, setUnitToArchive] = useState<any>(null);
+  const [bulkArchiveUnitIds, setBulkArchiveUnitIds] = useState<string[] | null>(null);
+  const [bulkRestoreUnitIds, setBulkRestoreUnitIds] = useState<string[] | null>(null);
   const [isBulkEntryOpen, setIsBulkEntryOpen] = useState(false);
 
-  const { data, loading, error, refetch } = useQuery(GET_UNITS);
+  const includeArchived = statusFilter !== 'active';
+  const { data, loading, error, refetch } = useQuery(GET_UNITS, {
+    variables: { includeArchived },
+  });
 
   const [createUnit, { loading: creating }] = useMutation(CREATE_UNIT, {
     onCompleted: () => {
@@ -78,29 +108,67 @@ function UnitsContent() {
     },
   });
 
-  const [deleteUnit] = useMutation(DELETE_UNIT, {
+  const [archiveUnit] = useMutation(DELETE_UNIT, {
     onCompleted: () => {
-      toast({ title: 'Unit deleted', description: 'Unit has been deleted successfully' });
+      toast({ title: 'Unit archived', description: 'Unit has been archived successfully' });
       refetch();
     },
     onError: (error) => {
       toast({
-        title: 'Cannot delete unit',
+        title: 'Cannot archive unit',
         description: 'This unit is in use by products',
         variant: 'destructive',
       });
     },
   });
 
+  const [archiveUnitQuiet] = useMutation(DELETE_UNIT);
+
   const units = data?.units || [];
 
   const filteredUnits = units.filter((unit: any) => {
-    return (
+    const matchesSearch =
       searchTerm === '' ||
       unit.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      unit.shortCode.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+      unit.shortCode.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && unit.isActive) ||
+      (statusFilter === 'archived' && !unit.isActive);
+
+    return matchesSearch && matchesStatus;
   });
+
+  const selectedCount = selectedUnitIds.size;
+
+  const visibleUnitIds = filteredUnits.map((u: any) => u.id).filter(Boolean);
+  const visibleSelectedCount = visibleUnitIds.filter((id: string) =>
+    selectedUnitIds.has(id),
+  ).length;
+  const allVisibleSelected =
+    visibleUnitIds.length > 0 && visibleSelectedCount === visibleUnitIds.length;
+  const someVisibleSelected = visibleSelectedCount > 0 && !allVisibleSelected;
+
+  const toggleSelected = (id: string, selected: boolean) => {
+    setSelectedUnitIds((prev) => {
+      const next = new Set(prev);
+      if (selected) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllVisible = (selected: boolean) => {
+    setSelectedUnitIds((prev) => {
+      const next = new Set(prev);
+      for (const id of visibleUnitIds) {
+        if (selected) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  };
 
   const handleAddUnit = () => {
     setSelectedUnit(null);
@@ -151,14 +219,132 @@ function UnitsContent() {
     }
   };
 
-  const handleDeleteUnit = (unit: any) => {
-    setUnitToDelete(unit);
+  const handleArchiveUnit = (unit: any) => {
+    setUnitToArchive(unit);
   };
 
-  const confirmDelete = async () => {
-    if (unitToDelete) {
-      await deleteUnit({ variables: { id: unitToDelete.id } });
-      setUnitToDelete(null);
+  const confirmArchive = async () => {
+    if (unitToArchive) {
+      await archiveUnit({ variables: { id: unitToArchive.id } });
+      setUnitToArchive(null);
+    }
+  };
+
+  const handleArchiveSelected = () => {
+    const selectedActiveIds = Array.from(selectedUnitIds).filter((id) => {
+      const unit = units.find((u: any) => u.id === id);
+      return unit?.isActive;
+    });
+    if (selectedActiveIds.length === 0) return;
+    setBulkArchiveUnitIds(selectedActiveIds);
+  };
+
+  const handleRestoreUnit = async (unit: any) => {
+    await updateUnit({
+      variables: {
+        input: {
+          id: unit.id,
+          name: unit.name,
+          shortCode: unit.shortCode,
+          isDefault: unit.isDefault,
+          isActive: true,
+        },
+      },
+    });
+  };
+
+  const handleRestoreSelected = () => {
+    const selectedArchivedIds = Array.from(selectedUnitIds).filter((id) => {
+      const unit = units.find((u: any) => u.id === id);
+      return unit && unit.isActive === false;
+    });
+    if (selectedArchivedIds.length === 0) return;
+    setBulkRestoreUnitIds(selectedArchivedIds);
+  };
+
+  const confirmBulkRestore = async () => {
+    const ids = bulkRestoreUnitIds;
+    if (!ids || ids.length === 0) return;
+
+    let restored = 0;
+    let failed = 0;
+
+    for (const id of ids) {
+      const unit = units.find((u: any) => u.id === id);
+      if (!unit) {
+        failed += 1;
+        continue;
+      }
+
+      try {
+        await updateUnit({
+          variables: {
+            input: {
+              id: unit.id,
+              name: unit.name,
+              shortCode: unit.shortCode,
+              isDefault: unit.isDefault,
+              isActive: true,
+            },
+          },
+        });
+        restored += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+
+    setBulkRestoreUnitIds(null);
+    setSelectedUnitIds(new Set());
+    await refetch();
+
+    if (restored > 0) {
+      toast({
+        title: 'Units restored',
+        description:
+          failed > 0 ? `Restored ${restored}. Failed ${failed}.` : `Restored ${restored} units.`,
+      });
+    } else {
+      toast({
+        title: 'Cannot restore units',
+        description: 'No units were restored.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const confirmBulkArchive = async () => {
+    const ids = bulkArchiveUnitIds;
+    if (!ids || ids.length === 0) return;
+
+    let archived = 0;
+    let failed = 0;
+
+    for (const id of ids) {
+      try {
+        await archiveUnitQuiet({ variables: { id } });
+        archived += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+
+    setBulkArchiveUnitIds(null);
+    setSelectedUnitIds(new Set());
+    await refetch();
+
+    if (archived > 0) {
+      toast({
+        title: 'Units archived',
+        description:
+          failed > 0 ? `Archived ${archived}. Failed ${failed}.` : `Archived ${archived} units.`,
+      });
+    } else {
+      toast({
+        title: 'Cannot archive units',
+        description: 'No units were archived.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -189,13 +375,9 @@ function UnitsContent() {
             </div>
             {!isEmpty && (
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => setIsBulkEntryOpen(true)}
-                >
+                <Button className="gap-2" onClick={() => setIsBulkEntryOpen(true)}>
                   <PackagePlus className="h-4 w-4" />
-                  Bulk Add Units
+                  Bulk Import
                 </Button>
                 <Button className="gap-2" onClick={handleAddUnit}>
                   <Plus className="h-4 w-4" />
@@ -223,13 +405,9 @@ function UnitsContent() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsBulkEntryOpen(true)}
-                  className="gap-2"
-                >
+                <Button onClick={() => setIsBulkEntryOpen(true)} className="gap-2">
                   <PackagePlus className="h-4 w-4" />
-                  Bulk Add Units
+                  Bulk Import
                 </Button>
                 <Button onClick={handleAddUnit} className="gap-2">
                   <Plus className="h-4 w-4" />
@@ -266,16 +444,71 @@ function UnitsContent() {
 
             {/* Units Table */}
             <Card>
-             
               <CardContent className="space-y-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search units..."
-                    className="pl-9"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search units..."
+                      className="pl-9"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full md:w-[180px]">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active Only</SelectItem>
+                      <SelectItem value="archived">Archived Only</SelectItem>
+                      <SelectItem value="all">All Units</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {selectedCount > 1 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="gap-2 w-full md:w-auto">
+                          Actions
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          disabled={
+                            Array.from(selectedUnitIds).filter((id) => {
+                              const unit = units.find((u: any) => u.id === id);
+                              return unit?.isActive;
+                            }).length === 0
+                          }
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            handleArchiveSelected();
+                          }}
+                        >
+                          <Archive className="h-4 w-4" />
+                          Archive Selected
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          disabled={
+                            Array.from(selectedUnitIds).filter((id) => {
+                              const unit = units.find((u: any) => u.id === id);
+                              return unit && unit.isActive === false;
+                            }).length === 0
+                          }
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            handleRestoreSelected();
+                          }}
+                        >
+                          <Archive className="h-4 w-4 text-green-600" />
+                          Restore Selected
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
 
                 {filteredUnits.length === 0 ? (
@@ -286,15 +519,44 @@ function UnitsContent() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-[44px]">
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              aria-label="Select all visible units"
+                              checked={
+                                allVisibleSelected
+                                  ? true
+                                  : someVisibleSelected
+                                    ? 'indeterminate'
+                                    : false
+                              }
+                              onCheckedChange={(checked) => {
+                                const next = checked === true;
+                                toggleSelectAllVisible(next);
+                              }}
+                            />
+                          </div>
+                        </TableHead>
                         <TableHead>Unit Name</TableHead>
                         <TableHead>Short Code</TableHead>
                         <TableHead>Default</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredUnits.map((unit: any) => (
                         <TableRow key={unit.id}>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              aria-label={`Select ${unit?.name ?? 'unit'}`}
+                              checked={!!unit?.id && selectedUnitIds.has(unit.id)}
+                              onCheckedChange={(checked) => {
+                                if (!unit?.id) return;
+                                toggleSelected(unit.id, checked === true);
+                              }}
+                            />
+                          </TableCell>
                           <TableCell className="font-medium">{unit.name}</TableCell>
                           <TableCell className="font-mono text-sm">{unit.shortCode}</TableCell>
                           <TableCell>
@@ -305,6 +567,11 @@ function UnitsContent() {
                               </Badge>
                             )}
                           </TableCell>
+                          <TableCell>
+                            <Badge variant={unit.isActive ? 'default' : 'secondary'}>
+                              {unit.isActive ? 'Active' : 'Archived'}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button
@@ -314,13 +581,23 @@ function UnitsContent() {
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteUnit(unit)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {unit.isActive ? (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleArchiveUnit(unit)}
+                                >
+                                  <Archive className="h-4 w-4" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => void handleRestoreUnit(unit)}
+                                >
+                                  <Archive className="h-4 w-4 text-green-600" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -408,27 +685,65 @@ function UnitsContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!unitToDelete} onOpenChange={() => setUnitToDelete(null)}>
+      {/* Archive Confirmation Dialog */}
+      <AlertDialog open={!!unitToArchive} onOpenChange={() => setUnitToArchive(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Unit?</AlertDialogTitle>
+            <AlertDialogTitle>Archive Unit?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete{' '}
+              Are you sure you want to archive{' '}
               <strong>
-                {unitToDelete?.name} ({unitToDelete?.shortCode})
+                {unitToArchive?.name} ({unitToArchive?.shortCode})
               </strong>
-              ? This action cannot be undone. Units in use by products cannot be deleted.
+              ? Units in use by products cannot be archived.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDelete}
+              onClick={confirmArchive}
               className="bg-destructive text-white hover:bg-destructive/90"
             >
-              Delete Unit
+              Archive Unit
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Archive Confirmation Dialog */}
+      <AlertDialog
+        open={!!bulkArchiveUnitIds && bulkArchiveUnitIds.length > 0}
+        onOpenChange={() => setBulkArchiveUnitIds(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive Units?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to archive {bulkArchiveUnitIds?.length ?? 0} selected units?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBulkArchive}>Archive Units</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Restore Confirmation Dialog */}
+      <AlertDialog
+        open={!!bulkRestoreUnitIds && bulkRestoreUnitIds.length > 0}
+        onOpenChange={() => setBulkRestoreUnitIds(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore Units?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to restore {bulkRestoreUnitIds?.length ?? 0} selected units?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBulkRestore}>Restore Units</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

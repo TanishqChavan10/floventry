@@ -86,6 +86,10 @@ export class CompanySettings {
   @Field({ nullable: true })
   track_stock_adjustments?: boolean;
 
+  // Subscription / Plan flags
+  @Field({ nullable: true })
+  is_premium?: boolean;
+
   @Field()
   created_at: Date;
 

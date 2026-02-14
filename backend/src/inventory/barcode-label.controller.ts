@@ -35,6 +35,7 @@ export class BarcodeLabelController {
     const pdf = await this.barcodeLabelService.generateLabelsPdf({
       companyId,
       productIds: body.productIds,
+      layout: body.layout,
     });
 
     res.setHeader('Content-Type', 'application/pdf');

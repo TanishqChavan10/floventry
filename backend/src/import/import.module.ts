@@ -9,7 +9,9 @@ import { Unit } from '../inventory/entities/unit.entity';
 import { StockLot } from '../inventory/entities/stock-lot.entity';
 import { Stock } from '../inventory/entities/stock.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
+import { ProductBarcodeUnit } from '../inventory/entities/product-barcode-unit.entity';
 import { AuthModule } from '../auth/auth.module';
+import { BarcodeService } from '../inventory/barcode.service';
 
 @Module({
   imports: [
@@ -21,10 +23,11 @@ import { AuthModule } from '../auth/auth.module';
       StockLot,
       Stock,
       StockMovement,
+      ProductBarcodeUnit,
     ]),
     AuthModule,
   ],
-  providers: [ImportService, ImportResolver],
+  providers: [ImportService, ImportResolver, BarcodeService],
   exports: [ImportService],
 })
 export class ImportModule {}

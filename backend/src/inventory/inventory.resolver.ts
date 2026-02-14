@@ -10,9 +10,13 @@ import { UseGuards, BadRequestException } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { Category } from './entities/category.entity';
 import { Product } from './entities/product.entity';
+import { BarcodeHistory } from './entities/barcode-history.entity';
 import { Stock } from './entities/stock.entity';
 import { StockMovement } from './entities/stock-movement.entity';
 import { StockLot } from './entities/stock-lot.entity';
+import { BarcodeLookupResult } from './models/barcode-lookup.model';
+import { ProductBarcodeUnit } from './entities/product-barcode-unit.entity';
+import { UpsertProductBarcodeUnitInput } from './dto/product-barcode-unit.input';
 import { CreateCategoryInput, UpdateCategoryInput } from './dto/category.input';
 import { CreateProductInput, UpdateProductInput } from './dto/product.input';
 import { CreateUnitInput, UpdateUnitInput } from './dto/unit.input';
@@ -102,6 +106,13 @@ export class ProductResolver {
     return this.inventoryService.createProduct(input, user.activeCompanyId);
   }
 
+  @Mutation(() => String)
+  async generateCompanyBarcode(@ClerkUser() user: any) {
+    if (!user.activeCompanyId)
+      throw new BadRequestException('Active company required');
+    return this.inventoryService.generateCompanyBarcode(user.activeCompanyId);
+  }
+
   @Query(() => [Product], { name: 'products' })
   async findAll(@ClerkUser() user: any) {
     if (!user.activeCompanyId)
@@ -129,6 +140,19 @@ export class ProductResolver {
     );
   }
 
+  @Query(() => BarcodeLookupResult, { name: 'productByBarcodeDetails' })
+  async productByBarcodeDetails(
+    @Args('barcode') barcode: string,
+    @ClerkUser() user: any,
+  ) {
+    if (!user.activeCompanyId)
+      throw new BadRequestException('Active company required');
+    return this.inventoryService.findProductByBarcodeDetails({
+      barcode,
+      companyId: user.activeCompanyId,
+    });
+  }
+
   @Mutation(() => Product)
   async updateProduct(
     @Args('input') input: UpdateProductInput,
@@ -136,7 +160,59 @@ export class ProductResolver {
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
-    return this.inventoryService.updateProduct(input, user.activeCompanyId);
+    return this.inventoryService.updateProduct(input, user.activeCompanyId, user.id);
+  }
+
+  @Query(() => [BarcodeHistory], { name: 'barcodeHistory' })
+  async barcodeHistory(
+    @Args('productId') productId: string,
+    @ClerkUser() user: any,
+  ) {
+    if (!user.activeCompanyId)
+      throw new BadRequestException('Active company required');
+    return this.inventoryService.getBarcodeHistory({
+      companyId: user.activeCompanyId,
+      productId,
+    });
+  }
+
+  @Query(() => [ProductBarcodeUnit], { name: 'productBarcodeUnits' })
+  async productBarcodeUnits(
+    @Args('productId') productId: string,
+    @ClerkUser() user: any,
+  ) {
+    if (!user.activeCompanyId)
+      throw new BadRequestException('Active company required');
+    return this.inventoryService.getProductBarcodeUnits({
+      companyId: user.activeCompanyId,
+      productId,
+    });
+  }
+
+  @Mutation(() => ProductBarcodeUnit)
+  async upsertProductBarcodeUnit(
+    @Args('input') input: UpsertProductBarcodeUnitInput,
+    @ClerkUser() user: any,
+  ) {
+    if (!user.activeCompanyId)
+      throw new BadRequestException('Active company required');
+    return this.inventoryService.upsertProductBarcodeUnit({
+      companyId: user.activeCompanyId,
+      input,
+    });
+  }
+
+  @Mutation(() => Boolean)
+  async removeProductBarcodeUnit(
+    @Args('id') id: string,
+    @ClerkUser() user: any,
+  ) {
+    if (!user.activeCompanyId)
+      throw new BadRequestException('Active company required');
+    return this.inventoryService.removeProductBarcodeUnit({
+      companyId: user.activeCompanyId,
+      id,
+    });
   }
 
   @Mutation(() => Boolean)
@@ -165,10 +241,13 @@ export class UnitResolver {
   }
 
   @Query(() => [Unit], { name: 'units' })
-  async findAll(@ClerkUser() user: any) {
+  async findAll(
+    @ClerkUser() user: any,
+    @Args('includeArchived', { type: () => Boolean, nullable: true }) includeArchived?: boolean,
+  ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
-    return this.inventoryService.findAllUnits(user.activeCompanyId);
+    return this.inventoryService.findAllUnits(user.activeCompanyId, includeArchived ?? false);
   }
 
   @Mutation(() => Unit)

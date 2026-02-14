@@ -5,12 +5,13 @@ import { toast } from 'sonner';
 import { useMutation } from '@apollo/client';
 import { saveAs } from 'file-saver';
 import { Button } from '@/components/ui/button';
-import { GENERATE_BARCODE_LABELS } from '@/lib/graphql/barcode';
+import { GENERATE_BARCODE_LABELS, type BarcodeLabelLayout } from '@/lib/graphql/barcode';
 
 type Props = {
   productIds: string[];
   disabled?: boolean;
   filename?: string;
+  layout?: BarcodeLabelLayout;
   children?: ReactNode;
   size?: 'default' | 'sm' | 'lg' | 'icon';
   variant?: 'default' | 'secondary' | 'destructive' | 'outline' | 'ghost' | 'link';
@@ -20,6 +21,7 @@ export function GenerateBarcodeLabelsButton({
   productIds,
   disabled,
   filename,
+  layout,
   children,
   size,
   variant,
@@ -34,6 +36,7 @@ export function GenerateBarcodeLabelsButton({
         variables: {
           input: {
             productIds,
+            layout,
           },
         },
       });
@@ -49,7 +52,8 @@ export function GenerateBarcodeLabelsButton({
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: 'application/pdf' });
 
-        const safeFilename = filename?.trim() || data.generateBarcodeLabels.filename || 'barcode-labels.pdf';
+        const safeFilename =
+          filename?.trim() || data.generateBarcodeLabels.filename || 'barcode-labels.pdf';
         saveAs(blob, safeFilename);
         toast.success('Barcode label PDF downloaded');
       }

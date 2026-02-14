@@ -4,13 +4,14 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import { BarcodeScanInput } from '@/components/barcode/BarcodeScanInput';
 
-export type BarcodeScanContext = 'ISSUE' | 'TRANSFER' | 'GRN' | 'OPENING_STOCK';
+export type BarcodeScanContext = 'ISSUE' | 'TRANSFER' | 'GRN' | 'OPENING_STOCK' | 'ADJUSTMENT';
 
 const CONTEXT_ROUTE_HINTS: Record<BarcodeScanContext, string[]> = {
   ISSUE: ['/issues/new'],
   TRANSFER: ['/inventory/transfers/new'],
   GRN: ['/inventory/grn'],
   OPENING_STOCK: ['/inventory/stock'],
+  ADJUSTMENT: ['/inventory/adjustments'],
 };
 
 function isAllowedPath(pathname: string, context: BarcodeScanContext): boolean {
@@ -23,7 +24,7 @@ function isAllowedPath(pathname: string, context: BarcodeScanContext): boolean {
  *
  * Purpose:
  * - Make barcode scanning "opt-in" per physical flow.
- * - Prevent accidental rendering in reports/adjustments/dashboards.
+ * - Prevent accidental rendering in the wrong context.
  *
  * Security model:
  * - Not a security boundary (backend still enforces stock rules).
@@ -40,7 +41,6 @@ export function SafeBarcodeScanInput(
 
   if (enforceRoute && !isAllowedPath(pathname, props.context)) {
     if (process.env.NODE_ENV !== 'production') {
-       
       console.warn(
         `[SafeBarcodeScanInput] Blocked render outside allowed route. context=${props.context} pathname=${pathname}`,
       );

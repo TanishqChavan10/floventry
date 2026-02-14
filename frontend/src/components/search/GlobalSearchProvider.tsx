@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useApolloClient } from '@apollo/client';
+import { useApolloClient, useQuery } from '@apollo/client';
 import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 import {
   GlobalSearchContext,
@@ -17,6 +18,8 @@ import {
   GET_ISSUE_FOR_REDIRECT,
   GET_TRANSFER_FOR_REDIRECT,
 } from '@/lib/graphql/search';
+import { GET_COMPANY_BY_SLUG } from '@/lib/graphql/company';
+import { PRODUCT_BY_BARCODE } from '@/lib/graphql/barcode';
 import { GlobalSearchModal } from './GlobalSearchModal';
 import { CreateWarehouseDialog } from '@/components/warehouses/CreateWarehouseDialog';
 
@@ -39,6 +42,14 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
   const router = useRouter();
   const params = useParams();
   const companySlug = params?.slug as string | undefined;
+
+  const { data: companyData } = useQuery(GET_COMPANY_BY_SLUG, {
+    variables: { slug: companySlug as string },
+    skip: !companySlug,
+    fetchPolicy: 'cache-first',
+  });
+
+  const isPremiumCompany = Boolean(companyData?.companyBySlug?.settings?.is_premium);
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -167,6 +178,46 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
         if (item.id === 'create-warehouse') {
           if (!companySlug) return;
           setCreateWarehouseOpen(true);
+          return;
+        }
+
+        if (item.id === 'scan-barcode') {
+          if (!companySlug) return;
+
+          if (!isPremiumCompany) {
+            toast.error('Barcode scanning is a Premium feature');
+            return;
+          }
+
+          // Normalize scanner noise (whitespace/newlines/control chars)
+          const normalized = String(query || '')
+            .replace(/[\x00-\x1F\x7F]/g, '')
+            .replace(/\s+/g, '')
+            .trim();
+
+          if (!normalized) return;
+
+          try {
+            const res = await client.query({
+              query: PRODUCT_BY_BARCODE,
+              variables: { barcode: normalized },
+              fetchPolicy: 'no-cache',
+            });
+
+            const productId = res.data?.productByBarcode?.id as string | undefined;
+            if (!productId) {
+              toast.error('No product found for barcode');
+              return;
+            }
+
+            router.push(
+              `/${companySlug}/catalog/products?productId=${encodeURIComponent(productId)}`,
+            );
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Barcode lookup failed';
+            toast.error(message);
+          }
+
           return;
         }
 

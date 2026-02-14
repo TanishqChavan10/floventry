@@ -88,7 +88,20 @@ export function GlobalSearchModal() {
       },
     ];
 
+    const q = (query ?? '').trim();
+    const looksLikeBarcode = q.replace(/[\x00-\x1F\x7F]/g, '').replace(/\s+/g, '').length >= 4;
+
     if (companySlug) {
+      if (looksLikeBarcode) {
+        actions.unshift({
+          key: 'action:scan-barcode',
+          kind: 'action',
+          id: 'scan-barcode',
+          title: 'Scan barcode',
+          subtitle: 'Open product by barcode (Premium)',
+        });
+      }
+
       actions.unshift({
         key: 'action:create-warehouse',
         kind: 'action',
@@ -99,7 +112,7 @@ export function GlobalSearchModal() {
     }
 
     return actions;
-  }, [companySlug]);
+  }, [companySlug, query]);
 
   const items = useMemo(() => {
     const searched = flattenResults({
