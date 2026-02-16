@@ -59,6 +59,21 @@ export class Company {
   @Column({ nullable: true })
   email: string;
 
+  // --- Company-specific barcode format settings (auto-generation) ---
+  // Example: prefix 'FLO-', padding 6, next_number 1, suffix '' => 'FLO-000001'
+  @Column({ type: 'varchar', length: 20, default: 'FLO-' })
+  barcode_prefix: string;
+
+  @Column({ type: 'int', default: 6 })
+  barcode_padding: number;
+
+  // bigint is returned as string by TypeORM (driver-dependent)
+  @Column({ type: 'bigint', default: () => '1' })
+  barcode_next_number: string;
+
+  @Column({ type: 'varchar', length: 20, default: '' })
+  barcode_suffix: string;
+
   @Column({ nullable: true })
   website: string;
 

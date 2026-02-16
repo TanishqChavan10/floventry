@@ -394,9 +394,9 @@ function CatalogProductsContent() {
 
   const activeProducts = products.filter((p: any) => p.is_active).length;
 
-  const visibleProductIds = filteredProducts
-    .map((p: any) => p?.id as string | undefined)
-    .filter((id): id is string => typeof id === 'string' && id.length > 0);
+  const visibleProductIds: string[] = filteredProducts
+    .map((p: any) => p?.id)
+    .filter((id: unknown): id is string => typeof id === 'string' && id.length > 0);
 
   const visibleSelectedCount = visibleProductIds.filter((id) => selectedProductIds.has(id)).length;
   const allVisibleSelected =
@@ -451,25 +451,33 @@ function CatalogProductsContent() {
 
   const confirmArchive = async () => {
     if (productToArchive) {
-      await deleteProduct({ variables: { id: productToArchive.id } });
+      try {
+        await deleteProduct({ variables: { id: productToArchive.id } });
+      } catch {
+        // onError handles user-facing messaging
+      }
       setProductToArchive(null);
     }
   };
 
   const handleUnarchiveProduct = async (product: any) => {
     // Backend updateProduct automatically sets is_active=true
-    await updateProduct({
-      variables: {
-        input: {
-          id: product.id,
-          name: product.name,
-          sku: product.sku,
-          unit: product.unit, // Unit is already a string ID in the product object
-          cost_price: product.cost_price,
-          selling_price: product.selling_price,
+    try {
+      await updateProduct({
+        variables: {
+          input: {
+            id: product.id,
+            name: product.name,
+            sku: product.sku,
+            unit: product.unit, // Unit is already a string ID in the product object
+            cost_price: product.cost_price,
+            selling_price: product.selling_price,
+          },
         },
-      },
-    });
+      });
+    } catch {
+      // onError handles user-facing messaging
+    }
   };
 
   if (loading) {

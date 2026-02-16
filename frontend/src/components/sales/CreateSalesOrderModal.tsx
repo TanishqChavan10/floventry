@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { CopyButton } from '@/components/common/CopyButton';
+import { BarcodeScanInput } from '@/components/barcode/BarcodeScanInput';
 
 interface SalesOrderItem {
   product_id: string;
@@ -77,6 +78,34 @@ export function CreateSalesOrderModal({
     const updated = [...items];
     updated[index] = { ...updated[index], [field]: value };
     setItems(updated);
+  };
+
+  const addOrIncrementItem = (productId: string, quantityToAdd: number) => {
+    const safeQty = Number.isFinite(quantityToAdd) && quantityToAdd > 0 ? quantityToAdd : 1;
+
+    setItems((prev) => {
+      const existingIndex = prev.findIndex((it) => it.product_id === productId);
+      if (existingIndex !== -1) {
+        const next = [...prev];
+        const currentQty = Number.isFinite(next[existingIndex].ordered_quantity)
+          ? next[existingIndex].ordered_quantity
+          : 0;
+        next[existingIndex] = {
+          ...next[existingIndex],
+          ordered_quantity: currentQty + safeQty,
+        };
+        return next;
+      }
+
+      const emptyIndex = prev.findIndex((it) => !it.product_id);
+      if (emptyIndex !== -1) {
+        const next = [...prev];
+        next[emptyIndex] = { product_id: productId, ordered_quantity: safeQty };
+        return next;
+      }
+
+      return [...prev, { product_id: productId, ordered_quantity: safeQty }];
+    });
   };
 
   const handleClose = () => {
@@ -156,6 +185,16 @@ export function CreateSalesOrderModal({
                   Add Item
                 </Button>
               </div>
+
+              <BarcodeScanInput
+                label="Scan barcode"
+                description="Scan a product barcode to add it to the order (or increase quantity)."
+                onProductResolved={(product, _scanned, scanMeta) => {
+                  const qty = typeof scanMeta?.quantity === 'number' ? scanMeta.quantity : 1;
+                  addOrIncrementItem(product.id, qty);
+                }}
+                onError={(message) => toast.error(message)}
+              />
 
               <div className="space-y-3 max-h-[250px] overflow-y-auto">
                 {items.map((item, index) => (

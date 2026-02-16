@@ -72,6 +72,10 @@ export const GET_COMPANY_BY_SLUG = gql`
       phone
       email
       industry
+      barcodePrefix
+      barcodePadding
+      barcodeNextNumber
+      barcodeSuffix
       warehouses {
         id
         name
@@ -109,6 +113,21 @@ export const GET_COMPANY_BY_SLUG = gql`
         audit_retention_days
         track_stock_adjustments
       }
+    }
+  }
+`;
+
+export const UPDATE_COMPANY_BARCODE_SETTINGS = gql`
+  mutation UpdateCompanyBarcodeSettings(
+    $companyId: String!
+    $input: UpdateCompanyBarcodeSettingsInput!
+  ) {
+    updateCompanyBarcodeSettings(companyId: $companyId, input: $input) {
+      id
+      barcodePrefix
+      barcodePadding
+      barcodeNextNumber
+      barcodeSuffix
     }
   }
 `;

@@ -58,6 +58,7 @@ export function ImportPreview({ type, rows, existingKeys = new Set() }: ImportPr
           { key: 'sku', label: 'SKU' },
           { key: 'name', label: 'Product Name' },
           { key: 'unit', label: 'Unit' },
+          { key: 'barcode', label: 'Barcode' },
           { key: 'description', label: 'Description' },
         ];
       case 'suppliers':

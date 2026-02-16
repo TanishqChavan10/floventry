@@ -9,9 +9,15 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
   if (graphQLErrors)
     graphQLErrors.forEach(({ message }) => {
       // Suppress auth-related errors to prevent console spam
-      if (!message.includes('No token provided') &&
-        !message.includes('Invalid or expired token') &&
-        !message.includes('Unauthorized')) {
+      const isAuthError =
+        message.includes('No token provided') ||
+        message.includes('Invalid or expired token') ||
+        message.includes('Unauthorized');
+
+      const isExpectedValidationError =
+        /Barcode already assigned to another product in this company/i.test(message);
+
+      if (!isAuthError && !isExpectedValidationError) {
         console.error(`[GraphQL error]: ${message}`);
       }
     });

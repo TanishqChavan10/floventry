@@ -2,17 +2,12 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Building2, 
-  MapPin, 
-  Package, 
-  AlertTriangle 
-} from 'lucide-react';
-import { 
-  CompanyProfileForm, 
-  BusinessInfoForm, 
-  InventorySettingsForm, 
-  DangerZone 
+import { Building2, MapPin, Package, AlertTriangle } from 'lucide-react';
+import {
+  CompanyProfileForm,
+  BusinessInfoForm,
+  InventorySettingsForm,
+  DangerZone,
 } from './components';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -45,7 +40,10 @@ export default function CompanySettingsContent({ company }: CompanySettingsProps
           <TabsTrigger value="inventory" className="flex-1 min-w-[120px]">
             <Package className="w-4 h-4 mr-2" /> Inventory
           </TabsTrigger>
-          <TabsTrigger value="danger" className="flex-1 min-w-[120px] text-red-500 data-[state=active]:text-red-600 data-[state=active]:bg-red-50 dark:data-[state=active]:bg-red-950/20">
+          <TabsTrigger
+            value="danger"
+            className="flex-1 min-w-[120px] text-red-500 data-[state=active]:text-red-600 data-[state=active]:bg-red-50 dark:data-[state=active]:bg-red-950/20"
+          >
             <AlertTriangle className="w-4 h-4 mr-2" /> Danger
           </TabsTrigger>
         </TabsList>
@@ -53,15 +51,24 @@ export default function CompanySettingsContent({ company }: CompanySettingsProps
         <TabsContent value="profile" className="space-y-4">
           <CompanyProfileForm company={company} />
         </TabsContent>
-        
+
         <TabsContent value="business" className="space-y-4">
           <BusinessInfoForm company={company} settings={settings} />
         </TabsContent>
-        
+
         <TabsContent value="inventory" className="space-y-4">
-          <InventorySettingsForm companyId={company.id} settings={settings} />
+          <InventorySettingsForm
+            companyId={company.id}
+            settings={settings}
+            barcodeSettings={{
+              barcodePrefix: company?.barcodePrefix,
+              barcodePadding: company?.barcodePadding,
+              barcodeNextNumber: company?.barcodeNextNumber,
+              barcodeSuffix: company?.barcodeSuffix,
+            }}
+          />
         </TabsContent>
-        
+
         <TabsContent value="danger" className="space-y-4">
           <DangerZone companyId={company.id} />
         </TabsContent>

@@ -15,6 +15,10 @@ export const productSchema = z.object({
 
     barcode: z.string().max(100, 'Barcode must be less than 100 characters').optional().or(z.literal('')),
 
+    alternate_barcodes: z.array(z.string().max(100, 'Each alternate barcode must be less than 100 characters'))
+        .optional()
+        .default([]),
+
     category_id: z.string().uuid('Invalid category').optional().or(z.literal('')),
 
     supplier_id: z.string().uuid('Invalid supplier').optional().or(z.literal('')),

@@ -401,7 +401,7 @@ function UnitsContent() {
               <div className="text-center space-y-2">
                 <h3 className="text-lg font-semibold">No units defined yet</h3>
                 <p className="text-sm text-muted-foreground max-w-sm">
-                  Create measurement units like pieces, kilograms, liters, etc.
+                  Create measurement units like pieces, kilograms, li ters, etc.
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -519,7 +519,7 @@ function UnitsContent() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[44px]">
+                        <TableHead className="w-44px">
                           <div onClick={(e) => e.stopPropagation()}>
                             <Checkbox
                               aria-label="Select all visible units"

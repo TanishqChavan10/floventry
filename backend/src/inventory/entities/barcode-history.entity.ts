@@ -50,7 +50,7 @@ export class BarcodeHistory {
   new_value: string | null;
 
   @Field(() => String, { nullable: true })
-  @Column('uuid', { nullable: true })
+  @Column('text', { nullable: true })
   changed_by_user_id: string | null;
 
   @Field(() => String, { nullable: true })

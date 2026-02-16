@@ -117,14 +117,16 @@ export function IconRail() {
           className={cn(
             'h-10 w-10 rounded-xl flex items-center justify-center',
             'transition-all duration-200',
-            isOnHomePage
-              ? 'bg-white/10 hover:bg-white/15 opacity-100'
-              : 'bg-white/5 hover:bg-white/10 opacity-30',
           )}
           title="Home"
           aria-label="Home"
         >
-          <span className="text-lg font-semibold leading-none">F</span>
+          <img
+            src="/4.svg"
+            alt="Logo"
+            className="h-8 w-8"
+            style={{ filter: 'brightness(0) invert(1)' }}
+          />
         </Link>
 
         <div className="mt-4 flex-1 w-full flex flex-col items-center gap-3 overflow-y-auto px-2">

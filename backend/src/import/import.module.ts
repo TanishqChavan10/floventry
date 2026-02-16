@@ -12,6 +12,8 @@ import { StockMovement } from '../inventory/entities/stock-movement.entity';
 import { ProductBarcodeUnit } from '../inventory/entities/product-barcode-unit.entity';
 import { AuthModule } from '../auth/auth.module';
 import { BarcodeService } from '../inventory/barcode.service';
+import { Company } from '../company/company.entity';
+import { BarcodeFormatService } from '../inventory/barcode-format.service';
 
 @Module({
   imports: [
@@ -24,10 +26,11 @@ import { BarcodeService } from '../inventory/barcode.service';
       Stock,
       StockMovement,
       ProductBarcodeUnit,
+      Company,
     ]),
     AuthModule,
   ],
-  providers: [ImportService, ImportResolver, BarcodeService],
+  providers: [ImportService, ImportResolver, BarcodeService, BarcodeFormatService],
   exports: [ImportService],
 })
 export class ImportModule {}

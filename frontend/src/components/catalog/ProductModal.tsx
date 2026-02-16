@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button as IconButton } from '@/components/ui/button';
 import { X, Plus, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,29 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
   const isEditing = !!product;
   const { toast } = useToast();
 
+  const [barcodeInlineError, setBarcodeInlineError] = useState<string | null>(null);
+
+  const showProductMutationError = (error: any) => {
+    const message =
+      error?.graphQLErrors?.[0]?.message ||
+      error?.networkError?.message ||
+      error?.message ||
+      'Something went wrong';
+
+    if (/Barcode already assigned to another product/i.test(message)) {
+      setBarcodeInlineError(
+        'This barcode is already assigned to another product in this company. Please use a different barcode.',
+      );
+      return;
+    }
+
+    toast({
+      title: 'Error',
+      description: message,
+      variant: 'destructive',
+    });
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     sku: '',
@@ -68,13 +92,7 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
       });
       onClose();
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
+    onError: showProductMutationError,
   });
 
   const [updateProduct, { loading: updating }] = useMutation(UPDATE_PRODUCT, {
@@ -85,13 +103,7 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
       });
       onClose();
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
+    onError: showProductMutationError,
   });
 
   const [generateCompanyBarcode, { loading: generatingBarcode }] = useMutation(
@@ -180,7 +192,11 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
       name: formData.name,
       sku: formData.sku,
       barcode: formData.barcode || null,
-      alternate_barcodes: (formData.alternate_barcodes || []).map((b) => b.trim()).filter(Boolean),
+      ...(isEditing && {
+        alternate_barcodes: (formData.alternate_barcodes || [])
+          .map((b) => b.trim())
+          .filter(Boolean),
+      }),
       category_id: formData.category_id || null,
       supplier_id: formData.supplier_id || null,
       unit: formData.unit,
@@ -190,18 +206,26 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
     };
 
     if (isEditing) {
-      await updateProduct({
-        variables: {
-          input: {
-            id: product.id,
-            ...input,
+      try {
+        await updateProduct({
+          variables: {
+            input: {
+              id: product.id,
+              ...input,
+            },
           },
-        },
-      });
+        });
+      } catch {
+        // onError handles user-facing messaging
+      }
     } else {
-      await createProduct({
-        variables: { input },
-      });
+      try {
+        await createProduct({
+          variables: { input },
+        });
+      } catch {
+        // onError handles user-facing messaging
+      }
     }
   };
 
@@ -210,7 +234,15 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
     loading || alternateValidation.duplicates.length > 0 || alternateValidation.conflictsPrimary;
 
   return (
-    <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
+    <Dialog
+      open={open}
+      onOpenChange={(open) => {
+        if (!open) {
+          setBarcodeInlineError(null);
+          onClose();
+        }
+      }}
+    >
       <DialogContent className="max-w-2xl p-0">
         <div className="flex max-h-[90vh] flex-col">
           <DialogHeader className="px-6 pt-6 pr-12">
@@ -221,6 +253,14 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 pb-6 pt-4">
+            {barcodeInlineError ? (
+              <div className="mb-4">
+                <Alert variant="destructive">
+                  <AlertTitle>Barcode already used</AlertTitle>
+                  <AlertDescription>{barcodeInlineError}</AlertDescription>
+                </Alert>
+              </div>
+            ) : null}
             <div className="grid gap-x-4 gap-y-5 md:grid-cols-2">
               {/* Product Name */}
               <div className="space-y-2 md:col-span-2">
@@ -257,7 +297,10 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
                   <Input
                     id="barcode"
                     value={formData.barcode}
-                    onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                    onChange={(e) => {
+                      if (barcodeInlineError) setBarcodeInlineError(null);
+                      setFormData({ ...formData, barcode: e.target.value });
+                    }}
                     placeholder="Auto-generated if left empty"
                   />
                   {!isEditing ? (
@@ -284,70 +327,72 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
                 </div>
               </div>
 
-              {/* Alternate Barcodes */}
-              <div className="space-y-2 md:col-span-2">
-                <Label>Alternate Barcodes</Label>
-                <div className="space-y-2">
-                  {(formData.alternate_barcodes || []).length ? (
-                    (formData.alternate_barcodes || []).map((value, idx) => (
-                      <div key={`${idx}`} className="flex gap-2 items-center">
-                        <Input
-                          value={value}
-                          onChange={(e) => {
-                            const next = [...(formData.alternate_barcodes || [])];
-                            next[idx] = e.target.value;
-                            setFormData({ ...formData, alternate_barcodes: next });
-                          }}
-                          placeholder="e.g., supplier barcode"
-                        />
-                        <IconButton
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            const next = [...(formData.alternate_barcodes || [])];
-                            next.splice(idx, 1);
-                            setFormData({ ...formData, alternate_barcodes: next });
-                          }}
-                          title="Remove"
-                        >
-                          <X className="h-4 w-4" />
-                        </IconButton>
+              {/* Alternate Barcodes - Only show when editing */}
+              {isEditing && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Alternate Barcodes</Label>
+                  <div className="space-y-2">
+                    {(formData.alternate_barcodes || []).length ? (
+                      (formData.alternate_barcodes || []).map((value, idx) => (
+                        <div key={`${idx}`} className="flex gap-2 items-center">
+                          <Input
+                            value={value}
+                            onChange={(e) => {
+                              const next = [...(formData.alternate_barcodes || [])];
+                              next[idx] = e.target.value;
+                              setFormData({ ...formData, alternate_barcodes: next });
+                            }}
+                            placeholder="e.g., supplier barcode"
+                          />
+                          <IconButton
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const next = [...(formData.alternate_barcodes || [])];
+                              next.splice(idx, 1);
+                              setFormData({ ...formData, alternate_barcodes: next });
+                            }}
+                            title="Remove"
+                          >
+                            <X className="h-4 w-4" />
+                          </IconButton>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-xs text-muted-foreground">No alternate barcodes</div>
+                    )}
+
+                    <IconButton
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          alternate_barcodes: [...(formData.alternate_barcodes || []), ''],
+                        })
+                      }
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add alternate barcode
+                    </IconButton>
+
+                    {alternateValidation.conflictsPrimary ? (
+                      <div className="text-xs text-destructive">
+                        Primary barcode cannot also appear in alternate barcodes.
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-xs text-muted-foreground">No alternate barcodes</div>
-                  )}
+                    ) : null}
 
-                  <IconButton
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    onClick={() =>
-                      setFormData({
-                        ...formData,
-                        alternate_barcodes: [...(formData.alternate_barcodes || []), ''],
-                      })
-                    }
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add alternate barcode
-                  </IconButton>
-
-                  {alternateValidation.conflictsPrimary ? (
-                    <div className="text-xs text-destructive">
-                      Primary barcode cannot also appear in alternate barcodes.
-                    </div>
-                  ) : null}
-
-                  {alternateValidation.duplicates.length ? (
-                    <div className="text-xs text-destructive">
-                      Duplicate alternate barcodes: {alternateValidation.duplicates.join(', ')}
-                    </div>
-                  ) : null}
+                    {alternateValidation.duplicates.length ? (
+                      <div className="text-xs text-destructive">
+                        Duplicate alternate barcodes: {alternateValidation.duplicates.join(', ')}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Category */}
               <div className="space-y-2">

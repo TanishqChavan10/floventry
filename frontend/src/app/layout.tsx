@@ -35,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <head>
         <title>Floventory</title>
+        <link rel="icon" href="/4.svg" type="image/svg+xml" />
       </head>
       <body className={`${poppins.variable} font-sans min-h-screen flex flex-col`}>
         {/* --- 1) Theme Provider first for useTheme --- */}

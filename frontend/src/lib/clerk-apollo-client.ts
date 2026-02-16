@@ -25,7 +25,12 @@ const authLink = new ApolloLink((operation, forward) => {
 const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
   if (graphQLErrors) {
     graphQLErrors.forEach(({ message }) => {
-      console.error(`[GraphQL error]: ${message}`);
+      const isExpectedValidationError =
+        /Barcode already assigned to another product in this company/i.test(message);
+
+      if (!isExpectedValidationError) {
+        console.error(`[GraphQL error]: ${message}`);
+      }
 
       // If we get an unauthorized error, try to refresh the token
       if (message.includes('Unauthorized') || message.includes('unauthorized')) {

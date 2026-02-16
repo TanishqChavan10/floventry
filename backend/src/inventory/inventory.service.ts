@@ -79,6 +79,7 @@ import {
   determineStockHealthState,
 } from './stock-health/stock-health.utils';
 import { BarcodeService } from './barcode.service';
+import { BarcodeFormatService } from './barcode-format.service';
 import { BarcodeHistory, BarcodeHistoryChangeType } from './entities/barcode-history.entity';
 import { ProductBarcodeUnit, ProductBarcodeUnitType } from './entities/product-barcode-unit.entity';
 import { UpsertProductBarcodeUnitInput } from './dto/product-barcode-unit.input';
@@ -106,6 +107,7 @@ export class InventoryService {
     private stockMovementRepository: Repository<StockMovement>,
     @InjectDataSource()
     private dataSource: DataSource,
+    private readonly barcodeFormatService: BarcodeFormatService,
   ) {}
 
   // --- Packaging/Multi-unit barcodes ---
@@ -285,7 +287,9 @@ export class InventoryService {
         : null;
 
     const generatedBarcode =
-      barcodeRaw === null ? await this.barcodeService.generateUniqueBarcode(companyId) : null;
+      barcodeRaw === null
+        ? await this.barcodeFormatService.generateNextCompanyBarcode(companyId)
+        : null;
 
     const normalized = await this.barcodeService.normalizeAndValidateForCompany(
       {
@@ -304,7 +308,7 @@ export class InventoryService {
   }
 
   async generateCompanyBarcode(companyId: string): Promise<string> {
-    return this.barcodeService.generateUniqueBarcode(companyId);
+    return this.barcodeFormatService.generateNextCompanyBarcode(companyId);
   }
 
   async findAllProducts(companyId: string): Promise<Product[]> {
@@ -351,7 +355,7 @@ export class InventoryService {
 
     const ensuredBarcode =
       nextBarcodeRaw === null
-        ? await this.barcodeService.generateUniqueBarcode(companyId)
+        ? await this.barcodeFormatService.generateNextCompanyBarcode(companyId)
         : nextBarcodeRaw;
     const nextAlternateRaw =
       (input as any).alternate_barcodes !== undefined

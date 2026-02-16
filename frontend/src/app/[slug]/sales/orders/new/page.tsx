@@ -21,6 +21,7 @@ import { useToast } from '@/components/ui/use-toast';
 import Link from 'next/link';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
+import { BarcodeScanInput } from '@/components/barcode/BarcodeScanInput';
 
 function NewSalesOrderContent() {
   const params = useParams();
@@ -66,6 +67,34 @@ function NewSalesOrderContent() {
     setItems(updated);
   };
 
+  const addOrIncrementItem = (productId: string, quantityToAdd: number) => {
+    const safeQty = Number.isFinite(quantityToAdd) && quantityToAdd > 0 ? quantityToAdd : 1;
+
+    setItems((prev) => {
+      const existingIndex = prev.findIndex((it) => it.product_id === productId);
+      if (existingIndex !== -1) {
+        const next = [...prev];
+        const currentQty = Number.isFinite(next[existingIndex].ordered_quantity)
+          ? next[existingIndex].ordered_quantity
+          : 0;
+        next[existingIndex] = {
+          ...next[existingIndex],
+          ordered_quantity: currentQty + safeQty,
+        };
+        return next;
+      }
+
+      const emptyIndex = prev.findIndex((it) => !it.product_id);
+      if (emptyIndex !== -1) {
+        const next = [...prev];
+        next[emptyIndex] = { product_id: productId, ordered_quantity: safeQty };
+        return next;
+      }
+
+      return [...prev, { product_id: productId, ordered_quantity: safeQty }];
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -78,9 +107,7 @@ function NewSalesOrderContent() {
       return;
     }
 
-    const validItems = items.filter(
-      (item) => item.product_id && item.ordered_quantity > 0
-    );
+    const validItems = items.filter((item) => item.product_id && item.ordered_quantity > 0);
 
     if (validItems.length === 0) {
       toast({
@@ -114,9 +141,7 @@ function NewSalesOrderContent() {
             </Link>
             <div>
               <h1 className="text-3xl font-bold">Create Sales Order</h1>
-              <p className="text-slate-600 dark:text-slate-400">
-                Add a new customer order
-              </p>
+              <p className="text-slate-600 dark:text-slate-400">Add a new customer order</p>
             </div>
           </div>
         </div>
@@ -162,6 +187,22 @@ function NewSalesOrderContent() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              <BarcodeScanInput
+                label="Scan barcode"
+                description="Scan a product barcode to add it to the order (or increase quantity)."
+                onProductResolved={(product, _scanned, scanMeta) => {
+                  const qty = typeof scanMeta?.quantity === 'number' ? scanMeta.quantity : 1;
+                  addOrIncrementItem(product.id, qty);
+                }}
+                onError={(message) =>
+                  toast({
+                    title: 'Error',
+                    description: message,
+                    variant: 'destructive',
+                  })
+                }
+              />
+
               {items.map((item, index) => (
                 <div key={index} className="flex gap-4 items-end">
                   <div className="flex-1">

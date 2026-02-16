@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
 import {
   Sheet,
@@ -26,10 +26,6 @@ import {
 import { Edit, Package, Tag, Building2, Ruler, IndianRupee } from 'lucide-react';
 import { CopyButton } from '@/components/common/CopyButton';
 import type { BarcodeLabelLayout } from '@/lib/graphql/barcode';
-import {
-  copyThermalLabelsZplToClipboard,
-  downloadThermalLabelsZpl,
-} from '@/lib/api/thermal-labels';
 import { toast } from 'sonner';
 import {
   BARCODE_HISTORY,
@@ -37,6 +33,7 @@ import {
   REMOVE_PRODUCT_BARCODE_UNIT,
   UPSERT_PRODUCT_BARCODE_UNIT,
 } from '@/lib/graphql/barcode';
+import { UPDATE_PRODUCT } from '@/lib/graphql/catalog';
 
 interface ProductDetailDrawerProps {
   product: any;
@@ -53,17 +50,34 @@ export default function ProductDetailDrawer({
 }: ProductDetailDrawerProps) {
   if (!product) return null;
 
+  const [drawerProduct, setDrawerProduct] = useState<any>(product);
+  const [newAlternateBarcode, setNewAlternateBarcode] = useState('');
+
+  useEffect(() => {
+    if (!open) return;
+    setDrawerProduct(product);
+    setNewAlternateBarcode('');
+  }, [open, product]);
+
   const [labelLayout, setLabelLayout] = useState<BarcodeLabelLayout>('A4_SINGLE');
 
   const alternateBarcodes: string[] = useMemo(() => {
-    const raw = product?.alternate_barcodes;
+    const raw = drawerProduct?.alternate_barcodes;
     if (!Array.isArray(raw)) return [];
     return raw.filter((v: any) => typeof v === 'string' && v.trim().length > 0);
-  }, [product]);
+  }, [drawerProduct]);
+
+  const normalizeClientBarcode = (raw: string): string => {
+    const noControls = raw.replace(/[\x00-\x1F\x7F]/g, '');
+    const noWhitespace = noControls.replace(/\s+/g, '').trim();
+    if (!noWhitespace) return '';
+    if (/^\d{13}$/.test(noWhitespace)) return noWhitespace;
+    return noWhitespace.toUpperCase();
+  };
 
   const { data: historyData, loading: historyLoading } = useQuery(BARCODE_HISTORY, {
-    variables: { productId: product.id },
-    skip: !open || !product?.id,
+    variables: { productId: drawerProduct.id },
+    skip: !open || !drawerProduct?.id,
     fetchPolicy: 'cache-and-network',
   });
 
@@ -74,8 +88,8 @@ export default function ProductDetailDrawer({
     loading: unitsLoading,
     refetch: refetchUnits,
   } = useQuery(PRODUCT_BARCODE_UNITS, {
-    variables: { productId: product.id },
-    skip: !open || !product?.id,
+    variables: { productId: drawerProduct.id },
+    skip: !open || !drawerProduct?.id,
     fetchPolicy: 'cache-and-network',
   });
 
@@ -110,18 +124,75 @@ export default function ProductDetailDrawer({
     onError: (e) => toast.error(e.message || 'Failed to remove packaging barcode'),
   });
 
+  const [updateProduct, { loading: savingAlternates }] = useMutation(UPDATE_PRODUCT, {
+    onError: (e) => toast.error(e.message || 'Failed to save alternate barcodes'),
+  });
+
+  const saveAlternateBarcodes = async (nextAlternates: string[]) => {
+    const primary = normalizeClientBarcode(drawerProduct?.barcode || '');
+    const normalized = nextAlternates
+      .map((b) => normalizeClientBarcode(b || ''))
+      .filter(Boolean);
+
+    const unique = Array.from(new Set(normalized));
+    if (primary && unique.includes(primary)) {
+      toast.error('Primary barcode cannot also appear in alternate barcodes');
+      return;
+    }
+
+    // Determine if we're adding or removing
+    const currentAlternates = drawerProduct.alternate_barcodes || [];
+    const isRemoving = unique.length < currentAlternates.length;
+    const isAdding = unique.length > currentAlternates.length;
+
+    try {
+      const { data } = await updateProduct({
+        variables: {
+          input: {
+            id: drawerProduct.id,
+            alternate_barcodes: unique,
+          },
+        },
+      });
+
+      const updated = (data as any)?.updateProduct;
+      if (updated) {
+        setDrawerProduct((prev: any) => ({ ...prev, ...updated }));
+      }
+
+      if (isRemoving) {
+        toast.success('Alternate barcode removed');
+      } else if (isAdding) {
+        toast.success('Alternate barcode added');
+      } else {
+        toast.success('Alternate barcodes saved');
+      }
+    } catch {
+      // onError handles user-facing messaging
+    }
+  };
+
   return (
-    <Sheet open={open} onOpenChange={(open) => !open && onClose()}>
+    <Sheet
+      open={open}
+      onOpenChange={(open) => {
+        if (!open) {
+          setDrawerProduct(product);
+          setNewAlternateBarcode('');
+          onClose();
+        }
+      }}
+    >
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
           <div className="flex items-start justify-between gap-3 pr-10">
             <div className="space-y-1">
-              <SheetTitle className="text-2xl">{product.name}</SheetTitle>
+              <SheetTitle className="text-2xl">{drawerProduct.name}</SheetTitle>
               <SheetDescription className="font-mono text-sm">
                 <span className="inline-flex items-center gap-1">
-                  <span>SKU: {product.sku}</span>
+                  <span>SKU: {drawerProduct.sku}</span>
                   <CopyButton
-                    value={product.sku}
+                    value={drawerProduct.sku}
                     ariaLabel="Copy SKU"
                     successMessage="Copied SKU to clipboard"
                     className="h-7 w-7 text-muted-foreground"
@@ -129,19 +200,22 @@ export default function ProductDetailDrawer({
                 </span>
               </SheetDescription>
             </div>
-            <Badge className="shrink-0 mt-1" variant={product.is_active ? 'default' : 'secondary'}>
-              {product.is_active ? 'Active' : 'Archived'}
+            <Badge
+              className="shrink-0 mt-1"
+              variant={drawerProduct.is_active ? 'default' : 'secondary'}
+            >
+              {drawerProduct.is_active ? 'Active' : 'Archived'}
             </Badge>
           </div>
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
           {/* Product Image */}
-          {product.image_url && (
+          {drawerProduct.image_url && (
             <div className="rounded-lg border overflow-hidden">
               <img
-                src={product.image_url}
-                alt={product.name}
+                src={drawerProduct.image_url}
+                alt={drawerProduct.name}
                 className="w-full h-48 object-cover"
               />
             </div>
@@ -151,12 +225,12 @@ export default function ProductDetailDrawer({
           <div className="space-y-4">
             <h3 className="font-semibold text-sm text-muted-foreground">Basic Information</h3>
             <div className="space-y-3">
-              {product.barcode && (
+              {drawerProduct.barcode && (
                 <div className="flex items-center gap-3">
                   <Tag className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">Barcode</p>
-                    <p className="text-sm text-muted-foreground font-mono">{product.barcode}</p>
+                    <p className="text-sm text-muted-foreground font-mono">{drawerProduct.barcode}</p>
                   </div>
                 </div>
               )}
@@ -176,8 +250,85 @@ export default function ProductDetailDrawer({
                             successMessage="Copied barcode to clipboard"
                             className="h-7 w-7 text-muted-foreground"
                           />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={savingAlternates}
+                            onClick={async () => {
+                              const next = alternateBarcodes.filter((x) => x !== b);
+                              await saveAlternateBarcodes(next);
+                            }}
+                          >
+                            Remove
+                          </Button>
                         </div>
                       ))}
+                    </div>
+
+                    <div className="pt-2 space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          value={newAlternateBarcode}
+                          onChange={(e) => setNewAlternateBarcode(e.target.value)}
+                          placeholder="Scan or type alternate barcode"
+                          disabled={savingAlternates}
+                        />
+                        <Button
+                          type="button"
+                          disabled={
+                            savingAlternates ||
+                            !normalizeClientBarcode(newAlternateBarcode).length
+                          }
+                          onClick={async () => {
+                            const nextValue = normalizeClientBarcode(newAlternateBarcode);
+                            if (!nextValue) return;
+                            const next = Array.from(new Set([...alternateBarcodes, nextValue]));
+                            await saveAlternateBarcodes(next);
+                            setNewAlternateBarcode('');
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Alternate barcodes are for the same single item (not packs/cartons).
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {!alternateBarcodes.length ? (
+                <div className="flex items-start gap-3">
+                  <Tag className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div className="space-y-2 flex-1">
+                    <p className="text-sm font-medium">Alternate Barcodes</p>
+                    <div className="flex gap-2">
+                      <Input
+                        value={newAlternateBarcode}
+                        onChange={(e) => setNewAlternateBarcode(e.target.value)}
+                        placeholder="Scan or type alternate barcode"
+                        disabled={savingAlternates}
+                      />
+                      <Button
+                        type="button"
+                        disabled={
+                          savingAlternates ||
+                          !normalizeClientBarcode(newAlternateBarcode).length
+                        }
+                        onClick={async () => {
+                          const nextValue = normalizeClientBarcode(newAlternateBarcode);
+                          if (!nextValue) return;
+                          await saveAlternateBarcodes([nextValue]);
+                          setNewAlternateBarcode('');
+                        }}
+                      >
+                        Add
+                      </Button>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Add alternate barcodes if this product can be scanned with more than one code.
                     </div>
                   </div>
                 </div>
@@ -187,7 +338,7 @@ export default function ProductDetailDrawer({
                 <Ruler className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">Unit</p>
-                  <p className="text-sm text-muted-foreground font-mono">{product.unit}</p>
+                  <p className="text-sm text-muted-foreground font-mono">{drawerProduct.unit}</p>
                 </div>
               </div>
             </div>
@@ -247,7 +398,7 @@ export default function ProductDetailDrawer({
                 <div>
                   <p className="text-sm font-medium">Category</p>
                   <p className="text-sm text-muted-foreground">
-                    {product.category?.name || 'Not categorized'}
+                    {drawerProduct.category?.name || 'Not categorized'}
                   </p>
                 </div>
               </div>
@@ -257,7 +408,7 @@ export default function ProductDetailDrawer({
                 <div>
                   <p className="text-sm font-medium">Supplier</p>
                   <p className="text-sm text-muted-foreground">
-                    {product.supplier?.name || 'No supplier'}
+                    {drawerProduct.supplier?.name || 'No supplier'}
                   </p>
                 </div>
               </div>
@@ -276,7 +427,9 @@ export default function ProductDetailDrawer({
                   <p className="text-sm font-medium">Cost Price</p>
                 </div>
                 <p className="text-lg font-bold">
-                  {product.cost_price ? `₹${parseFloat(product.cost_price).toFixed(2)}` : '—'}
+                  {drawerProduct.cost_price
+                    ? `₹${parseFloat(drawerProduct.cost_price).toFixed(2)}`
+                    : '—'}
                 </p>
               </div>
               <div className="space-y-1">
@@ -285,20 +438,22 @@ export default function ProductDetailDrawer({
                   <p className="text-sm font-medium">Selling Price</p>
                 </div>
                 <p className="text-lg font-bold">
-                  {product.selling_price ? `₹${parseFloat(product.selling_price).toFixed(2)}` : '—'}
+                  {drawerProduct.selling_price
+                    ? `₹${parseFloat(drawerProduct.selling_price).toFixed(2)}`
+                    : '—'}
                 </p>
               </div>
             </div>
           </div>
 
           {/* Description */}
-          {product.description && (
+          {drawerProduct.description && (
             <>
               <Separator />
               <div className="space-y-2">
                 <h3 className="font-semibold text-sm text-muted-foreground">Description</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  {product.description}
+                  {drawerProduct.description}
                 </p>
               </div>
             </>
@@ -312,13 +467,13 @@ export default function ProductDetailDrawer({
               <div>
                 <p>Created:</p>
                 <p className="font-medium text-foreground">
-                  {new Date(product.created_at).toLocaleDateString()}
+                  {new Date(drawerProduct.created_at).toLocaleDateString()}
                 </p>
               </div>
               <div>
                 <p>Updated:</p>
                 <p className="font-medium text-foreground">
-                  {new Date(product.updated_at).toLocaleDateString()}
+                  {new Date(drawerProduct.updated_at).toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -433,7 +588,7 @@ export default function ProductDetailDrawer({
                     await upsertUnit({
                       variables: {
                         input: {
-                          product_id: product.id,
+                          product_id: drawerProduct.id,
                           barcode_value: newUnit.barcode_value,
                           unit_type: newUnit.unit_type,
                           quantity_multiplier: Number(newUnit.quantity_multiplier),
@@ -451,74 +606,35 @@ export default function ProductDetailDrawer({
 
           {/* Actions */}
           <div className="pt-4 space-y-2">
-            {product.barcode && (
+            {drawerProduct.barcode && (
               <>
-                <div className="space-y-2">
-                  <div className="text-sm font-medium">Label layout</div>
-                  <Select
-                    value={labelLayout}
-                    onValueChange={(v) => setLabelLayout(v as BarcodeLabelLayout)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select layout" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="A4_SINGLE">A4 (1 per page)</SelectItem>
-                      <SelectItem value="A4_2X4">A4 2×4 (8 per page)</SelectItem>
-                      <SelectItem value="A4_3X8">A4 3×8 (24 per page)</SelectItem>
-                      <SelectItem value="THERMAL_50X25">Thermal 50×25mm</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex items-end gap-2">
+                  <div className="flex-1 space-y-2">
+                    <div className="text-sm font-medium">Label layout</div>
+                    <Select
+                      value={labelLayout}
+                      onValueChange={(v) => setLabelLayout(v as BarcodeLabelLayout)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select layout" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A4_SINGLE">A4 (1 per page)</SelectItem>
+                        <SelectItem value="A4_2X4">A4 2×4 (8 per page)</SelectItem>
+                        <SelectItem value="A4_3X8">A4 3×8 (24 per page)</SelectItem>
+                        <SelectItem value="THERMAL_50X25">Thermal 50×25mm</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <GenerateBarcodeLabelsButton
+                    productIds={[drawerProduct.id]}
+                    filename={`barcode-label_${drawerProduct.sku || drawerProduct.id}.pdf`}
+                    variant="outline"
+                    size="default"
+                    layout={labelLayout}
+                  />
                 </div>
-
-                <GenerateBarcodeLabelsButton
-                  productIds={[product.id]}
-                  filename={`barcode-label_${product.sku || product.id}.pdf`}
-                  variant="outline"
-                  size="default"
-                  layout={labelLayout}
-                />
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={async () => {
-                    try {
-                      await downloadThermalLabelsZpl({
-                        productIds: [product.id],
-                        filename: `thermal-label_${product.sku || product.id}.zpl`,
-                        copies: 1,
-                        labelSize: '4x6',
-                      });
-                      toast.success('ZPL downloaded');
-                    } catch (e: any) {
-                      toast.error(e?.message || 'Failed to generate ZPL');
-                    }
-                  }}
-                >
-                  Download Thermal ZPL (4×6)
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={async () => {
-                    try {
-                      await copyThermalLabelsZplToClipboard({
-                        productIds: [product.id],
-                        copies: 1,
-                        labelSize: '4x6',
-                      });
-                      toast.success('ZPL copied to clipboard');
-                    } catch (e: any) {
-                      toast.error(e?.message || 'Failed to copy ZPL');
-                    }
-                  }}
-                >
-                  Copy Thermal ZPL (4×6)
-                </Button>
               </>
             )}
 

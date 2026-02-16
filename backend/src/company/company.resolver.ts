@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, Context } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ResolveField, Parent, Int, Float } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { Company, SwitchCompanyResponse } from './company.model';
@@ -7,6 +7,7 @@ import { CompanySettings } from './company-settings.model';
 import { CreateCompanyInput } from './dto/create-company.input';
 import { UpdateCompanyInput } from './dto/update-company.input';
 import { UpdateCompanySettingsInput } from './dto/update-company-settings.input';
+import { UpdateCompanyBarcodeSettingsInput } from './dto/update-company-barcode-settings.input';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -20,6 +21,39 @@ export class CompanyResolver {
     private readonly companyService: CompanyService,
     private readonly clerkService: ClerkService,
   ) {}
+
+  // --- Barcode settings fields (resolved from Company entity snake_case columns) ---
+  @ResolveField(() => String, { name: 'barcodePrefix' })
+  barcodePrefix(@Parent() company: any): string {
+    return (company?.barcode_prefix ?? 'FLO-') as string;
+  }
+
+  @ResolveField(() => Int, { name: 'barcodePadding' })
+  barcodePadding(@Parent() company: any): number {
+    const value = company?.barcode_padding;
+    return typeof value === 'number' && Number.isFinite(value) ? value : 6;
+  }
+
+  @ResolveField(() => Float, { name: 'barcodeNextNumber', nullable: true })
+  barcodeNextNumber(
+    @Parent() company: any,
+    @ClerkUser() user: any,
+  ): number | null {
+    // Admin/owner only; also only for the active company.
+    const role = typeof user?.role === 'string' ? user.role.toUpperCase() : '';
+    const isPrivileged = role === Role.ADMIN || role === Role.OWNER;
+    if (!isPrivileged) return null;
+    if (user?.activeCompanyId && company?.id && user.activeCompanyId !== company.id) return null;
+
+    const raw = company?.barcode_next_number;
+    const num = typeof raw === 'string' || typeof raw === 'number' ? Number(raw) : NaN;
+    return Number.isFinite(num) ? num : null;
+  }
+
+  @ResolveField(() => String, { name: 'barcodeSuffix' })
+  barcodeSuffix(@Parent() company: any): string {
+    return (company?.barcode_suffix ?? '') as string;
+  }
 
   @Query(() => [Company])
   @UseGuards(ClerkAuthGuard)
@@ -89,6 +123,23 @@ export class CompanyResolver {
       );
     }
     return this.companyService.updateSettings(companyId, input);
+  }
+
+  @Mutation(() => Company)
+  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.OWNER)
+  async updateCompanyBarcodeSettings(
+    @Args('companyId') companyId: string,
+    @Args('input') input: UpdateCompanyBarcodeSettingsInput,
+    @ClerkUser() user: any,
+  ) {
+    if (user.activeCompanyId !== companyId) {
+      throw new Error(
+        'Unauthorized: You can only update barcode settings for your active company',
+      );
+    }
+
+    return this.companyService.updateBarcodeSettings(companyId, input, user);
   }
 
   @Mutation(() => Company)

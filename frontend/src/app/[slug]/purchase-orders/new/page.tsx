@@ -25,6 +25,7 @@ import { GET_STOCK_BY_WAREHOUSE } from '@/lib/graphql/stock';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
+import { BarcodeScanInput } from '@/components/barcode/BarcodeScanInput';
 
 interface POItem {
   product_id: string;
@@ -131,6 +132,35 @@ function CreatePurchaseOrderContent() {
     const updated = [...items];
     updated[index] = { ...updated[index], [field]: value };
     setItems(updated);
+  };
+
+  const addOrIncrementItem = (productId: string, quantityToAdd: number) => {
+    const safeQtyRaw = Number.isFinite(quantityToAdd) && quantityToAdd > 0 ? quantityToAdd : 1;
+    const safeQty = Math.max(1, Math.floor(safeQtyRaw));
+
+    setItems((prev) => {
+      const existingIndex = prev.findIndex((it) => it.product_id === productId);
+      if (existingIndex !== -1) {
+        const next = [...prev];
+        const currentQty = Number.isFinite(next[existingIndex].ordered_quantity)
+          ? next[existingIndex].ordered_quantity
+          : 1;
+        next[existingIndex] = {
+          ...next[existingIndex],
+          ordered_quantity: Math.max(1, currentQty + safeQty),
+        };
+        return next;
+      }
+
+      const emptyIndex = prev.findIndex((it) => !it.product_id);
+      if (emptyIndex !== -1) {
+        const next = [...prev];
+        next[emptyIndex] = { product_id: productId, ordered_quantity: safeQty };
+        return next;
+      }
+
+      return [...prev, { product_id: productId, ordered_quantity: safeQty }];
+    });
   };
 
   const autoSelectSupplierForProduct = (productId: string) => {
@@ -298,6 +328,33 @@ function CreatePurchaseOrderContent() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
+              <BarcodeScanInput
+                label="Scan barcode"
+                description={
+                  selectedWarehouse
+                    ? 'Scan a product barcode to add it to the purchase order (or increase quantity).'
+                    : 'Select a warehouse first to enable barcode scanning.'
+                }
+                disabled={!selectedWarehouse}
+                onProductResolved={(product, _scanned, scanMeta) => {
+                  if (!selectedWarehouse) {
+                    toast.error('Please select a warehouse first');
+                    return;
+                  }
+
+                  const stockRow = products.find((p: any) => p?.product?.id === product.id);
+                  if (!stockRow) {
+                    toast.error('Scanned product is not available in the selected warehouse list');
+                    return;
+                  }
+
+                  const qty = typeof scanMeta?.quantity === 'number' ? scanMeta.quantity : 1;
+                  addOrIncrementItem(product.id, qty);
+                  autoSelectSupplierForProduct(product.id);
+                }}
+                onError={(message) => toast.error(message)}
+              />
+
               {!selectedWarehouse && (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   Select a warehouse first to add products

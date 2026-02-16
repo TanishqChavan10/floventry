@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID } from '@nestjs/graphql';
+import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
 import { CompanySettings } from './company-settings.model';
 import { Warehouse } from '../warehouse/warehouse.entity';
 
@@ -69,6 +69,20 @@ export class Company {
 
   @Field(() => [Warehouse], { nullable: true })
   warehouses?: Warehouse[];
+
+  // --- Barcode settings (company-specific auto-generation format) ---
+  @Field(() => String)
+  barcodePrefix: string;
+
+  @Field(() => Int)
+  barcodePadding: number;
+
+  // Admin/owner only (resolved conditionally)
+  @Field(() => Float, { nullable: true })
+  barcodeNextNumber?: number;
+
+  @Field(() => String)
+  barcodeSuffix: string;
 }
 
 @ObjectType()

@@ -41,6 +41,8 @@ import { BarcodeThermalLabelService } from './barcode-thermal-label.service';
 import { BarcodesController } from './barcodes.controller';
 import { BarcodeHistory } from './entities/barcode-history.entity';
 import { ProductBarcodeUnit } from './entities/product-barcode-unit.entity';
+import { Company } from '../company/company.entity';
+import { BarcodeFormatService } from './barcode-format.service';
 
 @Module({
   imports: [
@@ -59,6 +61,7 @@ import { ProductBarcodeUnit } from './entities/product-barcode-unit.entity';
       WarehouseTransferItem,
       PurchaseOrder,
       PurchaseOrderItem,
+      Company,
     ]),
     AuthModule,
     SupplierModule,
@@ -71,6 +74,7 @@ import { ProductBarcodeUnit } from './entities/product-barcode-unit.entity';
   controllers: [BarcodeLabelController, ThermalLabelController, BarcodesController],
   providers: [
     BarcodeService,
+    BarcodeFormatService,
     BarcodeLabelService,
     BarcodeLabelResolver,
     BarcodeThermalLabelService,
@@ -86,6 +90,6 @@ import { ProductBarcodeUnit } from './entities/product-barcode-unit.entity';
     LowStockResolver,
     AdjustmentResolver,
   ],
-  exports: [InventoryService, GRNService, TransferService],
+  exports: [InventoryService, GRNService, TransferService, BarcodeFormatService],
 })
 export class InventoryModule {}

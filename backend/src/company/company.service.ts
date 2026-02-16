@@ -10,6 +10,7 @@ import { CompanySettings } from './company-settings.entity';
 import { CompanyStats } from './company-stats.model';
 import { CreateCompanyInput } from './dto/create-company.input';
 import { UpdateCompanySettingsInput } from './dto/update-company-settings.input';
+import { UpdateCompanyBarcodeSettingsInput } from './dto/update-company-barcode-settings.input';
 import { User } from '../auth/entities/user.entity';
 import { UserCompany } from '../user-company/user-company.entity';
 import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
@@ -205,6 +206,65 @@ export class CompanyService {
       throw new NotFoundException('Company not found');
     }
     Object.assign(company, input);
+    return this.companyRepository.save(company);
+  }
+
+  async updateBarcodeSettings(
+    companyId: string,
+    input: UpdateCompanyBarcodeSettingsInput,
+    user: { role?: string } | null,
+  ): Promise<Company> {
+    const company = await this.companyRepository.findOne({ where: { id: companyId } });
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    const prefix = (input.barcodePrefix ?? '').trim();
+    const suffix = (input.barcodeSuffix ?? '').trim();
+    const padding = input.barcodePadding;
+
+    if (!prefix) {
+      throw new BadRequestException('barcodePrefix is required');
+    }
+    if (/\s/.test(prefix)) {
+      throw new BadRequestException('barcodePrefix cannot contain spaces');
+    }
+    if (prefix.length > 20) {
+      throw new BadRequestException('barcodePrefix must be at most 20 characters');
+    }
+    if (suffix.length > 20) {
+      throw new BadRequestException('barcodeSuffix must be at most 20 characters');
+    }
+    if (!Number.isInteger(padding) || padding < 3 || padding > 10) {
+      throw new BadRequestException('barcodePadding must be between 3 and 10');
+    }
+
+    company.barcode_prefix = prefix;
+    company.barcode_padding = padding;
+    company.barcode_suffix = suffix;
+
+    const role = typeof user?.role === 'string' ? user.role.toUpperCase() : '';
+    const isPrivileged = role === Role.ADMIN || role === Role.OWNER;
+
+    if (input.barcodeNextNumber !== undefined) {
+      if (!isPrivileged) {
+        throw new BadRequestException('Not allowed to update barcodeNextNumber');
+      }
+
+      const next = input.barcodeNextNumber;
+      if (!Number.isFinite(next) || next < 1) {
+        throw new BadRequestException('barcodeNextNumber must be >= 1');
+      }
+      if (!Number.isInteger(next)) {
+        throw new BadRequestException('barcodeNextNumber must be an integer');
+      }
+      if (next > Number.MAX_SAFE_INTEGER) {
+        throw new BadRequestException('barcodeNextNumber is too large');
+      }
+
+      company.barcode_next_number = BigInt(next).toString();
+    }
+
     return this.companyRepository.save(company);
   }
 

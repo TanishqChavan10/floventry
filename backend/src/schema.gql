@@ -190,6 +190,10 @@ type Category {
 type Company {
   address_line1: String
   address_line2: String
+  barcodeNextNumber: Float
+  barcodePadding: Int!
+  barcodePrefix: String!
+  barcodeSuffix: String!
   city: String
   company_type: String
   country: String
@@ -766,6 +770,7 @@ type Mutation {
   unarchiveSupplier(id: String!): Supplier!
   updateCategory(input: UpdateCategoryInput!): Category!
   updateCompany(id: String!, input: UpdateCompanyInput!): Company!
+  updateCompanyBarcodeSettings(companyId: String!, input: UpdateCompanyBarcodeSettingsInput!): Company!
   updateCompanySettings(companyId: String!, input: UpdateCompanySettingsInput!): CompanySettings!
   updateGRN(id: String!, input: UpdateGRNInput!): GoodsReceiptNote!
   updateIssueNote(id: ID!, input: UpdateIssueNoteInput!): IssueNote!
@@ -1302,6 +1307,13 @@ input UpdateCategoryInput {
   description: String
   id: String!
   name: String!
+}
+
+input UpdateCompanyBarcodeSettingsInput {
+  barcodeNextNumber: Float
+  barcodePadding: Int!
+  barcodePrefix: String!
+  barcodeSuffix: String
 }
 
 input UpdateCompanyInput {
