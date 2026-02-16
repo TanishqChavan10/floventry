@@ -136,10 +136,6 @@ body {
   }
   a {
     color: var(--primary);
-    text-underline-offset: 2px;
-  }
-  a:hover {
-    text-decoration: underline;
   }
 }
 

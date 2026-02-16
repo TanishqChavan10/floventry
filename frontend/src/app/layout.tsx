@@ -18,6 +18,7 @@ import AppLayoutWrapper from './layout-wrapper';
 
 // UI
 import { Toaster } from '@/components/ui/sonner';
+import { DesktopOnlyOverlay } from '@/components/common/DesktopOnlyOverlay';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/4.svg" type="image/svg+xml" />
       </head>
       <body className={`${poppins.variable} font-sans min-h-screen flex flex-col`}>
+        <DesktopOnlyOverlay />
         {/* --- 1) Theme Provider first for useTheme --- */}
         <ThemeProvider>
           {/* --- 2) Clerk (light only) --- */}

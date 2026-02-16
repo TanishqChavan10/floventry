@@ -138,7 +138,6 @@ function CompanyPurchaseOrdersContent() {
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <h1 className="text-3xl font-bold tracking-tight text-foreground">Purchase Orders</h1>
-              <p className="text-muted-foreground">Manage purchase orders across all warehouses</p>
             </div>
             <Button className="gap-2" onClick={() => setIsCreateModalOpen(true)}>
               <Plus className="h-4 w-4" />
@@ -194,7 +193,6 @@ function CompanyPurchaseOrdersContent() {
         <Card>
           <CardHeader>
             <div className="space-y-4">
-              <CardTitle>Purchase Orders ({filteredPOs.length})</CardTitle>
               <div className="flex flex-col gap-4 md:flex-row">
                 <div className="flex-1">
                   <div className="relative">

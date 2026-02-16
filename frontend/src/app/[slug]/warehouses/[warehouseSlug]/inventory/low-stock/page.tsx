@@ -309,7 +309,7 @@ function LowStockContent() {
             {lowStockItems.length === 0 ? (
               <div className="text-center py-12">
                 <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">All inventory levels are healthy 🎉</h3>
+                <h3 className="text-xl font-semibold mb-2">All inventory levels are healthy</h3>
                 <p className="text-slate-600 dark:text-slate-400">
                   No products are currently below their reorder thresholds
                 </p>

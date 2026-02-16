@@ -143,129 +143,133 @@ export function CreateSalesOrderModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
+      <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[900px] h-[90vh] flex flex-col p-0">
+        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+          <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
             <DialogTitle>Create Sales Order</DialogTitle>
             <DialogDescription>Add a new customer order</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
-            {/* Order Details */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="customer">
-                  Customer Name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="customer"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Enter customer name"
-                  required
+          <div className="flex-1 overflow-y-auto px-6">
+            <div className="space-y-6 pb-4">
+              {/* Order Details */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="customer">
+                    Customer Name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="customer"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Enter customer name"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="date">Expected Dispatch Date</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={expectedDate}
+                    onChange={(e) => setExpectedDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Order Items */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Order Items</Label>
+                  <Button type="button" onClick={addItem} variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Item
+                  </Button>
+                </div>
+
+                <BarcodeScanInput
+                  label="Scan barcode"
+                  description="Scan a product barcode to add it to the order (or increase quantity)."
+                  onProductResolved={(product, _scanned, scanMeta) => {
+                    const qty = typeof scanMeta?.quantity === 'number' ? scanMeta.quantity : 1;
+                    addOrIncrementItem(product.id, qty);
+                  }}
+                  onError={(message) => toast.error(message)}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="date">Expected Dispatch Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={expectedDate}
-                  onChange={(e) => setExpectedDate(e.target.value)}
-                />
-              </div>
-            </div>
 
-            {/* Order Items */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Order Items</Label>
-                <Button type="button" onClick={addItem} variant="outline" size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Item
-                </Button>
-              </div>
-
-              <BarcodeScanInput
-                label="Scan barcode"
-                description="Scan a product barcode to add it to the order (or increase quantity)."
-                onProductResolved={(product, _scanned, scanMeta) => {
-                  const qty = typeof scanMeta?.quantity === 'number' ? scanMeta.quantity : 1;
-                  addOrIncrementItem(product.id, qty);
-                }}
-                onError={(message) => toast.error(message)}
-              />
-
-              <div className="space-y-3 max-h-[250px] overflow-y-auto">
-                {items.map((item, index) => (
-                  <div
-                    key={index}
-                    className="grid gap-3 items-start p-3 border rounded-lg bg-muted/40 sm:grid-cols-[minmax(0,1fr)_7rem_auto]"
-                  >
-                    <div className="min-w-0 space-y-2">
-                      <Label className="text-xs">Product *</Label>
-                      <Select
-                        value={item.product_id}
-                        onValueChange={(value) => updateItem(index, 'product_id', value)}
-                      >
-                        <SelectTrigger className="min-w-0">
-                          <SelectValue placeholder="Select product" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {products.map((product: any) => (
-                            <SelectItem key={product.id} value={product.id}>
-                              {product.name} ({product.sku})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {(() => {
-                        const selectedProduct = products.find((p: any) => p.id === item.product_id);
-                        if (!selectedProduct) return null;
-
-                        return (
-                          <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                            <span className="font-mono">SKU: {selectedProduct.sku}</span>
-                            <CopyButton
-                              value={selectedProduct.sku}
-                              ariaLabel="Copy SKU"
-                              successMessage="Copied SKU to clipboard"
-                              className="h-6 w-6 text-muted-foreground"
-                            />
-                          </div>
-                        );
-                      })()}
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Quantity *</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.ordered_quantity || ''}
-                        onChange={(e) =>
-                          updateItem(index, 'ordered_quantity', parseFloat(e.target.value) || 0)
-                        }
-                        placeholder="0"
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeItem(index)}
-                      disabled={items.length === 1}
-                      className="sm:self-end"
+                <div className="space-y-3">
+                  {items.map((item, index) => (
+                    <div
+                      key={index}
+                      className="grid gap-3 items-start p-3 border rounded-lg bg-muted/40 sm:grid-cols-[minmax(0,1fr)_7rem_auto]"
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                      <div className="min-w-0 space-y-2">
+                        <Label className="text-xs">Product *</Label>
+                        <Select
+                          value={item.product_id}
+                          onValueChange={(value) => updateItem(index, 'product_id', value)}
+                        >
+                          <SelectTrigger className="min-w-0">
+                            <SelectValue placeholder="Select product" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {products.map((product: any) => (
+                              <SelectItem key={product.id} value={product.id}>
+                                {product.name} ({product.sku})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {(() => {
+                          const selectedProduct = products.find(
+                            (p: any) => p.id === item.product_id,
+                          );
+                          if (!selectedProduct) return null;
+
+                          return (
+                            <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                              <span className="font-mono">SKU: {selectedProduct.sku}</span>
+                              <CopyButton
+                                value={selectedProduct.sku}
+                                ariaLabel="Copy SKU"
+                                successMessage="Copied SKU to clipboard"
+                                className="h-6 w-6 text-muted-foreground"
+                              />
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Quantity *</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.ordered_quantity || ''}
+                          onChange={(e) =>
+                            updateItem(index, 'ordered_quantity', parseFloat(e.target.value) || 0)
+                          }
+                          placeholder="0"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeItem(index)}
+                        disabled={items.length === 1}
+                        className="sm:self-end"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="px-6 pb-6 pt-4 flex-shrink-0 border-t">
             <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
               Cancel
             </Button>
