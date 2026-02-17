@@ -44,7 +44,6 @@ import { useAuth } from '@/context/auth-context';
 import { GET_CATEGORIES, DELETE_CATEGORY, UPDATE_CATEGORY } from '@/lib/graphql/catalog';
 import { CategoryModal } from '@/components/catalog/CategoryModal';
 import { useToast } from '@/components/ui/use-toast';
-import { BulkEntryModal } from '@/components/catalog/BulkEntryModal';
 
 function CatalogCategoriesContent() {
   const { user } = useAuth();
@@ -52,7 +51,6 @@ function CatalogCategoriesContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('active'); // active, archived, all
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [isBulkEntryOpen, setIsBulkEntryOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [categoryToArchive, setCategoryToArchive] = useState<any>(null);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
@@ -338,12 +336,6 @@ function CatalogCategoriesContent() {
             </div>
             {!isEmpty && (
               <div className="flex items-center gap-2">
-                {isOwnerOrAdmin && (
-                  <Button className="gap-2" onClick={() => setIsBulkEntryOpen(true)}>
-                    <PackagePlus className="h-4 w-4" />
-                    Bulk Import
-                  </Button>
-                )}
                 {canEdit && (
                   <Button className="gap-2" onClick={handleAddCategory}>
                     <Plus className="h-4 w-4" />
@@ -375,12 +367,6 @@ function CatalogCategoriesContent() {
               </div>
               {canEdit && (
                 <div className="flex items-center gap-2">
-                  {isOwnerOrAdmin && (
-                    <Button onClick={() => setIsBulkEntryOpen(true)} className="gap-2">
-                      <PackagePlus className="h-4 w-4" />
-                      Bulk Import
-                    </Button>
-                  )}
                   <Button onClick={handleAddCategory} className="gap-2">
                     <Plus className="h-4 w-4" />
                     Add your first category
@@ -610,14 +596,6 @@ function CatalogCategoriesContent() {
           </>
         )}
       </main>
-
-      {/* Modal */}
-      <BulkEntryModal
-        open={isBulkEntryOpen}
-        onOpenChange={setIsBulkEntryOpen}
-        type="categories"
-        onCompleted={() => refetch()}
-      />
 
       {isCategoryModalOpen && (
         <CategoryModal

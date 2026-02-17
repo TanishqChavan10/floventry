@@ -160,7 +160,7 @@ export function InviteUserDialog({
           Invite User
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] border-none shadow-2xl bg-white dark:bg-slate-950">
+      <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSend}>
           <DialogHeader className="pb-4 border-b">
             <div className="flex items-center gap-3">
@@ -189,7 +189,7 @@ export function InviteUserDialog({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-11 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                className="h-11"
               />
             </div>
 
@@ -199,7 +199,7 @@ export function InviteUserDialog({
                 Role Assignment
               </Label>
               {permissions.isManager ? (
-                <div className="h-auto py-3 px-3 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm">
+                <div className="h-auto py-3 px-3 rounded-md bg-muted/30 border text-sm">
                   <div className="flex items-start gap-3">
                     <span className="text-xl mt-0.5">👤</span>
                     <div>
@@ -212,7 +212,7 @@ export function InviteUserDialog({
                 </div>
               ) : (
                 <Select value={role} onValueChange={setRole}>
-                  <SelectTrigger className="h-auto py-3 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                  <SelectTrigger className="h-auto py-3">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -286,7 +286,7 @@ export function InviteUserDialog({
                   </span>
                 </div>
 
-                <div className="border rounded-xl bg-slate-50/50 dark:bg-slate-900/50 p-1 max-h-[220px] overflow-y-auto">
+                <div className="border rounded-xl bg-muted/30 p-1 max-h-[220px] overflow-y-auto">
                   {availableWarehouses.length === 0 ? (
                     <div className="p-4 text-center text-sm text-muted-foreground">
                       No warehouses available to assign
@@ -306,8 +306,8 @@ export function InviteUserDialog({
                               flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 border
                               ${
                                 isSelected
-                                  ? 'bg-white dark:bg-slate-800 border-primary/20 shadow-sm'
-                                  : 'hover:bg-white dark:hover:bg-slate-800 border-transparent hover:shadow-sm'
+                                  ? 'bg-background border-primary/20 shadow-sm'
+                                  : 'hover:bg-accent border-transparent hover:shadow-sm'
                               }
                             `}
                           >

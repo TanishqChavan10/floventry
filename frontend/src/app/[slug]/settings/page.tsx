@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useQuery } from '@apollo/client';
 import { GET_COMPANY_BY_SLUG } from '@/lib/graphql/company';
 import { Loader2 } from 'lucide-react';
@@ -9,7 +9,6 @@ import CompanySettingsContent from './CompanySettingsContent';
 
 export default function CompanySettingsPage() {
   const params = useParams();
-  const router = useRouter();
   const companySlug = params?.slug as string;
 
   const { data, loading, error } = useQuery(GET_COMPANY_BY_SLUG, {
@@ -20,14 +19,14 @@ export default function CompanySettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-8 text-center text-red-500">
+      <div className="p-8 text-center text-destructive">
         Error loading company settings: {error.message}
       </div>
     );
@@ -40,7 +39,7 @@ export default function CompanySettingsPage() {
   }
 
   return (
-    <div className="min-h-full bg-slate-50 dark:bg-slate-950 p-6 md:p-8">
+    <div className="min-h-full bg-background p-6 md:p-8">
       <div className="max-w-6xl mx-auto">
         <CompanySettingsContent company={company} />
       </div>

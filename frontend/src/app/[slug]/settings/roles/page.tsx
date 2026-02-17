@@ -5,13 +5,14 @@ import RoleGuard from '@/components/guards/RoleGuard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Users, Building, Package } from 'lucide-react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { ArrowLeft, Shield, Users, Building, Package, AlertTriangle } from 'lucide-react';
 
 const roles = [
   {
     name: 'OWNER',
     description: 'Full system access with complete control over the company',
-    color: 'bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400',
     icon: Shield,
     permissions: [
       'Full company access',
@@ -26,7 +27,6 @@ const roles = [
   {
     name: 'ADMIN',
     description: 'Company-wide administrative access',
-    color: 'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400',
     icon: Users,
     permissions: [
       'View all warehouses',
@@ -41,7 +41,6 @@ const roles = [
   {
     name: 'MANAGER',
     description: 'Warehouse-level management',
-    color: 'bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400',
     icon: Building,
     permissions: [
       'Manage assigned warehouse(s)',
@@ -56,7 +55,6 @@ const roles = [
   {
     name: 'STAFF',
     description: 'Warehouse operational staff',
-    color: 'bg-orange-100 text-orange-600 dark:bg-orange-950 dark:text-orange-400',
     icon: Package,
     permissions: [
       'View assigned warehouse',
@@ -71,41 +69,38 @@ const roles = [
 ];
 
 function RolesContent() {
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* Header */}
-      <header className="border-b bg-white dark:bg-slate-900">
-        <div className="container mx-auto px-6 py-6">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Roles & Permissions
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400">
-              Manage user roles and access control across your organization
-            </p>
-          </div>
-        </div>
-      </header>
+  const params = useParams();
+  const slug = params?.slug as string;
 
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-8 space-y-6">
-        {/* Info Banner */}
-        <Card className="border-indigo-200 bg-indigo-50 dark:bg-indigo-950/20 dark:border-indigo-900">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <Shield className="h-5 w-5 text-indigo-600 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-indigo-900 dark:text-indigo-100">
-                  Role-Based Access Control (RBAC)
-                </h3>
-                <p className="text-sm text-indigo-700 dark:text-indigo-200 mt-1">
-                  Floventry uses a hierarchical role system to ensure users have appropriate access
-                  to company and warehouse resources. Roles cannot be customized but are carefully
-                  designed for inventory management workflows.
-                </p>
-              </div>
+  return (
+    <div className="min-h-screen bg-background p-6 md:p-12">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <div>
+          <Button variant="ghost" size="sm" asChild className="-ml-2">
+            <Link href={`/${slug}/settings`} className="inline-flex items-center">
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Go back
+            </Link>
+          </Button>
+        </div>
+
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Role Definitions</h1>
+        </div>
+
+        
+        {/* Clear Note */}
+        <Card className="border-amber-500/50 bg-amber-500/5 dark:bg-amber-500/10">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+              <CardTitle className="text-amber-900 dark:text-amber-100">Important</CardTitle>
             </div>
-          </CardContent>
+            <CardDescription className="text-amber-800/90 dark:text-amber-200/90">
+              Custom roles are not currently supported. Roles are designed to keep operations clear
+              and auditable.
+            </CardDescription>
+          </CardHeader>
         </Card>
 
         {/* Role Cards */}
@@ -115,7 +110,7 @@ function RolesContent() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-lg ${role.color}`}>
+                    <div className="p-3 rounded-lg bg-primary/10 text-primary">
                       <role.icon className="h-6 w-6" />
                     </div>
                     <div>
@@ -123,28 +118,19 @@ function RolesContent() {
                       <CardDescription className="mt-1">{role.description}</CardDescription>
                     </div>
                   </div>
-                  <Badge variant="secondary">{role.userCount} users</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
-                    Permissions
-                  </h4>
+                  <h4 className="text-sm font-semibold text-foreground mb-3">Permissions</h4>
                   <ul className="space-y-2">
                     {role.permissions.map((permission, idx) => (
                       <li key={idx} className="flex items-start gap-2 text-sm">
-                        <div className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-600 mt-1.5 flex-shrink-0" />
-                        <span className="text-slate-600 dark:text-slate-400">{permission}</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 mt-1.5 shrink-0" />
+                        <span className="text-muted-foreground">{permission}</span>
                       </li>
                     ))}
                   </ul>
-                </div>
-
-                <div className="pt-4 border-t">
-                  <Button variant="outline" size="sm" className="w-full">
-                    View Users with this Role
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -162,35 +148,31 @@ function RolesContent() {
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <div className="w-32 font-semibold text-sm text-slate-900 dark:text-white">
-                  Company Level
-                </div>
+                <div className="w-32 font-semibold text-sm text-foreground">Company Level</div>
                 <div className="flex-1 flex gap-2">
-                  <Badge className="bg-purple-600">OWNER</Badge>
-                  <Badge className="bg-blue-600">ADMIN</Badge>
+                  <Badge variant="secondary">OWNER</Badge>
+                  <Badge variant="secondary">ADMIN</Badge>
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <div className="w-32 font-semibold text-sm text-slate-900 dark:text-white">
-                  Warehouse Level
-                </div>
+                <div className="w-32 font-semibold text-sm text-foreground">Warehouse Level</div>
                 <div className="flex-1 flex gap-2">
-                  <Badge className="bg-green-600">MANAGER</Badge>
-                  <Badge className="bg-orange-600">STAFF</Badge>
+                  <Badge variant="outline">MANAGER</Badge>
+                  <Badge variant="outline">STAFF</Badge>
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 p-4 bg-slate-100 dark:bg-slate-900 rounded-lg">
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                <strong>Note:</strong> OWNER and ADMIN roles have company-wide access, while
-                MANAGER and STAFF roles are scoped to specific warehouses. Users can be assigned to
-                multiple warehouses with different roles.
+            <div className="mt-6 p-4 bg-muted/30 rounded-lg border">
+              <p className="text-sm text-muted-foreground">
+                <strong>Note:</strong> OWNER and ADMIN roles have company-wide access, while MANAGER
+                and STAFF roles are scoped to specific warehouses. Users can be assigned to multiple
+                warehouses with different roles.
               </p>
             </div>
           </CardContent>
         </Card>
-      </main>
+      </div>
     </div>
   );
 }

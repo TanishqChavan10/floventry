@@ -163,7 +163,7 @@ export function CategoryModal({ open, onOpenChange, category, onSuccess }: Categ
           <DialogFooter>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >

@@ -6,6 +6,14 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { Building2, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -60,97 +68,103 @@ export default function CreateCompanyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-lg">
         <div className="mb-8">
-          <Link
-            href="/onboarding"
-            className="inline-flex items-center text-sm text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors mb-6"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to options
-          </Link>
+          <Button variant="ghost" size="sm" asChild className="-ml-2 mb-6">
+            <Link href="/onboarding" className="inline-flex items-center">
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
+            </Link>
+          </Button>
 
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg">
-              <Building2 className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+            <div className="p-2 rounded-lg bg-primary/10 text-primary">
+              <Building2 className="h-6 w-6" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Create your Company
-            </h1>
+            <h1 className="text-2xl font-bold text-foreground">Create your Company</h1>
           </div>
-          <p className="text-slate-600 dark:text-slate-400">
+          <p className="text-muted-foreground">
             Set up your workspace to start managing inventory efficiently.
           </p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-xl shadow-indigo-100/50 dark:shadow-none">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="companyName">Company Name</Label>
-              <Input
-                id="companyName"
-                placeholder="e.g. Acme Corp"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                required
-                className="h-11"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="slug">Custom Company URL</Label>
-              <div className="flex rounded-md shadow-sm">
-                <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-500 text-sm">
-                  flowventory.com/
-                </span>
+        <Card>
+          <CardHeader>
+            <CardTitle>Create details</CardTitle>
+            <CardDescription>Choose a name and URL for your company workspace.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form id="create-company-form" onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="companyName">Company Name</Label>
                 <Input
-                  id="slug"
-                  placeholder="acme-corp"
-                  className="rounded-l-none h-11"
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
+                  id="companyName"
+                  placeholder="e.g. Acme Corp"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
                   required
+                  className="h-11"
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Industry</Label>
-                <Select>
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Select..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="retail">Retail</SelectItem>
-                    <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                    <SelectItem value="logistics">Logistics & Warehousing</SelectItem>
-                    <SelectItem value="ecommerce">E-commerce</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
 
               <div className="space-y-2">
-                <Label>Company Size</Label>
-                <Select>
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Select..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1-10">1-10 employees</SelectItem>
-                    <SelectItem value="11-50">11-50 employees</SelectItem>
-                    <SelectItem value="51-200">51-200 employees</SelectItem>
-                    <SelectItem value="201+">201+ employees</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="slug">Custom Company URL</Label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-input bg-muted text-muted-foreground text-sm">
+                    flowventory.com/
+                  </span>
+                  <Input
+                    id="slug"
+                    placeholder="acme-corp"
+                    className="rounded-l-none h-11"
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
-            </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Industry</Label>
+                  <Select>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="retail">Retail</SelectItem>
+                      <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                      <SelectItem value="logistics">Logistics & Warehousing</SelectItem>
+                      <SelectItem value="ecommerce">E-commerce</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Company Size</Label>
+                  <Select>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1-10">1-10 employees</SelectItem>
+                      <SelectItem value="11-50">11-50 employees</SelectItem>
+                      <SelectItem value="51-200">51-200 employees</SelectItem>
+                      <SelectItem value="201+">201+ employees</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </form>
+          </CardContent>
+          <CardFooter>
             <Button
               type="submit"
-              className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white"
+              size="lg"
+              form="create-company-form"
+              className="w-full"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -162,8 +176,8 @@ export default function CreateCompanyPage() {
                 'Create Company'
               )}
             </Button>
-          </form>
-        </div>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );

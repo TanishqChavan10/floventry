@@ -11,24 +11,22 @@ export default function OnboardingPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-4xl">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">
-            Welcome to Flowventory
-          </h1>
-          <p className="text-lg text-slate-600 dark:text-slate-400">
+          <h1 className="text-4xl font-bold text-foreground mb-4">Welcome to Flowventory</h1>
+          <p className="text-lg text-muted-foreground">
             Let's get you started with your inventory management journey
           </p>
         </div>
 
         {/* Create Company Card */}
         <div className="max-w-xl mx-auto">
-          <Card className="border-2 border-indigo-100 dark:border-indigo-900 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all group">
+          <Card className="transition-colors group hover:border-primary/40">
             <CardHeader>
-              <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg w-fit mb-4 group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800 transition-colors">
-                <Building2 className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+              <div className="p-3 rounded-lg w-fit mb-4 bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
+                <Building2 className="h-8 w-8" />
               </div>
               <CardTitle className="text-xl">Create Your Company</CardTitle>
               <CardDescription>
@@ -36,10 +34,7 @@ export default function OnboardingPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button
-                onClick={() => router.push('/onboarding/create-company')}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-              >
+              <Button onClick={() => router.push('/onboarding/create-company')} className="w-full">
                 Create Company
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -49,9 +44,9 @@ export default function OnboardingPage() {
 
         {/* Help Text */}
         <div className="text-center mt-8">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-muted-foreground">
             Need help? Contact our support team at{' '}
-            <a href="mailto:support@flowventory.com" className="text-indigo-600 dark:text-indigo-400 hover:underline">
+            <a href="mailto:support@flowventory.com" className="hover:underline">
               support@flowventory.com
             </a>
           </p>

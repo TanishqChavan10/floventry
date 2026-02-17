@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useMutation } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -44,6 +44,7 @@ import {
   EXECUTE_OPENING_STOCK_IMPORT,
   EXECUTE_UNIT_IMPORT,
 } from '@/lib/graphql/import';
+import { GET_CATEGORIES, GET_PRODUCTS, GET_SUPPLIERS, GET_UNITS } from '@/lib/graphql/catalog';
 import {
   parsePlainTextCategories,
   parsePlainTextProducts,
@@ -150,6 +151,40 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
   const [detectedFormat, setDetectedFormat] = useState<'plain' | 'csv' | 'tsv' | null>(null);
   const [plainTextPreview, setPlainTextPreview] = useState<any>(null);
   const [csvPreview, setCsvPreview] = useState<any>(null);
+
+  // Product import permission (wizard-scoped)
+  const [autoCreateMissingMasters, setAutoCreateMissingMasters] = useState(false);
+
+  const autoCreatableRows = useMemo(() => {
+    if (!validationResult) return [] as ValidatedRow[];
+    if (type !== 'products') return [] as ValidatedRow[];
+
+    const isMissingMasterError = (error: ValidationError) => {
+      const message = (error.message || '').toLowerCase();
+      const isMissing = message.includes('does not exist');
+      if (!isMissing) return false;
+      return error.field === 'unit' || error.field === 'category' || error.field === 'supplier';
+    };
+
+    return validationResult.errorRows.filter(
+      (row) => row.errors.length > 0 && row.errors.every((e) => isMissingMasterError(e)),
+    );
+  }, [validationResult, type]);
+
+  const rowsToImport = useMemo(() => {
+    if (!validationResult) return [] as ValidatedRow[];
+    if (type !== 'products') return validationResult.validRows;
+
+    if (!autoCreateMissingMasters) return validationResult.validRows;
+    return [...validationResult.validRows, ...autoCreatableRows];
+  }, [validationResult, type, autoCreateMissingMasters, autoCreatableRows]);
+
+  const skippedRowsCount = useMemo(() => {
+    if (!validationResult) return 0;
+    if (type !== 'products') return validationResult.errorRows.length;
+    if (!autoCreateMissingMasters) return validationResult.errorRows.length;
+    return Math.max(0, validationResult.errorRows.length - autoCreatableRows.length);
+  }, [validationResult, type, autoCreateMissingMasters, autoCreatableRows.length]);
 
   // Template download mutations
   const templateMutations = {
@@ -320,17 +355,36 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
   };
 
   const handleExecute = async () => {
-    if (!validationResult || validationResult.validRows.length === 0) return;
+    if (!validationResult || rowsToImport.length === 0) return;
 
     try {
       const variables: any = {
-        validatedData: JSON.stringify(validationResult.validRows),
+        validatedData: JSON.stringify(rowsToImport),
       };
+
+      if (type === 'products') {
+        variables.autoCreateMissingUnits = autoCreateMissingMasters;
+        variables.autoCreateMissingCategories = autoCreateMissingMasters;
+        variables.autoCreateMissingSuppliers = autoCreateMissingMasters;
+      }
       if (type === 'opening_stock' && warehouseId) {
         variables.warehouseId = warehouseId;
       }
 
-      const { data } = await executeImport({ variables });
+      const { data } = await executeImport({
+        variables,
+        ...(type === 'products'
+          ? {
+              refetchQueries: [
+                { query: GET_PRODUCTS },
+                { query: GET_CATEGORIES },
+                { query: GET_UNITS, variables: { includeArchived: false } },
+                { query: GET_SUPPLIERS, variables: { includeArchived: false } },
+              ],
+              awaitRefetchQueries: true,
+            }
+          : {}),
+      });
       const result = JSON.parse(Object.values(data)[0] as string) as ImportResult;
 
       setImportResult(result);
@@ -364,6 +418,8 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
     setDetectedFormat(null);
     setPlainTextPreview(null);
     setCsvPreview(null);
+
+    setAutoCreateMissingMasters(false);
   };
 
   // Auto-parse and preview based on input method
@@ -700,10 +756,14 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
                 <div className="text-sm text-muted-foreground">Total Rows</div>
               </div>
               <div className="p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-primary">
-                  {validationResult.validRows.length}
+                <div className="text-2xl font-bold text-primary">{rowsToImport.length}</div>
+                <div className="text-sm text-muted-foreground">
+                  {type === 'products' &&
+                  autoCreateMissingMasters &&
+                  rowsToImport.length !== validationResult.validRows.length
+                    ? 'Eligible Rows'
+                    : 'Valid Rows'}
                 </div>
-                <div className="text-sm text-muted-foreground">Valid Rows</div>
               </div>
               <div className="p-4 border rounded-lg">
                 <div className="text-2xl font-bold text-destructive">
@@ -713,15 +773,43 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
               </div>
             </div>
 
+            {type === 'products' && autoCreatableRows.length > 0 && (
+              <div className="p-4 border rounded-lg bg-muted/40">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="font-medium">Auto-create missing masters?</div>
+                    <div className="text-sm text-muted-foreground">
+                      Creates missing Units, Categories, and Suppliers referenced in your file
+                      during import.
+                      {autoCreatableRows.length > 0
+                        ? ` (+${autoCreatableRows.length} row(s) become eligible)`
+                        : ''}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="auto-create-masters" className="text-sm">
+                      {autoCreateMissingMasters ? 'On' : 'Off'}
+                    </Label>
+                    <Switch
+                      id="auto-create-masters"
+                      checked={autoCreateMissingMasters}
+                      onCheckedChange={(v) => setAutoCreateMissingMasters(Boolean(v))}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {validationResult.errorRows.length > 0 && (
               <div>
-                <h4 className="font-medium mb-2 text-destructive">Errors Found</h4>
+                <h4 className="font-medium mb-2 text-destructive">Needs Attention</h4>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Row</TableHead>
                       <TableHead>Field</TableHead>
-                      <TableHead>Error</TableHead>
+                      <TableHead>What to fix</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -761,9 +849,14 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
               <Button variant="outline" onClick={reset}>
                 Start Over
               </Button>
-              {validationResult.validRows.length > 0 && (
+              {rowsToImport.length > 0 && (
                 <Button onClick={() => setStep('confirm')}>
-                  Continue with {validationResult.validRows.length} Valid Rows
+                  Continue with {rowsToImport.length}{' '}
+                  {type === 'products' &&
+                  autoCreateMissingMasters &&
+                  rowsToImport.length !== validationResult.validRows.length
+                    ? 'Eligible Rows'
+                    : 'Valid Rows'}
                 </Button>
               )}
             </div>
@@ -783,12 +876,9 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 <strong>This action cannot be undone.</strong> You are about to create{' '}
-                {validationResult.validRows.length} {IMPORT_LABELS[type].toLowerCase()}.
-                {validationResult.errorRows.length > 0 && (
-                  <>
-                    {' '}
-                    {validationResult.errorRows.length} will be skipped due to validation errors.
-                  </>
+                {rowsToImport.length} {IMPORT_LABELS[type].toLowerCase()}.
+                {skippedRowsCount > 0 && (
+                  <> {skippedRowsCount} will be skipped due to validation errors.</>
                 )}
               </AlertDescription>
             </Alert>
@@ -797,14 +887,14 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
               <Button variant="outline" onClick={() => setStep('validate')}>
                 Back
               </Button>
-              <Button onClick={handleExecute} disabled={executing}>
+              <Button onClick={handleExecute} disabled={executing || rowsToImport.length === 0}>
                 {executing ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Importing...
                   </>
                 ) : (
-                  `Import ${validationResult.validRows.length} Records`
+                  `Import ${rowsToImport.length} Records`
                 )}
               </Button>
             </div>

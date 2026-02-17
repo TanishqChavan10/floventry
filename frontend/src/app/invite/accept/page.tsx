@@ -25,8 +25,7 @@ function InviteAcceptContent() {
 
   /** ✅ Token persistence (SSO safe) */
   const urlToken = searchParams.get('token');
-  const storedToken =
-    typeof window !== 'undefined' ? localStorage.getItem('inviteToken') : null;
+  const storedToken = typeof window !== 'undefined' ? localStorage.getItem('inviteToken') : null;
   const token = urlToken || storedToken;
 
   const [inviteDetails, setInviteDetails] = useState<{
@@ -78,14 +77,7 @@ function InviteAcceptContent() {
    *  2️⃣ Auto-accept AFTER SSO login
    * ------------------------------------ */
   useEffect(() => {
-    if (
-      !token ||
-      !inviteDetails ||
-      !isLoaded ||
-      !isSignedIn ||
-      hasAccepted ||
-      isAccepting
-    ) {
+    if (!token || !inviteDetails || !isLoaded || !isSignedIn || hasAccepted || isAccepting) {
       return;
     }
 
@@ -106,16 +98,7 @@ function InviteAcceptContent() {
         setError(err.message || 'Failed to accept invite');
       }
     })();
-  }, [
-    token,
-    inviteDetails,
-    isLoaded,
-    isSignedIn,
-    hasAccepted,
-    isAccepting,
-    acceptInvite,
-    router,
-  ]);
+  }, [token, inviteDetails, isLoaded, isSignedIn, hasAccepted, isAccepting, acceptInvite, router]);
 
   /** -----------------------------
    *  UI STATES
@@ -123,10 +106,10 @@ function InviteAcceptContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
-            <XCircle className="mx-auto h-10 w-10 text-red-500" />
+            <XCircle className="mx-auto h-10 w-10 text-destructive" />
             <CardTitle>Invite Invalid</CardTitle>
             <CardDescription>{error}</CardDescription>
           </CardHeader>
@@ -140,7 +123,7 @@ function InviteAcceptContent() {
 
   if (!inviteDetails || !isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -151,10 +134,10 @@ function InviteAcceptContent() {
    * ----------------------------- */
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <Card className="max-w-md w-full text-center">
           <CardHeader>
-            <CheckCircle className="mx-auto h-10 w-10 text-indigo-600" />
+            <CheckCircle className="mx-auto h-10 w-10 text-primary" />
             <CardTitle>You’re invited!</CardTitle>
             <CardDescription>
               Join <strong>{inviteDetails.companyName}</strong> as{' '}
@@ -166,9 +149,7 @@ function InviteAcceptContent() {
               className="w-full"
               onClick={() =>
                 router.push(
-                  `/auth/sign-in?redirect_url=${encodeURIComponent(
-                    window.location.href,
-                  )}`,
+                  `/auth/sign-in?redirect_url=${encodeURIComponent(window.location.href)}`,
                 )
               }
             >
@@ -184,7 +165,7 @@ function InviteAcceptContent() {
    *  Signed in → auto accepting
    * ----------------------------- */
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <Card className="max-w-md w-full text-center">
         <CardHeader>
           <Loader2 className="mx-auto h-8 w-8 animate-spin" />
@@ -200,7 +181,13 @@ function InviteAcceptContent() {
 
 export default function InviteAcceptPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      }
+    >
       <InviteAcceptContent />
     </Suspense>
   );

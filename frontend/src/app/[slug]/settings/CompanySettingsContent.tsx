@@ -23,26 +23,23 @@ export default function CompanySettingsContent({ company }: CompanySettingsProps
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Company Settings</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-2">
-          Manage your organization's preferences and configuration.
-        </p>
+        <h1 className="text-3xl font-bold text-foreground">Company Settings</h1>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="flex flex-wrap h-auto p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
-          <TabsTrigger value="profile" className="flex-1 min-w-[120px]">
+        <TabsList className="flex flex-wrap h-auto p-1 bg-muted rounded-lg">
+          <TabsTrigger value="profile" className="flex-1 min-w-30">
             <Building2 className="w-4 h-4 mr-2" /> Profile
           </TabsTrigger>
-          <TabsTrigger value="business" className="flex-1 min-w-[120px]">
+          <TabsTrigger value="business" className="flex-1 min-w-30">
             <MapPin className="w-4 h-4 mr-2" /> Business Info
           </TabsTrigger>
-          <TabsTrigger value="inventory" className="flex-1 min-w-[120px]">
+          <TabsTrigger value="inventory" className="flex-1 min-w-30">
             <Package className="w-4 h-4 mr-2" /> Inventory
           </TabsTrigger>
           <TabsTrigger
             value="danger"
-            className="flex-1 min-w-[120px] text-red-500 data-[state=active]:text-red-600 data-[state=active]:bg-red-50 dark:data-[state=active]:bg-red-950/20"
+            className="flex-1 min-w-30 text-destructive data-[state=active]:text-destructive data-[state=active]:bg-destructive/10"
           >
             <AlertTriangle className="w-4 h-4 mr-2" /> Danger
           </TabsTrigger>
@@ -74,15 +71,15 @@ export default function CompanySettingsContent({ company }: CompanySettingsProps
         </TabsContent>
       </Tabs>
 
-      <div className="grid gap-6 md:grid-cols-3 pt-6 border-t border-slate-200 dark:border-slate-800">
+      <div className="grid gap-6 md:grid-cols-3 pt-6 border-t border-border">
         <Link href={`/${company.slug}/settings/team`}>
-          <Card className="hover:border-indigo-500 transition-all cursor-pointer h-full">
+          <Card className="hover:border-primary/40 transition-colors cursor-pointer h-full">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-base font-semibold">Team Management</CardTitle>
-              <Users className="h-4 w-4 text-slate-500" />
+              <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-muted-foreground">
                 Invite users, manage members and remove access.
               </p>
             </CardContent>
@@ -90,27 +87,27 @@ export default function CompanySettingsContent({ company }: CompanySettingsProps
         </Link>
 
         <Link href={`/${company.slug}/settings/roles`}>
-          <Card className="hover:border-indigo-500 transition-all cursor-pointer h-full">
+          <Card className="hover:border-primary/40 transition-colors cursor-pointer h-full">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-base font-semibold">Roles & Permissions</CardTitle>
-              <UserCog className="h-4 w-4 text-slate-500" />
+              <CardTitle className="text-base font-semibold">Role Definitions</CardTitle>
+              <UserCog className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-slate-500">
-                Configure custom roles and granular permissions.
+              <p className="text-sm text-muted-foreground">
+                View the fixed permission model for each role.
               </p>
             </CardContent>
           </Card>
         </Link>
 
         <Link href={`/${company.slug}/settings/billing`}>
-          <Card className="hover:border-indigo-500 transition-all cursor-pointer h-full">
+          <Card className="hover:border-primary/40 transition-colors cursor-pointer h-full">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-base font-semibold">Billing & Plans</CardTitle>
-              <CreditCard className="h-4 w-4 text-slate-500" />
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-muted-foreground">
                 Manage subscription, payment methods and invoices.
               </p>
             </CardContent>

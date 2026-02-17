@@ -52,8 +52,18 @@ export const VALIDATE_OPENING_STOCK_IMPORT = gql`
 
 // Execution
 export const EXECUTE_PRODUCT_IMPORT = gql`
-  mutation ExecuteProductImport($validatedData: String!) {
-    executeProductImport(validatedData: $validatedData)
+  mutation ExecuteProductImport(
+    $validatedData: String!
+    $autoCreateMissingUnits: Boolean
+    $autoCreateMissingCategories: Boolean
+    $autoCreateMissingSuppliers: Boolean
+  ) {
+    executeProductImport(
+      validatedData: $validatedData
+      autoCreateMissingUnits: $autoCreateMissingUnits
+      autoCreateMissingCategories: $autoCreateMissingCategories
+      autoCreateMissingSuppliers: $autoCreateMissingSuppliers
+    )
   }
 `;
 

@@ -737,7 +737,7 @@ type Mutation {
   downloadUnitTemplate: String!
   executeCategoryImport(validatedData: String!): String!
   executeOpeningStockImport(validatedData: String!, warehouseId: String!): String!
-  executeProductImport(validatedData: String!): String!
+  executeProductImport(autoCreateMissingCategories: Boolean, autoCreateMissingSuppliers: Boolean, autoCreateMissingUnits: Boolean, validatedData: String!): String!
   executeSupplierImport(validatedData: String!): String!
   executeUnitImport(validatedData: String!): String!
   exportAdjustments(filters: ExportFiltersInput, warehouseId: String!): String!

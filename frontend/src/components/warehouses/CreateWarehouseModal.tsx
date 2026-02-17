@@ -4,11 +4,31 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useWarehouse } from '@/context/warehouse-context';
 
@@ -44,11 +64,11 @@ export function CreateWarehouseModal({ isOpen, onClose }: CreateWarehouseModalPr
   const onSubmit = async (data: WarehouseFormValues) => {
     setIsLoading(true);
     try {
-      const newWarehouse = await addWarehouse(data as any); 
+      const newWarehouse = await addWarehouse(data as any);
       form.reset();
       onClose();
-      // Force reload to trigger the root page check and redirect 
-      window.location.reload(); 
+      // Force reload to trigger the root page check and redirect
+      window.location.reload();
     } catch (error) {
       // Error handling done in context
     } finally {
@@ -123,10 +143,14 @@ export function CreateWarehouseModal({ isOpen, onClose }: CreateWarehouseModalPr
             />
 
             <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+              <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-700">
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="bg-indigo-600 hover:bg-indigo-700"
+              >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

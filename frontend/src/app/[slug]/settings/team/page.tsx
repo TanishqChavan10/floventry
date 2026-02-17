@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@apollo/client';
 import { GET_COMPANY_BY_SLUG } from '@/lib/graphql/company';
@@ -10,7 +11,8 @@ import { ActiveMembersTable } from '@/components/settings/team/ActiveMembersTabl
 import { EditMemberDialog } from '@/components/settings/team/EditMemberDialog';
 import { RemoveMemberDialog } from '@/components/settings/team/RemoveMemberDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import CompanyGuard from '@/components/CompanyGuard';
 import { useAuth } from '@/context/auth-context';
 import RoleGuard from '@/components/guards/RoleGuard';
@@ -39,15 +41,15 @@ function TeamManagementContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+      <div className="flex items-center justify-center min-h-96">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (error || !company) {
     return (
-      <div className="p-8 text-center text-red-500">
+      <div className="p-8 text-center text-destructive">
         Error loading company details. Please try again.
       </div>
     );
@@ -55,14 +57,20 @@ function TeamManagementContent() {
 
   return (
     <>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 md:p-12">
+      <div className="min-h-screen bg-background p-6 md:p-12">
         <div className="max-w-6xl mx-auto space-y-8">
+          <div>
+            <Button variant="ghost" size="sm" asChild className="-ml-2">
+              <Link href={`/${slug}/settings`} className="inline-flex items-center">
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Go back
+              </Link>
+            </Button>
+          </div>
+
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Team Management</h1>
-              <p className="text-slate-500 dark:text-slate-400 mt-2">
-                Manage members and pending invitations for {company.name}.
-              </p>
+              <h1 className="text-3xl font-bold text-foreground">Team Management</h1>
             </div>
             <InviteUserDialog
               companyId={company.id}

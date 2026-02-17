@@ -270,7 +270,7 @@ export function CreateSalesOrderModal({
           </div>
 
           <DialogFooter className="px-6 pb-6 pt-4 flex-shrink-0 border-t">
-            <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
+            <Button type="button" variant="ghost" onClick={handleClose} disabled={loading}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>

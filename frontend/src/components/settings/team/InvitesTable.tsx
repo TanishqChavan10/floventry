@@ -66,14 +66,14 @@ export function InvitesTable({ companyId, refreshTrigger }: InvitesTableProps) {
   };
 
   if (loading) {
-    return <div className="text-center py-4 text-sm text-slate-500">Loading invites...</div>;
+    return <div className="text-center py-4 text-sm text-muted-foreground">Loading invites...</div>;
   }
 
   const invites: Invite[] = data?.companyInvites || [];
 
   if (invites.length === 0) {
     return (
-      <div className="text-center py-8 text-slate-500 bg-slate-50 dark:bg-slate-900 rounded-lg border border-dashed border-slate-300 dark:border-slate-700">
+      <div className="text-center py-8 text-muted-foreground bg-muted/30 rounded-lg border border-dashed border-border">
         No pending invites
       </div>
     );
@@ -99,11 +99,11 @@ export function InvitesTable({ companyId, refreshTrigger }: InvitesTableProps) {
                 <Badge variant="outline">{invite.role}</Badge>
               </TableCell>
               <TableCell>
-                <Badge className={invite.status === 'pending' ? 'bg-yellow-500' : 'bg-gray-500'}>
+                <Badge variant={invite.status === 'pending' ? 'secondary' : 'outline'}>
                   {invite.status}
                 </Badge>
               </TableCell>
-              <TableCell className="text-slate-500 text-xs">
+              <TableCell className="text-muted-foreground text-xs">
                 {formatDistanceToNow(new Date(invite.created_at), { addSuffix: true })}
               </TableCell>
               <TableCell className="text-right">
@@ -111,7 +111,7 @@ export function InvitesTable({ companyId, refreshTrigger }: InvitesTableProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={() => handleRevoke(invite.invite_id)}
                     title="Cancel Invite"
                   >

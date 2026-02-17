@@ -62,7 +62,6 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { BulkEntryModal } from '@/components/catalog/BulkEntryModal';
 
 function UnitsContent() {
   const { toast } = useToast();
@@ -79,7 +78,6 @@ function UnitsContent() {
   const [unitToArchive, setUnitToArchive] = useState<any>(null);
   const [bulkArchiveUnitIds, setBulkArchiveUnitIds] = useState<string[] | null>(null);
   const [bulkRestoreUnitIds, setBulkRestoreUnitIds] = useState<string[] | null>(null);
-  const [isBulkEntryOpen, setIsBulkEntryOpen] = useState(false);
 
   const includeArchived = statusFilter !== 'active';
   const { data, loading, error, refetch } = useQuery(GET_UNITS, {
@@ -375,10 +373,6 @@ function UnitsContent() {
             </div>
             {!isEmpty && (
               <div className="flex items-center gap-2">
-                <Button className="gap-2" onClick={() => setIsBulkEntryOpen(true)}>
-                  <PackagePlus className="h-4 w-4" />
-                  Bulk Import
-                </Button>
                 <Button className="gap-2" onClick={handleAddUnit}>
                   <Plus className="h-4 w-4" />
                   Add Unit
@@ -405,10 +399,6 @@ function UnitsContent() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button onClick={() => setIsBulkEntryOpen(true)} className="gap-2">
-                  <PackagePlus className="h-4 w-4" />
-                  Bulk Import
-                </Button>
                 <Button onClick={handleAddUnit} className="gap-2">
                   <Plus className="h-4 w-4" />
                   Add your first unit
@@ -610,14 +600,6 @@ function UnitsContent() {
           </>
         )}
       </main>
-
-      {/* Bulk Entry Modal */}
-      <BulkEntryModal
-        open={isBulkEntryOpen}
-        onOpenChange={setIsBulkEntryOpen}
-        type="units"
-        onCompleted={() => refetch()}
-      />
 
       {/* Unit Modal */}
       <Dialog open={isUnitModalOpen} onOpenChange={(open) => !open && handleCloseModal()}>

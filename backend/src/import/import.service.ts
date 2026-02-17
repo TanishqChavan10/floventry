@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, Raw } from 'typeorm';
 import { Product } from '../inventory/entities/product.entity';
 import { Category } from '../inventory/entities/category.entity';
 import { Supplier } from '../supplier/supplier.entity';
@@ -41,6 +41,12 @@ export interface ImportResult {
   failureCount: number;
   errors: ValidationError[];
 }
+
+type ProductImportOptions = {
+  autoCreateMissingUnits: boolean;
+  autoCreateMissingCategories: boolean;
+  autoCreateMissingSuppliers: boolean;
+};
 
 @Injectable()
 export class ImportService {
@@ -149,12 +155,29 @@ export class ImportService {
     const validRows: ValidatedRow[] = [];
     const errorRows: ValidatedRow[] = [];
 
-    // Get existing SKUs to check for duplicates
+    const normalizeKey = (value: unknown): string =>
+      typeof value === 'string' ? value.trim().toLowerCase() : String(value ?? '').trim().toLowerCase();
+
+    // Ensure uniqueness within this validation batch. DB uniqueness checks won't catch duplicates
+    // within the same CSV until execution time.
+    const reservedBarcodes = new Set<string>();
+    const normalizeReserved = (value: string) =>
+      this.barcodeService.normalizeBarcode(value) ?? '';
+
+    // Get existing SKUs + barcodes to check for duplicates
     const existingProducts = await this.productRepository.find({
       where: { company_id: companyId },
-      select: ['sku'],
+      select: ['sku', 'barcode'],
     });
-    const existingSKUs = new Set(existingProducts.map((p) => p.sku));
+    const existingSKUKeys = new Set(existingProducts.map((p) => normalizeKey(p.sku)));
+    const existingBarcodeKeys = new Set(
+      existingProducts
+        .map((p) => (p.barcode ? normalizeReserved(p.barcode) : ''))
+        .filter((v) => v.length > 0),
+    );
+
+    // Track duplicates within the same CSV
+    const seenSkuKeysInFile = new Set<string>();
 
     // Get existing units to validate references
     const existingUnits = await this.unitRepository.find({
@@ -186,30 +209,38 @@ export class ImportService {
       existingCategories.map((c) => c.name.toLowerCase()),
     );
 
-    // Ensure uniqueness within this validation batch. DB uniqueness checks won't catch duplicates
-    // within the same CSV until execution time.
-    const reservedBarcodes = new Set<string>();
-    const normalizeReserved = (value: string) =>
-      this.barcodeService.normalizeBarcode(value) ?? '';
-
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowNumber = i + 2; // +2 because of header row and 0-based index
       const errors: ValidationError[] = [];
 
       // Validate SKU
-      if (!row.sku || row.sku.trim() === '') {
+      const skuRaw = typeof row.sku === 'string' ? row.sku : String(row.sku ?? '');
+      const skuTrimmed = skuRaw.trim();
+      const skuKey = normalizeKey(skuTrimmed);
+
+      if (!skuTrimmed) {
         errors.push({
           rowNumber,
           field: 'sku',
           message: 'SKU is required',
         });
-      } else if (existingSKUs.has(row.sku)) {
+      } else if (existingSKUKeys.has(skuKey)) {
         errors.push({
           rowNumber,
           field: 'sku',
-          message: `Duplicate SKU: ${row.sku} already exists`,
+          message: `SKU "${skuTrimmed}" already exists`,
         });
+      } else if (seenSkuKeysInFile.has(skuKey)) {
+        errors.push({
+          rowNumber,
+          field: 'sku',
+          message: `SKU "${skuTrimmed}" is duplicated in this import file`,
+        });
+      } else {
+        seenSkuKeysInFile.add(skuKey);
+        // Persist trimmed value so validation + execution behave consistently.
+        row.sku = skuTrimmed;
       }
 
       // Validate name
@@ -283,6 +314,12 @@ export class ImportService {
               rowNumber,
               field: 'barcode',
               message: 'Duplicate barcode within import batch',
+            });
+          } else if (key && existingBarcodeKeys.has(key)) {
+            errors.push({
+              rowNumber,
+              field: 'barcode',
+              message: `Barcode "${canonical}" already exists`,
             });
           } else {
             if (key) reservedBarcodes.add(key);
@@ -367,6 +404,11 @@ export class ImportService {
   async executeProductImport(
     validatedRows: ValidatedRow[],
     companyId: string,
+    options: ProductImportOptions = {
+      autoCreateMissingUnits: false,
+      autoCreateMissingCategories: false,
+      autoCreateMissingSuppliers: false,
+    },
   ): Promise<ImportResult> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -379,42 +421,149 @@ export class ImportService {
     const reservedBarcodes = new Set<string>();
     const normalizeReserved = (value: string) => this.barcodeService.normalizeBarcode(value) ?? '';
 
+    const normalizeKey = (value: unknown): string =>
+      typeof value === 'string' ? value.trim().toLowerCase() : '';
+
+    const proposeUnitShortCode = (nameOrCode: string): string => {
+      const trimmed = nameOrCode.trim();
+      const cleaned = trimmed
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+      const words = cleaned.split(/\s+/).filter(Boolean);
+      if (words.length === 0) return 'unit';
+      if (words.length === 1) {
+        const w = words[0];
+        return w.length <= 6 ? w : w.slice(0, 6);
+      }
+      const initials = words.map((w) => w[0]).join('');
+      if (initials.length >= 2 && initials.length <= 6) return initials;
+      return words.join('').slice(0, 6);
+    };
+
 
 
     try {
+      // Preload existing master data keys (case-insensitive) for fast existence checks + shortCode generation.
+      const existingUnits = await queryRunner.manager.find(Unit, {
+        where: { company_id: companyId },
+        select: ['id', 'name', 'shortCode'],
+      });
+      const unitShortCodes = new Set(existingUnits.map((u) => normalizeKey(u.shortCode)));
+
       for (const row of validatedRows) {
         try {
-          // Find category (validation ensures it exists if provided)
+          // Find category (case-insensitive to match validation)
           let category: Category | null = null;
           if (row.data.category) {
             category = await queryRunner.manager.findOne(Category, {
-              where: { name: row.data.category, company_id: companyId },
+              where: {
+                company_id: companyId,
+                name: Raw((alias) => `LOWER(${alias}) = LOWER(:name)`, {
+                  name: String(row.data.category),
+                }),
+              },
             });
+
+            if (!category && options.autoCreateMissingCategories) {
+              category = queryRunner.manager.create(Category, {
+                company_id: companyId,
+                name: String(row.data.category).trim(),
+                description: null,
+                isActive: true,
+              } as any);
+              category = await queryRunner.manager.save(category);
+            }
+
+            if (!category && !options.autoCreateMissingCategories) {
+              throw new BadRequestException(
+                `Category "${row.data.category}" does not exist. Please create it first.`,
+              );
+            }
           }
 
-          // Find supplier (validation ensures it exists if provided)
+          // Find supplier (case-insensitive to match validation)
           let supplier: Supplier | null = null;
           if (row.data.supplier) {
             supplier = await queryRunner.manager.findOne(Supplier, {
-              where: { name: row.data.supplier, company_id: companyId },
+              where: {
+                company_id: companyId,
+                name: Raw((alias) => `LOWER(${alias}) = LOWER(:name)`, {
+                  name: String(row.data.supplier),
+                }),
+              },
             });
+
+            if (!supplier && options.autoCreateMissingSuppliers) {
+              supplier = queryRunner.manager.create(Supplier, {
+                company_id: companyId,
+                name: String(row.data.supplier).trim(),
+                email: null,
+                phone: null,
+                address: null,
+                isActive: true,
+              } as any);
+              supplier = await queryRunner.manager.save(supplier);
+            }
+
+            if (!supplier && !options.autoCreateMissingSuppliers) {
+              throw new BadRequestException(
+                `Supplier "${row.data.supplier}" does not exist. Please create it first.`,
+              );
+            }
           }
 
-          // Find unit by either shortCode or name (validation ensures it exists)
-          let unitValue = row.data.unit;
-          const unit = await queryRunner.manager.findOne(
-            this.unitRepository.target as any,
-            {
-              where: [
-                { shortCode: row.data.unit, company_id: companyId },
-                { name: row.data.unit, company_id: companyId },
-              ],
-            },
-          );
+          // Find unit by either shortCode or name (case-insensitive to match validation)
+          let unitValue = String(row.data.unit ?? '').trim();
+          if (!unitValue) {
+            throw new BadRequestException('Unit is required');
+          }
+
+          let unit = await queryRunner.manager.findOne(Unit, {
+            where: [
+              {
+                company_id: companyId,
+                shortCode: Raw((alias) => `LOWER(${alias}) = LOWER(:v)`, { v: unitValue }),
+              },
+              {
+                company_id: companyId,
+                name: Raw((alias) => `LOWER(${alias}) = LOWER(:v)`, { v: unitValue }),
+              },
+            ],
+            select: ['id', 'name', 'shortCode'],
+          });
+
+          if (!unit && options.autoCreateMissingUnits) {
+            const base = proposeUnitShortCode(unitValue);
+            const maxLen = 12;
+            let candidate = base.slice(0, maxLen);
+            let i = 2;
+            while (unitShortCodes.has(normalizeKey(candidate))) {
+              const suffix = String(i);
+              candidate = `${base}`.slice(0, Math.max(1, maxLen - suffix.length)) + suffix;
+              i++;
+            }
+            unitShortCodes.add(normalizeKey(candidate));
+
+            unit = queryRunner.manager.create(Unit, {
+              company_id: companyId,
+              name: unitValue,
+              shortCode: candidate,
+              isDefault: false,
+              isActive: true,
+            } as any);
+            unit = await queryRunner.manager.save(unit);
+          }
+
+          if (!unit && !options.autoCreateMissingUnits) {
+            throw new BadRequestException(
+              `Unit "${unitValue}" does not exist. Please create it first.`,
+            );
+          }
 
           // Use the shortCode for storage (consistent format)
-          if (unit && (unit as any).shortCode) {
-            unitValue = (unit as any).shortCode;
+          if (unit?.shortCode) {
+            unitValue = unit.shortCode;
           }
 
           // Create product

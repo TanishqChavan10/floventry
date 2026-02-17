@@ -519,7 +519,11 @@ function CatalogProductsContent() {
             {!isEmpty && (
               <div className="flex items-center gap-2">
                 {isOwnerOrAdmin && (
-                  <Button className="gap-2" onClick={() => setIsBulkEntryOpen(true)}>
+                  <Button
+                    variant="ghost"
+                    className="gap-2 hover:bg-transparent"
+                    onClick={() => setIsBulkEntryOpen(true)}
+                  >
                     <PackagePlus className="h-4 w-4" />
                     Bulk Import
                   </Button>
@@ -556,7 +560,11 @@ function CatalogProductsContent() {
               {canEdit && (
                 <div className="flex items-center gap-2">
                   {isOwnerOrAdmin && (
-                    <Button onClick={() => setIsBulkEntryOpen(true)} className="gap-2">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setIsBulkEntryOpen(true)}
+                      className="gap-2 hover:bg-transparent"
+                    >
                       <PackagePlus className="h-4 w-4" />
                       Bulk Import
                     </Button>
@@ -603,8 +611,6 @@ function CatalogProductsContent() {
             {/* Filters */}
             <Card>
               <CardContent className="space-y-6">
-               
-
                 <div className="flex flex-col gap-4 md:flex-row">
                   <div className="flex-1">
                     <div className="relative">

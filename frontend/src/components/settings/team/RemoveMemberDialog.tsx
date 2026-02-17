@@ -61,7 +61,9 @@ export function RemoveMemberDialog({
         },
       });
 
-      toast.success(`${member.user.fullName || member.user.email} has been removed from the company`);
+      toast.success(
+        `${member.user.fullName || member.user.email} has been removed from the company`,
+      );
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
@@ -75,13 +77,11 @@ export function RemoveMemberDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-red-600">
+          <DialogTitle className="flex items-center gap-2 text-destructive">
             <AlertTriangle className="h-5 w-5" />
             Remove Team Member
           </DialogTitle>
-          <DialogDescription>
-            This action cannot be undone.
-          </DialogDescription>
+          <DialogDescription>This action cannot be undone.</DialogDescription>
         </DialogHeader>
 
         <div className="py-4 space-y-4">
@@ -90,27 +90,21 @@ export function RemoveMemberDialog({
             <div className="space-y-2">
               <div>
                 <span className="text-sm font-medium">Name:</span>
-                <p className="text-sm text-muted-foreground">
-                  {member.user.fullName || 'N/A'}
-                </p>
+                <p className="text-sm text-muted-foreground">{member.user.fullName || 'N/A'}</p>
               </div>
               <div>
                 <span className="text-sm font-medium">Email:</span>
-                <p className="text-sm text-muted-foreground">
-                  {member.user.email}
-                </p>
+                <p className="text-sm text-muted-foreground">{member.user.email}</p>
               </div>
               <div>
                 <span className="text-sm font-medium">Role:</span>
-                <p className="text-sm text-muted-foreground">
-                  {member.role}
-                </p>
+                <p className="text-sm text-muted-foreground">{member.role}</p>
               </div>
               {member.warehouses && member.warehouses.length > 0 && (
                 <div>
                   <span className="text-sm font-medium">Warehouses:</span>
                   <p className="text-sm text-muted-foreground">
-                    {member.warehouses.map(w => w.warehouseName).join(', ')}
+                    {member.warehouses.map((w) => w.warehouseName).join(', ')}
                   </p>
                 </div>
               )}
@@ -132,7 +126,7 @@ export function RemoveMemberDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button variant="destructive" onClick={handleRemove} disabled={loading}>

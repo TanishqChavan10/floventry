@@ -75,10 +75,10 @@ interface ActiveMembersTableProps {
 }
 
 const roleColors: Record<string, string> = {
-  OWNER: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
-  ADMIN: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  MANAGER: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
-  STAFF: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
+  OWNER: 'default',
+  ADMIN: 'secondary',
+  MANAGER: 'outline',
+  STAFF: 'outline',
 };
 
 const roleIcons: Record<string, string> = {
@@ -116,7 +116,9 @@ export function ActiveMembersTable({
 
   if (error) {
     return (
-      <div className="text-sm text-red-500 py-4">Error loading team members: {error.message}</div>
+      <div className="text-sm text-destructive py-4">
+        Error loading team members: {error.message}
+      </div>
     );
   }
 
@@ -181,7 +183,7 @@ export function ActiveMembersTable({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
+            <Button variant="ghost" size="sm">
               {roleFilter === 'ALL' ? 'All Roles' : roleFilter}
             </Button>
           </DropdownMenuTrigger>
@@ -231,7 +233,7 @@ export function ActiveMembersTable({
 
                   {/* Role Badge */}
                   <TableCell>
-                    <Badge className={roleColors[member.role] || roleColors.STAFF}>
+                    <Badge variant={(roleColors[member.role] as any) || 'outline'}>
                       <span className="mr-1">{roleIcons[member.role]}</span>
                       {member.role}
                     </Badge>
@@ -284,7 +286,7 @@ export function ActiveMembersTable({
                           )}
                           <DropdownMenuItem
                             onClick={() => onRemoveMember(member)}
-                            className="text-red-600 focus:text-red-600"
+                            className="text-destructive focus:text-destructive"
                           >
                             <UserMinus className="mr-2 h-4 w-4" />
                             Remove from Company

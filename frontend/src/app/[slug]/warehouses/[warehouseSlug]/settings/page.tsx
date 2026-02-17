@@ -214,16 +214,16 @@ function WarehouseSettingsContent() {
 
   if (loading || loadingWarehouses) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   if (!warehouse) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-        <p className="text-slate-500">Warehouse not found</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Warehouse not found</p>
       </div>
     );
   }
@@ -231,16 +231,16 @@ function WarehouseSettingsContent() {
   const isSaving = updatingWarehouse || updatingSettings;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
+    <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <div className="border-b bg-white dark:bg-slate-900 sticky top-0 z-10">
+      <div className="border-b border-border bg-card sticky top-0 z-10">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Settings2 className="h-6 w-6 text-indigo-600" />
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+              <Settings2 className="h-6 w-6 text-primary" />
               Warehouse Settings
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+            <p className="text-muted-foreground text-sm mt-1">
               Configure general preferences, location, and access controls
             </p>
             {isReadOnly && (
@@ -284,7 +284,7 @@ function WarehouseSettingsContent() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-indigo-600" />
+                  <Building2 className="h-5 w-5 text-primary" />
                   <CardTitle>Basic Information</CardTitle>
                 </div>
                 <CardDescription>Identify this warehouse in your organization</CardDescription>
@@ -594,7 +594,7 @@ function WarehouseSettingsContent() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between rounded-lg border p-4 bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+                <div className="flex items-center justify-between rounded-lg border p-4 bg-muted/30">
                   <div className="space-y-0.5">
                     <Label className="text-base">Require Transfer Approval</Label>
                     <p className="text-sm text-muted-foreground">
@@ -616,7 +616,7 @@ function WarehouseSettingsContent() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-indigo-600" />
+                  <Users className="h-5 w-5 text-primary" />
                   <CardTitle>Staff & Manager</CardTitle>
                 </div>
                 <CardDescription>View warehouse staff and manager assignments</CardDescription>
@@ -632,13 +632,13 @@ function WarehouseSettingsContent() {
           {/* Danger Zone */}
           {!isReadOnly && (
             <TabsContent value="danger" className="space-y-6">
-              <Card className="border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-900/10">
+              <Card className="border-destructive/20 bg-destructive/5">
                 <CardHeader>
-                  <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                  <div className="flex items-center gap-2 text-destructive">
                     <ShieldAlert className="h-5 w-5" />
                     <CardTitle>Danger Zone</CardTitle>
                   </div>
-                  <CardDescription className="text-red-600/80 dark:text-red-400/80">
+                  <CardDescription className="text-destructive/80">
                     Irreversible actions for this warehouse
                   </CardDescription>
                 </CardHeader>
@@ -647,16 +647,14 @@ function WarehouseSettingsContent() {
                     <>
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                          <p className="font-medium text-green-600 dark:text-green-400">
-                            Reactivate Warehouse
-                          </p>
-                          <p className="text-sm text-green-600/70 dark:text-green-400/70">
-                            Restore this archived warehouse and make it available for operations again.
+                          <p className="font-medium text-foreground">Reactivate Warehouse</p>
+                          <p className="text-sm text-muted-foreground">
+                            Restore this archived warehouse and make it available for operations
+                            again.
                           </p>
                         </div>
                         <Button
                           variant="outline"
-                          className="border-green-600 text-green-600 hover:bg-green-50"
                           onClick={handleReactivate}
                           disabled={reactivating}
                         >
@@ -668,34 +666,28 @@ function WarehouseSettingsContent() {
                           Reactivate
                         </Button>
                       </div>
-                      <Separator className="bg-red-200 dark:bg-red-800/30" />
+                      <Separator className="bg-border" />
                     </>
                   )}
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <p className="font-medium text-slate-900 dark:text-white">
-                        Archive Warehouse
-                      </p>
-                      <p className="text-sm text-slate-500">
+                      <p className="font-medium text-foreground">Archive Warehouse</p>
+                      <p className="text-sm text-muted-foreground">
                         Hide from lists but keep data intact.
                       </p>
                     </div>
                     <Button variant="outline">Archive</Button>
                   </div>
-                  <Separator className="bg-red-200 dark:bg-red-800/30" />
+                  <Separator className="bg-border" />
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <p className="font-medium text-red-600 dark:text-red-400">Delete Warehouse</p>
-                      <p className="text-sm text-red-600/70 dark:text-red-400/70">
+                      <p className="font-medium text-destructive">Delete Warehouse</p>
+                      <p className="text-sm text-destructive/80">
                         Permanently remove this warehouse and all associated stock data. This cannot
                         be undone.
                       </p>
                     </div>
-                    <Button 
-                      variant="destructive" 
-                      className="bg-red-600 hover:bg-red-700"
-                      onClick={() => setIsDeleteDialogOpen(true)}
-                    >
+                    <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete Warehouse
                     </Button>

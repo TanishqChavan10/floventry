@@ -197,7 +197,7 @@ export default function SupplierForm({ initialData, isEditing = false }: Supplie
       </div>
 
       <div className="flex items-center justify-end gap-4">
-        <Button type="button" variant="outline" onClick={() => router.back()}>
+        <Button type="button" variant="ghost" onClick={() => router.back()}>
           Cancel
         </Button>
         <Button type="submit" disabled={isLoading}>

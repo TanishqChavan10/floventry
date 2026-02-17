@@ -110,11 +110,22 @@ export class ImportResolver {
   async executeProductImport(
     @Args('validatedData') validatedData: string, // JSON string
     @ClerkUser() user: any,
+    @Args('autoCreateMissingUnits', { type: () => Boolean, nullable: true })
+    autoCreateMissingUnits?: boolean,
+    @Args('autoCreateMissingCategories', { type: () => Boolean, nullable: true })
+    autoCreateMissingCategories?: boolean,
+    @Args('autoCreateMissingSuppliers', { type: () => Boolean, nullable: true })
+    autoCreateMissingSuppliers?: boolean,
   ): Promise<string> {
     const data = JSON.parse(validatedData);
     const result = await this.importService.executeProductImport(
       data,
       user.activeCompanyId,
+      {
+        autoCreateMissingUnits: Boolean(autoCreateMissingUnits),
+        autoCreateMissingCategories: Boolean(autoCreateMissingCategories),
+        autoCreateMissingSuppliers: Boolean(autoCreateMissingSuppliers),
+      },
     );
     return JSON.stringify(result);
   }
