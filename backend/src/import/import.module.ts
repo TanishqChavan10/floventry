@@ -11,6 +11,7 @@ import { Stock } from '../inventory/entities/stock.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
 import { ProductBarcodeUnit } from '../inventory/entities/product-barcode-unit.entity';
 import { AuthModule } from '../auth/auth.module';
+import { AuditModule } from '../audit/audit.module';
 import { BarcodeService } from '../inventory/barcode.service';
 import { Company } from '../company/company.entity';
 import { BarcodeFormatService } from '../inventory/barcode-format.service';
@@ -29,6 +30,7 @@ import { BarcodeFormatService } from '../inventory/barcode-format.service';
       Company,
     ]),
     AuthModule,
+    AuditModule,
   ],
   providers: [ImportService, ImportResolver, BarcodeService, BarcodeFormatService],
   exports: [ImportService],

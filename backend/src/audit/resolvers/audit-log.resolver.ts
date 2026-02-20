@@ -9,8 +9,8 @@ import { AuditLogService } from '../services/audit-log.service';
 import {
   AuditLogResponse,
   AuditLogFilterInput,
-  PaginationInput,
 } from '../dto/audit-log.dto';
+import { PaginationInput } from '../../common/dto/pagination.types';
 
 @Resolver()
 export class AuditLogResolver {

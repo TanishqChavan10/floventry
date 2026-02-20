@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID, Int } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { IssuesService } from './issues.service';
 import { IssueNote } from './entities/issue-note.entity';
@@ -15,25 +15,31 @@ import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
 
 @Resolver(() => IssueNote)
 export class IssuesResolver {
-  constructor(private readonly issuesService: IssuesService) {}
+  constructor(private readonly issuesService: IssuesService) { }
 
   @Query(() => [IssueNote])
   @UseGuards(ClerkAuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async issueNotesByWarehouse(
     @Args('warehouseId', { type: () => ID }) warehouseId: string,
+    @Args('limit', { type: () => Int, nullable: true }) limit: number,
+    @Args('offset', { type: () => Int, nullable: true }) offset: number,
   ): Promise<IssueNote[]> {
-    return this.issuesService.findAll(warehouseId);
+    return this.issuesService.findAll(warehouseId, limit, offset);
   }
 
   @Query(() => [IssueNote])
   @UseGuards(ClerkAuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
-  async issueNotesByCompany(@ClerkUser() user: any): Promise<IssueNote[]> {
+  async issueNotesByCompany(
+    @Args('limit', { type: () => Int, nullable: true }) limit: number,
+    @Args('offset', { type: () => Int, nullable: true }) offset: number,
+    @ClerkUser() user: any,
+  ): Promise<IssueNote[]> {
     if (!user.activeCompanyId) {
       return [];
     }
-    return this.issuesService.findAllByCompany(user.activeCompanyId);
+    return this.issuesService.findAllByCompany(user.activeCompanyId, limit, offset);
   }
 
   @Query(() => IssueNote)

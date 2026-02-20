@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID, Int } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { SalesService } from './sales.service';
 import { SalesOrder } from './entities/sales-order.entity';
@@ -14,15 +14,19 @@ import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
 
 @Resolver(() => SalesOrder)
 export class SalesResolver {
-  constructor(private readonly salesService: SalesService) {}
+  constructor(private readonly salesService: SalesService) { }
 
   @Query(() => [SalesOrder])
   @UseGuards(ClerkAuthGuard)
-  async salesOrders(@ClerkUser() user: any): Promise<SalesOrder[]> {
+  async salesOrders(
+    @Args('limit', { type: () => Int, nullable: true }) limit: number,
+    @Args('offset', { type: () => Int, nullable: true }) offset: number,
+    @ClerkUser() user: any,
+  ): Promise<SalesOrder[]> {
     if (!user.activeCompanyId) {
       return [];
     }
-    return this.salesService.findAll(user.activeCompanyId);
+    return this.salesService.findAll(user.activeCompanyId, limit, offset);
   }
 
   @Query(() => SalesOrder)

@@ -9,6 +9,7 @@ import {
   OneToMany,
   OneToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { Company } from '../company/company.entity';
@@ -18,6 +19,7 @@ import { WarehouseSettings as WarehouseSettingsModel } from './warehouse-setting
 
 @ObjectType()
 @Entity('warehouses')
+@Index(['company_id'])
 export class Warehouse {
   @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')

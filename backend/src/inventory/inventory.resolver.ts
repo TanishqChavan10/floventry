@@ -5,6 +5,7 @@ import {
   Args,
   ResolveField,
   Parent,
+  Int,
 } from '@nestjs/graphql';
 import { UseGuards, BadRequestException } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
@@ -50,11 +51,23 @@ import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
 import { Supplier } from '../supplier/supplier.entity';
+import { PaginationInput, PageInfo } from '../common/dto/pagination.types';
+import { ObjectType, Field } from '@nestjs/graphql';
+import { StockLotLoader } from './stock-lot.loader';
+
+@ObjectType()
+export class PaginatedProductsResult {
+  @Field(() => [Product])
+  items: Product[];
+
+  @Field(() => PageInfo)
+  pageInfo: PageInfo;
+}
 
 @Resolver(() => Category)
 @UseGuards(ClerkAuthGuard)
 export class CategoryResolver {
-  constructor(private readonly inventoryService: InventoryService) {}
+  constructor(private readonly inventoryService: InventoryService) { }
 
   @Mutation(() => Category)
   async createCategory(
@@ -94,7 +107,7 @@ export class CategoryResolver {
 @Resolver(() => Product)
 @UseGuards(ClerkAuthGuard)
 export class ProductResolver {
-  constructor(private readonly inventoryService: InventoryService) {}
+  constructor(private readonly inventoryService: InventoryService) { }
 
   @Mutation(() => Product)
   async createProduct(
@@ -118,6 +131,19 @@ export class ProductResolver {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
     return this.inventoryService.findAllProducts(user.activeCompanyId);
+  }
+
+  @Query(() => PaginatedProductsResult, { name: 'productsPaginated' })
+  async findAllPaginated(
+    @Args('pagination', { nullable: true }) pagination: PaginationInput,
+    @ClerkUser() user: any,
+  ) {
+    if (!user.activeCompanyId)
+      throw new BadRequestException('Active company required');
+    return this.inventoryService.findAllProductsPaginated(
+      user.activeCompanyId,
+      pagination,
+    );
   }
 
   @Query(() => Product, { name: 'product' })
@@ -228,7 +254,7 @@ export class ProductResolver {
 @Resolver(() => Unit)
 @UseGuards(ClerkAuthGuard)
 export class UnitResolver {
-  constructor(private readonly inventoryService: InventoryService) {}
+  constructor(private readonly inventoryService: InventoryService) { }
 
   @Mutation(() => Unit)
   async createUnit(
@@ -271,11 +297,14 @@ export class UnitResolver {
 @Resolver(() => Stock)
 @UseGuards(ClerkAuthGuard, RolesGuard)
 export class StockResolver {
-  constructor(private readonly inventoryService: InventoryService) {}
+  constructor(
+    private readonly inventoryService: InventoryService,
+    private readonly stockLotLoader: StockLotLoader,
+  ) { }
 
   @ResolveField(() => [StockLot], { name: 'lots', nullable: true })
   async resolveLots(@Parent() stock: Stock) {
-    return this.inventoryService.getLotsForStock({
+    return this.stockLotLoader.getLotsForStock({
       company_id: stock.company_id,
       product_id: stock.product_id,
       warehouse_id: stock.warehouse_id,
@@ -337,6 +366,8 @@ export class StockResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
   async getStockByWarehouse(
     @Args('warehouseId') warehouseId: string,
+    @Args('limit', { type: () => Int, nullable: true }) limit: number,
+    @Args('offset', { type: () => Int, nullable: true }) offset: number,
     @ClerkUser() user: any,
   ) {
     if (!user.activeCompanyId)
@@ -344,6 +375,8 @@ export class StockResolver {
     return this.inventoryService.getStockByWarehouse(
       warehouseId,
       user.activeCompanyId,
+      limit,
+      offset,
     );
   }
 
@@ -363,10 +396,18 @@ export class StockResolver {
 
   @Query(() => [Stock], { name: 'allStock' })
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
-  async getAllStock(@ClerkUser() user: any) {
+  async getAllStock(
+    @Args('limit', { type: () => Int, nullable: true }) limit: number,
+    @Args('offset', { type: () => Int, nullable: true }) offset: number,
+    @ClerkUser() user: any,
+  ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
-    return this.inventoryService.getAllStock(user.activeCompanyId);
+    return this.inventoryService.getAllStock(
+      user.activeCompanyId,
+      limit,
+      offset,
+    );
   }
 
   @Mutation(() => Stock)

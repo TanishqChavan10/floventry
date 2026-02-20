@@ -42,7 +42,7 @@ export class IssuesService {
     private notificationsService: NotificationsService,
     private readonly auditLogService: AuditLogService,
     private dataSource: DataSource,
-  ) {}
+  ) { }
 
   async create(
     input: CreateIssueNoteInput,
@@ -164,7 +164,11 @@ export class IssuesService {
     }
   }
 
-  async findAll(warehouseId: string): Promise<IssueNote[]> {
+  async findAll(
+    warehouseId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<IssueNote[]> {
     return this.issueNoteRepository.find({
       where: { warehouse_id: warehouseId },
       relations: [
@@ -175,10 +179,16 @@ export class IssuesService {
         'issuer',
       ],
       order: { created_at: 'DESC' },
+      take: limit || 50,
+      skip: offset || 0,
     });
   }
 
-  async findAllByCompany(companyId: string): Promise<IssueNote[]> {
+  async findAllByCompany(
+    companyId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<IssueNote[]> {
     return this.issueNoteRepository.find({
       where: { company_id: companyId },
       relations: [
@@ -189,6 +199,8 @@ export class IssuesService {
         'issuer',
       ],
       order: { created_at: 'DESC' },
+      take: limit || 50,
+      skip: offset || 0,
     });
   }
 
@@ -314,7 +326,7 @@ export class IssuesService {
         const daysUntilExpiry = Math.ceil(
           (normalizeExpiryToEndOfDayUTC(new Date(lot.expiry_date)).getTime() -
             now.getTime()) /
-            (1000 * 60 * 60 * 24),
+          (1000 * 60 * 60 * 24),
         );
         if (daysUntilExpiry <= 30) {
           expiryStatus = 'EXPIRING_SOON';

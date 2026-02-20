@@ -7,6 +7,7 @@ import { WarehouseService } from './warehouse.service';
 import { WarehouseController } from './warehouse.controller';
 import { WarehouseResolver } from './warehouse.resolver';
 import { AuthModule } from '../auth/auth.module';
+import { AuditModule } from '../audit/audit.module';
 import { UserCompany } from '../user-company/user-company.entity';
 import { Stock } from '../inventory/entities/stock.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
@@ -22,6 +23,7 @@ import { StockMovement } from '../inventory/entities/stock-movement.entity';
       StockMovement,
     ]),
     AuthModule,
+    AuditModule,
   ],
   controllers: [WarehouseController],
   providers: [WarehouseService, WarehouseResolver],

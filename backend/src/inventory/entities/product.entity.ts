@@ -19,6 +19,8 @@ import { Company as CompanyModel } from '../../company/company.model';
 @Index(['company_id', 'sku'], { unique: true }) // Ensure SKU is unique per company
 @Index(['company_id', 'barcode'], { unique: true }) // Ensure barcode is unique per company (nullable allowed)
 @Index(['company_id']) // Optimize company-scoped queries
+@Index(['company_id', 'is_active']) // Active product filtering
+@Index(['company_id', 'name']) // Product search by name
 export class Product {
   @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')

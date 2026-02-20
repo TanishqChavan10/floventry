@@ -12,6 +12,8 @@ import { LotSourceType } from '../inventory/entities/stock-lot.entity';
 import * as Papa from 'papaparse';
 import { BarcodeService } from '../inventory/barcode.service';
 import { BarcodeFormatService } from '../inventory/barcode-format.service';
+import { AuditLogService } from '../audit/services/audit-log.service';
+import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
 import {
   isExpiryInPastEndOfDay,
   normalizeExpiryToEndOfDayUTC,
@@ -66,6 +68,7 @@ export class ImportService {
     private readonly barcodeService: BarcodeService,
     private dataSource: DataSource,
     private readonly barcodeFormatService: BarcodeFormatService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   /**
@@ -635,6 +638,19 @@ export class ImportService {
       await queryRunner.release();
     }
 
+    await this.auditLogService.record({
+      companyId,
+      actor: { id: 'system', email: '', role: 'SYSTEM' },
+      action: AuditAction.BULK_IMPORT_COMPLETED,
+      entityType: AuditEntityType.BULK_IMPORT,
+      metadata: {
+        importType: 'products',
+        totalRows: validatedRows.length,
+        validRows: successCount,
+        errorRows: validatedRows.length - successCount,
+      },
+    });
+
     return {
       successCount,
       failureCount: validatedRows.length - successCount,
@@ -1099,6 +1115,20 @@ export class ImportService {
     } finally {
       await queryRunner.release();
     }
+
+    await this.auditLogService.record({
+      companyId,
+      actor: { id: userId, email: '', role: 'STAFF' },
+      action: AuditAction.BULK_IMPORT_COMPLETED,
+      entityType: AuditEntityType.BULK_IMPORT,
+      metadata: {
+        importType: 'opening_stock',
+        warehouseId,
+        totalRows: validatedRows.length,
+        validRows: successCount,
+        errorRows: validatedRows.length - successCount,
+      },
+    });
 
     return {
       successCount,

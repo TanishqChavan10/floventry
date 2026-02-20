@@ -32,6 +32,8 @@ export type GlobalSearchResultsData = {
 };
 
 export type GlobalSearchContextValue = {
+  companyPlan: 'Free' | 'Pro' | null;
+
   open: boolean;
   setOpen: (open: boolean) => void;
 

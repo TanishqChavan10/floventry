@@ -29,10 +29,15 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
 import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
+import { AuditLogService } from '../audit/services/audit-log.service';
+import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
 
 @Resolver(() => Warehouse)
 export class WarehouseResolver {
-  constructor(private readonly warehouseService: WarehouseService) {}
+  constructor(
+    private readonly warehouseService: WarehouseService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   @Mutation(() => Warehouse)
   @UseGuards(ClerkAuthGuard, RolesGuard)
@@ -45,7 +50,18 @@ export class WarehouseResolver {
       throw new Error('No active company');
     }
 
-    return this.warehouseService.create(input, user.activeCompanyId, user.id);
+    const warehouse = await this.warehouseService.create(input, user.activeCompanyId, user.id);
+
+    await this.auditLogService.record({
+      companyId: user.activeCompanyId,
+      actor: { id: user.id, email: user.email || '', role: user.role || 'OWNER' },
+      action: AuditAction.WAREHOUSE_CREATED,
+      entityType: AuditEntityType.WAREHOUSE,
+      entityId: warehouse.id,
+      metadata: { warehouseName: warehouse.name, warehouseSlug: warehouse.slug },
+    });
+
+    return warehouse;
   }
 
   @Mutation(() => Warehouse)
@@ -73,8 +89,20 @@ export class WarehouseResolver {
   @Roles(Role.OWNER, Role.ADMIN)
   async deleteWarehouse(
     @Args('id', { type: () => ID }) id: string,
+    @ClerkUser() user: any,
   ): Promise<boolean> {
+    const warehouse = await this.warehouseService.findOne(id);
     await this.warehouseService.remove(id);
+
+    await this.auditLogService.record({
+      companyId: user.activeCompanyId,
+      actor: { id: user.id, email: user.email || '', role: user.role || 'ADMIN' },
+      action: AuditAction.WAREHOUSE_ARCHIVED,
+      entityType: AuditEntityType.WAREHOUSE,
+      entityId: id,
+      metadata: { warehouseName: warehouse.name },
+    });
+
     return true;
   }
 
@@ -117,8 +145,20 @@ export class WarehouseResolver {
   @Roles(Role.OWNER) // OWNER only
   async reactivateWarehouse(
     @Args('id', { type: () => ID }) id: string,
+    @ClerkUser() user: any,
   ): Promise<Warehouse> {
-    return this.warehouseService.reactivate(id);
+    const warehouse = await this.warehouseService.reactivate(id);
+
+    await this.auditLogService.record({
+      companyId: user.activeCompanyId,
+      actor: { id: user.id, email: user.email || '', role: user.role || 'OWNER' },
+      action: AuditAction.WAREHOUSE_REACTIVATED,
+      entityType: AuditEntityType.WAREHOUSE,
+      entityId: id,
+      metadata: { warehouseName: warehouse.name },
+    });
+
+    return warehouse;
   }
 
   @Query(() => Warehouse)

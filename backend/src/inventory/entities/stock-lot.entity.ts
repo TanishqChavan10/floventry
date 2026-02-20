@@ -31,6 +31,7 @@ registerEnumType(LotSourceType, {
 @Index(['product_id', 'warehouse_id', 'expiry_date'])
 @Index(['received_at'])
 @Index(['expiry_date'])
+@Index(['company_id', 'product_id']) // Company-level lot aggregation
 export class StockLot {
   @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')

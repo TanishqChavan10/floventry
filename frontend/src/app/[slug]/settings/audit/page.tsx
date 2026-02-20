@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@apollo/client';
 import { format } from 'date-fns';
@@ -8,13 +9,13 @@ import { DateRange } from 'react-day-picker';
 
 import { GET_COMPANY_AUDIT_LOGS, GET_COMPANY_MEMBERS } from '@/lib/graphql/audit';
 import { GET_COMPANY_BY_SLUG } from '@/lib/graphql/company';
-import CompanyGuard from '@/components/CompanyGuard';
+import { useAuth } from '@/context/auth-context';
 import RoleGuard from '@/components/guards/RoleGuard';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -27,6 +28,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Skeleton } from '@/components/ui/skeleton';
 
 import {
+  ArrowLeft,
   Search,
   Download,
   ChevronDown,
@@ -48,7 +50,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 
-// --- Constants ----------------------------------------------------------------
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const ACTION_LABELS: Record<string, string> = {
   GRN_POSTED: 'Goods Receipt Posted',
@@ -112,7 +114,7 @@ const ALL_ENTITY_TYPES = Object.keys(ENTITY_LABELS);
 
 const PAGE_SIZE = 20;
 
-// --- Types --------------------------------------------------------------------
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface AuditLogEntry {
   id: string;
@@ -137,7 +139,7 @@ interface CompanyMember {
   };
 }
 
-// --- Helpers ------------------------------------------------------------------
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function parseUserAgent(ua: string | null): string {
   if (!ua) return 'Unknown';
@@ -159,7 +161,6 @@ function getRecordName(entry: AuditLogEntry): string | null {
     meta.warehouse_name ||
     meta.userName ||
     meta.user_name ||
-    meta.userEmail ||
     meta.email ||
     meta.grnNumber ||
     meta.grn_number ||
@@ -204,17 +205,19 @@ function getChanges(
   if (!meta) return null;
   const changes: Array<{ field: string; oldValue: string; newValue: string }> = [];
 
+  // Check for explicit changes array
   if (Array.isArray(meta.changes)) {
     for (const c of meta.changes) {
       changes.push({
         field: c.field || c.key || 'Unknown',
-        oldValue: String(c.old ?? c.oldValue ?? c.from ?? '\u2014'),
-        newValue: String(c.new ?? c.newValue ?? c.to ?? '\u2014'),
+        oldValue: String(c.old ?? c.oldValue ?? c.from ?? '—'),
+        newValue: String(c.new ?? c.newValue ?? c.to ?? '—'),
       });
     }
     return changes.length > 0 ? changes : null;
   }
 
+  // Check for before/after style
   if (meta.before && meta.after) {
     const allKeys = new Set([...Object.keys(meta.before), ...Object.keys(meta.after)]);
     for (const key of allKeys) {
@@ -223,14 +226,15 @@ function getChanges(
       if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
         changes.push({
           field: key,
-          oldValue: oldVal != null ? String(oldVal) : '\u2014',
-          newValue: newVal != null ? String(newVal) : '\u2014',
+          oldValue: oldVal != null ? String(oldVal) : '—',
+          newValue: newVal != null ? String(newVal) : '—',
         });
       }
     }
     return changes.length > 0 ? changes : null;
   }
 
+  // Check for old_*/new_* pattern
   const oldKeys = Object.keys(meta).filter((k) => k.startsWith('old_') || k.startsWith('old'));
   for (const ok of oldKeys) {
     const field = ok.replace(/^old_?/, '');
@@ -243,8 +247,8 @@ function getChanges(
     if (nk) {
       changes.push({
         field,
-        oldValue: String(meta[ok] ?? '\u2014'),
-        newValue: String(meta[nk] ?? '\u2014'),
+        oldValue: String(meta[ok] ?? '—'),
+        newValue: String(meta[nk] ?? '—'),
       });
     }
   }
@@ -291,7 +295,6 @@ function matchesSearch(entry: AuditLogEntry, search: string): boolean {
 function exportToCSV(entries: AuditLogEntry[]) {
   const headers = [
     'Date & Time',
-    'Timezone',
     'User Email',
     'User Role',
     'Action',
@@ -301,15 +304,11 @@ function exportToCSV(entries: AuditLogEntry[]) {
     'SKU / Reference',
     'IP Address',
     'Browser',
-    'Status',
-    'Details (JSON)',
+    'Details',
   ];
-
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const rows = entries.map((e) => [
     format(new Date(e.created_at), 'yyyy-MM-dd HH:mm:ss'),
-    tz,
     e.actor_email,
     e.actor_role,
     ACTION_LABELS[e.action] || e.action,
@@ -319,7 +318,6 @@ function exportToCSV(entries: AuditLogEntry[]) {
     getRecordIdentifier(e) || '',
     e.ip_address || '',
     parseUserAgent(e.user_agent),
-    e.metadata?.status === 'failed' ? 'Failed' : 'Success',
     JSON.stringify(e.metadata || {}),
   ]);
 
@@ -337,7 +335,7 @@ function exportToCSV(entries: AuditLogEntry[]) {
   URL.revokeObjectURL(url);
 }
 
-// --- Sub-components -----------------------------------------------------------
+// ─── Components ───────────────────────────────────────────────────────────────
 
 function AuditLogSkeleton() {
   return (
@@ -370,12 +368,12 @@ function ChangesDiff({
       </div>
       <div className="divide-y divide-border">
         {changes.map((c, i) => (
-          <div key={i} className="flex items-center gap-3 px-4 py-2.5 text-sm">
-            <span className="font-medium text-foreground min-w-32 capitalize">
+          <div key={i} className="flex items-start gap-3 px-4 py-2.5 text-sm">
+            <span className="font-medium text-foreground min-w-28 capitalize">
               {c.field.replace(/_/g, ' ')}
             </span>
             <span className="text-red-600 dark:text-red-400 line-through">{c.oldValue}</span>
-            <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+            <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
             <span className="text-green-600 dark:text-green-400 font-medium">{c.newValue}</span>
           </div>
         ))}
@@ -420,6 +418,7 @@ function BulkImportDetails({
 function MetadataDetails({ metadata }: { metadata: any }) {
   if (!metadata || Object.keys(metadata).length === 0) return null;
 
+  // Filter out keys already shown elsewhere
   const skipKeys = new Set([
     'changes',
     'before',
@@ -434,8 +433,6 @@ function MetadataDetails({ metadata }: { metadata: any }) {
     'error_rows',
     'successRows',
     'failedRows',
-    'status',
-    'error',
   ]);
 
   const entries = Object.entries(metadata).filter(
@@ -453,7 +450,7 @@ function MetadataDetails({ metadata }: { metadata: any }) {
       <div className="divide-y divide-border">
         {entries.map(([key, value]) => (
           <div key={key} className="flex items-start gap-3 px-4 py-2.5 text-sm">
-            <span className="font-medium text-foreground min-w-32 capitalize">
+            <span className="font-medium text-foreground min-w-28 capitalize">
               {key.replace(/_/g, ' ')}
             </span>
             <span className="text-muted-foreground break-all">
@@ -488,6 +485,7 @@ function AuditLogRow({
       : null;
   const hasDetails =
     changes || bulkInfo || (entry.metadata && Object.keys(entry.metadata).length > 0);
+  const isSuccess = entry.metadata?.status !== 'failed';
 
   return (
     <div className="border border-border rounded-lg hover:border-primary/30 transition-colors">
@@ -497,7 +495,7 @@ function AuditLogRow({
         onClick={onToggle}
         className="w-full text-left px-4 py-3.5 flex items-start gap-4 cursor-pointer"
       >
-        {/* Time icon */}
+        {/* Timestamp */}
         <div className="shrink-0 pt-0.5">
           <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -506,11 +504,13 @@ function AuditLogRow({
 
         {/* Content */}
         <div className="flex-1 min-w-0 space-y-1">
-          {/* Action + status */}
+          {/* Action line */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-sm text-foreground">
               {ACTION_LABELS[entry.action] || entry.action}
             </span>
+
+            {/* Status badge */}
             {entry.metadata?.status === 'failed' ? (
               <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
                 <AlertCircle className="h-3 w-3 mr-0.5" />
@@ -527,11 +527,11 @@ function AuditLogRow({
             )}
           </div>
 
-          {/* Who: name, email, role */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-            <User className="h-3 w-3 shrink-0" />
+          {/* Who */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <User className="h-3 w-3" />
             <span className="font-medium">{actorName}</span>
-            <span className="hidden sm:inline">({entry.actor_email})</span>
+            <span>({entry.actor_email})</span>
             <Badge
               className={`text-[10px] px-1.5 py-0 ${ROLE_COLORS[entry.actor_role?.toUpperCase()] || ROLE_COLORS.STAFF}`}
             >
@@ -539,10 +539,10 @@ function AuditLogRow({
             </Badge>
           </div>
 
-          {/* Which record */}
+          {/* Record info */}
           {(recordName || entry.entity_id) && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <FileText className="h-3 w-3 shrink-0" />
+              <FileText className="h-3 w-3" />
               {recordName && <span className="font-medium text-foreground">{recordName}</span>}
               {recordIdentifier && (
                 <span className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded">
@@ -557,7 +557,7 @@ function AuditLogRow({
             </div>
           )}
 
-          {/* Error message if failed */}
+          {/* Error message */}
           {entry.metadata?.status === 'failed' && entry.metadata?.error && (
             <p className="text-xs text-red-600 dark:text-red-400 mt-1">
               Error: {entry.metadata.error}
@@ -565,18 +565,20 @@ function AuditLogRow({
           )}
         </div>
 
-        {/* Right side: module badge + timestamp + expand */}
+        {/* Right side info */}
         <div className="shrink-0 flex flex-col items-end gap-1.5">
+          {/* Module badge */}
           <Badge
             className={`text-[10px] px-2 py-0.5 ${MODULE_COLORS[entry.entity_type] || 'bg-gray-100 text-gray-800'}`}
           >
             {ENTITY_LABELS[entry.entity_type] || entry.entity_type}
           </Badge>
 
+          {/* Timestamp */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                <span className="text-[11px] text-muted-foreground">
                   {format(new Date(entry.created_at), 'MMM dd, yyyy  HH:mm')}
                 </span>
               </TooltipTrigger>
@@ -589,6 +591,7 @@ function AuditLogRow({
             </Tooltip>
           </TooltipProvider>
 
+          {/* Expand icon */}
           {hasDetails && (
             <span className="text-muted-foreground">
               {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -600,9 +603,9 @@ function AuditLogRow({
       {/* Expanded details */}
       {expanded && (
         <div className="px-4 pb-4 border-t border-border pt-3 space-y-2">
-          {/* Device / IP */}
+          {/* Device / IP info */}
           {(entry.ip_address || entry.user_agent) && (
-            <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
               {entry.ip_address && (
                 <span className="flex items-center gap-1">
                   <Globe className="h-3 w-3" />
@@ -618,13 +621,13 @@ function AuditLogRow({
             </div>
           )}
 
-          {/* Before vs After */}
+          {/* Before vs After changes */}
           {changes && <ChangesDiff changes={changes} />}
 
-          {/* Bulk import summary */}
+          {/* Bulk import details */}
           {bulkInfo && <BulkImportDetails info={bulkInfo} />}
 
-          {/* Additional metadata */}
+          {/* Other metadata */}
           <MetadataDetails metadata={entry.metadata} />
         </div>
       )}
@@ -632,12 +635,14 @@ function AuditLogRow({
   );
 }
 
-// --- Main Page ----------------------------------------------------------------
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
-function AuditLogContent() {
+function AuditLogPageContent() {
   const params = useParams();
   const slug = params?.slug as string;
+  const { user } = useAuth();
 
+  // Filters
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState<string>('all');
   const [entityFilter, setEntityFilter] = useState<string>('all');
@@ -647,11 +652,13 @@ function AuditLogContent() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(true);
 
+  // Queries
   const { data: companyData } = useQuery(GET_COMPANY_BY_SLUG, {
     variables: { slug },
     skip: !slug,
     fetchPolicy: 'cache-first',
   });
+
   const companyId = companyData?.companyBySlug?.id;
 
   const filters = useMemo(() => {
@@ -678,6 +685,7 @@ function AuditLogContent() {
     fetchPolicy: 'cache-first',
   });
 
+  // Build member map
   const memberMap = useMemo(() => {
     const map = new Map<string, CompanyMember>();
     if (membersData?.companyMembers) {
@@ -688,9 +696,11 @@ function AuditLogContent() {
     return map;
   }, [membersData]);
 
+  // All entries from server
   const allEntries: AuditLogEntry[] = data?.companyAuditLogs?.items || [];
   const pageInfo = data?.companyAuditLogs?.pageInfo;
 
+  // Client-side search filter
   const filteredEntries = useMemo(
     () => allEntries.filter((e) => matchesSearch(e, search)),
     [allEntries, search],
@@ -718,55 +728,62 @@ function AuditLogContent() {
     exportToCSV(filteredEntries);
   }, [filteredEntries]);
 
-  const totalPages = pageInfo ? Math.max(1, Math.ceil(pageInfo.total / pageInfo.limit)) : 1;
-
   return (
     <div className="min-h-screen bg-background p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Shield className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Audit Log</h1>
-              <p className="text-sm text-muted-foreground">
-                Read-only history of all actions across your company
-              </p>
-            </div>
-          </div>
+        <div>
+          <Button variant="ghost" size="sm" asChild className="-ml-2 mb-4">
+            <Link href={`/${slug}/settings`} className="inline-flex items-center">
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Go back
+            </Link>
+          </Button>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFilters((v) => !v)}
-              className="gap-1.5"
-            >
-              <Filter className="h-4 w-4" />
-              Filters
-              {activeFilterCount > 0 && (
-                <Badge className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
-                  {activeFilterCount}
-                </Badge>
-              )}
-            </Button>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Shield className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Audit Log</h1>
+                <p className="text-sm text-muted-foreground">
+                  Read-only history of all actions across your company
+                </p>
+              </div>
+            </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-              disabled={filteredEntries.length === 0}
-              className="gap-1.5"
-            >
-              <Download className="h-4 w-4" />
-              Export CSV
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters((v) => !v)}
+                className="gap-1.5"
+              >
+                <Filter className="h-4 w-4" />
+                Filters
+                {activeFilterCount > 0 && (
+                  <Badge className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
+                    {activeFilterCount}
+                  </Badge>
+                )}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                disabled={filteredEntries.length === 0}
+                className="gap-1.5"
+              >
+                <Download className="h-4 w-4" />
+                Export CSV
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Filters panel */}
         {showFilters && (
           <Card>
             <CardContent className="pt-6">
@@ -799,7 +816,7 @@ function AuditLogContent() {
                   </div>
                 </div>
 
-                {/* Module */}
+                {/* Module filter */}
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                     Module
@@ -825,7 +842,7 @@ function AuditLogContent() {
                   </Select>
                 </div>
 
-                {/* Action */}
+                {/* Action filter */}
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                     Action
@@ -851,7 +868,7 @@ function AuditLogContent() {
                   </Select>
                 </div>
 
-                {/* User */}
+                {/* User filter */}
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                     User
@@ -878,8 +895,8 @@ function AuditLogContent() {
                 </div>
               </div>
 
-              {/* Date range + clear */}
-              <div className="mt-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              {/* Date range row */}
+              <div className="mt-4 flex items-end justify-between gap-4">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                     Date Range
@@ -914,13 +931,13 @@ function AuditLogContent() {
           <div className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             <span>
-              {loading ? 'Loading\u2026' : `${pageInfo?.total ?? 0} total entries`}
-              {search && ` \u00b7 ${filteredEntries.length} matching "${search}"`}
+              {loading ? 'Loading...' : `${pageInfo?.total ?? 0} total entries`}
+              {search && ` · ${filteredEntries.length} matching "${search}"`}
             </span>
           </div>
           {pageInfo && (
             <span>
-              Page {pageInfo.page} of {totalPages}
+              Page {pageInfo.page} of {Math.ceil(pageInfo.total / pageInfo.limit) || 1}
             </span>
           )}
         </div>
@@ -982,33 +999,35 @@ function AuditLogContent() {
               <ChevronLeft className="h-4 w-4 mr-1" />
               Previous
             </Button>
-
             <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum: number;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (page <= 3) {
-                  pageNum = i + 1;
-                } else if (page >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = page - 2 + i;
-                }
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={pageNum === page ? 'default' : 'outline'}
-                    size="sm"
-                    className="w-9 h-9 p-0"
-                    onClick={() => setPage(pageNum)}
-                  >
-                    {pageNum}
-                  </Button>
-                );
-              })}
+              {Array.from(
+                { length: Math.min(5, Math.ceil(pageInfo.total / pageInfo.limit)) },
+                (_, i) => {
+                  const totalPages = Math.ceil(pageInfo.total / pageInfo.limit);
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (page <= 3) {
+                    pageNum = i + 1;
+                  } else if (page >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = page - 2 + i;
+                  }
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={pageNum === page ? 'default' : 'outline'}
+                      size="sm"
+                      className="w-9 h-9 p-0"
+                      onClick={() => setPage(pageNum)}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                },
+              )}
             </div>
-
             <Button
               variant="outline"
               size="sm"
@@ -1033,10 +1052,8 @@ function AuditLogContent() {
 
 export default function AuditLogPage() {
   return (
-    <CompanyGuard>
-      <RoleGuard allowedRoles={['OWNER', 'ADMIN']}>
-        <AuditLogContent />
-      </RoleGuard>
-    </CompanyGuard>
+    <RoleGuard allowedRoles={['OWNER', 'ADMIN']}>
+      <AuditLogPageContent />
+    </RoleGuard>
   );
 }

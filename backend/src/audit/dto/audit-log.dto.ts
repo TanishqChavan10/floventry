@@ -20,15 +20,6 @@ export class AuditLogFilterInput {
   dateTo?: Date;
 }
 
-@InputType()
-export class PaginationInput {
-  @Field(() => Int, { nullable: true, defaultValue: 1 })
-  page?: number;
-
-  @Field(() => Int, { nullable: true, defaultValue: 50 })
-  limit?: number;
-}
-
 @ObjectType()
 export class AuditLogPageInfo {
   @Field(() => Int)

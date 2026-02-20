@@ -31,6 +31,42 @@ export const GET_PRODUCTS = gql`
   }
 `;
 
+export const GET_PRODUCTS_PAGINATED = gql`
+  query GetProductsPaginated($pagination: PaginationInput) {
+    productsPaginated(pagination: $pagination) {
+      items {
+        id
+        name
+        sku
+        barcode
+        alternate_barcodes
+        unit
+        cost_price
+        selling_price
+        image_url
+        is_active
+        category {
+          id
+          name
+        }
+        supplier {
+          id
+          name
+        }
+        created_at
+        updated_at
+      }
+      pageInfo {
+        total
+        page
+        limit
+        hasNextPage
+        hasPreviousPage
+      }
+    }
+  }
+`;
+
 export const GET_PRODUCT = gql`
   query GetProduct($id: String!) {
     product(id: $id) {

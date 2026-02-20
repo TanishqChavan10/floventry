@@ -50,6 +50,11 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
   });
 
   const isPremiumCompany = Boolean(companyData?.companyBySlug?.settings?.is_premium);
+  const companyPlan: 'Free' | 'Pro' | null = companySlug
+    ? isPremiumCompany
+      ? 'Pro'
+      : 'Free'
+    : null;
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -134,6 +139,7 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
     client
       .query({
         query: GLOBAL_SEARCH,
+        companyPlan,
         variables: { query: q },
         fetchPolicy: 'no-cache',
         context: {

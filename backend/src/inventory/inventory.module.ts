@@ -43,6 +43,7 @@ import { BarcodeHistory } from './entities/barcode-history.entity';
 import { ProductBarcodeUnit } from './entities/product-barcode-unit.entity';
 import { Company } from '../company/company.entity';
 import { BarcodeFormatService } from './barcode-format.service';
+import { StockLotLoader } from './stock-lot.loader';
 
 @Module({
   imports: [
@@ -89,7 +90,8 @@ import { BarcodeFormatService } from './barcode-format.service';
     TransferResolver,
     LowStockResolver,
     AdjustmentResolver,
+    StockLotLoader,
   ],
   exports: [InventoryService, GRNService, TransferService, BarcodeFormatService],
 })
-export class InventoryModule {}
+export class InventoryModule { }

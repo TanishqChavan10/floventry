@@ -21,7 +21,7 @@ export class SalesService {
     @InjectRepository(SalesOrderItem)
     private salesOrderItemRepository: Repository<SalesOrderItem>,
     private dataSource: DataSource,
-  ) {}
+  ) { }
 
   async create(
     input: CreateSalesOrderInput,
@@ -82,11 +82,17 @@ export class SalesService {
     }
   }
 
-  async findAll(companyId: string): Promise<SalesOrder[]> {
+  async findAll(
+    companyId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<SalesOrder[]> {
     return this.salesOrderRepository.find({
       where: { company_id: companyId },
       relations: ['items', 'items.product', 'creator'],
       order: { created_at: 'DESC' },
+      take: limit || 50,
+      skip: offset || 0,
     });
   }
 

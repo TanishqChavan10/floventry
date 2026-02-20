@@ -43,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Plus,
   Search,
@@ -58,7 +59,7 @@ import {
 import { saveAs } from 'file-saver';
 import { useAuth } from '@/context/auth-context';
 import {
-  GET_PRODUCTS,
+  GET_PRODUCTS_PAGINATED,
   GET_CATEGORIES,
   GET_SUPPLIERS,
   DELETE_PRODUCT,
@@ -89,9 +90,29 @@ function CatalogProductsContent() {
   const [productToArchive, setProductToArchive] = useState<any>(null);
   const [downloadingLabelForId, setDownloadingLabelForId] = useState<string | null>(null);
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const pageSize = 50;
   const { toast } = useToast();
 
-  const { data: productsData, loading, error, refetch } = useQuery(GET_PRODUCTS);
+  // Debounce search input for server-side search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1); // Reset to page 1 on search change
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const { data: productsData, loading, error, refetch } = useQuery(GET_PRODUCTS_PAGINATED, {
+    variables: {
+      pagination: {
+        page: currentPage,
+        limit: pageSize,
+        ...(debouncedSearch ? { search: debouncedSearch } : {}),
+      },
+    },
+  });
   const { data: categoriesData } = useQuery(GET_CATEGORIES);
   const { data: suppliersData } = useQuery(GET_SUPPLIERS);
 
@@ -190,7 +211,9 @@ function CatalogProductsContent() {
   const canEdit = isOwnerOrAdmin || userRole === 'MANAGER'; // TODO: Check restrict_manager_catalog setting
   const canDelete = isOwnerOrAdmin;
 
-  const products = productsData?.products || [];
+  const products = productsData?.productsPaginated?.items || [];
+  const pageInfo = productsData?.productsPaginated?.pageInfo;
+  const totalProducts = pageInfo?.total || 0;
   const categories = categoriesData?.categories || [];
   const suppliers = suppliersData?.suppliers || [];
 
@@ -368,18 +391,8 @@ function CatalogProductsContent() {
     setIsDetailDrawerOpen(true);
   }, [products, searchParams]);
 
-  // Filter products
+  // Client-side filter on paginated results (category, supplier, status)
   const filteredProducts = products.filter((product: any) => {
-    const matchesSearch =
-      searchTerm === '' ||
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (product.barcode && product.barcode.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (Array.isArray(product.alternate_barcodes) &&
-        product.alternate_barcodes.some(
-          (b: any) => typeof b === 'string' && b.toLowerCase().includes(searchTerm.toLowerCase()),
-        ));
-
     const matchesCategory = categoryFilter === 'all' || product.category?.id === categoryFilter;
 
     const matchesSupplier = supplierFilter === 'all' || product.supplier?.id === supplierFilter;
@@ -389,7 +402,7 @@ function CatalogProductsContent() {
       (statusFilter === 'active' && product.is_active) ||
       (statusFilter === 'archived' && !product.is_active);
 
-    return matchesSearch && matchesCategory && matchesSupplier && matchesStatus;
+    return matchesCategory && matchesSupplier && matchesStatus;
   });
 
   const activeProducts = products.filter((p: any) => p.is_active).length;
@@ -587,7 +600,7 @@ function CatalogProductsContent() {
                   <Package className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{products.length}</div>
+                  <div className="text-2xl font-bold">{totalProducts}</div>
                 </CardContent>
               </Card>
               <Card>
@@ -943,6 +956,38 @@ function CatalogProductsContent() {
                       ))}
                     </TableBody>
                   </Table>
+                )}
+
+                {/* Pagination Controls */}
+                {pageInfo && (
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {((pageInfo.page - 1) * pageInfo.limit) + 1}–{Math.min(pageInfo.page * pageInfo.limit, pageInfo.total)} of {pageInfo.total} products
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!pageInfo.hasPreviousPage}
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        Previous
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        Page {pageInfo.page} of {Math.ceil(pageInfo.total / pageInfo.limit)}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!pageInfo.hasNextPage}
+                        onClick={() => setCurrentPage((p) => p + 1)}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>

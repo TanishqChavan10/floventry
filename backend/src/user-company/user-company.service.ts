@@ -10,6 +10,8 @@ import { UpdateRoleInput } from './dto/update-role.input';
 import { ClerkService } from '../auth/clerk.service';
 import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
 import { Warehouse } from '../warehouse/warehouse.entity';
+import { AuditLogService } from '../audit/services/audit-log.service';
+import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
 
 @Injectable()
 export class UserCompanyService {
@@ -21,6 +23,7 @@ export class UserCompanyService {
     @InjectRepository(Warehouse)
     private warehouseRepository: Repository<Warehouse>,
     private clerkService: ClerkService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   async listUsersInCompany(companyId: string): Promise<UserCompany[]> {
@@ -55,8 +58,33 @@ export class UserCompanyService {
 
     // TODO: Permission check: Ensure requester has higher role than target, and can assign target role.
 
+    const oldRole = membership.role;
     membership.role = input.role;
-    return this.userCompanyRepository.save(membership);
+    const saved = await this.userCompanyRepository.save(membership);
+
+    // Get requester email for audit
+    const requester = await this.userCompanyRepository.findOne({
+      where: { user_id: requestingUserId, company_id: membership.company_id },
+    });
+
+    await this.auditLogService.record({
+      companyId: membership.company_id,
+      actor: {
+        id: requestingUserId,
+        email: requester?.user_id || '',
+        role: requester?.role || 'ADMIN',
+      },
+      action: AuditAction.ROLE_CHANGED,
+      entityType: AuditEntityType.USER,
+      entityId: membership.user_id,
+      metadata: {
+        targetUserId: membership.user_id,
+        oldRole,
+        newRole: input.role,
+      },
+    });
+
+    return saved;
   }
 
   async removeUser(
@@ -89,6 +117,27 @@ export class UserCompanyService {
 
     membership.status = 'inactive';
     await this.userCompanyRepository.save(membership);
+
+    // Get requester info for audit
+    const requester = await this.userCompanyRepository.findOne({
+      where: { user_id: requestingUserId, company_id: membership.company_id },
+    });
+
+    await this.auditLogService.record({
+      companyId: membership.company_id,
+      actor: {
+        id: requestingUserId,
+        email: requester?.user_id || '',
+        role: requester?.role || 'ADMIN',
+      },
+      action: AuditAction.USER_REMOVED,
+      entityType: AuditEntityType.USER,
+      entityId: membership.user_id,
+      metadata: {
+        removedUserId: membership.user_id,
+        removedUserRole: membership.role,
+      },
+    });
   }
 
   async getMembership(

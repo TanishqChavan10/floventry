@@ -19,6 +19,7 @@ import { StockLot } from './stock-lot.entity';
 @Index(['product_id', 'warehouse_id'], { unique: true }) // One stock record per product per warehouse
 @Index(['warehouse_id']) // Optimize warehouse-scoped queries
 @Index(['company_id']) // Optimize company-scoped queries
+@Index(['company_id', 'product_id']) // Cross-warehouse product stock lookup
 export class Stock {
   @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')

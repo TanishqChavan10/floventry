@@ -80,9 +80,13 @@ import {
 } from './stock-health/stock-health.utils';
 import { BarcodeService } from './barcode.service';
 import { BarcodeFormatService } from './barcode-format.service';
+import { AuditLogService } from '../audit/services/audit-log.service';
+import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
 import { BarcodeHistory, BarcodeHistoryChangeType } from './entities/barcode-history.entity';
 import { ProductBarcodeUnit, ProductBarcodeUnitType } from './entities/product-barcode-unit.entity';
 import { UpsertProductBarcodeUnitInput } from './dto/product-barcode-unit.input';
+import { PaginationInput, PageInfo } from '../common/dto/pagination.types';
+import { ILike } from 'typeorm';
 
 @Injectable()
 export class InventoryService {
@@ -108,7 +112,8 @@ export class InventoryService {
     @InjectDataSource()
     private dataSource: DataSource,
     private readonly barcodeFormatService: BarcodeFormatService,
-  ) {}
+    private readonly auditLogService: AuditLogService,
+  ) { }
 
   // --- Packaging/Multi-unit barcodes ---
 
@@ -141,8 +146,8 @@ export class InventoryService {
     const primary = this.barcodeService.normalizeBarcode(product.barcode) ?? null;
     const alternates = Array.isArray((product as any).alternate_barcodes)
       ? ((product as any).alternate_barcodes as any[])
-          .map((v) => (typeof v === 'string' ? this.barcodeService.normalizeBarcode(v) : null))
-          .filter((v): v is string => typeof v === 'string' && v.length > 0)
+        .map((v) => (typeof v === 'string' ? this.barcodeService.normalizeBarcode(v) : null))
+        .filter((v): v is string => typeof v === 'string' && v.length > 0)
       : [];
 
     if (primary && primary === normalized) {
@@ -318,6 +323,40 @@ export class InventoryService {
       order: { created_at: 'DESC' },
       relations: ['category', 'supplier'],
     });
+  }
+
+  async findAllProductsPaginated(
+    companyId: string,
+    pagination?: PaginationInput,
+  ): Promise<{ items: Product[]; pageInfo: PageInfo }> {
+    const page = pagination?.page || 1;
+    const limit = Math.min(pagination?.limit || 50, 100);
+    const skip = (page - 1) * limit;
+
+    const where: any = { company_id: companyId };
+
+    if (pagination?.search) {
+      where.name = ILike(`%${pagination.search}%`);
+    }
+
+    const [items, total] = await this.productRepository.findAndCount({
+      where,
+      order: { created_at: 'DESC' },
+      relations: ['category', 'supplier'],
+      take: limit,
+      skip,
+    });
+
+    return {
+      items,
+      pageInfo: {
+        total,
+        page,
+        limit,
+        hasNextPage: skip + items.length < total,
+        hasPreviousPage: page > 1,
+      },
+    };
   }
 
   async findOneProduct(id: string, companyId: string): Promise<Product> {
@@ -647,6 +686,20 @@ export class InventoryService {
         throw new BadRequestException('Failed to load stock after creation');
       }
 
+      await this.auditLogService.record({
+        companyId,
+        actor: { id: userId, email: '', role: userRole || 'STAFF' },
+        action: AuditAction.OPENING_STOCK_SET,
+        entityType: AuditEntityType.OPENING_STOCK,
+        entityId: savedStock.id,
+        metadata: {
+          productName: stockWithRelations.product?.name,
+          sku: stockWithRelations.product?.sku,
+          warehouseName: stockWithRelations.warehouse?.name,
+          quantity: input.quantity,
+        },
+      });
+
       return stockWithRelations;
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -734,6 +787,8 @@ export class InventoryService {
   async getStockByWarehouse(
     warehouseId: string,
     companyId: string,
+    limit?: number,
+    offset?: number,
   ): Promise<Stock[]> {
     return this.stockRepository.find({
       where: {
@@ -747,6 +802,8 @@ export class InventoryService {
         'warehouse',
       ],
       order: { updated_at: 'DESC' },
+      take: limit || 50,
+      skip: offset || 0,
     });
   }
 
@@ -779,10 +836,17 @@ export class InventoryService {
     });
   }
 
-  async getAllStock(companyId: string): Promise<Stock[]> {
+  async getAllStock(
+    companyId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<Stock[]> {
     return this.stockRepository.find({
       where: { company_id: companyId },
       relations: ['product', 'warehouse'],
+      order: { updated_at: 'DESC' },
+      take: limit || 50,
+      skip: offset || 0,
     });
   }
 
@@ -881,6 +945,23 @@ export class InventoryService {
     if (!stockWithRelations) {
       throw new BadRequestException('Failed to load stock after adjustment');
     }
+
+    await this.auditLogService.record({
+      companyId,
+      actor: { id: userId, email: '', role: userRole || 'STAFF' },
+      action: AuditAction.ADJUSTMENT_CREATED,
+      entityType: AuditEntityType.ADJUSTMENT,
+      entityId: updatedStock.id,
+      metadata: {
+        productName: stockWithRelations.product?.name,
+        sku: stockWithRelations.product?.sku,
+        warehouseName: stockWithRelations.warehouse?.name,
+        previousQuantity,
+        adjustedBy: input.quantity,
+        newQuantity,
+        reason: input.reason,
+      },
+    });
 
     return stockWithRelations;
   }
@@ -1017,6 +1098,25 @@ export class InventoryService {
           'Failed to reload stock after adjustment',
         );
       }
+
+      await this.auditLogService.record({
+        companyId,
+        actor: { id: userId, email: '', role: userRole || 'STAFF' },
+        action: AuditAction.ADJUSTMENT_CREATED,
+        entityType: AuditEntityType.ADJUSTMENT,
+        entityId: stock!.id,
+        metadata: {
+          productName: stockWithRelations.product?.name,
+          sku: stockWithRelations.product?.sku,
+          warehouseName: stockWithRelations.warehouse?.name,
+          adjustmentType: input.adjustment_type,
+          previousQuantity: previousQty,
+          adjustedBy: adjustmentQty,
+          newQuantity: newQty,
+          reason: input.reason,
+          reference: input.reference,
+        },
+      });
 
       return {
         success: true,
@@ -1938,9 +2038,9 @@ export class InventoryService {
         ),
         days_to_expiry: lot.expiry_date
           ? Math.ceil(
-              (lot.expiry_date.getTime() - new Date().getTime()) /
-                (1000 * 60 * 60 * 24),
-            )
+            (lot.expiry_date.getTime() - new Date().getTime()) /
+            (1000 * 60 * 60 * 24),
+          )
           : undefined,
       }));
   }

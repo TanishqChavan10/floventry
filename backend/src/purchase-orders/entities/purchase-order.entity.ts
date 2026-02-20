@@ -7,6 +7,7 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { ObjectType, Field, ID, registerEnumType } from '@nestjs/graphql';
 import { Company } from '../../company/company.entity';
@@ -28,6 +29,9 @@ registerEnumType(PurchaseOrderStatus, {
 
 @ObjectType()
 @Entity('purchase_orders')
+@Index(['company_id', 'created_at'])
+@Index(['company_id', 'warehouse_id'])
+@Index(['company_id', 'status'])
 export class PurchaseOrder {
   @Field(() => ID)
   @PrimaryGeneratedColumn('uuid')

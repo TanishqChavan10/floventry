@@ -11,7 +11,7 @@ import {
 } from './components';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Users, UserCog, CreditCard } from 'lucide-react';
+import { Users, UserCog, CreditCard, Shield } from 'lucide-react';
 
 interface CompanySettingsProps {
   company: any;
@@ -71,7 +71,7 @@ export default function CompanySettingsContent({ company }: CompanySettingsProps
         </TabsContent>
       </Tabs>
 
-      <div className="grid gap-6 md:grid-cols-3 pt-6 border-t border-border">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 pt-6 border-t border-border">
         <Link href={`/${company.slug}/settings/team`}>
           <Card className="hover:border-primary/40 transition-colors cursor-pointer h-full">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -109,6 +109,20 @@ export default function CompanySettingsContent({ company }: CompanySettingsProps
             <CardContent>
               <p className="text-sm text-muted-foreground">
                 Manage subscription, payment methods and invoices.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href={`/${company.slug}/audit-log`}>
+          <Card className="hover:border-primary/40 transition-colors cursor-pointer h-full">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-base font-semibold">Audit Log</CardTitle>
+              <Shield className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                View a read-only history of all actions and changes.
               </p>
             </CardContent>
           </Card>

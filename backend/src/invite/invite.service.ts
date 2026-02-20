@@ -20,6 +20,8 @@ import { EmailService } from '../email/email.service';
 import { ClerkService } from '../auth/clerk.service';
 import { UserWarehouseService } from '../auth/user-warehouse.service';
 import { Role } from '../auth/enums/role.enum';
+import { AuditLogService } from '../audit/services/audit-log.service';
+import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
 
 @Injectable()
 export class InviteService {
@@ -40,7 +42,8 @@ export class InviteService {
     private clerkService: ClerkService,
     private dataSource: DataSource,
     private userWarehouseService: UserWarehouseService,
-  ) {}
+    private readonly auditLogService: AuditLogService,
+  ) { }
 
   private async validateWarehousesBelongToCompany(
     companyId: string,
@@ -320,6 +323,24 @@ export class InviteService {
     } catch (err) {
       this.logger.error(`Failed to send invitation email:`, err);
     }
+
+    await this.auditLogService.record({
+      companyId,
+      actor: {
+        id: invitedBy,
+        email: inviter?.email || '',
+        role: inviterRole || 'ADMIN',
+      },
+      action: AuditAction.USER_INVITED,
+      entityType: AuditEntityType.USER,
+      entityId: savedInvite.invite_id,
+      metadata: {
+        invitedEmail: email,
+        assignedRole: role,
+        companyName: company.name,
+        warehouseCount: (input.warehouseIds || []).length,
+      },
+    });
 
     return savedInvite;
   }

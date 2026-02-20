@@ -13,6 +13,8 @@ export const GET_COMPANY_AUDIT_LOGS = gql`
         entity_type
         entity_id
         metadata
+        ip_address
+        user_agent
       }
       pageInfo {
         total

@@ -829,9 +829,23 @@ enum NotificationType {
   TRANSFER_COMPLETED
 }
 
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  limit: Int!
+  page: Int!
+  total: Int!
+}
+
+type PaginatedProductsResult {
+  items: [Product!]!
+  pageInfo: PageInfo!
+}
+
 input PaginationInput {
   limit: Int = 50
   page: Int = 1
+  search: String
 }
 
 type Product {
@@ -931,7 +945,7 @@ type Query {
   adjustmentTrends(days: Float = 30): [AdjustmentTrendData!]!
   adjustmentsByUser(days: Float = 30, limit: Float = 10): [AdjustmentByUser!]!
   adjustmentsByWarehouse(days: Float = 30): [AdjustmentByWarehouse!]!
-  allStock: [Stock!]!
+  allStock(limit: Int, offset: Int): [Stock!]!
   barcodeHistory(productId: String!): [BarcodeHistory!]!
   categories: [Category!]!
   companies: [Company!]!
@@ -953,8 +967,8 @@ type Query {
   grns(filters: GRNFilterInput!): [GoodsReceiptNote!]!
   inventoryHealthStats: InventoryHealthStats!
   issueNote(id: ID!): IssueNote!
-  issueNotesByCompany: [IssueNote!]!
-  issueNotesByWarehouse(warehouseId: ID!): [IssueNote!]!
+  issueNotesByCompany(limit: Int, offset: Int): [IssueNote!]!
+  issueNotesByWarehouse(limit: Int, offset: Int, warehouseId: ID!): [IssueNote!]!
   lowStockItems(warehouseId: String!): [StockHealthItem!]!
   lowStockPreview(limit: Int = 5, warehouseId: ID!): [LowStockPreviewItem!]!
   me: UserModel
@@ -968,15 +982,16 @@ type Query {
   productByBarcode(barcode: String!): Product!
   productByBarcodeDetails(barcode: String!): BarcodeLookupResult!
   products: [Product!]!
+  productsPaginated(pagination: PaginationInput): PaginatedProductsResult!
   purchaseOrder(id: String!): PurchaseOrder
   purchaseOrders(filters: PurchaseOrderFilterInput!): [PurchaseOrder!]!
   recentMovements(limit: Int = 10, warehouseId: ID!): [DashboardMovementItem!]!
   roles: [RolePermission!]!
   salesOrder(id: ID!): SalesOrder!
-  salesOrders: [SalesOrder!]!
+  salesOrders(limit: Int, offset: Int): [SalesOrder!]!
   stock(productId: String!, warehouseId: String!): Stock!
   stockByProduct(productId: String!): [Stock!]!
-  stockByWarehouse(warehouseId: String!): [Stock!]!
+  stockByWarehouse(limit: Int, offset: Int, warehouseId: String!): [Stock!]!
   stockMovements(filters: StockMovementFilters!, warehouseId: ID!): StockMovementResult!
   stockSnapshot(filters: StockSnapshotFilters, warehouseId: ID!): StockSnapshotResult!
   supplier(id: String!): Supplier!

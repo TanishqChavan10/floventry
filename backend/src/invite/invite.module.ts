@@ -9,6 +9,7 @@ import { Warehouse } from '../warehouse/warehouse.entity';
 import { UserWarehouseService } from '../auth/user-warehouse.service';
 
 import { AuthModule } from '../auth/auth.module';
+import { AuditModule } from '../audit/audit.module';
 import { EmailModule } from '../email/email.module';
 import { InviteResolver } from './invite.resolver';
 
@@ -16,6 +17,7 @@ import { InviteResolver } from './invite.resolver';
   imports: [
     TypeOrmModule.forFeature([Invite, UserCompany, User, Company, Warehouse]),
     AuthModule,
+    AuditModule,
     EmailModule,
   ],
   providers: [InviteService, InviteResolver],
