@@ -12,6 +12,7 @@ import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
 import { Warehouse } from '../warehouse/warehouse.entity';
 import { AuditLogService } from '../audit/services/audit-log.service';
 import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class UserCompanyService {
@@ -24,6 +25,7 @@ export class UserCompanyService {
     private warehouseRepository: Repository<Warehouse>,
     private clerkService: ClerkService,
     private readonly auditLogService: AuditLogService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async listUsersInCompany(companyId: string): Promise<UserCompany[]> {
@@ -84,6 +86,17 @@ export class UserCompanyService {
       },
     });
 
+    this.notificationsService
+      .notifyRoleChanged(
+        membership.company_id,
+        membership.user_id,
+        oldRole,
+        input.role,
+      )
+      .catch((err) =>
+        console.error('Failed to send role-changed notification', err),
+      );
+
     return saved;
   }
 
@@ -138,6 +151,16 @@ export class UserCompanyService {
         removedUserRole: membership.role,
       },
     });
+
+    this.notificationsService
+      .notifyUserRemoved(
+        membership.company_id,
+        membership.user_id,
+        membership.role,
+      )
+      .catch((err) =>
+        console.error('Failed to send user-removed notification', err),
+      );
   }
 
   async getMembership(

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,7 +50,7 @@ export default function DeliveryForm({
   const params = useParams();
   const companySlug = params?.slug as string;
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const { run, isLoading } = useAsyncAction();
   const [items, setItems] = useState<DeliveryItem[]>(expectedItems);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [notes, setNotes] = useState('');
@@ -109,18 +110,16 @@ export default function DeliveryForm({
     return { totalOrdered, totalDelivered, shortageCount, matchCount };
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    setTimeout(() => {
-      setIsLoading(false);
+    void run(async () => {
+      await new Promise((res) => setTimeout(res, 1500));
       const { totalDelivered, shortageCount } = calculateTotals();
       toast.success(
         `Delivery recorded: ${totalDelivered} units received${shortageCount > 0 ? ` (${shortageCount} items short)` : ''}`,
       );
       router.push(`/${companySlug}/purchase-orders`);
-    }, 1500);
+    });
   };
 
   const totals = calculateTotals();

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -50,7 +51,7 @@ interface CreateWarehouseModalProps {
 
 export function CreateWarehouseModal({ isOpen, onClose }: CreateWarehouseModalProps) {
   const { addWarehouse } = useWarehouse();
-  const [isLoading, setIsLoading] = useState(false);
+  const { run, isLoading } = useAsyncAction();
 
   const form = useForm<WarehouseFormValues>({
     resolver: zodResolver(warehouseSchema),
@@ -61,19 +62,14 @@ export function CreateWarehouseModal({ isOpen, onClose }: CreateWarehouseModalPr
     },
   });
 
-  const onSubmit = async (data: WarehouseFormValues) => {
-    setIsLoading(true);
-    try {
-      const newWarehouse = await addWarehouse(data as any);
+  const onSubmit = (data: WarehouseFormValues) => {
+    void run(async () => {
+      await addWarehouse(data as any);
       form.reset();
       onClose();
       // Force reload to trigger the root page check and redirect
       window.location.reload();
-    } catch (error) {
-      // Error handling done in context
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   return (

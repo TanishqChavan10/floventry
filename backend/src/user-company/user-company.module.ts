@@ -8,12 +8,14 @@ import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
 import { AuthModule } from '../auth/auth.module';
 import { AuditModule } from '../audit/audit.module';
 import { Warehouse } from '../warehouse/warehouse.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserCompany, Role, UserWarehouse, Warehouse]),
     AuthModule,
     AuditModule,
+    NotificationsModule,
   ],
   providers: [UserCompanyService, UserCompanyResolver],
   exports: [UserCompanyService],

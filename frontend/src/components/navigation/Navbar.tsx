@@ -48,10 +48,10 @@ export function Navbar() {
   });
 
   const isPremiumCompany = Boolean(companyData?.companyBySlug?.settings?.is_premium);
-  const companyPlan: 'Free' | 'Pro' | null = companySlug
+  const companyPlan: 'Standard' | 'Pro' | null = companySlug
     ? isPremiumCompany
       ? 'Pro'
-      : 'Free'
+      : 'Standard'
     : null;
 
   // Get current active company from user's companies

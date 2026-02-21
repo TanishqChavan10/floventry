@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { useUser } from '@clerk/nextjs';
 import { useQuery, useMutation } from '@apollo/client';
 import { ProfileForm } from '@/components/profile/ProfileForm';
@@ -33,7 +34,7 @@ function arePreferencesEqual(a: PreferencesState, b: PreferencesState): boolean 
 
 export default function ProfilePage() {
   const { user } = useUser();
-  const [isLoading, setIsLoading] = useState(false);
+  const { run, isLoading } = useAsyncAction();
 
   const { data: meData, loading: meLoading } = useQuery(GET_CURRENT_USER, {
     fetchPolicy: 'cache-and-network',
@@ -88,9 +89,8 @@ export default function ProfilePage() {
     return profileChanged || prefsChanged;
   }, [formData.firstName, formData.lastName, preferences, savedSnapshot]);
 
-  const handleSaveAll = async () => {
-    setIsLoading(true);
-    try {
+  const handleSaveAll = () => {
+    void run(async () => {
       // Save profile information to Clerk
       await user?.update({
         firstName: formData.firstName,
@@ -114,12 +114,10 @@ export default function ProfilePage() {
         },
         preferences: { ...preferences },
       });
-    } catch (error) {
+    }).catch((error) => {
       toast.error('Failed to save changes');
       console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   return (

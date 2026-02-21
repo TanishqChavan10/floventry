@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,7 +48,7 @@ export default function CategoryDialog({
   onSave,
   categories,
 }: CategoryDialogProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const { run, isLoading } = useAsyncAction();
   const [formData, setFormData] = useState<Partial<Category>>({
     name: '',
     description: '',
@@ -70,20 +71,17 @@ export default function CategoryDialog({
     }
   }, [category, open]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    // Simulate API delay
-    setTimeout(() => {
+    void run(async () => {
+      await new Promise((res) => setTimeout(res, 1000));
       onSave({
         ...formData,
         parentId: formData.parentId === 'none' ? null : formData.parentId,
       });
-      setIsLoading(false);
       onOpenChange(false);
       toast.success(category ? 'Category updated' : 'Category created');
-    }, 1000);
+    });
   };
 
   return (
@@ -108,7 +106,7 @@ export default function CategoryDialog({
               required
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea

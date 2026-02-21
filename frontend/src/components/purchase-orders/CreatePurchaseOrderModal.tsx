@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +35,7 @@ import { BarcodeScanInput } from '@/components/barcode/BarcodeScanInput';
 interface POItem {
   product_id: string;
   product_name?: string;
-  ordered_quantity: number;
+  ordered_quantity: number | string;
 }
 
 interface CreatePurchaseOrderModalProps {
@@ -56,6 +56,7 @@ export function CreatePurchaseOrderModal({
   initialProductId,
 }: CreatePurchaseOrderModalProps) {
   const params = useParams();
+  const router = useRouter();
   const companySlug = params?.slug as string;
   const { user } = useAuth();
 
@@ -84,10 +85,14 @@ export function CreatePurchaseOrderModal({
 
   const [createPO, { loading }] = useMutation(CREATE_PURCHASE_ORDER, {
     refetchQueries: [{ query: GET_PURCHASE_ORDERS, variables: { filters: { limit: 100 } } }],
-    onCompleted: () => {
+    onCompleted: (data) => {
       toast.success('Purchase order created successfully!');
       handleClose();
       onSuccess?.();
+      const poId = data?.createPurchaseOrder?.id;
+      if (poId && companySlug) {
+        router.push(`/${companySlug}/purchase-orders/${poId}`);
+      }
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to create purchase order');
@@ -396,8 +401,17 @@ export function CreatePurchaseOrderModal({
                         min="1"
                         value={item.ordered_quantity}
                         onChange={(e) =>
-                          updateItem(index, 'ordered_quantity', parseInt(e.target.value) || 1)
+                          updateItem(
+                            index,
+                            'ordered_quantity',
+                            e.target.value === '' ? '' : parseInt(e.target.value) || '',
+                          )
+                          
                         }
+                        onBlur={(e) => {
+                          const val = parseInt(e.target.value);
+                          if (!val || val < 1) updateItem(index, 'ordered_quantity', 1);
+                        }}
                       />
                     </div>
 

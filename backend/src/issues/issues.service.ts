@@ -533,9 +533,10 @@ export class IssuesService {
       this.notificationsService
         .notifyIssuePosted(
           issueNote.company_id,
-          [userId], // Add more users as needed (OWNER, ADMIN, MANAGER)
+          [userId],
           result.id,
           result.issue_number,
+          issueNote.warehouse_id,
         )
         .catch((err) => console.error('Failed to send notification:', err));
 

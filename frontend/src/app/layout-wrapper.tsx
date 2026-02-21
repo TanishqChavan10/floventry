@@ -31,8 +31,30 @@ import {
 } from '@/lib/warehouse-pending-route';
 
 function BottomSection() {
-  const { user } = useAuth();
+  const { user, isClerkSignedIn } = useAuth();
   const { open } = useSidebar();
+
+  // Show skeleton bottom row while DB user is loading but Clerk confirms signed-in.
+  if (!user && isClerkSignedIn) {
+    return (
+      <div className="border-t border-border pt-2">
+        <div
+          className={cn(
+            'flex items-center rounded-xl mx-2 px-3 py-2.5 gap-3',
+            open ? '' : 'justify-center mx-1 px-0',
+          )}
+        >
+          <div className="h-9 w-9 rounded-full bg-muted animate-pulse flex-shrink-0" />
+          {open && (
+            <div className="flex-1 min-w-0 space-y-1.5">
+              <div className="h-3 w-24 bg-muted animate-pulse rounded" />
+              <div className="h-2.5 w-32 bg-muted animate-pulse rounded" />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (!user) return null;
 
@@ -81,7 +103,7 @@ function BottomSection() {
 }
 
 function AppSidebarContent() {
-  const { user } = useAuth();
+  const { user, isClerkSignedIn } = useAuth();
   const permissions = usePermissions();
   const params = useParams();
   const pathname = usePathname();
@@ -89,8 +111,28 @@ function AppSidebarContent() {
   const warehouseSlug = params?.warehouseSlug as string;
 
   // Don't show sidebar if no user is authenticated
-  if (!user) {
+  if (!user && !isClerkSignedIn) {
     return null;
+  }
+
+  // Clerk confirms signed-in but DB user is still loading — show a skeleton shell
+  // so the layout structure is already visible when data arrives.
+  if (!user) {
+    return (
+      <SidebarBody className="justify-between gap-10">
+        <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="mb-6 px-3">
+            <div className="h-6 w-28 bg-muted animate-pulse rounded" />
+          </div>
+          <div className="flex-1 space-y-2 px-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-8 bg-muted animate-pulse rounded-lg" />
+            ))}
+          </div>
+        </div>
+        <BottomSection />
+      </SidebarBody>
+    );
   }
 
   // Get navigation configuration based on context

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { useAuth } from '@clerk/nextjs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,11 +12,10 @@ import { API_URL } from '@/config/env';
 export default function NotificationsPage() {
   const { getToken } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { run, isLoading: loading } = useAsyncAction();
 
-  const fetchNotifications = async () => {
-    setLoading(true);
-    try {
+  const fetchNotifications = () => {
+    void run(async () => {
       const token = await getToken();
       const res = await fetch(`${API_URL}/notifications`, {
         headers: {
@@ -24,11 +24,9 @@ export default function NotificationsPage() {
       });
       const json = await res.json();
       setNotifications(json);
-    } catch (error) {
+    }).catch((error) => {
       console.error('Failed to fetch notifications', error);
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   useEffect(() => {

@@ -11,7 +11,9 @@ import {
   AlertTriangle,
   Barcode,
   UserPlus,
+  UserMinus,
   Shield,
+  Archive,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
@@ -98,6 +100,21 @@ export function RecentActivity({ data }: RecentActivityProps) {
           label: 'Role changed',
           icon: <Shield className="h-4 w-4 text-muted-foreground" />,
         };
+      case 'ADJUSTMENT_POSTED':
+        return {
+          label: 'Stock adjustment posted',
+          icon: <Activity className="h-4 w-4 text-[var(--chart-3)]" />,
+        };
+      case 'USER_REMOVED':
+        return {
+          label: 'User removed',
+          icon: <UserMinus className="h-4 w-4 text-destructive" />,
+        };
+      case 'WAREHOUSE_ARCHIVED':
+        return {
+          label: 'Warehouse archived',
+          icon: <Archive className="h-4 w-4 text-muted-foreground" />,
+        };
       default:
         return {
           label: formatEventType(eventType),
@@ -149,7 +166,9 @@ export function RecentActivity({ data }: RecentActivityProps) {
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 min-w-0">
                             {meta.icon}
-                            <p className="text-sm font-medium leading-none truncate">{meta.label}</p>
+                            <p className="text-sm font-medium leading-none truncate">
+                              {meta.label}
+                            </p>
                           </div>
                           {event.referenceNumber ? (
                             <p

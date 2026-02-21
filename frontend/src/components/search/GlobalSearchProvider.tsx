@@ -22,6 +22,7 @@ import { GET_COMPANY_BY_SLUG } from '@/lib/graphql/company';
 import { PRODUCT_BY_BARCODE } from '@/lib/graphql/barcode';
 import { GlobalSearchModal } from './GlobalSearchModal';
 import { CreateWarehouseDialog } from '@/components/warehouses/CreateWarehouseDialog';
+import { useLoadingContext } from '@/context/loading-context';
 
 const EMPTY_RESULTS: GlobalSearchResultsData = {
   products: [],
@@ -50,10 +51,10 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
   });
 
   const isPremiumCompany = Boolean(companyData?.companyBySlug?.settings?.is_premium);
-  const companyPlan: 'Free' | 'Pro' | null = companySlug
+  const companyPlan: 'Standard' | 'Pro' | null = companySlug
     ? isPremiumCompany
       ? 'Pro'
-      : 'Free'
+      : 'Standard'
     : null;
 
   const [open, setOpen] = useState(false);
@@ -63,6 +64,26 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<GlobalSearchResultsData>(EMPTY_RESULTS);
+
+  const { _increment, _decrement } = useLoadingContext();
+  // Tracks whether the global counter has been incremented for the current in-flight search.
+  const searchInFlightRef = useRef(false);
+
+  const startSearchLoading = useCallback(() => {
+    if (!searchInFlightRef.current) {
+      searchInFlightRef.current = true;
+      _increment();
+    }
+    setLoading(true);
+  }, [_increment]);
+
+  const stopSearchLoading = useCallback(() => {
+    if (searchInFlightRef.current) {
+      searchInFlightRef.current = false;
+      _decrement();
+    }
+    setLoading(false);
+  }, [_decrement]);
 
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -106,7 +127,7 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
     abortRef.current?.abort();
     abortRef.current = null;
     setQuery('');
-    setLoading(false);
+    stopSearchLoading();
     setError(null);
     setResults(EMPTY_RESULTS);
     setActiveIndex(0);
@@ -121,7 +142,7 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
     if (q.length < 2) {
       abortRef.current?.abort();
       abortRef.current = null;
-      setLoading(false);
+      stopSearchLoading();
       setError(null);
       setResults(EMPTY_RESULTS);
       setActiveIndex(0);
@@ -133,13 +154,12 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
     abortRef.current = controller;
 
     let disposed = false;
-    setLoading(true);
+    startSearchLoading();
     setError(null);
 
     client
       .query({
         query: GLOBAL_SEARCH,
-        companyPlan,
         variables: { query: q },
         fetchPolicy: 'no-cache',
         context: {
@@ -162,14 +182,15 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
       })
       .finally(() => {
         if (disposed) return;
-        setLoading(false);
+        stopSearchLoading();
       });
 
     return () => {
       disposed = true;
       controller.abort();
+      stopSearchLoading();
     };
-  }, [client, debouncedQuery, open]);
+  }, [client, debouncedQuery, open, startSearchLoading, stopSearchLoading]);
 
   const navigateToResult: GlobalSearchContextValue['navigateToResult'] = useCallback(
     async (item) => {
@@ -328,6 +349,8 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
 
   const value: GlobalSearchContextValue = useMemo(
     () => ({
+      companyPlan,
+
       open,
       setOpen,
 
@@ -346,6 +369,7 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
       navigateToResult,
     }),
     [
+      companyPlan,
       activeIndex,
       closePalette,
       error,

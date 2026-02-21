@@ -5,6 +5,7 @@ import { useMutation } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useLoadingContext } from '@/context/loading-context';
 import {
   EXPORT_STOCK_SNAPSHOT,
   EXPORT_STOCK_MOVEMENTS,
@@ -75,19 +76,21 @@ export function ExportButton({
 }: ExportButtonProps) {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+  const { _increment, _decrement } = useLoadingContext();
 
   const mutation = EXPORT_MUTATIONS[type];
 
   const [executeExport] = useMutation(mutation, {
     onCompleted: (data) => {
       setIsExporting(false);
+      _decrement();
       const csvContent = Object.values(data)[0] as string;
-      
+
       // Create blob and download
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
-      
+
       link.setAttribute('href', url);
       link.setAttribute('download', `${type}_${new Date().toISOString().slice(0, 10)}.csv`);
       link.style.visibility = 'hidden';
@@ -102,6 +105,7 @@ export function ExportButton({
     },
     onError: (error) => {
       setIsExporting(false);
+      _decrement();
       toast({
         title: 'Export Failed',
         description: error.message,
@@ -112,13 +116,14 @@ export function ExportButton({
 
   const handleExport = () => {
     setIsExporting(true);
+    _increment();
 
     const variables: any = {};
-    
+
     if (warehouseId) {
       variables.warehouseId = warehouseId;
     }
-    
+
     if (filters && Object.keys(filters).length > 0) {
       variables.filters = filters;
     }

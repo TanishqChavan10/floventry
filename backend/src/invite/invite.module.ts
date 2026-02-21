@@ -11,6 +11,7 @@ import { UserWarehouseService } from '../auth/user-warehouse.service';
 import { AuthModule } from '../auth/auth.module';
 import { AuditModule } from '../audit/audit.module';
 import { EmailModule } from '../email/email.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { InviteResolver } from './invite.resolver';
 
 @Module({
@@ -19,6 +20,7 @@ import { InviteResolver } from './invite.resolver';
     AuthModule,
     AuditModule,
     EmailModule,
+    NotificationsModule,
   ],
   providers: [InviteService, InviteResolver],
   exports: [InviteService],

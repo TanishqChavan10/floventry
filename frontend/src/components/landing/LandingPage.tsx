@@ -11,14 +11,15 @@ import Footer from './Footer';
 export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const router = useRouter();
-  const { isAuthenticated, loading } = useAuth();
+  const { isClerkLoaded, isClerkSignedIn } = useAuth();
 
-  // Redirect authenticated users to their dashboard
+  // Redirect signed-in users immediately — no need to wait for DB user
   React.useEffect(() => {
-    if (!loading && isAuthenticated) {
+    if (!isClerkLoaded) return;
+    if (isClerkSignedIn) {
       router.replace('/auth-redirect');
     }
-  }, [isAuthenticated, loading, router]);
+  }, [isClerkLoaded, isClerkSignedIn, router]);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">

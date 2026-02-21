@@ -11,6 +11,8 @@ import { ApolloAppProvider } from '@/components/ApolloAppProvider';
 import { WarehouseProvider } from '@/context/warehouse-context';
 import { ThemeProvider } from '@/context/theme-context';
 import { GlobalSearchProvider } from '@/components/search/GlobalSearchProvider';
+import { LoadingProvider } from '@/context/loading-context';
+import { GlobalLoadingBar } from '@/components/ui/GlobalLoadingBar';
 
 // UI Wrappers
 import PageWrapper from '@/components/ui/PageWrapper';
@@ -41,25 +43,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${poppins.variable} font-sans min-h-screen flex flex-col`}>
         <DesktopOnlyOverlay />
         {/* --- 1) Theme Provider first for useTheme --- */}
-        <ThemeProvider>
-          {/* --- 2) Clerk (light only) --- */}
-          <ClerkThemeProvider>
-            {/* --- 3) Apollo loads AFTER Clerk (prevents redirect loops) --- */}
-            <ApolloAppProvider>
-              <WarehouseProvider>
-                <GlobalSearchProvider>
-                  <PageWrapper>
-                    <AppLayoutWrapper>
-                      <main className="flex-1 min-h-screen">{children}</main>
-                    </AppLayoutWrapper>
+        <LoadingProvider>
+          <ThemeProvider>
+            {/* --- 2) Clerk (light only) --- */}
+            <ClerkThemeProvider>
+              {/* --- 3) Apollo loads AFTER Clerk (prevents redirect loops) --- */}
+              <ApolloAppProvider>
+                <WarehouseProvider>
+                  <GlobalSearchProvider>
+                    <PageWrapper>
+                      <GlobalLoadingBar />
+                      <AppLayoutWrapper>
+                        <main className="flex-1 min-h-screen">{children}</main>
+                      </AppLayoutWrapper>
 
-                    <Toaster richColors position="top-center" />
-                  </PageWrapper>
-                </GlobalSearchProvider>
-              </WarehouseProvider>
-            </ApolloAppProvider>
-          </ClerkThemeProvider>
-        </ThemeProvider>
+                      <Toaster richColors position="top-center" />
+                    </PageWrapper>
+                  </GlobalSearchProvider>
+                </WarehouseProvider>
+              </ApolloAppProvider>
+            </ClerkThemeProvider>
+          </ThemeProvider>
+        </LoadingProvider>
       </body>
     </html>
   );

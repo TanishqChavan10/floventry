@@ -15,6 +15,7 @@ import { AuditModule } from '../audit/audit.module';
 import { BarcodeService } from '../inventory/barcode.service';
 import { Company } from '../company/company.entity';
 import { BarcodeFormatService } from '../inventory/barcode-format.service';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { BarcodeFormatService } from '../inventory/barcode-format.service';
     ]),
     AuthModule,
     AuditModule,
+    NotificationsModule,
   ],
   providers: [ImportService, ImportResolver, BarcodeService, BarcodeFormatService],
   exports: [ImportService],

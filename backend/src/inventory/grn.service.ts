@@ -499,9 +499,10 @@ export class GRNService {
       this.notificationsService
         .notifyGRNPosted(
           grn.company_id,
-          [userId], // Add more users as needed
+          [userId],
           result.id,
           result.grn_number,
+          grn.warehouse_id,
         )
         .catch((err) => console.error('Failed to send notification:', err));
 

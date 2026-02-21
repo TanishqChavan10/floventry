@@ -13,7 +13,6 @@ interface Company {
   isActive: boolean;
 }
 
-
 interface Warehouse {
   warehouseId: string;
   warehouseName: string;
@@ -41,6 +40,10 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
+  /** True once Clerk SDK has initialized (happens in milliseconds). */
+  isClerkLoaded: boolean;
+  /** True if Clerk considers the user signed in (even before DB user loads). */
+  isClerkSignedIn: boolean;
   error: Error | null;
   clerkUser: any;
   signOut: () => void;
@@ -95,14 +98,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  // When Clerk signs out:
+  // When Clerk signs out: only clear state once Clerk is fully loaded.
+  // Guarding with `isLoaded` prevents a premature `internalLoading = false`
+  // on initial mount before the Clerk SDK has hydrated (where isSignedIn is
+  // temporarily falsy), which would make `loading` briefly false before the
+  // DB user query has even started and cause redirect loops.
   useEffect(() => {
-    if (!isSignedIn) {
+    if (isLoaded && !isSignedIn) {
       setUser(null);
       setInternalLoading(false);
       setTokenReady(false);
     }
-  }, [isSignedIn]);
+  }, [isLoaded, isSignedIn]);
 
   const isAuthResolved = isLoaded && !internalLoading;
 
@@ -112,6 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isAuthenticated: !!isSignedIn && !!user,
         loading: !isAuthResolved || loading,
+        isClerkLoaded: isLoaded,
+        isClerkSignedIn: !!isSignedIn,
         error: error || null,
         clerkUser,
         signOut,

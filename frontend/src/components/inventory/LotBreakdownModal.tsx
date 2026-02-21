@@ -80,9 +80,17 @@ export function LotBreakdownModal({
     }
   };
 
-  // Sort lots by expiry date (earliest first), then by received date
+  // Deduplicate and sort lots by expiry date (earliest first), then by received date
   const sortedLots = useMemo(() => {
-    return [...lots].sort((a, b) => {
+    // Deduplicate by lot ID to prevent React key warnings
+    const seen = new Set<string>();
+    const unique = lots.filter((lot) => {
+      if (seen.has(lot.id)) return false;
+      seen.add(lot.id);
+      return true;
+    });
+
+    return unique.sort((a, b) => {
       // Lots with expiry come first
       if (!a.expiry_date && b.expiry_date) return 1;
       if (a.expiry_date && !b.expiry_date) return -1;
@@ -98,7 +106,7 @@ export function LotBreakdownModal({
     });
   }, [lots]);
 
-  const totalQuantity = lots.reduce((sum, lot) => sum + lot.quantity, 0);
+  const totalQuantity = sortedLots.reduce((sum, lot) => sum + lot.quantity, 0);
 
   const canAdjustOut = Boolean(productId && companySlug && warehouseSlug);
 
@@ -180,7 +188,7 @@ export function LotBreakdownModal({
                 />
               </span>
               <span>• Total Quantity: {totalQuantity.toFixed(2)}</span>
-              <span>• {lots.length} lot(s)</span>
+              <span>• {sortedLots.length} lot(s)</span>
             </span>
           </DialogDescription>
         </DialogHeader>
@@ -191,7 +199,7 @@ export function LotBreakdownModal({
         </div>
 
         <div className="mt-4">
-          {lots.length === 0 ? (
+          {sortedLots.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No lots found for this product
             </div>

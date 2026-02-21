@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { useSignIn } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -13,20 +14,21 @@ import { useAuth } from '@/context/auth-context';
 
 export default function CustomSignIn() {
   const { isLoaded, signIn, setActive } = useSignIn();
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isClerkLoaded, isClerkSignedIn } = useAuth();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
-  const [isLoading, setIsLoading] = React.useState(false);
+  const { run, isLoading } = useAsyncAction();
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState('');
   const router = useRouter();
 
-  // Redirect authenticated users immediately
+  // Redirect signed-in users away from sign-in page — no need to wait for DB user
   React.useEffect(() => {
-    if (!loading && isAuthenticated && user) {
+    if (!isClerkLoaded) return;
+    if (isClerkSignedIn) {
       router.replace('/auth-redirect');
     }
-  }, [isAuthenticated, user, loading, router]);
+  }, [isClerkLoaded, isClerkSignedIn, router]);
 
   // Helper to get redirect URL based on user's companies
   const getRedirectUrl = () => {
@@ -49,14 +51,12 @@ export default function CustomSignIn() {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isLoaded) return;
 
-    setIsLoading(true);
-    setError('');
-
-    try {
+    void run(async () => {
+      setError('');
       const result = await signIn.create({
         identifier: email,
         password,
@@ -71,7 +71,7 @@ export default function CustomSignIn() {
       } else {
         setError('Something went wrong. Please try again.');
       }
-    } catch (err: any) {
+    }).catch((err: any) => {
       const errorMessage =
         err.errors?.[0]?.longMessage || err.message || 'Invalid email or password';
 
@@ -81,9 +81,7 @@ export default function CustomSignIn() {
       }
 
       setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   return (

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,18 +28,15 @@ export default function SupplierForm({ initialData, isEditing = false }: Supplie
   const params = useParams();
   const companySlug = params?.slug as string;
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const { run, isLoading } = useAsyncAction();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    void run(async () => {
+      await new Promise((res) => setTimeout(res, 1500));
       toast.success(isEditing ? 'Supplier updated successfully' : 'Supplier added successfully');
       router.push(`/${companySlug}/suppliers`);
-    }, 1500);
+    });
   };
 
   return (

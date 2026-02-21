@@ -82,6 +82,7 @@ import { BarcodeService } from './barcode.service';
 import { BarcodeFormatService } from './barcode-format.service';
 import { AuditLogService } from '../audit/services/audit-log.service';
 import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
+import { NotificationsService } from '../notifications/notifications.service';
 import { BarcodeHistory, BarcodeHistoryChangeType } from './entities/barcode-history.entity';
 import { ProductBarcodeUnit, ProductBarcodeUnitType } from './entities/product-barcode-unit.entity';
 import { UpsertProductBarcodeUnitInput } from './dto/product-barcode-unit.input';
@@ -113,6 +114,7 @@ export class InventoryService {
     private dataSource: DataSource,
     private readonly barcodeFormatService: BarcodeFormatService,
     private readonly auditLogService: AuditLogService,
+    private readonly notificationsService: NotificationsService,
   ) { }
 
   // --- Packaging/Multi-unit barcodes ---
@@ -1117,6 +1119,19 @@ export class InventoryService {
           reference: input.reference,
         },
       });
+
+      this.notificationsService
+        .notifyAdjustmentPosted(
+          companyId,
+          stock!.id,
+          stockWithRelations.product?.name || 'Unknown Product',
+          input.warehouse_id,
+          input.adjustment_type,
+          adjustmentQty,
+        )
+        .catch((err) =>
+          console.error('Failed to send adjustment notification', err),
+        );
 
       return {
         success: true,

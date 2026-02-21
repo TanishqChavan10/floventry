@@ -12,9 +12,22 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { GET_NOTIFICATIONS, GET_UNREAD_COUNT, MARK_AS_READ } from '@/lib/graphql/notifications';
+import {
+  GET_NOTIFICATIONS,
+  GET_UNREAD_COUNT,
+  MARK_AS_READ,
+  MARK_ALL_AS_READ,
+} from '@/lib/graphql/notifications';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter, useParams } from 'next/navigation';
+
+/** Ensure a timestamp string is parsed as UTC (appends 'Z' if missing). */
+function parseUtc(dateStr: string): Date {
+  if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+    return new Date(dateStr + 'Z');
+  }
+  return new Date(dateStr);
+}
 
 interface Notification {
   id: string;
@@ -43,7 +56,18 @@ export default function NotificationBell() {
     skip: !isOpen, // Only fetch when dropdown is open
   });
 
-  const [markAsRead] = useMutation(MARK_AS_READ);
+  const [markAsRead] = useMutation(MARK_AS_READ, {
+    refetchQueries: [
+      { query: GET_UNREAD_COUNT },
+      { query: GET_NOTIFICATIONS, variables: { limit: 5, offset: 0 } },
+    ],
+  });
+  const [markAllAsRead] = useMutation(MARK_ALL_AS_READ, {
+    refetchQueries: [
+      { query: GET_UNREAD_COUNT },
+      { query: GET_NOTIFICATIONS, variables: { limit: 5, offset: 0 } },
+    ],
+  });
 
   const unreadCount = countData?.unreadNotificationCount || 0;
   const notifications: Notification[] = notificationsData?.notifications || [];
@@ -104,7 +128,16 @@ export default function NotificationBell() {
         <div className="flex items-center justify-between px-4 py-2">
           <h3 className="font-semibold text-sm">Notifications</h3>
           {unreadCount > 0 && (
-            <span className="text-xs text-muted-foreground">{unreadCount} unread</span>
+            <button
+              type="button"
+              className="text-xs text-primary hover:underline"
+              onClick={(e) => {
+                e.stopPropagation();
+                markAllAsRead();
+              }}
+            >
+              Mark all read
+            </button>
           )}
         </div>
         <DropdownMenuSeparator />
@@ -134,11 +167,21 @@ export default function NotificationBell() {
                       {notification.message}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                      {formatDistanceToNow(parseUtc(notification.createdAt), { addSuffix: true })}
                     </p>
                   </div>
                   {!notification.readAt && (
-                    <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-1.5" />
+                    <button
+                      type="button"
+                      className="shrink-0 mt-0.5 p-0.5 rounded-full hover:bg-muted transition-colors"
+                      title="Mark as read"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markAsRead({ variables: { id: notification.id } });
+                      }}
+                    >
+                      <Check className="h-3.5 w-3.5 text-blue-600" />
+                    </button>
                   )}
                 </div>
               </DropdownMenuItem>

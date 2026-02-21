@@ -32,7 +32,7 @@ export type GlobalSearchResultsData = {
 };
 
 export type GlobalSearchContextValue = {
-  companyPlan: 'Free' | 'Pro' | null;
+  companyPlan: 'Standard' | 'Pro' | null;
 
   open: boolean;
   setOpen: (open: boolean) => void;

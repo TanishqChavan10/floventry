@@ -14,6 +14,7 @@ import { BarcodeService } from '../inventory/barcode.service';
 import { BarcodeFormatService } from '../inventory/barcode-format.service';
 import { AuditLogService } from '../audit/services/audit-log.service';
 import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   isExpiryInPastEndOfDay,
   normalizeExpiryToEndOfDayUTC,
@@ -69,6 +70,7 @@ export class ImportService {
     private dataSource: DataSource,
     private readonly barcodeFormatService: BarcodeFormatService,
     private readonly auditLogService: AuditLogService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -651,6 +653,16 @@ export class ImportService {
       },
     });
 
+    // Notify OWNER + ADMIN about import completion (fire-and-forget)
+    this.notificationsService
+      .notifyImportCompleted(
+        companyId,
+        'Products',
+        successCount,
+        validatedRows.length - successCount,
+      )
+      .catch((err) => console.error('Failed to send import notification:', err));
+
     return {
       successCount,
       failureCount: validatedRows.length - successCount,
@@ -1129,6 +1141,16 @@ export class ImportService {
         errorRows: validatedRows.length - successCount,
       },
     });
+
+    // Notify OWNER + ADMIN about import completion (fire-and-forget)
+    this.notificationsService
+      .notifyImportCompleted(
+        companyId,
+        'Opening Stock',
+        successCount,
+        validatedRows.length - successCount,
+      )
+      .catch((err) => console.error('Failed to send import notification:', err));
 
     return {
       successCount,

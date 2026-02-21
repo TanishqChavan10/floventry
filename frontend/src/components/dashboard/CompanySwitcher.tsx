@@ -13,32 +13,33 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/auth-context';
-import { useMutation } from '@apollo/client';
+import { useMutation, useApolloClient } from '@apollo/client';
 import { SWITCH_COMPANY } from '@/lib/graphql/company';
-import { GET_CURRENT_USER } from '@/lib/graphql/auth';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
 export default function CompanySwitcher() {
   const { user } = useAuth();
   const router = useRouter();
-  const [switchCompany] = useMutation(SWITCH_COMPANY, {
-    refetchQueries: [{ query: GET_CURRENT_USER }],
-  });
+  const apolloClient = useApolloClient();
+  const [switchCompany] = useMutation(SWITCH_COMPANY);
 
   const activeCompany = user?.companies?.find((c) => c.isActive) || user?.companies?.[0];
 
   const handleSwitchCompany = async (companyId: string) => {
     if (companyId === activeCompany?.id) return;
 
+    const targetCompany = user?.companies?.find((c) => c.id === companyId);
+
     try {
-      const { data } = await switchCompany({
-        variables: { companyId },
-      });
+      const { data } = await switchCompany({ variables: { companyId } });
 
       if (data?.switchCompany?.success) {
-        toast.success('Company switched successfully!');
-        router.refresh();
+        // Clear Apollo cache so all queries refetch fresh data for the new company
+        await apolloClient.clearStore();
+        toast.success(`Switched to ${targetCompany?.name || 'company'}`);
+        // Hard-navigate to the new company's dashboard so [slug] param changes
+        router.push(`/${targetCompany?.slug}`);
       }
     } catch (error: any) {
       console.error('Error switching company:', error);

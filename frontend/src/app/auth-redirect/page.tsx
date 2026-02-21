@@ -11,11 +11,14 @@ import { Loader2 } from 'lucide-react';
  */
 export default function AuthRedirect() {
   const router = useRouter();
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading, isClerkLoaded, isClerkSignedIn } = useAuth();
 
   useEffect(() => {
-    // Wait for auth to load
-    if (loading) return;
+    // Wait for Clerk to hydrate first.
+    if (!isClerkLoaded) return;
+
+    // Clerk says user is signed in — wait for the DB user to load before deciding.
+    if (isClerkSignedIn && loading) return;
 
     if (!isAuthenticated || !user) {
       // Not authenticated, send to sign-in
@@ -34,7 +37,7 @@ export default function AuthRedirect() {
       // No companies, redirect to onboarding
       router.replace('/onboarding/create-company');
     }
-  }, [isAuthenticated, user, loading, router]);
+  }, [isAuthenticated, user, loading, isClerkLoaded, isClerkSignedIn, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-white">

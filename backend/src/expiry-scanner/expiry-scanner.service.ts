@@ -3,19 +3,19 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, Not, IsNull } from 'typeorm';
 import { StockLot } from '../inventory/entities/stock-lot.entity';
+import { CompanySettings } from '../company/company-settings.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
   isExpiryInPastEndOfDay,
   endOfDayUtcFromNowPlusDays,
 } from '../common/utils/expiry-date';
 
+/** Standard-tier fixed warning window (days). */
+const STANDARD_EXPIRY_WARNING_DAYS = 30;
+
 @Injectable()
 export class ExpiryScannerService implements OnModuleInit {
   private readonly logger = new Logger(ExpiryScannerService.name);
-  private readonly EXPIRY_WARNING_DAYS = parseInt(
-    process.env.EXPIRY_WARNING_DAYS || '30',
-    10,
-  );
 
   private lastRunAt?: Date;
   private lastSuccessAt?: Date;
@@ -25,6 +25,8 @@ export class ExpiryScannerService implements OnModuleInit {
   constructor(
     @InjectRepository(StockLot)
     private stockLotRepository: Repository<StockLot>,
+    @InjectRepository(CompanySettings)
+    private companySettingsRepository: Repository<CompanySettings>,
     private notificationsService: NotificationsService,
   ) {}
 
@@ -90,22 +92,55 @@ export class ExpiryScannerService implements OnModuleInit {
     };
   }
 
+  // ----------------------------------------------------------------
+  //  Per-company warning-days resolution
+  // ----------------------------------------------------------------
+
   /**
-   * Core scanning logic
-   * Queries active lots and triggers notifications based on expiry status
+   * Resolve the effective expiry warning days for a company.
+   *  - Pro (is_premium): use the company's custom `expiry_warning_days`.
+   *  - Standard: always 30 days (safety baseline, never zero).
+   */
+  private async getWarningDaysForCompany(
+    companyId: string,
+    settingsCache: Map<string, { isPremium: boolean; warningDays: number }>,
+  ): Promise<number> {
+    if (settingsCache.has(companyId)) {
+      const cached = settingsCache.get(companyId)!;
+      return cached.isPremium ? cached.warningDays : STANDARD_EXPIRY_WARNING_DAYS;
+    }
+
+    const settings = await this.companySettingsRepository.findOne({
+      where: { company_id: companyId },
+    });
+
+    const isPremium = settings?.is_premium ?? false;
+    const warningDays = settings?.expiry_warning_days ?? STANDARD_EXPIRY_WARNING_DAYS;
+
+    settingsCache.set(companyId, { isPremium, warningDays });
+    return isPremium ? warningDays : STANDARD_EXPIRY_WARNING_DAYS;
+  }
+
+  // ----------------------------------------------------------------
+  //  Core scanning logic
+  // ----------------------------------------------------------------
+
+  /**
+   * Queries active lots and triggers notifications based on expiry status.
+   * Per-company aware: Pro companies use their custom warning window,
+   * Standard companies always use the fixed 30-day window.
    */
   async scanExpiryStatuses(): Promise<void> {
     this.logger.log('Querying active stock lots with expiry dates');
 
-    // Query all active lots with expiry dates
     const lots = await this.stockLotRepository.find({
       where: {
         quantity: MoreThan(0),
         expiry_date: Not(IsNull()),
-        company_id: Not(IsNull()), // Tenant safety
+        company_id: Not(IsNull()),
       },
       relations: ['product', 'warehouse'],
-      order: { expiry_date: 'ASC' }, // Process soonest expiries first
+      order: { expiry_date: 'ASC' },
     });
 
     this.logger.log(`Found ${lots.length} active lots with expiry dates`);
@@ -114,20 +149,23 @@ export class ExpiryScannerService implements OnModuleInit {
     let expiringSoonCount = 0;
     let errorCount = 0;
 
-    // Process each lot
+    // Cache company settings to avoid repeated DB lookups
+    const settingsCache = new Map<string, { isPremium: boolean; warningDays: number }>();
+
     for (const lot of lots) {
       try {
-        await this.checkAndNotifyLot(lot);
+        const warningDays = await this.getWarningDaysForCompany(
+          lot.company_id,
+          settingsCache,
+        );
 
-        // Categorize for logging
+        await this.checkAndNotifyLot(lot, warningDays);
+
         const now = new Date();
         if (isExpiryInPastEndOfDay(lot.expiry_date, now)) {
           expiredCount++;
         } else {
-          const warningCutoff = endOfDayUtcFromNowPlusDays(
-            this.EXPIRY_WARNING_DAYS,
-            now,
-          );
+          const warningCutoff = endOfDayUtcFromNowPlusDays(warningDays, now);
           if (lot.expiry_date <= warningCutoff) {
             expiringSoonCount++;
           }
@@ -138,7 +176,6 @@ export class ExpiryScannerService implements OnModuleInit {
           `Failed to process lot ${lot.id} for product ${lot.product?.name || 'unknown'}`,
           error.stack,
         );
-        // Continue processing other lots
       }
     }
 
@@ -148,13 +185,17 @@ export class ExpiryScannerService implements OnModuleInit {
   }
 
   /**
-   * Check a single lot and trigger notifications if needed
-   * Deduplication is handled by the NotificationsService
+   * Check a single lot and trigger notifications if needed.
+   * @param warningDays  Effective warning window (per-company, tier-aware).
+   * Deduplication is handled by the NotificationsService.
    */
-  private async checkAndNotifyLot(lot: StockLot): Promise<void> {
+  private async checkAndNotifyLot(
+    lot: StockLot,
+    warningDays: number,
+  ): Promise<void> {
     const now = new Date();
 
-    // Check if expired
+    // Expired → always notify (both tiers)
     if (isExpiryInPastEndOfDay(lot.expiry_date, now)) {
       await this.notificationsService.notifyExpired(
         lot.company_id,
@@ -167,11 +208,8 @@ export class ExpiryScannerService implements OnModuleInit {
       return;
     }
 
-    // Check if expiring soon (within warning threshold)
-    const warningCutoff = endOfDayUtcFromNowPlusDays(
-      this.EXPIRY_WARNING_DAYS,
-      now,
-    );
+    // Expiring soon → use the tier-aware warning window
+    const warningCutoff = endOfDayUtcFromNowPlusDays(warningDays, now);
     if (lot.expiry_date <= warningCutoff) {
       await this.notificationsService.notifyExpiringSoon(
         lot.company_id,
@@ -182,8 +220,6 @@ export class ExpiryScannerService implements OnModuleInit {
         lot.quantity,
       );
     }
-
-    // If neither expired nor expiring soon, no notification needed (status: OK)
   }
 
   /**

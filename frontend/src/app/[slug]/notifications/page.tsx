@@ -10,6 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bell, AlertCircle, Info, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+
+/** Ensure a timestamp string is parsed as UTC (appends 'Z' if missing). */
+function parseUtc(dateStr: string): Date {
+  if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
+    return new Date(dateStr + 'Z');
+  }
+  return new Date(dateStr);
+}
 import {
   GET_NOTIFICATIONS,
   GET_UNREAD_COUNT,
@@ -41,6 +49,7 @@ type TabFilter = 'all' | 'unread' | 'critical';
 function NotificationsPageContent() {
   const [filter, setFilter] = useState<TabFilter>('all');
   const [page] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
   const pageSize = 50;
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -143,7 +152,7 @@ function NotificationsPageContent() {
     };
 
     notifications.forEach((n) => {
-      const createdAt = new Date(n.createdAt);
+      const createdAt = parseUtc(n.createdAt);
       if (createdAt.toDateString() === todayStr) {
         groups.today.push(n);
       } else if (createdAt >= weekAgo) {
@@ -192,6 +201,20 @@ function NotificationsPageContent() {
         if (warehouseSlug) {
           router.push(`/${companySlug}/warehouses/${warehouseSlug}/inventory/reports`);
         }
+        break;
+      case 'Adjustment':
+        if (warehouseSlug) {
+          router.push(`/${companySlug}/warehouses/${warehouseSlug}/inventory/reports`);
+        } else {
+          router.push(`/${companySlug}/inventory/products`);
+        }
+        break;
+      case 'User':
+      case 'Role':
+        router.push(`/${companySlug}/settings?tab=team`);
+        break;
+      case 'Warehouse':
+        router.push(`/${companySlug}/warehouses`);
         break;
       default:
         // Fallback to notifications page
@@ -269,7 +292,7 @@ function NotificationsPageContent() {
                   </p>
                   <div className="flex items-center gap-3 text-xs text-slate-500">
                     <span>
-                      {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                      {formatDistanceToNow(parseUtc(notification.createdAt), { addSuffix: true })}
                     </span>
                     <span>•</span>
                     <span className="capitalize">
@@ -302,9 +325,21 @@ function NotificationsPageContent() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => refetch()} variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+            <Button
+              onClick={async () => {
+                setRefreshing(true);
+                try {
+                  await refetch();
+                } finally {
+                  setRefreshing(false);
+                }
+              }}
+              variant="outline"
+              size="sm"
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing…' : 'Refresh'}
             </Button>
             {unreadCount > 0 && (
               <Button onClick={() => markAllAsRead()} variant="outline" size="sm">

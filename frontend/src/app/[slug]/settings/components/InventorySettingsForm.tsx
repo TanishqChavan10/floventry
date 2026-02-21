@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2 } from 'lucide-react';
+import { Crown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation } from '@apollo/client';
 import { UPDATE_COMPANY_BARCODE_SETTINGS, UPDATE_COMPANY_SETTINGS } from '@/lib/graphql/company';
@@ -29,6 +29,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/context/auth-context';
+import { usePlanTier } from '@/hooks/usePlanTier';
+import { UpgradeModal } from '@/components/upgrade/UpgradeModal';
 
 const formSchema = z.object({
   low_stock_threshold: z.coerce.number().min(0),
@@ -80,6 +82,8 @@ export function InventorySettingsForm({
   );
 
   const { user } = useAuth();
+  const { isPro } = usePlanTier();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const roleForCompany =
     user?.companies?.find((c) => c.id === companyId)?.role?.toUpperCase() ?? '';
   const isAdmin = roleForCompany === 'ADMIN' || roleForCompany === 'OWNER';
@@ -207,12 +211,28 @@ export function InventorySettingsForm({
                     name="expiry_warning_days"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Expiry Warning Days</FormLabel>
+                        <FormLabel className="flex items-center gap-1.5">
+                          Expiry Warning Days
+                          {!isPro && (
+                            <span className="inline-flex items-center gap-0.5 text-xs font-normal text-amber-600">
+                              <Crown className="h-3 w-3" /> Pro
+                            </span>
+                          )}
+                        </FormLabel>
                         <FormControl>
-                          <Input type="number" {...field} />
+                          <Input
+                            type="number"
+                            {...field}
+                            disabled={!isPro}
+                            onClick={() => {
+                              if (!isPro) setUpgradeOpen(true);
+                            }}
+                          />
                         </FormControl>
                         <FormDescription>
-                          Days before expiration to trigger an alert.
+                          {isPro
+                            ? 'Days before expiration to trigger an alert.'
+                            : 'Standard plan uses a fixed 30-day window. Upgrade to Pro to customise.'}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -357,6 +377,8 @@ export function InventorySettingsForm({
           </Form>
         </CardContent>
       </Card>
+
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </div>
   );
 }

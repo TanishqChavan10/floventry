@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
@@ -31,24 +32,31 @@ import { toast } from 'sonner';
 export default function CreateCompanyPage() {
   const router = useRouter();
   const { user } = useUser();
-  const [isLoading, setIsLoading] = React.useState(false);
   const [companyName, setCompanyName] = React.useState('');
-  const [slug, setSlug] = React.useState('');
+
+  const generateSlug = (name: string) =>
+    name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 50);
 
   const [createCompany] = useMutation(CREATE_COMPANY, {
     refetchQueries: [{ query: GET_CURRENT_USER }],
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const { run, isLoading } = useAsyncAction();
 
-    try {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void run(async () => {
       const { data } = await createCompany({
         variables: {
           input: {
             name: companyName,
-            slug: slug,
+            slug: generateSlug(companyName),
           },
         },
       });
@@ -57,14 +65,12 @@ export default function CreateCompanyPage() {
         toast.success('Company created successfully!');
         // Force refresh session to ensure middleware sees the new activeCompanyId
         await user?.reload();
-        router.push(`/${slug}/settings`);
+        router.push(`/${generateSlug(companyName)}/settings`);
       }
-    } catch (error: any) {
+    }).catch((error: any) => {
       console.error('Error creating company:', error);
       toast.error(error.message || 'Failed to create company');
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   return (
@@ -91,8 +97,8 @@ export default function CreateCompanyPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Create details</CardTitle>
-            <CardDescription>Choose a name and URL for your company workspace.</CardDescription>
+            <CardTitle>Company details</CardTitle>
+            <CardDescription>Enter a name for your company workspace.</CardDescription>
           </CardHeader>
           <CardContent>
             <form id="create-company-form" onSubmit={handleSubmit} className="space-y-6">
@@ -106,23 +112,12 @@ export default function CreateCompanyPage() {
                   required
                   className="h-11"
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="slug">Custom Company URL</Label>
-                <div className="flex">
-                  <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-input bg-muted text-muted-foreground text-sm">
-                    flowventory.com/
-                  </span>
-                  <Input
-                    id="slug"
-                    placeholder="acme-corp"
-                    className="rounded-l-none h-11"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
-                    required
-                  />
-                </div>
+                {companyName && (
+                  <p className="text-xs text-muted-foreground">
+                    Your workspace URL:{' '}
+                    <span className="font-medium">{generateSlug(companyName)}</span>
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">

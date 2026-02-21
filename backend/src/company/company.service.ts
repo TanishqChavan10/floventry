@@ -119,6 +119,18 @@ export class CompanyService {
       throw new NotFoundException('Company settings not found');
     }
 
+    // Plan-tier gate: Standard-tier companies cannot customise expiry_warning_days.
+    // The field is silently reset to 30 so the mutation still succeeds for other fields.
+    if (
+      input.expiry_warning_days !== undefined &&
+      input.expiry_warning_days !== 30 &&
+      !settings.is_premium
+    ) {
+      throw new BadRequestException(
+        'Custom expiry warning days require the Pro plan. Standard plan uses a fixed 30-day window.',
+      );
+    }
+
     Object.assign(settings, input);
 
     return this.settingsRepository.save(settings);

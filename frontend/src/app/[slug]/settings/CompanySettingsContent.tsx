@@ -2,11 +2,13 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, MapPin, Package, AlertTriangle } from 'lucide-react';
+import { Building2, MapPin, Package, AlertTriangle, Bell } from 'lucide-react';
 import {
   CompanyProfileForm,
   BusinessInfoForm,
   InventorySettingsForm,
+  ExpiryScannerCard,
+  NotificationSettingsForm,
   DangerZone,
 } from './components';
 import Link from 'next/link';
@@ -37,6 +39,9 @@ export default function CompanySettingsContent({ company }: CompanySettingsProps
           <TabsTrigger value="inventory" className="flex-1 min-w-30">
             <Package className="w-4 h-4 mr-2" /> Inventory
           </TabsTrigger>
+          <TabsTrigger value="notifications" className="flex-1 min-w-30">
+            <Bell className="w-4 h-4 mr-2" /> Notifications
+          </TabsTrigger>
           <TabsTrigger
             value="danger"
             className="flex-1 min-w-30 text-destructive data-[state=active]:text-destructive data-[state=active]:bg-destructive/10"
@@ -64,6 +69,11 @@ export default function CompanySettingsContent({ company }: CompanySettingsProps
               barcodeSuffix: company?.barcodeSuffix,
             }}
           />
+          <ExpiryScannerCard />
+        </TabsContent>
+
+        <TabsContent value="notifications" className="space-y-4">
+          <NotificationSettingsForm companyId={company.id} settings={settings} />
         </TabsContent>
 
         <TabsContent value="danger" className="space-y-4">

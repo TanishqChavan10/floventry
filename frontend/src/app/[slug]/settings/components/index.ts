@@ -3,6 +3,7 @@ export * from './BusinessInfoForm';
 export * from './InventorySettingsForm';
 export * from './PurchaseOrderSettingsForm';
 export * from './NotificationSettingsForm';
+export * from './ExpiryScannerCard';
 export * from './AccessSecurityForm';
 export * from './AuditActivityForm';
 export * from './DangerZone';

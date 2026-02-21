@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 import { addDays } from 'date-fns';
@@ -17,35 +18,29 @@ export function SalesReports() {
     to: new Date(),
   });
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const { run, isLoading } = useAsyncAction();
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!date?.from || !date?.to) return;
-      setLoading(true);
-      try {
-        const token = await getToken();
-        const res = await fetch(
-          `${API_URL}/reports/sales?startDate=${date.from.toISOString()}&endDate=${date.to.toISOString()}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+    if (!date?.from || !date?.to) return;
+    void run(async () => {
+      const token = await getToken();
+      const res = await fetch(
+        `${API_URL}/reports/sales?startDate=${date.from!.toISOString()}&endDate=${date.to!.toISOString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-        );
-        const json = await res.json();
-        setData(json);
-      } catch (error) {
-        console.error('Failed to fetch sales report', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+        },
+      );
+      const json = await res.json();
+      setData(json);
+    }).catch((error) => {
+      console.error('Failed to fetch sales report', error);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
-  if (loading) return <div>Loading...</div>;
+  if (isLoading) return <div>Loading...</div>;
   if (!data) return <div>No data</div>;
 
   return (

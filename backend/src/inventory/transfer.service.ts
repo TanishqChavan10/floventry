@@ -26,6 +26,7 @@ import {
 import { Role } from '../auth/enums/role.enum';
 import { AuditLogService } from '../audit/services/audit-log.service';
 import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class TransferService {
@@ -42,6 +43,7 @@ export class TransferService {
     private stockMovementRepository: Repository<StockMovement>,
     private dataSource: DataSource,
     private readonly auditLogService: AuditLogService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -460,6 +462,16 @@ export class TransferService {
       } catch (err) {
         console.error('Failed to record audit log for transfer posting:', err);
       }
+
+      // Notify OWNER, ADMIN and warehouse managers (fire-and-forget)
+      this.notificationsService
+        .notifyTransferCompleted(
+          transfer.company_id,
+          await this.notificationsService.getRecipients(transfer.company_id, transfer.source_warehouse_id),
+          result.id,
+          result.transfer_number,
+        )
+        .catch((err) => console.error('Failed to send transfer notification:', err));
 
       return result;
     } catch (error) {

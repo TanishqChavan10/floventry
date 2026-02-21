@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,19 +28,16 @@ export default function ItemForm({ initialData, isEditing = false }: ItemFormPro
   const params = useParams();
   const companySlug = params?.slug as string;
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const { run, isLoading } = useAsyncAction();
   const [images, setImages] = useState<string[]>(initialData?.images || []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    void run(async () => {
+      await new Promise((res) => setTimeout(res, 1500));
       toast.success(isEditing ? 'Item updated successfully' : 'Item created successfully');
       router.push(`/${companySlug}/inventory/items`);
-    }, 1500);
+    });
   };
 
   const handleImageUpload = () => {

@@ -393,24 +393,31 @@ export class NotificationsService {
   }
 
   /**
-   * GRN_POSTED notification
+   * GRN_POSTED notification — sent to OWNER, ADMIN and warehouse managers.
+   * Falls back to provided userIds when warehouseId is unavailable.
    */
   async notifyGRNPosted(
     companyId: string,
     userIds: string[],
     grnId: string,
     grnNumber: string,
+    warehouseId?: string,
   ): Promise<void> {
     try {
+      const recipients = warehouseId
+        ? await this.resolveRecipients(companyId, warehouseId)
+        : userIds;
+
       await this.create(
         companyId,
-        userIds,
+        recipients,
         NotificationType.GRN_POSTED,
         NotificationSeverity.INFO,
         'GRN',
         grnId,
         'GRN Posted',
         `Goods receipt ${grnNumber} has been posted successfully`,
+        { warehouseId },
       );
     } catch (error) {
       console.error('Failed to create GRN_POSTED notification:', error);
@@ -418,24 +425,30 @@ export class NotificationsService {
   }
 
   /**
-   * ISSUE_POSTED notification
+   * ISSUE_POSTED notification — sent to OWNER, ADMIN and warehouse managers.
    */
   async notifyIssuePosted(
     companyId: string,
     userIds: string[],
     issueId: string,
     issueNumber: string,
+    warehouseId?: string,
   ): Promise<void> {
     try {
+      const recipients = warehouseId
+        ? await this.resolveRecipients(companyId, warehouseId)
+        : userIds;
+
       await this.create(
         companyId,
-        userIds,
+        recipients,
         NotificationType.ISSUE_POSTED,
         NotificationSeverity.INFO,
         'Issue',
         issueId,
         'Issue Posted',
         `Issue ${issueNumber} has been posted successfully`,
+        { warehouseId },
       );
     } catch (error) {
       console.error('Failed to create ISSUE_POSTED notification:', error);
@@ -468,16 +481,17 @@ export class NotificationsService {
   }
 
   /**
-   * IMPORT_COMPLETED notification
+   * IMPORT_COMPLETED / IMPORT_PARTIAL_FAILURE notification.
+   * Sent to OWNER + ADMIN (company-wide, no warehouse scope).
    */
   async notifyImportCompleted(
     companyId: string,
-    userIds: string[],
     importType: string,
     successCount: number,
     failureCount: number,
   ): Promise<void> {
     try {
+      const userIds = await this.resolveRecipients(companyId);
       const severity =
         failureCount > 0
           ? NotificationSeverity.WARNING
@@ -494,13 +508,154 @@ export class NotificationsService {
         type,
         severity,
         'Import',
-        `import-${Date.now()}`, // Generate unique ID
+        `import-${Date.now()}`,
         failureCount > 0 ? 'Import Completed with Errors' : 'Import Completed',
         `${importType} import completed. Success: ${successCount}, Failed: ${failureCount}`,
         { successCount, failureCount, importType },
       );
     } catch (error) {
       console.error('Failed to create IMPORT notification:', error);
+    }
+  }
+
+  // ========== Governance Notifications ==========
+
+  /**
+   * ADJUSTMENT_POSTED notification — sent to OWNER, ADMIN and warehouse managers.
+   */
+  async notifyAdjustmentPosted(
+    companyId: string,
+    adjustmentId: string,
+    productName: string,
+    warehouseId: string,
+    adjustmentType: string,
+    quantityChange: number,
+  ): Promise<void> {
+    try {
+      const userIds = await this.resolveRecipients(companyId, warehouseId);
+
+      await this.create(
+        companyId,
+        userIds,
+        NotificationType.ADJUSTMENT_POSTED,
+        NotificationSeverity.INFO,
+        'Adjustment',
+        adjustmentId,
+        'Stock Adjustment',
+        `${productName}: ${adjustmentType} adjustment of ${Math.abs(quantityChange)} units`,
+        { warehouseId, adjustmentType, quantityChange },
+      );
+    } catch (error) {
+      console.error('Failed to create ADJUSTMENT_POSTED notification:', error);
+    }
+  }
+
+  /**
+   * USER_INVITED — OWNER + ADMIN only (governance).
+   */
+  async notifyUserInvited(
+    companyId: string,
+    invitedEmail: string,
+    assignedRole: string,
+  ): Promise<void> {
+    try {
+      const userIds = await this.resolveRecipients(companyId);
+
+      await this.create(
+        companyId,
+        userIds,
+        NotificationType.USER_INVITED,
+        NotificationSeverity.INFO,
+        'User',
+        `invite-${Date.now()}`,
+        'User Invited',
+        `${invitedEmail} has been invited as ${assignedRole}`,
+        { invitedEmail, assignedRole },
+      );
+    } catch (error) {
+      console.error('Failed to create USER_INVITED notification:', error);
+    }
+  }
+
+  /**
+   * USER_REMOVED — OWNER + ADMIN only (governance).
+   */
+  async notifyUserRemoved(
+    companyId: string,
+    removedUserId: string,
+    removedRole: string,
+  ): Promise<void> {
+    try {
+      const userIds = await this.resolveRecipients(companyId);
+
+      await this.create(
+        companyId,
+        userIds,
+        NotificationType.USER_REMOVED,
+        NotificationSeverity.WARNING,
+        'User',
+        removedUserId,
+        'User Removed',
+        `A team member (${removedRole}) has been removed from the company`,
+        { removedUserId, removedRole },
+      );
+    } catch (error) {
+      console.error('Failed to create USER_REMOVED notification:', error);
+    }
+  }
+
+  /**
+   * ROLE_CHANGED — OWNER + ADMIN only (governance).
+   */
+  async notifyRoleChanged(
+    companyId: string,
+    targetUserId: string,
+    oldRole: string,
+    newRole: string,
+  ): Promise<void> {
+    try {
+      const userIds = await this.resolveRecipients(companyId);
+
+      await this.create(
+        companyId,
+        userIds,
+        NotificationType.ROLE_CHANGED,
+        NotificationSeverity.WARNING,
+        'User',
+        targetUserId,
+        'Role Changed',
+        `A team member's role has been changed from ${oldRole} to ${newRole}`,
+        { targetUserId, oldRole, newRole },
+      );
+    } catch (error) {
+      console.error('Failed to create ROLE_CHANGED notification:', error);
+    }
+  }
+
+  /**
+   * WAREHOUSE_ARCHIVED — OWNER + ADMIN only (governance).
+   */
+  async notifyWarehouseArchived(
+    companyId: string,
+    warehouseId: string,
+    warehouseName: string,
+  ): Promise<void> {
+    try {
+      const userIds = await this.resolveRecipients(companyId);
+
+      await this.create(
+        companyId,
+        userIds,
+        NotificationType.WAREHOUSE_ARCHIVED,
+        NotificationSeverity.WARNING,
+        'Warehouse',
+        warehouseId,
+        'Warehouse Archived',
+        `Warehouse "${warehouseName}" has been archived`,
+        { warehouseId, warehouseName },
+      );
+    } catch (error) {
+      console.error('Failed to create WAREHOUSE_ARCHIVED notification:', error);
     }
   }
 }

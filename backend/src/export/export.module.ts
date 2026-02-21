@@ -5,11 +5,12 @@ import { ExportResolver } from './export.resolver';
 import { Stock } from '../inventory/entities/stock.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
 import { StockLot } from '../inventory/entities/stock-lot.entity';
+import { CompanySettings } from '../company/company-settings.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Stock, StockMovement, StockLot]),
+    TypeOrmModule.forFeature([Stock, StockMovement, StockLot, CompanySettings]),
     AuthModule,
   ],
   providers: [ExportService, ExportResolver],

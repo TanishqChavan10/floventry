@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { useSignUp } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -16,7 +17,7 @@ export default function CustomSignUp() {
   const [password, setPassword] = React.useState('');
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
-  const [isLoading, setIsLoading] = React.useState(false);
+  const { run, isLoading } = useAsyncAction();
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState('');
   const [pendingVerification, setPendingVerification] = React.useState(false);
@@ -34,14 +35,12 @@ export default function CustomSignUp() {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isLoaded) return;
 
-    setIsLoading(true);
-    setError('');
-
-    try {
+    void run(async () => {
+      setError('');
       await signUp.create({
         emailAddress: email,
         password,
@@ -51,22 +50,18 @@ export default function CustomSignUp() {
 
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setPendingVerification(true);
-    } catch (err: any) {
+    }).catch((err: any) => {
       console.error('error', err.errors[0].longMessage);
       setError(err.errors[0].longMessage || 'Invalid data');
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
-  const handleVerification = async (e: React.FormEvent) => {
+  const handleVerification = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isLoaded) return;
 
-    setIsLoading(true);
-    setError('');
-
-    try {
+    void run(async () => {
+      setError('');
       const completeSignUp = await signUp.attemptEmailAddressVerification({
         code,
       });
@@ -78,12 +73,10 @@ export default function CustomSignUp() {
         console.log(completeSignUp);
         setError('Verification failed. Please try again.');
       }
-    } catch (err: any) {
+    }).catch((err: any) => {
       console.error('error', err.errors[0].longMessage);
       setError(err.errors[0].longMessage || 'Invalid code');
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
 
   if (pendingVerification) {

@@ -15,15 +15,24 @@ import {
 import GraphQLJSONObject from 'graphql-type-json';
 
 export enum NotificationType {
+  // Risk
   STOCK_LOW = 'STOCK_LOW',
   STOCK_CRITICAL = 'STOCK_CRITICAL',
   STOCK_EXPIRED = 'STOCK_EXPIRED',
   STOCK_EXPIRING_SOON = 'STOCK_EXPIRING_SOON',
+  // Operational
   GRN_POSTED = 'GRN_POSTED',
   ISSUE_POSTED = 'ISSUE_POSTED',
   TRANSFER_COMPLETED = 'TRANSFER_COMPLETED',
+  ADJUSTMENT_POSTED = 'ADJUSTMENT_POSTED',
+  // System
   IMPORT_COMPLETED = 'IMPORT_COMPLETED',
   IMPORT_PARTIAL_FAILURE = 'IMPORT_PARTIAL_FAILURE',
+  // Governance
+  USER_INVITED = 'USER_INVITED',
+  USER_REMOVED = 'USER_REMOVED',
+  ROLE_CHANGED = 'ROLE_CHANGED',
+  WAREHOUSE_ARCHIVED = 'WAREHOUSE_ARCHIVED',
 }
 
 registerEnumType(NotificationType, {
@@ -106,10 +115,10 @@ export class Notification {
   metadata: any;
 
   @Field(() => GraphQLISODateTime, { nullable: true })
-  @Column('timestamp', { nullable: true })
+  @Column('timestamptz', { nullable: true })
   read_at: Date | null;
 
   @Field()
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 }

@@ -31,12 +31,14 @@ import { Role } from '../auth/enums/role.enum';
 import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
 import { AuditLogService } from '../audit/services/audit-log.service';
 import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Resolver(() => Warehouse)
 export class WarehouseResolver {
   constructor(
     private readonly warehouseService: WarehouseService,
     private readonly auditLogService: AuditLogService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   @Mutation(() => Warehouse)
@@ -102,6 +104,12 @@ export class WarehouseResolver {
       entityId: id,
       metadata: { warehouseName: warehouse.name },
     });
+
+    this.notificationsService
+      .notifyWarehouseArchived(user.activeCompanyId, id, warehouse.name)
+      .catch((err) =>
+        console.error('Failed to send warehouse-archived notification', err),
+      );
 
     return true;
   }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@clerk/nextjs';
 import {
@@ -16,31 +17,25 @@ import { API_URL } from '@/config/env';
 export function InventoryReports() {
   const { getToken } = useAuth();
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const { run, isLoading } = useAsyncAction();
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const token = await getToken();
-        const res = await fetch(`${API_URL}/reports/inventory`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const json = await res.json();
-        setData(json);
-      } catch (error) {
-        console.error('Failed to fetch inventory report', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    void run(async () => {
+      const token = await getToken();
+      const res = await fetch(`${API_URL}/reports/inventory`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const json = await res.json();
+      setData(json);
+    }).catch((error) => {
+      console.error('Failed to fetch inventory report', error);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (loading) return <div>Loading...</div>;
+  if (isLoading) return <div>Loading...</div>;
   if (!data) return <div>No data</div>;
 
   return (

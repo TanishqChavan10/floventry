@@ -22,6 +22,7 @@ import { UserWarehouseService } from '../auth/user-warehouse.service';
 import { Role } from '../auth/enums/role.enum';
 import { AuditLogService } from '../audit/services/audit-log.service';
 import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class InviteService {
@@ -43,6 +44,7 @@ export class InviteService {
     private dataSource: DataSource,
     private userWarehouseService: UserWarehouseService,
     private readonly auditLogService: AuditLogService,
+    private readonly notificationsService: NotificationsService,
   ) { }
 
   private async validateWarehousesBelongToCompany(
@@ -341,6 +343,12 @@ export class InviteService {
         warehouseCount: (input.warehouseIds || []).length,
       },
     });
+
+    this.notificationsService
+      .notifyUserInvited(companyId, email, role)
+      .catch((err) =>
+        console.error('Failed to send user-invited notification', err),
+      );
 
     return savedInvite;
   }

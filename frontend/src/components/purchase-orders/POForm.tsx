@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -39,7 +39,7 @@ export default function POForm() {
   const params = useParams();
   const companySlug = params?.slug as string;
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const { run, isLoading } = useAsyncAction();
   const [items, setItems] = useState<POItem[]>([
     {
       id: '1',
@@ -81,15 +81,13 @@ export default function POForm() {
   const calculateTax = () => calculateSubtotal() * 0.18; // 18% tax
   const calculateGrandTotal = () => calculateSubtotal() + calculateTax();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    setTimeout(() => {
-      setIsLoading(false);
+    void run(async () => {
+      await new Promise((res) => setTimeout(res, 1500));
       toast.success('Purchase Order created successfully');
       router.push(`/${companySlug}/purchase-orders`);
-    }, 1500);
+    });
   };
 
   return (

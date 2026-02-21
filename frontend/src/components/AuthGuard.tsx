@@ -13,7 +13,7 @@ interface AuthGuardProps {
 }
 
 export default function AuthGuard({ children }: AuthGuardProps) {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading, isClerkLoaded, isClerkSignedIn } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -205,8 +205,11 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     }
   }, [isAuthenticated, user, loading, pathname, router, isPublicRoute, isOnboardingRoute]);
 
-  // Show loading spinner while checking authentication
-  if (loading) {
+  // Show loading spinner ONLY while Clerk SDK itself is initializing.
+  // This takes milliseconds (Clerk is already hydrated from SSR).
+  // Once Clerk resolves we know if the user is signed in or not, so we can
+  // immediately render the layout shell and let page data load in the background.
+  if (!isClerkLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900">
         <div className="text-center">
@@ -217,8 +220,9 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
-  // If user is not authenticated and trying to access protected route, don't render children
-  if (!isAuthenticated && !isPublicRoute && !isOnboardingRoute) {
+  // Clerk is loaded. If the user is definitely not signed in and this is a
+  // protected route, don't flash the layout — the redirect effect will fire shortly.
+  if (!isClerkSignedIn && !isPublicRoute && !isOnboardingRoute) {
     return null;
   }
 
