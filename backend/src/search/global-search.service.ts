@@ -8,9 +8,15 @@ import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
 import { GoodsReceiptNote } from '../inventory/entities/goods-receipt-note.entity';
 import { IssueNote } from '../issues/entities/issue-note.entity';
 import { WarehouseTransfer } from '../inventory/entities/warehouse-transfer.entity';
+import { Supplier } from '../supplier/supplier.entity';
+import { Category } from '../inventory/entities/category.entity';
+import { PurchaseOrder } from '../purchase-orders/entities/purchase-order.entity';
+import { SalesOrder } from '../sales/entities/sales-order.entity';
 import {
   GlobalSearchDocument,
   GlobalSearchDocumentType,
+  GlobalSearchPurchaseOrder,
+  GlobalSearchSalesOrder,
   GlobalSearchResponse,
 } from './global-search.types';
 import { Role } from '../auth/enums/role.enum';
@@ -63,6 +69,14 @@ export class GlobalSearchService {
     private readonly issueRepository: Repository<IssueNote>,
     @InjectRepository(WarehouseTransfer)
     private readonly transferRepository: Repository<WarehouseTransfer>,
+    @InjectRepository(Supplier)
+    private readonly supplierRepository: Repository<Supplier>,
+    @InjectRepository(Category)
+    private readonly categoryRepository: Repository<Category>,
+    @InjectRepository(PurchaseOrder)
+    private readonly purchaseOrderRepository: Repository<PurchaseOrder>,
+    @InjectRepository(SalesOrder)
+    private readonly salesOrderRepository: Repository<SalesOrder>,
   ) {}
 
   async globalSearch(params: {
@@ -74,29 +88,55 @@ export class GlobalSearchService {
     const q = normalizeQuery(params.query);
 
     if (!q || q.length < 2) {
-      return { products: [], warehouses: [], documents: [] };
+      return {
+        products: [],
+        warehouses: [],
+        documents: [],
+        suppliers: [],
+        categories: [],
+        purchaseOrders: [],
+        salesOrders: [],
+      };
     }
 
-    const [products, warehouses, documents] = await Promise.all([
-      this.searchProducts({
-        companyId: params.companyId,
-        query: q,
-        role: params.role,
-      }),
-      this.searchWarehouses({
-        companyId: params.companyId,
-        query: q,
-        userId: params.userId,
-        role: params.role,
-      }),
-      this.searchDocuments({
-        companyId: params.companyId,
-        query: q,
-        role: params.role,
-      }),
-    ]);
+    const [products, warehouses, documents, suppliers, categories, purchaseOrders, salesOrders] =
+      await Promise.all([
+        this.searchProducts({
+          companyId: params.companyId,
+          query: q,
+          role: params.role,
+        }),
+        this.searchWarehouses({
+          companyId: params.companyId,
+          query: q,
+          userId: params.userId,
+          role: params.role,
+        }),
+        this.searchDocuments({
+          companyId: params.companyId,
+          query: q,
+          role: params.role,
+        }),
+        this.searchSuppliers({
+          companyId: params.companyId,
+          query: q,
+        }),
+        this.searchCategories({
+          companyId: params.companyId,
+          query: q,
+        }),
+        this.searchPurchaseOrders({
+          companyId: params.companyId,
+          query: q,
+          role: params.role,
+        }),
+        this.searchSalesOrders({
+          companyId: params.companyId,
+          query: q,
+        }),
+      ]);
 
-    return { products, warehouses, documents };
+    return { products, warehouses, documents, suppliers, categories, purchaseOrders, salesOrders };
   }
 
   private async isPremiumCompany(companyId: string): Promise<boolean> {
@@ -301,6 +341,114 @@ export class GlobalSearchService {
       id: doc.id,
       type: doc.type,
       number: doc.number,
+    }));
+  }
+
+  // ── Suppliers ──────────────────────────────────────────────────────────
+
+  private async searchSuppliers(params: {
+    companyId: string;
+    query: string;
+  }): Promise<Supplier[]> {
+    return this.supplierRepository
+      .createQueryBuilder('s')
+      .where('s.company_id = :companyId', { companyId: params.companyId })
+      .andWhere('s.isActive = true')
+      .andWhere(
+        new Brackets((sub) => {
+          sub
+            .where('s.name ILIKE :q', { q: `%${params.query}%` })
+            .orWhere('s.email ILIKE :q', { q: `%${params.query}%` })
+            .orWhere('s.phone ILIKE :q', { q: `%${params.query}%` });
+        }),
+      )
+      .orderBy('s.created_at', 'DESC')
+      .take(MAX_PER_GROUP)
+      .getMany();
+  }
+
+  // ── Categories ─────────────────────────────────────────────────────────
+
+  private async searchCategories(params: {
+    companyId: string;
+    query: string;
+  }): Promise<Category[]> {
+    return this.categoryRepository
+      .createQueryBuilder('c')
+      .where('c.company_id = :companyId', { companyId: params.companyId })
+      .andWhere('c.isActive = true')
+      .andWhere(
+        new Brackets((sub) => {
+          sub
+            .where('c.name ILIKE :q', { q: `%${params.query}%` })
+            .orWhere('c.description ILIKE :q', { q: `%${params.query}%` });
+        }),
+      )
+      .orderBy('c.name', 'ASC')
+      .take(MAX_PER_GROUP)
+      .getMany();
+  }
+
+  // ── Purchase Orders ────────────────────────────────────────────────────
+
+  private async searchPurchaseOrders(params: {
+    companyId: string;
+    query: string;
+    role?: string;
+  }): Promise<GlobalSearchPurchaseOrder[]> {
+    // POs are only visible to Owner / Admin / Manager
+    if (!canSearchDocuments(params.role)) {
+      return [];
+    }
+
+    const pos = await this.purchaseOrderRepository
+      .createQueryBuilder('po')
+      .leftJoinAndSelect('po.supplier', 'supplier')
+      .where('po.company_id = :companyId', { companyId: params.companyId })
+      .andWhere(
+        new Brackets((sub) => {
+          sub
+            .where('po.po_number ILIKE :q', { q: `%${params.query}%` })
+            .orWhere('supplier.name ILIKE :q', { q: `%${params.query}%` });
+        }),
+      )
+      .orderBy('po.created_at', 'DESC')
+      .take(MAX_PER_GROUP)
+      .getMany();
+
+    return pos.map((po) => ({
+      id: po.id,
+      po_number: po.po_number,
+      status: po.status,
+      supplier_name: po.supplier?.name ?? undefined,
+    }));
+  }
+
+  // ── Sales Orders ───────────────────────────────────────────────────────
+
+  private async searchSalesOrders(params: {
+    companyId: string;
+    query: string;
+  }): Promise<GlobalSearchSalesOrder[]> {
+    const orders = await this.salesOrderRepository
+      .createQueryBuilder('so')
+      .where('so.company_id = :companyId', { companyId: params.companyId })
+      .andWhere(
+        new Brackets((sub) => {
+          sub
+            .where('so.order_number ILIKE :q', { q: `%${params.query}%` })
+            .orWhere('so.customer_name ILIKE :q', { q: `%${params.query}%` });
+        }),
+      )
+      .orderBy('so.created_at', 'DESC')
+      .take(MAX_PER_GROUP)
+      .getMany();
+
+    return orders.map((so) => ({
+      id: so.id,
+      order_number: so.order_number,
+      status: so.status,
+      customer_name: so.customer_name,
     }));
   }
 }

@@ -25,10 +25,41 @@ export type GlobalSearchDocument = {
   number: string;
 };
 
+export type GlobalSearchSupplier = {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+};
+
+export type GlobalSearchCategory = {
+  id: string;
+  name: string;
+  description?: string | null;
+};
+
+export type GlobalSearchPurchaseOrder = {
+  id: string;
+  po_number: string;
+  status: string;
+  supplier_name?: string | null;
+};
+
+export type GlobalSearchSalesOrder = {
+  id: string;
+  order_number: string;
+  status: string;
+  customer_name: string;
+};
+
 export type GlobalSearchResultsData = {
   products: GlobalSearchProduct[];
   warehouses: GlobalSearchWarehouse[];
   documents: GlobalSearchDocument[];
+  suppliers: GlobalSearchSupplier[];
+  categories: GlobalSearchCategory[];
+  purchaseOrders: GlobalSearchPurchaseOrder[];
+  salesOrders: GlobalSearchSalesOrder[];
 };
 
 export type GlobalSearchContextValue = {
@@ -50,7 +81,7 @@ export type GlobalSearchContextValue = {
   openPalette: () => void;
   closePalette: () => void;
   navigateToResult: (item:
-    | { kind: 'product' | 'warehouse' | 'document'; id: string; type?: GlobalSearchDocumentType }
+    | { kind: 'product' | 'warehouse' | 'document' | 'supplier' | 'category' | 'purchaseOrder' | 'salesOrder'; id: string; type?: GlobalSearchDocumentType }
     | { kind: 'action'; id: 'create-warehouse' | 'create-company' | 'scan-barcode' }) => void;
 };
 

@@ -7,6 +7,10 @@ import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
 import { GoodsReceiptNote } from '../inventory/entities/goods-receipt-note.entity';
 import { IssueNote } from '../issues/entities/issue-note.entity';
 import { WarehouseTransfer } from '../inventory/entities/warehouse-transfer.entity';
+import { Supplier } from '../supplier/supplier.entity';
+import { Category } from '../inventory/entities/category.entity';
+import { PurchaseOrder } from '../purchase-orders/entities/purchase-order.entity';
+import { SalesOrder } from '../sales/entities/sales-order.entity';
 import { AuthModule } from '../auth/auth.module';
 import { GlobalSearchResolver } from './global-search.resolver';
 import { GlobalSearchService } from './global-search.service';
@@ -21,6 +25,10 @@ import { GlobalSearchService } from './global-search.service';
       GoodsReceiptNote,
       IssueNote,
       WarehouseTransfer,
+      Supplier,
+      Category,
+      PurchaseOrder,
+      SalesOrder,
     ]),
     AuthModule,
   ],

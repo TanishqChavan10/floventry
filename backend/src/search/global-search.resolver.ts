@@ -22,19 +22,29 @@ export class GlobalSearchResolver {
     @Args('query') query: string,
     @ClerkUser() user: ClerkRequestUser,
   ): Promise<GlobalSearchResponse> {
+    const emptyResponse = {
+      products: [],
+      warehouses: [],
+      documents: [],
+      suppliers: [],
+      categories: [],
+      purchaseOrders: [],
+      salesOrders: [],
+    };
+
     if (!user?.activeCompanyId) {
       // Keep behavior silent (no leak) and consistent with other resolvers.
-      return { products: [], warehouses: [], documents: [] };
+      return emptyResponse;
     }
 
     const userId = user.userId ?? user.id;
     if (!userId) {
-      return { products: [], warehouses: [], documents: [] };
+      return emptyResponse;
     }
 
     const normalized = (query ?? '').trim();
     if (normalized.length > 0 && normalized.length < 2) {
-      return { products: [], warehouses: [], documents: [] };
+      return emptyResponse;
     }
 
     if (!normalized) {

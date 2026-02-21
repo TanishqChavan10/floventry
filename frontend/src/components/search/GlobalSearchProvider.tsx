@@ -28,6 +28,10 @@ const EMPTY_RESULTS: GlobalSearchResultsData = {
   products: [],
   warehouses: [],
   documents: [],
+  suppliers: [],
+  categories: [],
+  purchaseOrders: [],
+  salesOrders: [],
 };
 
 function isAbortLikeError(error: unknown): boolean {
@@ -270,6 +274,26 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
         router.push(
           `/${companySlug}/warehouses/${encodeURIComponent(slug)}${archived ? '?archived=1' : ''}`,
         );
+        return;
+      }
+
+      if (item.kind === 'supplier') {
+        router.push(`/${companySlug}/suppliers`);
+        return;
+      }
+
+      if (item.kind === 'category') {
+        router.push(`/${companySlug}/catalog/categories`);
+        return;
+      }
+
+      if (item.kind === 'purchaseOrder') {
+        router.push(`/${companySlug}/purchase-orders`);
+        return;
+      }
+
+      if (item.kind === 'salesOrder') {
+        router.push(`/${companySlug}/sales/orders`);
         return;
       }
 

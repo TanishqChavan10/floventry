@@ -21,6 +21,29 @@ export const GLOBAL_SEARCH = gql`
         type
         number
       }
+      suppliers {
+        id
+        name
+        email
+        phone
+      }
+      categories {
+        id
+        name
+        description
+      }
+      purchaseOrders {
+        id
+        po_number
+        status
+        supplier_name
+      }
+      salesOrders {
+        id
+        order_number
+        status
+        customer_name
+      }
     }
   }
 `;

@@ -16,7 +16,14 @@ export type FlattenedSearchItem =
     }
   | {
       key: string;
-      kind: 'product' | 'warehouse' | 'document';
+      kind:
+        | 'product'
+        | 'warehouse'
+        | 'document'
+        | 'supplier'
+        | 'category'
+        | 'purchaseOrder'
+        | 'salesOrder';
       id: string;
       type?: GlobalSearchDocumentType;
       title: string;
@@ -142,6 +149,10 @@ export function GlobalSearchResults({
   const productItems = items.filter((i) => i.kind === 'product');
   const warehouseItems = items.filter((i) => i.kind === 'warehouse');
   const documentItems = items.filter((i) => i.kind === 'document');
+  const supplierItems = items.filter((i) => i.kind === 'supplier');
+  const categoryItems = items.filter((i) => i.kind === 'category');
+  const purchaseOrderItems = items.filter((i) => i.kind === 'purchaseOrder');
+  const salesOrderItems = items.filter((i) => i.kind === 'salesOrder');
   const actionItems = items.filter((i) => i.kind === 'action');
 
   return (
@@ -149,6 +160,10 @@ export function GlobalSearchResults({
       {renderGroup('Actions', actionItems)}
       {renderGroup('Products', productItems)}
       {renderGroup('Warehouses', warehouseItems)}
+      {renderGroup('Suppliers', supplierItems)}
+      {renderGroup('Categories', categoryItems)}
+      {renderGroup('Purchase Orders', purchaseOrderItems)}
+      {renderGroup('Sales Orders', salesOrderItems)}
       {renderGroup('Documents', documentItems)}
     </div>
   );

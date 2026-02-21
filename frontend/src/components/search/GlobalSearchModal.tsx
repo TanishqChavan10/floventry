@@ -12,6 +12,15 @@ function flattenResults(args: {
   products: Array<{ id: string; name: string; sku: string; barcode?: string | null }>;
   warehouses: Array<{ id: string; name: string; code?: string | null; status: string }>;
   documents: Array<{ id: string; type: 'GRN' | 'ISSUE' | 'TRANSFER'; number: string }>;
+  suppliers: Array<{ id: string; name: string; email?: string | null; phone?: string | null }>;
+  categories: Array<{ id: string; name: string; description?: string | null }>;
+  purchaseOrders: Array<{
+    id: string;
+    po_number: string;
+    status: string;
+    supplier_name?: string | null;
+  }>;
+  salesOrders: Array<{ id: string; order_number: string; status: string; customer_name: string }>;
 }): FlattenedSearchItem[] {
   const items: FlattenedSearchItem[] = [];
 
@@ -46,6 +55,48 @@ function flattenResults(args: {
       type: d.type,
       title: `${label} ${d.number}`,
       subtitle: 'Inventory document',
+    });
+  }
+
+  for (const s of args.suppliers) {
+    items.push({
+      key: `supplier:${s.id}`,
+      kind: 'supplier',
+      id: s.id,
+      title: s.name,
+      subtitle: [s.email, s.phone].filter(Boolean).join(' • ') || undefined,
+    });
+  }
+
+  for (const c of args.categories) {
+    items.push({
+      key: `category:${c.id}`,
+      kind: 'category',
+      id: c.id,
+      title: c.name,
+      subtitle: c.description || undefined,
+    });
+  }
+
+  for (const po of args.purchaseOrders) {
+    items.push({
+      key: `purchaseOrder:${po.id}`,
+      kind: 'purchaseOrder',
+      id: po.id,
+      title: po.po_number,
+      subtitle: po.supplier_name ? `Supplier: ${po.supplier_name}` : undefined,
+      badge: po.status,
+    });
+  }
+
+  for (const so of args.salesOrders) {
+    items.push({
+      key: `salesOrder:${so.id}`,
+      kind: 'salesOrder',
+      id: so.id,
+      title: so.order_number,
+      subtitle: `Customer: ${so.customer_name}`,
+      badge: so.status,
     });
   }
 
@@ -119,10 +170,14 @@ export function GlobalSearchModal() {
       products: results.products,
       warehouses: results.warehouses,
       documents: results.documents,
+      suppliers: results.suppliers,
+      categories: results.categories,
+      purchaseOrders: results.purchaseOrders,
+      salesOrders: results.salesOrders,
     });
 
     return [...actionItems, ...searched];
-  }, [actionItems, results.documents, results.products, results.warehouses]);
+  }, [actionItems, results]);
 
   useEffect(() => {
     if (!open) return;
@@ -196,7 +251,7 @@ export function GlobalSearchModal() {
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search products, warehouses, GRNs, issues, transfers…"
+            placeholder="Search products, warehouses, suppliers, orders…"
             className="flex-1 h-10 bg-transparent outline-none text-sm text-foreground placeholder:text-muted-foreground"
             autoComplete="off"
             spellCheck={false}
@@ -208,7 +263,15 @@ export function GlobalSearchModal() {
           {query.trim().length < 2 ? (
             <GlobalSearchResults
               loading={false}
-              results={{ products: [], warehouses: [], documents: [] }}
+              results={{
+                products: [],
+                warehouses: [],
+                documents: [],
+                suppliers: [],
+                categories: [],
+                purchaseOrders: [],
+                salesOrders: [],
+              }}
               items={items}
               activeIndex={activeIndex}
               setActiveIndex={setActiveIndex}

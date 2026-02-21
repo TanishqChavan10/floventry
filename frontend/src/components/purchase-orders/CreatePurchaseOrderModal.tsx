@@ -166,8 +166,8 @@ export function CreatePurchaseOrderModal({
       const existingIndex = prev.findIndex((it) => it.product_id === productId);
       if (existingIndex !== -1) {
         const next = [...prev];
-        const currentQty = Number.isFinite(next[existingIndex].ordered_quantity)
-          ? next[existingIndex].ordered_quantity
+        const currentQty = Number.isFinite(Number(next[existingIndex].ordered_quantity))
+          ? Number(next[existingIndex].ordered_quantity)
           : 1;
         next[existingIndex] = {
           ...next[existingIndex],
@@ -232,7 +232,7 @@ export function CreatePurchaseOrderModal({
     }
     if (
       items.length === 0 ||
-      items.some((item) => !item.product_id || item.ordered_quantity <= 0)
+      items.some((item) => !item.product_id || Number(item.ordered_quantity) <= 0)
     ) {
       toast.error('Please add at least one valid product');
       return;
@@ -406,7 +406,6 @@ export function CreatePurchaseOrderModal({
                             'ordered_quantity',
                             e.target.value === '' ? '' : parseInt(e.target.value) || '',
                           )
-                          
                         }
                         onBlur={(e) => {
                           const val = parseInt(e.target.value);
