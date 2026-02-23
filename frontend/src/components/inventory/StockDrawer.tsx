@@ -351,7 +351,7 @@ export default function StockDrawer({
                   Stock Alert Thresholds (Optional)
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Stock levels are optional alert thresholds. They help Floventory warn you early —
+                  Stock levels are optional alert thresholds. They help Floventry warn you early —
                   they never affect stock movement.
                 </p>
               </div>

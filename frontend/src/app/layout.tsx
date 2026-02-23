@@ -1,26 +1,9 @@
 // src/app/layout.tsx
-'use client';
+import type { Metadata, Viewport } from 'next';
 import { Poppins } from 'next/font/google';
 import './globals.css';
-import { useEffect } from 'react';
 
-import { ClerkThemeProvider } from '@/components/ClerkThemeProvider';
-
-// Providers
-import { ApolloAppProvider } from '@/components/ApolloAppProvider';
-import { WarehouseProvider } from '@/context/warehouse-context';
-import { ThemeProvider } from '@/context/theme-context';
-import { GlobalSearchProvider } from '@/components/search/GlobalSearchProvider';
-import { LoadingProvider } from '@/context/loading-context';
-import { GlobalLoadingBar } from '@/components/ui/GlobalLoadingBar';
-
-// UI Wrappers
-import PageWrapper from '@/components/ui/PageWrapper';
-import AppLayoutWrapper from './layout-wrapper';
-
-// UI
-import { Toaster } from '@/components/ui/sonner';
-import { DesktopOnlyOverlay } from '@/components/common/DesktopOnlyOverlay';
+import Providers from './providers';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -28,43 +11,103 @@ const poppins = Poppins({
   variable: '--font-poppins',
 });
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  // Set the document title for the browser tab
-  useEffect(() => {
-    document.title = 'Floventory';
-  }, []);
+/* ───────────── SEO Metadata ───────────── */
 
+const SITE_URL = 'https://floventry.online';
+const SITE_NAME = 'Floventry';
+const DESCRIPTION =
+  'Floventry — Smart inventory management built for Indian businesses. Track stock across warehouses, scan barcodes, manage suppliers, and streamline operations from one dashboard.';
+
+export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} — Smart Inventory Management`,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: [
+    'inventory management India',
+    'stock tracking software',
+    'warehouse management India',
+    'barcode scanning app',
+    'inventory software for Indian businesses',
+    'stock management system',
+    'supply chain India',
+    'inventory control',
+    'GST inventory management',
+    'Indian warehouse software',
+    'small business inventory India',
+    'godown management software',
+    'Floventry',
+  ],
+  authors: [{ name: SITE_NAME }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+
+  // Open Graph — shown on Facebook, LinkedIn, WhatsApp, etc.
+  openGraph: {
+    type: 'website',
+    locale: 'en_IN',
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — Smart Inventory Management`,
+    description: DESCRIPTION,
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: `${SITE_NAME} — Inventory Management Dashboard`,
+      },
+    ],
+  },
+
+  // Twitter / X card
+  twitter: {
+    card: 'summary_large_image',
+    title: `${SITE_NAME} — Smart Inventory Management`,
+    description: DESCRIPTION,
+    images: ['/opengraph-image'],
+  },
+
+  // Robots
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+
+  // Icons
+  icons: {
+    icon: '/4.svg',
+    shortcut: '/4.svg',
+    apple: '/4.svg',
+  },
+
+  // Canonical
+  alternates: {
+    canonical: SITE_URL,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#E53935',
+  width: 'device-width',
+  initialScale: 1,
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <title>Floventory</title>
-        <link rel="icon" href="/4.svg" type="image/svg+xml" />
-      </head>
       <body className={`${poppins.variable} font-sans min-h-screen flex flex-col`}>
-        <DesktopOnlyOverlay />
-        {/* --- 1) Theme Provider first for useTheme --- */}
-        <LoadingProvider>
-          <ThemeProvider>
-            {/* --- 2) Clerk (light only) --- */}
-            <ClerkThemeProvider>
-              {/* --- 3) Apollo loads AFTER Clerk (prevents redirect loops) --- */}
-              <ApolloAppProvider>
-                <WarehouseProvider>
-                  <GlobalSearchProvider>
-                    <PageWrapper>
-                      <GlobalLoadingBar />
-                      <AppLayoutWrapper>
-                        <main className="flex-1 min-h-screen">{children}</main>
-                      </AppLayoutWrapper>
-
-                      <Toaster richColors position="top-center" />
-                    </PageWrapper>
-                  </GlobalSearchProvider>
-                </WarehouseProvider>
-              </ApolloAppProvider>
-            </ClerkThemeProvider>
-          </ThemeProvider>
-        </LoadingProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

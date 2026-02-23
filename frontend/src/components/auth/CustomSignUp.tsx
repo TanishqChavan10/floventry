@@ -85,7 +85,7 @@ export default function CustomSignUp() {
         <div className="flex flex-col justify-center px-8 py-12 lg:px-16">
           <div className="mx-auto w-full max-w-[440px]">
             <Link href="/" className="mb-12 inline-block">
-              <img src="/2.svg" alt="Floventory" className="h-10 w-auto" />
+              <img src="/2.svg" alt="Floventry" className="h-10 w-auto" />
             </Link>
 
             <div className="mb-8">
@@ -176,7 +176,7 @@ export default function CustomSignUp() {
         <div className="mx-auto w-full max-w-[440px]">
           {/* Logo */}
           <Link href="/" className="mb-12 inline-block">
-            <img src="/2.svg" alt="Floventory" className="h-10 w-auto" />
+            <img src="/2.svg" alt="Floventry" className="h-10 w-auto" />
           </Link>
 
           {/* Header */}

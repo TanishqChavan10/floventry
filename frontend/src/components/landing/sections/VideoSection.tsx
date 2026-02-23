@@ -4,10 +4,10 @@ export default function VideoSection() {
       <div className="mx-auto max-w-[1200px] px-6">
         <div className="text-center">
           <h2 className="text-3xl font-semibold tracking-tight text-neutral-900 md:text-4xl">
-            See Floventory in Action
+            See Floventry in Action
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-neutral-700">
-            Watch how easy it is to manage your inventory with Floventory
+            Watch how easy it is to manage your inventory with Floventry
           </p>
         </div>
 
@@ -17,7 +17,7 @@ export default function VideoSection() {
             <iframe
               className="h-full w-full"
               src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
-              title="Floventory Demo Video"
+              title="Floventry Demo Video"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />

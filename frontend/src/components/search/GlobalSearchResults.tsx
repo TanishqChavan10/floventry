@@ -54,11 +54,17 @@ function ResultRow({
     item.kind === 'product' && item.subtitle ? item.subtitle.split(' • ')[0] : undefined;
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
       tabIndex={-1}
       onMouseEnter={onMouseEnter}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       className={cn(
         'w-full text-left px-4 py-3 flex items-start gap-3',
         'hover:bg-muted',
@@ -88,7 +94,7 @@ function ResultRow({
           </div>
         )}
       </div>
-    </button>
+    </div>
   );
 }
 

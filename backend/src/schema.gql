@@ -566,10 +566,28 @@ enum GlobalSearchDocumentType {
   TRANSFER
 }
 
+type GlobalSearchPurchaseOrder {
+  id: ID!
+  po_number: String!
+  status: String!
+  supplier_name: String
+}
+
 type GlobalSearchResponse {
+  categories: [Category!]!
   documents: [GlobalSearchDocument!]!
   products: [Product!]!
+  purchaseOrders: [GlobalSearchPurchaseOrder!]!
+  salesOrders: [GlobalSearchSalesOrder!]!
+  suppliers: [Supplier!]!
   warehouses: [Warehouse!]!
+}
+
+type GlobalSearchSalesOrder {
+  customer_name: String!
+  id: ID!
+  order_number: String!
+  status: String!
 }
 
 type GoodsReceiptNote {

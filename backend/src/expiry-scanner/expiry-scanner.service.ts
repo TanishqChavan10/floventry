@@ -98,27 +98,24 @@ export class ExpiryScannerService implements OnModuleInit {
 
   /**
    * Resolve the effective expiry warning days for a company.
-   *  - Pro (is_premium): use the company's custom `expiry_warning_days`.
-   *  - Standard: always 30 days (safety baseline, never zero).
+   * Uses the company's configured `expiry_warning_days`, falling back to 30.
    */
   private async getWarningDaysForCompany(
     companyId: string,
-    settingsCache: Map<string, { isPremium: boolean; warningDays: number }>,
+    settingsCache: Map<string, number>,
   ): Promise<number> {
     if (settingsCache.has(companyId)) {
-      const cached = settingsCache.get(companyId)!;
-      return cached.isPremium ? cached.warningDays : STANDARD_EXPIRY_WARNING_DAYS;
+      return settingsCache.get(companyId)!;
     }
 
     const settings = await this.companySettingsRepository.findOne({
       where: { company_id: companyId },
     });
 
-    const isPremium = settings?.is_premium ?? false;
     const warningDays = settings?.expiry_warning_days ?? STANDARD_EXPIRY_WARNING_DAYS;
 
-    settingsCache.set(companyId, { isPremium, warningDays });
-    return isPremium ? warningDays : STANDARD_EXPIRY_WARNING_DAYS;
+    settingsCache.set(companyId, warningDays);
+    return warningDays;
   }
 
   // ----------------------------------------------------------------
@@ -150,7 +147,7 @@ export class ExpiryScannerService implements OnModuleInit {
     let errorCount = 0;
 
     // Cache company settings to avoid repeated DB lookups
-    const settingsCache = new Map<string, { isPremium: boolean; warningDays: number }>();
+    const settingsCache = new Map<string, number>();
 
     for (const lot of lots) {
       try {

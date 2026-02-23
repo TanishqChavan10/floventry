@@ -7,11 +7,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 items-start gap-12 md:grid-cols-4">
           <div>
             <div className="flex items-end gap-2 text-white md:pt-1">
-              <img
-                src="/2.svg"
-                alt="Floventory"
-                className="h-10 block w-auto brightness-0 invert"
-              />
+              <img src="/2.svg" alt="Floventry" className="h-10 block w-auto brightness-0 invert" />
             </div>
           </div>
           <div className="items-center">

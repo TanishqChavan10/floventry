@@ -1,12 +1,10 @@
 'use client';
 
 import React from 'react';
-import { useQuery } from '@apollo/client';
 import { useAuth } from '@/context/auth-context';
 import { useWarehouse } from '@/context/warehouse-context';
 import { useRouter, useParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { GET_COMPANY_BY_SLUG } from '@/lib/graphql/company';
 import {
   IconBuilding,
   IconChevronDown,
@@ -41,18 +39,7 @@ export function Navbar() {
   const companySlug = params?.slug as string;
   const warehouseSlug = params?.warehouseSlug as string;
 
-  const { data: companyData } = useQuery(GET_COMPANY_BY_SLUG, {
-    variables: { slug: companySlug },
-    skip: !companySlug,
-    fetchPolicy: 'cache-first',
-  });
-
-  const isPremiumCompany = Boolean(companyData?.companyBySlug?.settings?.is_premium);
-  const companyPlan: 'Standard' | 'Pro' | null = companySlug
-    ? isPremiumCompany
-      ? 'Pro'
-      : 'Standard'
-    : null;
+  const companyPlan: 'Standard' | 'Pro' | null = companySlug ? 'Pro' : null;
 
   // Get current active company from user's companies
   // If no company slug in URL (e.g., /profile), use the first company as fallback

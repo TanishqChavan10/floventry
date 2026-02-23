@@ -16,9 +16,9 @@ export interface UsePlanTierReturn {
 }
 
 /**
- * Returns the current company's plan tier derived from `is_premium`.
- *  - `is_premium = true`  → Pro
- *  - `is_premium = false`  → Standard
+ * Returns the current company's plan tier.
+ *
+ * Monetization is not enabled yet, so all companies behave as Pro.
  */
 export function usePlanTier(): UsePlanTierReturn {
   const params = useParams();
@@ -30,11 +30,12 @@ export function usePlanTier(): UsePlanTierReturn {
     fetchPolicy: 'cache-first',
   });
 
-  const isPremium = Boolean(data?.companyBySlug?.settings?.is_premium);
+  // Keep the query for cache warming / other consumers, but do not gate features.
+  void data;
 
   return {
-    plan: isPremium ? 'Pro' : 'Standard',
-    isPro: isPremium,
+    plan: 'Pro',
+    isPro: true,
     loading,
   };
 }

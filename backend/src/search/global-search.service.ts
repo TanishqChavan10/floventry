@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { Product } from '../inventory/entities/product.entity';
 import { Warehouse } from '../warehouse/warehouse.entity';
-import { CompanySettings } from '../company/company-settings.entity';
 import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
 import { GoodsReceiptNote } from '../inventory/entities/goods-receipt-note.entity';
 import { IssueNote } from '../issues/entities/issue-note.entity';
@@ -59,8 +58,6 @@ export class GlobalSearchService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
-    @InjectRepository(CompanySettings)
-    private readonly companySettingsRepository: Repository<CompanySettings>,
     @InjectRepository(UserWarehouse)
     private readonly userWarehouseRepository: Repository<UserWarehouse>,
     @InjectRepository(GoodsReceiptNote)
@@ -139,20 +136,11 @@ export class GlobalSearchService {
     return { products, warehouses, documents, suppliers, categories, purchaseOrders, salesOrders };
   }
 
-  private async isPremiumCompany(companyId: string): Promise<boolean> {
-    const settings = await this.companySettingsRepository.findOne({
-      where: { company_id: companyId },
-    });
-    return Boolean(settings?.is_premium);
-  }
-
   private async searchProducts(params: {
     companyId: string;
     query: string;
     role?: string;
   }): Promise<Product[]> {
-    const isPremium = await this.isPremiumCompany(params.companyId);
-
     const qb = this.productRepository
       .createQueryBuilder('p')
       .where('p.company_id = :companyId', { companyId: params.companyId })
@@ -161,31 +149,20 @@ export class GlobalSearchService {
         new Brackets((sub) => {
           sub
             .where('p.name ILIKE :q', { q: `%${params.query}%` })
-            .orWhere('p.sku ILIKE :q', { q: `%${params.query}%` });
-
-          if (isPremium) {
-            sub.orWhere('p.barcode ILIKE :q', { q: `%${params.query}%` });
-
+            .orWhere('p.sku ILIKE :q', { q: `%${params.query}%` })
+            .orWhere('p.barcode ILIKE :q', { q: `%${params.query}%` })
             // Alternate barcodes are stored as a text[] in Postgres.
             // Use unnest() to allow ILIKE (partial match) search.
-            sub.orWhere(
+            .orWhere(
               'EXISTS (SELECT 1 FROM unnest(p.alternate_barcodes) AS ab WHERE ab ILIKE :q)',
               { q: `%${params.query}%` },
             );
-          }
         }),
       )
       .orderBy('p.created_at', 'DESC')
       .take(MAX_PER_GROUP);
 
-    const items = await qb.getMany();
-
-    // Do not leak barcode values to non-premium companies
-    if (!isPremium) {
-      return items.map((p) => ({ ...p, barcode: null }));
-    }
-
-    return items;
+    return qb.getMany();
   }
 
   private async searchWarehouses(params: {

@@ -91,7 +91,7 @@ export default function CustomSignIn() {
         <div className="mx-auto w-full max-w-[440px]">
           {/* Logo */}
           <Link href="/" className="mb-12 inline-block">
-            <img src="/2.svg" alt="Floventory" className="h-10 w-auto" />
+            <img src="/2.svg" alt="Floventry" className="h-10 w-auto" />
           </Link>
 
           {/* Header */}

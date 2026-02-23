@@ -158,7 +158,15 @@ body {
   display: none; /* WebKit browsers */
 }
 
-/* Ensure scrolling still works */
-html, body {
-  overflow: auto;
+/*
+  The app uses a fixed-height shell (`h-screen`) with an internal scroll container
+  (`overflow-y-auto`) in `src/app/layout-wrapper.tsx`.
+
+  Allowing `html, body` to scroll causes a double-scroll experience and can show
+  large blank areas while scrolling. Keep scrolling inside the app shell only.
+*/
+html,
+body {
+  height: 100%;
+  overflow: hidden;
 }

@@ -149,7 +149,7 @@ export function GlobalSearchModal() {
           kind: 'action',
           id: 'scan-barcode',
           title: 'Scan barcode',
-          subtitle: 'Open product by barcode (Premium)',
+          subtitle: 'Open product by barcode',
         });
       }
 

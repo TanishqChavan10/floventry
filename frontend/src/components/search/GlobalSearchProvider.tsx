@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useApolloClient, useQuery } from '@apollo/client';
+import { useApolloClient } from '@apollo/client';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -18,7 +18,6 @@ import {
   GET_ISSUE_FOR_REDIRECT,
   GET_TRANSFER_FOR_REDIRECT,
 } from '@/lib/graphql/search';
-import { GET_COMPANY_BY_SLUG } from '@/lib/graphql/company';
 import { PRODUCT_BY_BARCODE } from '@/lib/graphql/barcode';
 import { GlobalSearchModal } from './GlobalSearchModal';
 import { CreateWarehouseDialog } from '@/components/warehouses/CreateWarehouseDialog';
@@ -48,18 +47,7 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
   const params = useParams();
   const companySlug = params?.slug as string | undefined;
 
-  const { data: companyData } = useQuery(GET_COMPANY_BY_SLUG, {
-    variables: { slug: companySlug as string },
-    skip: !companySlug,
-    fetchPolicy: 'cache-first',
-  });
-
-  const isPremiumCompany = Boolean(companyData?.companyBySlug?.settings?.is_premium);
-  const companyPlan: 'Standard' | 'Pro' | null = companySlug
-    ? isPremiumCompany
-      ? 'Pro'
-      : 'Standard'
-    : null;
+  const companyPlan: 'Standard' | 'Pro' | null = companySlug ? 'Pro' : null;
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -214,11 +202,6 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
 
         if (item.id === 'scan-barcode') {
           if (!companySlug) return;
-
-          if (!isPremiumCompany) {
-            toast.error('Barcode scanning is a Premium feature');
-            return;
-          }
 
           // Normalize scanner noise (whitespace/newlines/control chars)
           const normalized = String(query || '')

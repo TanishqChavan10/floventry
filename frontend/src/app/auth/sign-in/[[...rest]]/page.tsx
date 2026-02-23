@@ -4,13 +4,13 @@ import CustomSignIn from '@/components/auth/CustomSignIn';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Sign In - Flowventory',
-  description: 'Sign in to your Flowventory account',
+  title: 'Sign In',
+  description: 'Sign in to your Floventry account to manage inventory, warehouses, and more.',
 };
 
 export default async function SignInPage() {
   const { userId } = await auth();
-  
+
   // If user is already authenticated, redirect them immediately
   if (userId) {
     redirect('/auth-redirect');

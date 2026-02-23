@@ -14,7 +14,7 @@ export function DesktopOnlyOverlay() {
             <CardDescription>This app is optimized for desktop screens.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>Please open Floventory on a laptop/desktop.</p>
+            <p>Please open Floventry on a laptop/desktop.</p>
             <p>If you must use your phone, enable your browser’s “Request desktop site” option.</p>
           </CardContent>
         </Card>

@@ -1,9 +1,6 @@
 import { Resolver, Mutation, Args } from '@nestjs/graphql';
-import { UseGuards, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { UseGuards } from '@nestjs/common';
 import { ExportService } from './export.service';
-import { CompanySettings } from '../company/company-settings.entity';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -13,23 +10,7 @@ import { ExportFiltersInput } from './dto/export-filters.input';
 
 @Resolver()
 export class ExportResolver {
-  constructor(
-    private readonly exportService: ExportService,
-    @InjectRepository(CompanySettings)
-    private readonly companySettingsRepository: Repository<CompanySettings>,
-  ) {}
-
-  /** Throws if the company is not on the Pro plan. */
-  private async assertPremium(companyId: string): Promise<void> {
-    const settings = await this.companySettingsRepository.findOne({
-      where: { company_id: companyId },
-    });
-    if (!settings?.is_premium) {
-      throw new BadRequestException(
-        'Expiry exports require the Pro plan. Upgrade to access expiry risk reports and expiry lot exports.',
-      );
-    }
-  }
+  constructor(private readonly exportService: ExportService) {}
 
   @Mutation(() => String)
   @UseGuards(ClerkAuthGuard)
@@ -84,7 +65,6 @@ export class ExportResolver {
     @Args('filters', { type: () => ExportFiltersInput, nullable: true })
     filters?: ExportFiltersInput,
   ): Promise<string> {
-    await this.assertPremium(user.activeCompanyId);
     return this.exportService.exportExpiryLots(
       warehouseId,
       filters,
@@ -128,7 +108,6 @@ export class ExportResolver {
     @Args('filters', { type: () => ExportFiltersInput, nullable: true })
     filters?: ExportFiltersInput,
   ): Promise<string> {
-    await this.assertPremium(user.activeCompanyId);
     return this.exportService.exportExpiryRisk(user.activeCompanyId, filters);
   }
 }
