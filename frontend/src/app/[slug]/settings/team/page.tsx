@@ -10,7 +10,6 @@ import { InvitesTable } from '@/components/settings/team/InvitesTable';
 import { ActiveMembersTable } from '@/components/settings/team/ActiveMembersTable';
 import { EditMemberDialog } from '@/components/settings/team/EditMemberDialog';
 import { RemoveMemberDialog } from '@/components/settings/team/RemoveMemberDialog';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import CompanyGuard from '@/components/CompanyGuard';
@@ -42,14 +41,14 @@ function TeamManagementContent() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (error || !company) {
     return (
-      <div className="p-8 text-center text-destructive">
+      <div className="p-8 text-center text-sm text-destructive">
         Error loading company details. Please try again.
       </div>
     );
@@ -57,58 +56,55 @@ function TeamManagementContent() {
 
   return (
     <>
-      <div className="min-h-screen bg-background p-6 md:p-12">
-        <div className="max-w-6xl mx-auto space-y-8">
+      <div className="p-6 md:p-10">
+        <div className="max-w-5xl mx-auto space-y-10">
+          {/* Header */}
           <div>
-            <Button variant="ghost" size="sm" asChild className="-ml-2">
-              <Link href={`/${slug}/settings`} className="inline-flex items-center">
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Go back
-              </Link>
-            </Button>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Team Management</h1>
+            <Link
+              href={`/${slug}/settings`}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Settings
+            </Link>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-semibold tracking-tight">Team</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Manage members and pending invitations.
+                </p>
+              </div>
+              <InviteUserDialog
+                companyId={company.id}
+                warehouses={company.warehouses || []}
+                managedWarehouses={managedWarehouseIds}
+                onSuccess={handleRefresh}
+              />
             </div>
-            <InviteUserDialog
-              companyId={company.id}
-              warehouses={company.warehouses || []}
-              managedWarehouses={managedWarehouseIds}
-              onSuccess={handleRefresh}
-            />
           </div>
 
           {/* Active Members */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Active Members</CardTitle>
-              <CardDescription>Current team members with access to this workspace.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ActiveMembersTable
-                companyId={company.id}
-                onEditMember={setEditingMember}
-                onRemoveMember={setRemovingMember}
-              />
-            </CardContent>
-          </Card>
+          <div className="space-y-3">
+            <ActiveMembersTable
+              companyId={company.id}
+              onEditMember={setEditingMember}
+              onRemoveMember={setRemovingMember}
+            />
+          </div>
 
           {/* Pending Invites */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Pending Invites</CardTitle>
-              <CardDescription>Invitations sent but not yet accepted.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <InvitesTable companyId={company.id} refreshTrigger={refreshKey} />
-            </CardContent>
-          </Card>
+          <div className="space-y-3">
+            <div className="border-b pb-3">
+              <h2 className="text-sm font-medium">Pending Invitations</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Invitations that have not yet been accepted.
+              </p>
+            </div>
+            <InvitesTable companyId={company.id} refreshTrigger={refreshKey} />
+          </div>
         </div>
       </div>
 
-      {/* Edit Member Dialog */}
       <EditMemberDialog
         open={!!editingMember}
         onOpenChange={(open: boolean) => !open && setEditingMember(null)}
@@ -118,7 +114,6 @@ function TeamManagementContent() {
         onSuccess={handleRefresh}
       />
 
-      {/* Remove Member Dialog */}
       <RemoveMemberDialog
         open={!!removingMember}
         onOpenChange={(open: boolean) => !open && setRemovingMember(null)}

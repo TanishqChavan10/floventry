@@ -27,13 +27,13 @@ export default function SupplierDetailDrawer({
   onClose,
   onEdit,
 }: SupplierDetailDrawerProps) {
-  if (!supplier) return null;
-
   const { data, loading } = useQuery(GET_SUPPLIER, {
-    variables: { id: supplier.id },
-    skip: !open,
+    variables: { id: supplier?.id },
+    skip: !open || !supplier,
     fetchPolicy: 'cache-and-network',
   });
+
+  if (!supplier) return null;
 
   const linkedProducts = data?.supplier?.products ?? [];
 

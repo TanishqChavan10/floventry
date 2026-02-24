@@ -16,4 +16,7 @@ export class ValidateInviteResponse {
 
   @Field()
   companyId: string;
+
+  @Field()
+  status: string;
 }

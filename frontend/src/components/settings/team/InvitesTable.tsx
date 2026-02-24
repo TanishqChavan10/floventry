@@ -11,7 +11,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
@@ -72,57 +71,49 @@ export function InvitesTable({ companyId, refreshTrigger }: InvitesTableProps) {
   const invites: Invite[] = data?.companyInvites || [];
 
   if (invites.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground bg-muted/30 rounded-lg border border-dashed border-border">
-        No pending invites
-      </div>
-    );
+    return <p className="text-sm text-muted-foreground py-4">No pending invitations.</p>;
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Sent</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {invites.map((invite) => (
-            <TableRow key={invite.invite_id}>
-              <TableCell className="font-medium">{invite.email}</TableCell>
-              <TableCell>
-                <Badge variant="outline">{invite.role}</Badge>
-              </TableCell>
-              <TableCell>
-                <Badge variant={invite.status === 'pending' ? 'secondary' : 'outline'}>
-                  {invite.status}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-muted-foreground text-xs">
+    <Table>
+      <TableHeader>
+        <TableRow className="border-b">
+          <TableHead className="text-xs font-medium">Email</TableHead>
+          <TableHead className="text-xs font-medium">Role</TableHead>
+          <TableHead className="text-xs font-medium">Sent</TableHead>
+          <TableHead className="w-10" />
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {invites.map((invite) => (
+          <TableRow key={invite.invite_id} className="group">
+            <TableCell className="py-3 text-sm">{invite.email}</TableCell>
+            <TableCell className="py-3">
+              <span className="text-xs text-muted-foreground">
+                {invite.role.charAt(0) + invite.role.slice(1).toLowerCase()}
+              </span>
+            </TableCell>
+            <TableCell className="py-3">
+              <span className="text-xs text-muted-foreground">
                 {formatDistanceToNow(new Date(invite.created_at), { addSuffix: true })}
-              </TableCell>
-              <TableCell className="text-right">
-                {!permissions.isManager && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => handleRevoke(invite.invite_id)}
-                    title="Cancel Invite"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+              </span>
+            </TableCell>
+            <TableCell className="py-3">
+              {!permissions.isManager && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-transparent"
+                  onClick={() => handleRevoke(invite.invite_id)}
+                  title="Cancel invitation"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

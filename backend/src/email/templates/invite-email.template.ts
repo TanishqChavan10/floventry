@@ -1,4 +1,4 @@
-export interface InviteEmailTemplateParams {
+﻿export interface InviteEmailTemplateParams {
   companyName: string;
   invitedEmail: string;
   invitedByName: string;
@@ -7,7 +7,7 @@ export interface InviteEmailTemplateParams {
 }
 
 /**
- * Generates a modern, responsive HTML email template for company invitations
+ * Generates a minimal, professional HTML email template for company invitations
  */
 export function generateInviteEmailTemplate(
   params: InviteEmailTemplateParams,
@@ -15,7 +15,6 @@ export function generateInviteEmailTemplate(
   const { companyName, invitedEmail, invitedByName, role, invitationLink } =
     params;
 
-  // Format role to be more readable (e.g., warehouse_staff -> Warehouse Staff)
   const formattedRole = role
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -35,227 +34,165 @@ export function generateInviteEmailTemplate(
       padding: 0;
       box-sizing: border-box;
     }
-    
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #333333;
-      background-color: #f4f4f5;
-      padding: 20px;
+      background-color: #fafafa;
+      color: #111111;
+      padding: 40px 20px;
     }
-    
-    .email-container {
-      max-width: 600px;
+
+    .wrapper {
+      max-width: 520px;
       margin: 0 auto;
       background-color: #ffffff;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-top: 3px solid #e05252;
+      padding: 48px 40px;
     }
-    
-    .email-header {
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-      padding: 40px 30px;
-      text-align: center;
+
+    .brand {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #e05252;
+      margin-bottom: 36px;
     }
-    
-    .email-header h1 {
-      color: #ffffff;
-      font-size: 28px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-    
-    .email-header p {
-      color: #e0e7ff;
-      font-size: 16px;
-    }
-    
-    .email-body {
-      padding: 40px 30px;
-    }
-    
-    .greeting {
-      font-size: 18px;
-      color: #1f2937;
+
+    .heading {
+      font-size: 22px;
+      font-weight: 600;
+      color: #111111;
+      line-height: 1.3;
       margin-bottom: 20px;
     }
-    
-    .invitation-box {
-      background-color: #f9fafb;
-      border-left: 4px solid #6366f1;
-      padding: 20px;
-      margin: 25px 0;
-      border-radius: 8px;
-    }
-    
-    .invitation-box p {
-      margin: 8px 0;
-      color: #4b5563;
+
+    .body-text {
       font-size: 15px;
+      color: #444444;
+      line-height: 1.7;
+      margin-bottom: 16px;
     }
-    
-    .invitation-box strong {
-      color: #1f2937;
-      font-weight: 600;
+
+    .meta {
+      margin: 28px 0;
+      border-top: 1px solid #eeeeee;
+      border-bottom: 1px solid #eeeeee;
+      padding: 20px 0;
     }
-    
-    .role-badge {
-      display: inline-block;
-      background-color: #6366f1;
-      color: #ffffff;
-      padding: 4px 12px;
-      border-radius: 6px;
+
+    .meta-row {
+      display: flex;
       font-size: 14px;
-      font-weight: 600;
+      margin-bottom: 10px;
+      color: #444444;
     }
-    
+
+    .meta-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .meta-label {
+      width: 80px;
+      flex-shrink: 0;
+      color: #999999;
+    }
+
+    .meta-value {
+      color: #111111;
+      font-weight: 500;
+    }
+
     .cta-button {
       display: inline-block;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      background-color: #e05252;
       color: #ffffff;
       text-decoration: none;
-      padding: 16px 40px;
-      border-radius: 8px;
+      padding: 13px 28px;
+      font-size: 14px;
       font-weight: 600;
-      font-size: 16px;
-      margin: 30px 0;
-      transition: transform 0.2s ease;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      letter-spacing: 0.01em;
+      margin: 28px 0 24px;
     }
-    
-    .cta-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
-    }
-    
-    .button-container {
-      text-align: center;
-      margin: 30px 0;
-    }
-    
-    .info-text {
-      color: #6b7280;
-      font-size: 14px;
-      line-height: 1.6;
-      margin: 20px 0;
-    }
-    
-    .expiry-notice {
-      background-color: #fef3c7;
-      border-left: 4px solid #f59e0b;
-      padding: 15px;
-      margin: 25px 0;
-      border-radius: 8px;
-    }
-    
-    .expiry-notice p {
-      color: #92400e;
-      font-size: 14px;
-      margin: 0;
-    }
-    
-    .email-footer {
-      background-color: #f9fafb;
-      padding: 30px;
-      text-align: center;
-      border-top: 1px solid #e5e7eb;
-    }
-    
-    .email-footer p {
-      color: #6b7280;
+
+    .link-fallback {
       font-size: 13px;
-      margin: 8px 0;
+      color: #999999;
+      line-height: 1.6;
+      margin-bottom: 28px;
+      word-break: break-all;
     }
-    
-    .email-footer a {
-      color: #6366f1;
+
+    .link-fallback a {
+      color: #e05252;
       text-decoration: none;
     }
-    
-    .divider {
-      height: 1px;
-      background-color: #e5e7eb;
-      margin: 30px 0;
+
+    .notice {
+      font-size: 13px;
+      color: #999999;
+      line-height: 1.6;
+      margin-bottom: 12px;
     }
-    
-    /* Responsive */
-    @media only screen and (max-width: 600px) {
-      .email-body {
-        padding: 30px 20px;
-      }
-      
-      .email-header {
-        padding: 30px 20px;
-      }
-      
-      .email-header h1 {
-        font-size: 24px;
-      }
-      
-      .cta-button {
-        padding: 14px 32px;
-        font-size: 15px;
+
+    .divider {
+      border: none;
+      border-top: 1px solid #eeeeee;
+      margin: 28px 0;
+    }
+
+    .footer {
+      font-size: 12px;
+      color: #bbbbbb;
+      line-height: 1.6;
+    }
+
+    @media only screen and (max-width: 560px) {
+      .wrapper {
+        padding: 32px 24px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="email-container">
-    <!-- Header -->
-    <div class="email-header">
-      <h1>🎉 You're Invited!</h1>
-      <p>Join your team on Flowventory</p>
+  <div class="wrapper">
+    <div class="brand">Floventry</div>
+
+    <h1 class="heading">You've been invited to join ${companyName}</h1>
+
+    <p class="body-text">
+      ${invitedByName} has invited you to collaborate on Floventry as <strong>${formattedRole}</strong>.
+    </p>
+
+    <div class="meta">
+      <div class="meta-row">
+        <span class="meta-label">Company</span>
+        <span class="meta-value">${companyName}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Email</span>
+        <span class="meta-value">${invitedEmail}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">Role</span>
+        <span class="meta-value">${formattedRole}</span>
+      </div>
     </div>
-    
-    <!-- Body -->
-    <div class="email-body">
-      <p class="greeting">Hello,</p>
-      
-      <p class="info-text">
-        <strong>${invitedByName}</strong> has invited you to join their team on Flowventory, the modern inventory management platform.
-      </p>
-      
-      <!-- Invitation Details -->
-      <div class="invitation-box">
-        <p><strong>Company:</strong> ${companyName}</p>
-        <p><strong>Email:</strong> ${invitedEmail}</p>
-        <p><strong>Role:</strong> <span class="role-badge">${formattedRole}</span></p>
-      </div>
-      
-      <p class="info-text">
-        Click the button below to accept the invitation and start collaborating with your team:
-      </p>
-      
-      <!-- CTA Button -->
-      <div class="button-container">
-        <a href="${invitationLink}" class="cta-button">Accept Invitation</a>
-      </div>
-      
-      <p class="info-text" style="text-align: center; font-size: 13px; color: #9ca3af;">
-        Or copy and paste this link into your browser:<br>
-        <a href="${invitationLink}" style="color: #6366f1; word-break: break-all;">${invitationLink}</a>
-      </p>
-      
-      <!-- Expiry Notice -->
-      <div class="expiry-notice">
-        <p><strong>⏰ This invitation expires in 48 hours.</strong> Please accept it soon to join the team.</p>
-      </div>
-      
-      <div class="divider"></div>
-      
-      <p class="info-text">
-        If you don't recognize this invitation or didn't expect it, you can safely ignore this email. No account will be created unless you click the acceptance button.
-      </p>
-    </div>
-    
-    <!-- Footer -->
-    <div class="email-footer">
-      <p><strong>Flowventory</strong> - Modern Inventory Management</p>
-      <p>This email was sent to ${invitedEmail}</p>
-      <p>
-        Need help? <a href="mailto:support@flowventory.com">Contact Support</a>
-      </p>
+
+    <a href="${invitationLink}" class="cta-button" style="color: #ffffff; text-decoration: none;">Accept invitation</a>
+
+    <p class="link-fallback">
+      Or paste this link into your browser:<br>
+      <a href="${invitationLink}">${invitationLink}</a>
+    </p>
+
+    <hr class="divider">
+
+    <p class="notice">This invitation expires in 48 hours.</p>
+    <p class="notice">If you weren't expecting this, you can safely ignore this email.</p>
+
+    <div class="footer">
+      <p>Sent to ${invitedEmail} &middot; Floventry</p>
     </div>
   </div>
 </body>

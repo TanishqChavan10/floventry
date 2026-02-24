@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/context/auth-context';
 
-export default function CustomSignIn() {
+export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) {
   const { isLoaded, signIn, setActive } = useSignIn();
   const { user, isClerkLoaded, isClerkSignedIn } = useAuth();
   const [email, setEmail] = React.useState('');
@@ -22,13 +22,16 @@ export default function CustomSignIn() {
   const [error, setError] = React.useState('');
   const router = useRouter();
 
+  /** Where to send the user after successful authentication */
+  const postAuthUrl = redirectUrl?.startsWith('/') ? redirectUrl : '/auth-redirect';
+
   // Redirect signed-in users away from sign-in page — no need to wait for DB user
   React.useEffect(() => {
     if (!isClerkLoaded) return;
     if (isClerkSignedIn) {
-      router.replace('/auth-redirect');
+      router.replace(postAuthUrl);
     }
-  }, [isClerkLoaded, isClerkSignedIn, router]);
+  }, [isClerkLoaded, isClerkSignedIn, router, postAuthUrl]);
 
   // Helper to get redirect URL based on user's companies
   const getRedirectUrl = () => {
@@ -47,7 +50,7 @@ export default function CustomSignIn() {
     return signIn.authenticateWithRedirect({
       strategy,
       redirectUrl: '/sso-callback',
-      redirectUrlComplete: '/auth-redirect',
+      redirectUrlComplete: postAuthUrl,
     });
   };
 
@@ -66,7 +69,7 @@ export default function CustomSignIn() {
         await setActive({ session: result.createdSessionId });
         // Wait a bit for auth context to update, then redirect
         setTimeout(() => {
-          router.push('/auth-redirect');
+          router.push(postAuthUrl);
         }, 500);
       } else {
         setError('Something went wrong. Please try again.');
@@ -76,7 +79,7 @@ export default function CustomSignIn() {
         err.errors?.[0]?.longMessage || err.message || 'Invalid email or password';
 
       if (errorMessage.toLowerCase().includes('already signed in')) {
-        router.push('/auth-redirect');
+        router.push(postAuthUrl);
         return;
       }
 
@@ -216,7 +219,7 @@ export default function CustomSignIn() {
           <p className="mt-8 text-center text-sm text-neutral-600">
             Don't have an account?{' '}
             <Link
-              href="/auth/sign-up"
+              href={`/auth/sign-up${redirectUrl ? `?redirect_url=${encodeURIComponent(redirectUrl)}` : ''}`}
               className="font-semibold text-neutral-900 hover:text-neutral-700"
             >
               Sign up

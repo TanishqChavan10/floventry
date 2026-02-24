@@ -48,6 +48,7 @@ export const VALIDATE_INVITE = gql`
       companySlug
       role
       companyId
+      status
     }
   }
 `;

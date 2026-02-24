@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-export default function CustomSignUp() {
+export default function CustomSignUp({ redirectUrl }: { redirectUrl?: string }) {
   const { isLoaded, signUp, setActive } = useSignUp();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -24,6 +24,9 @@ export default function CustomSignUp() {
   const [code, setCode] = React.useState('');
   const router = useRouter();
 
+  /** Where to send the user after successful authentication */
+  const postAuthUrl = redirectUrl?.startsWith('/') ? redirectUrl : '/onboarding';
+
   // Handle OAuth sign up
   const signUpWith = (strategy: 'oauth_google') => {
     if (!isLoaded) return;
@@ -31,7 +34,7 @@ export default function CustomSignUp() {
     return signUp.authenticateWithRedirect({
       strategy,
       redirectUrl: '/sso-callback',
-      redirectUrlComplete: '/onboarding',
+      redirectUrlComplete: postAuthUrl,
     });
   };
 
@@ -68,7 +71,7 @@ export default function CustomSignUp() {
 
       if (completeSignUp.status === 'complete') {
         await setActive({ session: completeSignUp.createdSessionId });
-        router.push('/onboarding');
+        router.push(postAuthUrl);
       } else {
         console.log(completeSignUp);
         setError('Verification failed. Please try again.');
@@ -324,7 +327,7 @@ export default function CustomSignUp() {
           <p className="mt-8 text-center text-sm text-neutral-600">
             Already have an account?{' '}
             <Link
-              href="/auth/sign-in"
+              href={`/auth/sign-in${redirectUrl ? `?redirect_url=${encodeURIComponent(redirectUrl)}` : ''}`}
               className="font-semibold text-neutral-900 hover:text-neutral-700"
             >
               Sign in

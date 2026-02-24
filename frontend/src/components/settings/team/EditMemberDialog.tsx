@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Building2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePermissions } from '@/hooks/usePermissions';
 
@@ -131,67 +131,52 @@ export function EditMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-110">
         <DialogHeader>
-          <DialogTitle>Transfer Warehouses</DialogTitle>
+          <DialogTitle>Transfer warehouses</DialogTitle>
           <DialogDescription>
-            Assign or transfer warehouse access for{' '}
+            Update warehouse access for{' '}
             <span className="font-medium text-foreground">
               {member.user.fullName || member.user.email}
             </span>
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
-          <div className="grid gap-3 border rounded-lg p-4 bg-muted/30">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-              <Label className="text-sm font-medium">Warehouse Access</Label>
-            </div>
-
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {filteredWarehouses.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No warehouses available</p>
-              ) : (
-                filteredWarehouses.map((warehouse) => (
-                  <div
-                    key={warehouse.id}
-                    className="flex items-start space-x-3 p-2 hover:bg-background rounded"
-                  >
-                    <Checkbox
-                      id={`wh-${warehouse.id}`}
-                      checked={selectedWarehouses.includes(warehouse.id)}
-                      onCheckedChange={() => handleToggle(warehouse.id)}
-                    />
-                    <label
-                      htmlFor={`wh-${warehouse.id}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                    >
-                      {warehouse.name}
-                    </label>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Select warehouses this member can access
-            </p>
+        <div className="mt-4">
+          <Label className="text-sm">Warehouse access</Label>
+          <div className="mt-2 border rounded-md max-h-70 overflow-y-auto divide-y">
+            {filteredWarehouses.length === 0 ? (
+              <p className="p-3 text-sm text-muted-foreground">No warehouses available.</p>
+            ) : (
+              filteredWarehouses.map((warehouse) => (
+                <label
+                  key={warehouse.id}
+                  className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/50"
+                >
+                  <Checkbox
+                    id={`wh-${warehouse.id}`}
+                    checked={selectedWarehouses.includes(warehouse.id)}
+                    onCheckedChange={() => handleToggle(warehouse.id)}
+                  />
+                  <span className="text-sm">{warehouse.name}</span>
+                </label>
+              ))
+            )}
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="mt-6">
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={loading}>
+          <Button size="sm" onClick={handleSave} disabled={loading}>
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                 Saving...
               </>
             ) : (
-              'Save Changes'
+              'Save changes'
             )}
           </Button>
         </DialogFooter>

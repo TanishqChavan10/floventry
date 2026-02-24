@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -20,7 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Loader2, MoreVertical, Search, UserCog, UserMinus } from 'lucide-react';
+import { Loader2, MoreHorizontal, Search, UserCog, UserMinus } from 'lucide-react';
 import { format } from 'date-fns';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/context/auth-context';
@@ -74,18 +73,11 @@ interface ActiveMembersTableProps {
   onRemoveMember: (member: Member) => void;
 }
 
-const roleColors: Record<string, string> = {
-  OWNER: 'default',
-  ADMIN: 'secondary',
-  MANAGER: 'outline',
-  STAFF: 'outline',
-};
-
-const roleIcons: Record<string, string> = {
-  OWNER: '👑',
-  ADMIN: '🛡️',
-  MANAGER: '📊',
-  STAFF: '👤',
+const roleLabel: Record<string, string> = {
+  OWNER: 'Owner',
+  ADMIN: 'Admin',
+  MANAGER: 'Manager',
+  STAFF: 'Staff',
 };
 
 export function ActiveMembersTable({
@@ -168,144 +160,135 @@ export function ActiveMembersTable({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Search and Filter Bar */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
-            placeholder="Search members..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="pl-8 h-8 text-sm"
           />
         </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              {roleFilter === 'ALL' ? 'All Roles' : roleFilter}
+            <Button variant="outline" size="sm" className="h-8 text-xs font-normal">
+              {roleFilter === 'ALL' ? 'All roles' : (roleLabel[roleFilter] ?? roleFilter)}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setRoleFilter('ALL')}>All Roles</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setRoleFilter('OWNER')}>👑 Owner</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setRoleFilter('ADMIN')}>🛡️ Admin</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setRoleFilter('MANAGER')}>📊 Manager</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setRoleFilter('STAFF')}>👤 Staff</DropdownMenuItem>
+          <DropdownMenuContent align="end" className="text-sm">
+            <DropdownMenuItem onClick={() => setRoleFilter('ALL')}>All roles</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setRoleFilter('OWNER')}>Owner</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setRoleFilter('ADMIN')}>Admin</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setRoleFilter('MANAGER')}>Manager</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setRoleFilter('STAFF')}>Staff</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
       {/* Members Table */}
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
+      <Table>
+        <TableHeader>
+          <TableRow className="border-b">
+            <TableHead className="text-xs font-medium">Member</TableHead>
+            <TableHead className="text-xs font-medium">Role</TableHead>
+            <TableHead className="text-xs font-medium">Warehouses</TableHead>
+            <TableHead className="text-xs font-medium">Joined</TableHead>
+            <TableHead className="w-10" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredMembers.length === 0 ? (
             <TableRow>
-              <TableHead>Member</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Warehouses</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <TableCell colSpan={5} className="text-center py-10 text-sm text-muted-foreground">
+                No members found.
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredMembers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  No members found
+          ) : (
+            filteredMembers.map((member) => (
+              <TableRow key={member.membership_id} className="group">
+                {/* Member */}
+                <TableCell className="py-3">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm font-medium leading-none">
+                      {member.user.fullName || member.user.email}
+                    </span>
+                    {member.user.fullName && (
+                      <span className="text-xs text-muted-foreground">{member.user.email}</span>
+                    )}
+                  </div>
+                </TableCell>
+
+                {/* Role */}
+                <TableCell className="py-3">
+                  <span className="text-xs text-muted-foreground">
+                    {roleLabel[member.role] ?? member.role}
+                  </span>
+                </TableCell>
+
+                {/* Warehouses */}
+                <TableCell className="py-3">
+                  {member.role === 'OWNER' || member.role === 'ADMIN' ? (
+                    <span className="text-xs text-muted-foreground">All warehouses</span>
+                  ) : member.warehouses && member.warehouses.length > 0 ? (
+                    <span className="text-xs text-muted-foreground">
+                      {member.warehouses.map((wh) => wh.warehouseName).join(', ')}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+
+                {/* Joined Date */}
+                <TableCell className="py-3">
+                  <span className="text-xs text-muted-foreground">
+                    {format(new Date(member.joined_at), 'MMM d, yyyy')}
+                  </span>
+                </TableCell>
+
+                {/* Actions */}
+                <TableCell className="py-3">
+                  {canModify(member) && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="text-sm">
+                        {canTransferWarehouses(member) && (
+                          <DropdownMenuItem onClick={() => onEditMember(member)}>
+                            <UserCog className="mr-2 h-3.5 w-3.5" />
+                            Transfer Warehouses
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => onRemoveMember(member)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <UserMinus className="mr-2 h-3.5 w-3.5" />
+                          Remove
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </TableCell>
               </TableRow>
-            ) : (
-              filteredMembers.map((member) => (
-                <TableRow key={member.membership_id}>
-                  {/* Member Name & Email */}
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="font-medium text-sm">
-                        {member.user.fullName || member.user.email}
-                      </span>
-                      {member.user.fullName && (
-                        <span className="text-xs text-muted-foreground">{member.user.email}</span>
-                      )}
-                    </div>
-                  </TableCell>
+            ))
+          )}
+        </TableBody>
+      </Table>
 
-                  {/* Role Badge */}
-                  <TableCell>
-                    <Badge variant={(roleColors[member.role] as any) || 'outline'}>
-                      <span className="mr-1">{roleIcons[member.role]}</span>
-                      {member.role}
-                    </Badge>
-                  </TableCell>
-
-                  {/* Warehouses */}
-                  <TableCell>
-                    {member.role === 'OWNER' || member.role === 'ADMIN' ? (
-                      <span className="text-xs text-muted-foreground italic">All warehouses</span>
-                    ) : member.warehouses && member.warehouses.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {member.warehouses.map((wh) => (
-                          <Badge
-                            key={wh.warehouseId}
-                            variant={wh.isManager ? 'default' : 'outline'}
-                            className="text-xs"
-                          >
-                            {wh.warehouseName}
-                            {wh.isManager && ' 📊'}
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">No warehouses</span>
-                    )}
-                  </TableCell>
-
-                  {/* Joined Date */}
-                  <TableCell>
-                    <span className="text-xs text-muted-foreground">
-                      {format(new Date(member.joined_at), 'MMM d, yyyy')}
-                    </span>
-                  </TableCell>
-
-                  {/* Actions */}
-                  <TableCell>
-                    {canModify(member) && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {canTransferWarehouses(member) && (
-                            <DropdownMenuItem onClick={() => onEditMember(member)}>
-                              <UserCog className="mr-2 h-4 w-4" />
-                              Transfer Warehouses
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem
-                            onClick={() => onRemoveMember(member)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <UserMinus className="mr-2 h-4 w-4" />
-                            Remove from Company
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Summary */}
-      <div className="text-xs text-muted-foreground">
-        Showing {filteredMembers.length} of {members.length} members
-      </div>
+      <p className="text-xs text-muted-foreground">
+        {filteredMembers.length} of {members.length} members
+      </p>
     </div>
   );
 }

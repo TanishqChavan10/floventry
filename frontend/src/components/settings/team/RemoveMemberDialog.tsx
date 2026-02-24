@@ -12,8 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const REMOVE_MEMBER = gql`
@@ -75,68 +74,35 @@ export function RemoveMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-100">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-destructive">
-            <AlertTriangle className="h-5 w-5" />
-            Remove Team Member
-          </DialogTitle>
+          <DialogTitle>Remove member</DialogTitle>
           <DialogDescription>This action cannot be undone.</DialogDescription>
         </DialogHeader>
 
-        <div className="py-4 space-y-4">
-          {/* Member Info */}
-          <div className="border rounded-lg p-4 bg-muted/30">
-            <div className="space-y-2">
-              <div>
-                <span className="text-sm font-medium">Name:</span>
-                <p className="text-sm text-muted-foreground">{member.user.fullName || 'N/A'}</p>
-              </div>
-              <div>
-                <span className="text-sm font-medium">Email:</span>
-                <p className="text-sm text-muted-foreground">{member.user.email}</p>
-              </div>
-              <div>
-                <span className="text-sm font-medium">Role:</span>
-                <p className="text-sm text-muted-foreground">{member.role}</p>
-              </div>
-              {member.warehouses && member.warehouses.length > 0 && (
-                <div>
-                  <span className="text-sm font-medium">Warehouses:</span>
-                  <p className="text-sm text-muted-foreground">
-                    {member.warehouses.map((w) => w.warehouseName).join(', ')}
-                  </p>
-                </div>
-              )}
-            </div>
+        <div className="mt-2 space-y-3">
+          <div className="text-sm">
+            <span className="text-muted-foreground">You are about to remove </span>
+            <span className="font-medium">{member.user.fullName || member.user.email}</span>
+            <span className="text-muted-foreground">
+              {' '}
+              from the company. They will lose all warehouse access immediately.
+            </span>
           </div>
-
-          {/* Warning Alert */}
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              Removing this member will:
-              <ul className="list-disc list-inside mt-2 text-sm space-y-1">
-                <li>Revoke all company access</li>
-                <li>Remove all warehouse assignments</li>
-                <li>Prevent them from logging into this workspace</li>
-              </ul>
-            </AlertDescription>
-          </Alert>
         </div>
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="mt-6">
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={handleRemove} disabled={loading}>
+          <Button variant="destructive" size="sm" onClick={handleRemove} disabled={loading}>
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                 Removing...
               </>
             ) : (
-              'Remove Member'
+              'Remove'
             )}
           </Button>
         </DialogFooter>

@@ -104,6 +104,12 @@ export class InviteService {
         this.logger.warn(
           `Invite found but status is: ${anyInvite.status}, expected: pending`,
         );
+
+        // Already accepted — return the invite so the frontend can handle it gracefully
+        if (anyInvite.status === 'accepted') {
+          return anyInvite;
+        }
+
         throw new NotFoundException(
           `Invite status is '${anyInvite.status}', cannot be accepted`,
         );

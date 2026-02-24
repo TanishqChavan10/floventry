@@ -47,7 +47,8 @@ export class InviteResolver {
     @Context() context: any,
   ) {
     const user = await this.clerkService.syncUser(context.req.user.clerkId);
-    return this.inviteService.acceptInvite(input, user.id);
+    const result = await this.inviteService.acceptInvite(input, user.id);
+    return result.membership;
   }
 
   @Mutation(() => Boolean)
@@ -78,6 +79,7 @@ export class InviteResolver {
       companySlug: invite.company?.slug,
       role: invite.role,
       companyId: invite.company_id,
+      status: invite.status,
     };
   }
 

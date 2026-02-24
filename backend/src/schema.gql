@@ -1587,6 +1587,7 @@ type ValidateInviteResponse {
   companySlug: String
   email: String!
   role: String!
+  status: String!
 }
 
 type Warehouse {

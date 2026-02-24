@@ -9,17 +9,24 @@ export const metadata: Metadata = {
     'Create your free Floventry account and start managing inventory, warehouses, and suppliers in minutes.',
 };
 
-export default async function SignUpPage() {
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect_url?: string }>;
+}) {
   const { userId } = await auth();
+  const { redirect_url } = await searchParams;
+
+  const safeRedirect = redirect_url?.startsWith('/') ? redirect_url : undefined;
 
   // If user is already authenticated, redirect them immediately
   if (userId) {
-    redirect('/auth-redirect');
+    redirect(safeRedirect || '/auth-redirect');
   }
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center">
-      <CustomSignUp />
+      <CustomSignUp redirectUrl={safeRedirect} />
     </div>
   );
 }

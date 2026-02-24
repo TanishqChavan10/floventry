@@ -8,17 +8,25 @@ export const metadata: Metadata = {
   description: 'Sign in to your Floventry account to manage inventory, warehouses, and more.',
 };
 
-export default async function SignInPage() {
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect_url?: string }>;
+}) {
   const { userId } = await auth();
+  const { redirect_url } = await searchParams;
+
+  // Validate it's a safe relative path
+  const safeRedirect = redirect_url?.startsWith('/') ? redirect_url : undefined;
 
   // If user is already authenticated, redirect them immediately
   if (userId) {
-    redirect('/auth-redirect');
+    redirect(safeRedirect || '/auth-redirect');
   }
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center">
-      <CustomSignIn />
+      <CustomSignIn redirectUrl={safeRedirect} />
     </div>
   );
 }

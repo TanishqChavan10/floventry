@@ -48,13 +48,11 @@ export default function ProductDetailDrawer({
   onClose,
   onEdit,
 }: ProductDetailDrawerProps) {
-  if (!product) return null;
-
   const [drawerProduct, setDrawerProduct] = useState<any>(product);
   const [newAlternateBarcode, setNewAlternateBarcode] = useState('');
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !product) return;
     setDrawerProduct(product);
     setNewAlternateBarcode('');
   }, [open, product]);
@@ -76,7 +74,7 @@ export default function ProductDetailDrawer({
   };
 
   const { data: historyData, loading: historyLoading } = useQuery(BARCODE_HISTORY, {
-    variables: { productId: drawerProduct.id },
+    variables: { productId: drawerProduct?.id },
     skip: !open || !drawerProduct?.id,
     fetchPolicy: 'cache-and-network',
   });
@@ -88,7 +86,7 @@ export default function ProductDetailDrawer({
     loading: unitsLoading,
     refetch: refetchUnits,
   } = useQuery(PRODUCT_BARCODE_UNITS, {
-    variables: { productId: drawerProduct.id },
+    variables: { productId: drawerProduct?.id },
     skip: !open || !drawerProduct?.id,
     fetchPolicy: 'cache-and-network',
   });
@@ -128,11 +126,11 @@ export default function ProductDetailDrawer({
     onError: (e) => toast.error(e.message || 'Failed to save alternate barcodes'),
   });
 
+  if (!product) return null;
+
   const saveAlternateBarcodes = async (nextAlternates: string[]) => {
     const primary = normalizeClientBarcode(drawerProduct?.barcode || '');
-    const normalized = nextAlternates
-      .map((b) => normalizeClientBarcode(b || ''))
-      .filter(Boolean);
+    const normalized = nextAlternates.map((b) => normalizeClientBarcode(b || '')).filter(Boolean);
 
     const unique = Array.from(new Set(normalized));
     if (primary && unique.includes(primary)) {
@@ -230,7 +228,9 @@ export default function ProductDetailDrawer({
                   <Tag className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">Barcode</p>
-                    <p className="text-sm text-muted-foreground font-mono">{drawerProduct.barcode}</p>
+                    <p className="text-sm text-muted-foreground font-mono">
+                      {drawerProduct.barcode}
+                    </p>
                   </div>
                 </div>
               )}
@@ -277,8 +277,7 @@ export default function ProductDetailDrawer({
                         <Button
                           type="button"
                           disabled={
-                            savingAlternates ||
-                            !normalizeClientBarcode(newAlternateBarcode).length
+                            savingAlternates || !normalizeClientBarcode(newAlternateBarcode).length
                           }
                           onClick={async () => {
                             const nextValue = normalizeClientBarcode(newAlternateBarcode);
@@ -314,8 +313,7 @@ export default function ProductDetailDrawer({
                       <Button
                         type="button"
                         disabled={
-                          savingAlternates ||
-                          !normalizeClientBarcode(newAlternateBarcode).length
+                          savingAlternates || !normalizeClientBarcode(newAlternateBarcode).length
                         }
                         onClick={async () => {
                           const nextValue = normalizeClientBarcode(newAlternateBarcode);

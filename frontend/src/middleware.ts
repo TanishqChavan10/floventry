@@ -6,6 +6,8 @@ const isPublicRoute = createRouteMatcher([
   '/auth/sign-in(.*)',
   '/auth/sign-up(.*)',
   '/auth-redirect',
+  '/sso-callback(.*)',
+  '/invite/accept(.*)',
   '/onboarding(.*)',
   '/api/webhooks(.*)',   // Webhooks should remain public
   '/api/public(.*)',      // Optional: your public APIs

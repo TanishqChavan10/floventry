@@ -4,18 +4,34 @@ import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useMutation, useApolloClient } from '@apollo/client';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from '@/components/ui/card';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@clerk/nextjs';
 import { ACCEPT_INVITE, VALIDATE_INVITE } from '@/lib/graphql/invite';
+
+function BrandHeader() {
+  return (
+    <div className="text-center mb-10">
+      <span className="text-2xl font-bold tracking-tight" style={{ color: '#e05252' }}>
+        Floventry
+      </span>
+    </div>
+  );
+}
+
+function PageShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-6"
+      style={{ backgroundColor: '#fafafa' }}
+    >
+      <div className="w-full max-w-sm">
+        <BrandHeader />
+        {children}
+      </div>
+    </div>
+  );
+}
 
 function InviteAcceptContent() {
   const searchParams = useSearchParams();
@@ -33,10 +49,12 @@ function InviteAcceptContent() {
     companyName: string;
     companySlug: string;
     role: string;
+    status: string;
   } | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [hasAccepted, setHasAccepted] = useState(false);
+  const [alreadyAccepted, setAlreadyAccepted] = useState(false);
 
   const [acceptInvite, { loading: isAccepting }] = useMutation(ACCEPT_INVITE);
 
@@ -66,9 +84,24 @@ function InviteAcceptContent() {
           throw new Error('Invite not found or expired');
         }
 
-        setInviteDetails(data.validateInvite);
+        const details = data.validateInvite;
+        setInviteDetails(details);
+
+        // Invite already accepted — show friendly message, no error
+        if (details.status === 'accepted') {
+          setAlreadyAccepted(true);
+          localStorage.removeItem('inviteToken');
+          return;
+        }
       } catch (err: any) {
-        setError(err.message || 'Invalid or expired invite.');
+        const msg: string = err.message || 'Invalid or expired invite.';
+        // If the invite was already accepted, redirect to dashboard
+        if (msg.toLowerCase().includes("'accepted'")) {
+          setAlreadyAccepted(true);
+          localStorage.removeItem('inviteToken');
+          return;
+        }
+        setError(msg);
       }
     })();
   }, [token, client, inviteDetails, hasAccepted]);
@@ -94,88 +127,127 @@ function InviteAcceptContent() {
 
         router.replace(`/${inviteDetails.companySlug}/dashboard`);
       } catch (err: any) {
+        const msg: string = err.message || 'Failed to accept invite';
+        // Already accepted (e.g. race condition / double-click) → just redirect
+        if (
+          msg.toLowerCase().includes("'accepted'") ||
+          msg.toLowerCase().includes('already a member')
+        ) {
+          localStorage.removeItem('inviteToken');
+          toast.success('You already joined this company');
+          router.replace(`/${inviteDetails.companySlug}/dashboard`);
+          return;
+        }
         setHasAccepted(false);
-        setError(err.message || 'Failed to accept invite');
+        setError(msg);
       }
     })();
   }, [token, inviteDetails, isLoaded, isSignedIn, hasAccepted, isAccepting, acceptInvite, router]);
 
-  /** -----------------------------
-   *  UI STATES
-   * ----------------------------- */
+  if (alreadyAccepted) {
+    return (
+      <PageShell>
+        <div className="text-center space-y-4">
+          <CheckCircle className="mx-auto h-10 w-10" style={{ color: '#e05252' }} />
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Already accepted</h2>
+            <p className="text-sm text-gray-500 mt-1">You've already joined this company.</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => router.push('/auth-redirect')}>
+            Go to dashboard
+          </Button>
+        </div>
+      </PageShell>
+    );
+  }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <XCircle className="mx-auto h-10 w-10 text-destructive" />
-            <CardTitle>Invite Invalid</CardTitle>
-            <CardDescription>{error}</CardDescription>
-          </CardHeader>
-          <CardFooter className="justify-center">
-            <Button onClick={() => router.push('/')}>Go Home</Button>
-          </CardFooter>
-        </Card>
-      </div>
+      <PageShell>
+        <div className="text-center space-y-4">
+          <XCircle className="mx-auto h-10 w-10" style={{ color: '#e05252' }} />
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Invite invalid</h2>
+            <p className="text-sm text-gray-500 mt-1">{error}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => router.push('/auth-redirect')}>
+            Go to dashboard
+          </Button>
+        </div>
+      </PageShell>
     );
   }
 
   if (!inviteDetails || !isLoaded) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+      <PageShell>
+        <div className="flex justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        </div>
+      </PageShell>
     );
   }
 
   /** -----------------------------
-   *  Not signed in → Sign in
+   *  Not signed in -> Sign in
    * ----------------------------- */
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <Card className="max-w-md w-full text-center">
-          <CardHeader>
-            <CheckCircle className="mx-auto h-10 w-10 text-primary" />
-            <CardTitle>You’re invited!</CardTitle>
-            <CardDescription>
-              Join <strong>{inviteDetails.companyName}</strong> as{' '}
-              <strong>{inviteDetails.role.replace(/_/g, ' ')}</strong>
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button
-              className="w-full"
-              onClick={() =>
-                router.push(
-                  `/auth/sign-in?redirect_url=${encodeURIComponent(window.location.href)}`,
-                )
-              }
-            >
-              Sign in to accept
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+      <PageShell>
+        <div
+          className="rounded-xl border bg-white p-8 text-center space-y-6"
+          style={{ borderColor: '#f0f0f0', boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}
+        >
+          <div
+            className="mx-auto h-12 w-12 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: '#fff0f0' }}
+          >
+            <CheckCircle className="h-6 w-6" style={{ color: '#e05252' }} />
+          </div>
+
+          <div className="space-y-1">
+            <h2 className="text-xl font-semibold text-gray-900">You're invited</h2>
+            <p className="text-sm text-gray-500">
+              Join <span className="font-medium text-gray-800">{inviteDetails.companyName}</span> as{' '}
+              <span className="font-medium text-gray-800">
+                {inviteDetails.role.charAt(0) + inviteDetails.role.slice(1).toLowerCase()}
+              </span>
+            </p>
+          </div>
+
+          <button
+            className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: '#e05252' }}
+            onClick={() =>
+              router.push(`/auth/sign-in?redirect_url=${encodeURIComponent(window.location.href)}`)
+            }
+          >
+            Sign in to accept
+          </button>
+
+          <p className="text-xs text-gray-400">
+            Invited to <span className="font-medium">{inviteDetails.email}</span>
+          </p>
+        </div>
+      </PageShell>
     );
   }
 
   /** -----------------------------
-   *  Signed in → auto accepting
+   *  Signed in -> auto accepting
    * ----------------------------- */
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <Card className="max-w-md w-full text-center">
-        <CardHeader>
-          <Loader2 className="mx-auto h-8 w-8 animate-spin" />
-          <CardTitle>Accepting invite…</CardTitle>
-          <CardDescription>
-            Joining <strong>{inviteDetails.companyName}</strong>
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    </div>
+    <PageShell>
+      <div className="text-center space-y-4">
+        <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-400" />
+        <div>
+          <h2 className="text-base font-medium text-gray-900">
+            Joining {inviteDetails.companyName}...
+          </h2>
+          <p className="text-sm text-gray-500 mt-0.5">Setting up your access</p>
+        </div>
+      </div>
+    </PageShell>
   );
 }
 
@@ -183,9 +255,11 @@ export default function InviteAcceptPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
+        <PageShell>
+          <div className="flex justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+          </div>
+        </PageShell>
       }
     >
       <InviteAcceptContent />

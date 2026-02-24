@@ -2,19 +2,9 @@
 
 import React from 'react';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
-import { Building2, ArrowLeft, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -63,7 +53,6 @@ export default function CreateCompanyPage() {
 
       if (data?.createCompany) {
         toast.success('Company created successfully!');
-        // Force refresh session to ensure middleware sees the new activeCompanyId
         await user?.reload();
         router.push(`/${generateSlug(companyName)}/settings`);
       }
@@ -74,105 +63,112 @@ export default function CreateCompanyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <div className="w-full max-w-lg">
-        <div className="mb-8">
-          <Button variant="ghost" size="sm" asChild className="-ml-2 mb-6">
-            <Link href="/onboarding" className="inline-flex items-center">
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back
-            </Link>
-          </Button>
-
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
-              <Building2 className="h-6 w-6" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">Create your Company</h1>
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-6"
+      style={{ backgroundColor: '#fafafa' }}
+    >
+      <div className="w-full max-w-sm space-y-8">
+        {/* Brand */}
+        <div className="text-center">
+          <div className="text-3xl font-bold tracking-tight" style={{ color: '#e05252' }}>
+            Floventry
           </div>
-          <p className="text-muted-foreground">
-            Set up your workspace to start managing inventory efficiently.
-          </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Company details</CardTitle>
-            <CardDescription>Enter a name for your company workspace.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form id="create-company-form" onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="companyName">Company Name</Label>
-                <Input
-                  id="companyName"
-                  placeholder="e.g. Acme Corp"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  required
-                  className="h-11"
-                />
-                {companyName && (
-                  <p className="text-xs text-muted-foreground">
-                    Your workspace URL:{' '}
-                    <span className="font-medium">{generateSlug(companyName)}</span>
-                  </p>
-                )}
+        {/* Card */}
+        <div
+          className="rounded-xl border bg-white p-8 space-y-6"
+          style={{ borderColor: '#f0f0f0', boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}
+        >
+          {/* Back + Heading */}
+          <div>
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors mb-4"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back
+            </button>
+            <h2 className="text-lg font-semibold text-gray-900">Create your company</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Set up your workspace to start managing inventory.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Company Name */}
+            <div className="space-y-1.5">
+              <Label htmlFor="companyName" className="text-sm">
+                Company name
+              </Label>
+              <Input
+                id="companyName"
+                placeholder="e.g. Acme Corp"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                required
+              />
+              {companyName && (
+                <p className="text-xs text-gray-400">
+                  URL:{' '}
+                  <span className="font-medium text-gray-600">{generateSlug(companyName)}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Industry + Size */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm">Industry</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="retail">Retail</SelectItem>
+                    <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                    <SelectItem value="logistics">Logistics</SelectItem>
+                    <SelectItem value="ecommerce">E-commerce</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Industry</Label>
-                  <Select>
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Select..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="retail">Retail</SelectItem>
-                      <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                      <SelectItem value="logistics">Logistics & Warehousing</SelectItem>
-                      <SelectItem value="ecommerce">E-commerce</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Company Size</Label>
-                  <Select>
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Select..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1-10">1-10 employees</SelectItem>
-                      <SelectItem value="11-50">11-50 employees</SelectItem>
-                      <SelectItem value="51-200">51-200 employees</SelectItem>
-                      <SelectItem value="201+">201+ employees</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Size</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1-10">1–10</SelectItem>
+                    <SelectItem value="11-50">11–50</SelectItem>
+                    <SelectItem value="51-200">51–200</SelectItem>
+                    <SelectItem value="201+">201+</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </form>
-          </CardContent>
-          <CardFooter>
-            <Button
+            </div>
+
+            {/* Submit */}
+            <button
               type="submit"
-              size="lg"
-              form="create-company-form"
-              className="w-full"
               disabled={isLoading}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+              style={{ backgroundColor: '#e05252' }}
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating Company...
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating...
                 </>
               ) : (
-                'Create Company'
+                'Create company'
               )}
-            </Button>
-          </CardFooter>
-        </Card>
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
