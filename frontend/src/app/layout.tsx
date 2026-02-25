@@ -86,9 +86,9 @@ export const metadata: Metadata = {
 
   // Icons
   icons: {
-    icon: '/4.svg',
-    shortcut: '/4.svg',
-    apple: '/4.svg',
+    icon: [{ url: '/4.svg', type: 'image/svg+xml', sizes: 'any' }],
+    shortcut: [{ url: '/4.svg', type: 'image/svg+xml', sizes: 'any' }],
+    apple: [{ url: '/4.svg', type: 'image/svg+xml', sizes: 'any' }],
   },
 
   // Canonical
