@@ -58,6 +58,8 @@ import {
 } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import { useAuth } from '@/context/auth-context';
+import { useRbac } from '@/hooks/use-rbac';
+import RoleGuard from '@/components/guards/role-guard';
 import {
   GET_PRODUCTS_PAGINATED,
   GET_CATEGORIES,
@@ -203,13 +205,10 @@ function CatalogProductsContent() {
     }
   };
 
-  // Get role from active company (role is company-specific)
-  const activeCompany = user?.companies?.find((c) => c.id === user.activeCompanyId);
-  const userRole = activeCompany?.role;
-
-  const isOwnerOrAdmin = userRole === 'OWNER' || userRole === 'ADMIN';
-  const canEdit = isOwnerOrAdmin || userRole === 'MANAGER'; // TODO: Check restrict_manager_catalog setting
-  const canDelete = isOwnerOrAdmin;
+  const rbac = useRbac();
+  const isOwnerOrAdmin = rbac.isAdmin || rbac.isOwner;
+  const canEdit = rbac.canEditCatalog; // Owner/Admin/Manager
+  const canDelete = rbac.isAdmin || rbac.isOwner;
 
   const products = productsData?.productsPaginated?.items || [];
   const pageInfo = productsData?.productsPaginated?.pageInfo;
@@ -1054,7 +1053,9 @@ function CatalogProductsContent() {
 export default function CatalogProductsPage() {
   return (
     <CompanyGuard>
-      <CatalogProductsContent />
+      <RoleGuard allowedRoles={['OWNER', 'ADMIN', 'MANAGER']}>
+        <CatalogProductsContent />
+      </RoleGuard>
     </CompanyGuard>
   );
 }

@@ -19,4 +19,7 @@ export class ValidateInviteResponse {
 
   @Field()
   status: string;
+
+  @Field()
+  userExists: boolean;
 }

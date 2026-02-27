@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useQuery } from '@apollo/client';
 import { useParams, useRouter } from 'next/navigation';
 import CompanyGuard from '@/components/CompanyGuard';
-import RoleGuard from '@/components/guards/RoleGuard';
+import RoleGuard from '@/components/guards/role-guard';
+import { useRbac } from '@/hooks/use-rbac';
 import { CreatePurchaseOrderModal } from '@/components/purchase-orders/CreatePurchaseOrderModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -60,6 +61,7 @@ function CompanyPurchaseOrdersContent() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const rbac = useRbac();
 
   // Fetch purchase orders
   const { data, loading, error, refetch } = useQuery(GET_PURCHASE_ORDERS, {
@@ -139,10 +141,12 @@ function CompanyPurchaseOrdersContent() {
             <div className="space-y-2">
               <h1 className="text-3xl font-bold tracking-tight text-foreground">Purchase Orders</h1>
             </div>
-            <Button className="gap-2" onClick={() => setIsCreateModalOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Create PO
-            </Button>
+            {rbac.canEditPurchaseOrders && (
+              <Button className="gap-2" onClick={() => setIsCreateModalOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Create PO
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -230,7 +234,7 @@ function CompanyPurchaseOrdersContent() {
                     ? 'Try adjusting your filters'
                     : 'Create your first purchase order to get started'}
                 </p>
-                {!searchQuery && statusFilter === 'all' && (
+                {!searchQuery && statusFilter === 'all' && rbac.canEditPurchaseOrders && (
                   <Button onClick={() => setIsCreateModalOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create First PO
@@ -296,7 +300,7 @@ function CompanyPurchaseOrdersContent() {
 export default function CompanyPurchaseOrdersPage() {
   return (
     <CompanyGuard>
-      <RoleGuard allowedRoles={['OWNER', 'ADMIN', 'MANAGER', 'STAFF']}>
+      <RoleGuard allowedRoles={['OWNER', 'ADMIN', 'MANAGER']}>
         <CompanyPurchaseOrdersContent />
       </RoleGuard>
     </CompanyGuard>

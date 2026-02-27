@@ -26,7 +26,7 @@ export class UserCompanyService {
     private clerkService: ClerkService,
     private readonly auditLogService: AuditLogService,
     private readonly notificationsService: NotificationsService,
-  ) {}
+  ) { }
 
   async listUsersInCompany(companyId: string): Promise<UserCompany[]> {
     return this.userCompanyRepository.find({
@@ -38,6 +38,7 @@ export class UserCompanyService {
   async changeRole(
     input: UpdateRoleInput,
     requestingUserId: string,
+    requesterRole: string = 'ADMIN',
   ): Promise<UserCompany> {
     const membership = await this.userCompanyRepository.findOne({
       where: { membership_id: input.membership_id },
@@ -58,7 +59,35 @@ export class UserCompanyService {
       );
     }
 
-    // TODO: Permission check: Ensure requester has higher role than target, and can assign target role.
+    // ── Admin RBAC restrictions ──────────────────────────────────────
+    const hierarchy: Record<string, number> = {
+      STAFF: 1, MANAGER: 2, ADMIN: 3, OWNER: 4,
+    };
+    const requesterLevel = hierarchy[requesterRole] ?? 0;
+    const targetCurrentLevel = hierarchy[membership.role] ?? 0;
+    const targetNewLevel = hierarchy[input.role] ?? 0;
+
+    // Rule 1: Admin cannot assign OWNER role (transfer ownership)
+    if (input.role === 'OWNER' && requesterRole !== 'OWNER') {
+      throw new BadRequestException(
+        'Only the Owner can transfer ownership to another user',
+      );
+    }
+
+    // Rule 2: Admin cannot change the role of an existing Owner (demote Owner)
+    if (membership.role === 'OWNER' && requesterRole !== 'OWNER') {
+      throw new BadRequestException(
+        'Only the Owner can change another Owner\'s role',
+      );
+    }
+
+    // Rule 3: Can only assign roles strictly below your own level
+    if (targetNewLevel >= requesterLevel) {
+      throw new BadRequestException(
+        'You cannot assign a role equal to or higher than your own',
+      );
+    }
+    // ────────────────────────────────────────────────────────────────
 
     const oldRole = membership.role;
     membership.role = input.role;

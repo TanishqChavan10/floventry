@@ -6,6 +6,8 @@ import { useSearchParams } from 'next/navigation';
 import { useWarehouse } from '@/context/warehouse-context';
 import { useAuth } from '@/context/auth-context';
 import CompanyGuard from '@/components/CompanyGuard';
+import RoleGuard from '@/components/guards/role-guard';
+import { useRbac } from '@/hooks/use-rbac';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -46,12 +48,8 @@ function AdjustmentsPageContent() {
   const [isNewAdjustmentOpen, setIsNewAdjustmentOpen] = useState(false);
   const [hasHandledPrefill, setHasHandledPrefill] = useState(false);
 
-  // Get user role
-  const activeCompany = user?.companies?.find((c) => c.id === user.activeCompanyId);
-  const userRole = activeCompany?.role;
-
-  // Can create adjustments: OWNER, ADMIN, MANAGER only
-  const canCreate = userRole ? ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole) : false;
+  const rbac = useRbac();
+  const canCreate = rbac.isOwner || rbac.isAdmin || rbac.isManager;
 
   const prefillNew = searchParams.get('new') === '1';
   const prefillProductId = searchParams.get('productId') || '';
@@ -347,7 +345,9 @@ function AdjustmentsPageContent() {
 export default function AdjustmentsPage() {
   return (
     <CompanyGuard>
-      <AdjustmentsPageContent />
+      <RoleGuard allowedRoles={['OWNER', 'ADMIN', 'MANAGER']}>
+        <AdjustmentsPageContent />
+      </RoleGuard>
     </CompanyGuard>
   );
 }

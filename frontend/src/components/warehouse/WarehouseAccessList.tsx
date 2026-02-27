@@ -4,9 +4,11 @@ import React from 'react';
 import { useQuery } from '@apollo/client';
 import { gql } from '@apollo/client';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { Loader2, Users, Building2, ExternalLink } from 'lucide-react';
+import { Loader2, ExternalLink } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
+import { InviteUserDialog } from '@/components/settings/team/InviteUserDialog';
+import { useRbac } from '@/hooks/use-rbac';
 
 const GET_WAREHOUSE_MEMBERS = gql`
   query GetWarehouseMembers($warehouseId: String!) {
@@ -30,42 +32,44 @@ interface WarehouseMember {
 
 interface WarehouseAccessListProps {
   warehouseId: string;
+  warehouseName: string;
   companySlug: string;
+  companyId: string;
 }
 
-const roleColors: Record<string, string> = {
-  OWNER: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200',
-  ADMIN: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200',
-  MANAGER: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border-indigo-200',
-  STAFF: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-gray-200',
+const roleBadgeVariant: Record<string, string> = {
+  OWNER: 'bg-muted text-foreground border-border',
+  ADMIN: 'bg-muted text-foreground border-border',
+  MANAGER: 'bg-muted text-foreground border-border',
+  STAFF: 'bg-muted text-muted-foreground border-border',
 };
 
-const roleIcons: Record<string, string> = {
-  OWNER: '👑',
-  ADMIN: '🛡️',
-  MANAGER: '📊',
-  STAFF: '👤',
-};
+function getInitials(name: string): string {
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
 
-export function WarehouseAccessList({ warehouseId, companySlug }: WarehouseAccessListProps) {
-  const { data, loading, error } = useQuery(GET_WAREHOUSE_MEMBERS, {
+export function WarehouseAccessList({ warehouseId, warehouseName, companySlug, companyId }: WarehouseAccessListProps) {
+  const rbac = useRbac();
+  const { data, loading, error, refetch } = useQuery(GET_WAREHOUSE_MEMBERS, {
     variables: { warehouseId },
     skip: !warehouseId,
   });
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      <div className="flex items-center justify-center py-10">
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-sm text-red-500 p-4 rounded-lg bg-red-50 dark:bg-red-950/20">
-        Error loading user access: {error.message}
-      </div>
+      <p className="text-sm text-destructive">
+        Failed to load members: {error.message}
+      </p>
     );
   }
 
@@ -73,91 +77,80 @@ export function WarehouseAccessList({ warehouseId, companySlug }: WarehouseAcces
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* Header row */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-muted-foreground" />
-          <h3 className="text-lg font-semibold">User Access</h3>
-        </div>
-        <Link
-          href={`/${companySlug}/settings/team`}
-          className="text-sm text-primary hover:underline flex items-center gap-1"
-        >
-          Manage team members
-          <ExternalLink className="h-3 w-3" />
-        </Link>
-      </div>
-
-      {/* Info Banner */}
-      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg p-3">
-        <p className="text-sm text-blue-800 dark:text-blue-300">
-          <strong>Read-only view:</strong> To modify user access or warehouse assignments, use the{' '}
-          <Link href={`/${companySlug}/settings/team`} className="underline font-medium">
-            Team Management
-          </Link>{' '}
-          page.
+        <p className="text-sm text-muted-foreground">
+          {members.length} {members.length === 1 ? 'member' : 'members'} with access
         </p>
+        <div className="flex items-center gap-4">
+          <InviteUserDialog 
+            companyId={companyId} 
+            warehouses={[{ id: warehouseId, name: warehouseName, slug: warehouseId }]} 
+            preselectedWarehouseId={warehouseId}
+            onSuccess={() => refetch()} 
+          />
+          <Link
+            href={`/${companySlug}/settings/team`}
+            className="text-xs text-primary flex items-center gap-1 hover:opacity-80 transition-opacity"
+          >
+            Manage in Team Settings
+            <ExternalLink className="h-3 w-3" />
+          </Link>
+        </div>
       </div>
 
-      {/* Members Grid */}
-      {members.length === 0 ? (
-        <Card className="p-8 text-center">
-          <Users className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-          <p className="text-sm text-muted-foreground">
-            No users have access to this warehouse yet
-          </p>
-        </Card>
-      ) : (
-        <div className="grid gap-3">
-          {members.map((member) => (
-            <Card key={member.userId} className="p-4 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                {/* User Info */}
-                <div className="flex items-center gap-3">
-                  {/* Avatar */}
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold">
-                    {member.fullName?.[0]?.toUpperCase() || member.email[0].toUpperCase()}
-                  </div>
+      {/* Note */}
+      <p className="text-xs text-muted-foreground border border-border rounded-md px-3 py-2 bg-muted/30">
+        This is a read-only view. To modify access or assignments, use Team Settings.
+      </p>
 
-                  {/* Name & Email */}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm">
-                        {member.fullName || member.email}
-                      </p>
-                      {member.isManager && (
-                        <Badge variant="outline" className="text-xs border-indigo-300 text-indigo-700 dark:border-indigo-700 dark:text-indigo-300">
-                          <Building2 className="h-3 w-3 mr-1" />
-                          Manages this warehouse
-                        </Badge>
-                      )}
-                    </div>
+      {/* Member list */}
+      {members.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-6 text-center">
+          No users assigned to this warehouse yet.
+        </p>
+      ) : (
+        <div className="rounded-md border border-border divide-y divide-border overflow-hidden">
+          {members.map((member) => {
+            const displayName = member.fullName || member.email;
+            const initials = getInitials(displayName);
+            return (
+              <div
+                key={member.userId}
+                className="flex items-center justify-between px-4 py-3 bg-card hover:bg-muted/30 transition-colors"
+              >
+                {/* Avatar + info */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-8 w-8 rounded-full bg-muted border border-border flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs font-medium text-muted-foreground">{initials}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
                     {member.fullName && (
-                      <p className="text-xs text-muted-foreground">{member.email}</p>
+                      <p className="text-xs text-muted-foreground truncate">{member.email}</p>
                     )}
                   </div>
                 </div>
 
-                {/* Role Badge */}
-                <Badge className={`${roleColors[member.role] || roleColors.STAFF} border`}>
-                  <span className="mr-1">{roleIcons[member.role]}</span>
-                  {member.role}
-                </Badge>
+                {/* Role badge */}
+                <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                  {member.isManager && (
+                    <span className="text-xs text-muted-foreground hidden sm:inline">
+                      Manages this warehouse
+                    </span>
+                  )}
+                  <Badge
+                    variant="outline"
+                    className={`text-xs font-medium ${roleBadgeVariant[member.role] || roleBadgeVariant.STAFF}`}
+                  >
+                    {member.role}
+                  </Badge>
+                </div>
               </div>
-            </Card>
-          ))}
+            );
+          })}
         </div>
       )}
-
-      {/* Footer Summary */}
-      <div className="text-xs text-muted-foreground pt-2 border-t">
-        <p>
-          {members.length} {members.length === 1 ? 'user has' : 'users have'} access to this warehouse
-          {members.some(m => m.role === 'OWNER' || m.role === 'ADMIN') && (
-            <> (including OWNER/ADMIN with access to all warehouses)</>
-          )}
-        </p>
-      </div>
     </div>
   );
 }

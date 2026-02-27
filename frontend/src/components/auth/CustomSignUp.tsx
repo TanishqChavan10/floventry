@@ -31,10 +31,13 @@ export default function CustomSignUp({ redirectUrl }: { redirectUrl?: string }) 
   const signUpWith = (strategy: 'oauth_google') => {
     if (!isLoaded) return;
 
+    // Google OAuth requires an absolute redirect_uri — use window.location.origin
+    const callbackUrl = `${window.location.origin}/sso-callback`;
+
     return signUp.authenticateWithRedirect({
       strategy,
-      redirectUrl: '/sso-callback',
-      redirectUrlComplete: postAuthUrl,
+      redirectUrl: callbackUrl,
+      redirectUrlComplete: '/auth-redirect',
     });
   };
 
@@ -44,6 +47,7 @@ export default function CustomSignUp({ redirectUrl }: { redirectUrl?: string }) 
 
     void run(async () => {
       setError('');
+
       await signUp.create({
         emailAddress: email,
         password,
@@ -54,8 +58,9 @@ export default function CustomSignUp({ redirectUrl }: { redirectUrl?: string }) 
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setPendingVerification(true);
     }).catch((err: any) => {
-      console.error('error', err.errors[0].longMessage);
-      setError(err.errors[0].longMessage || 'Invalid data');
+      const errorMessage = err?.errors?.[0]?.longMessage || err?.message || 'Invalid data';
+      console.error('error', errorMessage);
+      setError(errorMessage);
     });
   };
 
@@ -306,6 +311,9 @@ export default function CustomSignUp({ redirectUrl }: { redirectUrl?: string }) 
                 </button>
               </div>
             </div>
+
+            {/* Clerk's CAPTCHA widget (required for Smart CAPTCHA in custom flows) */}
+            <div id="clerk-captcha" data-cl-theme="auto" />
 
             <Button
               type="submit"

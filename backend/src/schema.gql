@@ -290,34 +290,17 @@ type CompanyMemberDetails {
 
 type CompanySettings {
   allow_negative_stock: Boolean
-  audit_retention_days: Int
   company_id: ID!
   created_at: DateTime!
   currency: String
-  default_user_role: String
-  enable_audit_logs: Boolean
   enable_expiry_tracking: Boolean
   expiry_warning_days: Int
   id: ID!
   is_premium: Boolean
-  language: String
   low_stock_threshold: Int
-  notify_expiry: Boolean
-  notify_low_stock: Boolean
-  notify_po_status: Boolean
-  notify_transfers: Boolean
-  po_approval_threshold: Float
-  po_auto_receive: Boolean
-  po_default_payment_terms: String
-  po_require_approval: Boolean
   restrict_manager_catalog: Boolean
-  restrict_staff_stock: Boolean
-  session_timeout_minutes: Int
   stock_valuation_method: String
-  theme: String
   timezone: String
-  track_stock_adjustments: Boolean
-  updated_at: DateTime
 }
 
 type CompanyStats {
@@ -803,7 +786,6 @@ type Mutation {
   updateSupplier(input: UpdateSupplierInput!): Supplier!
   updateUnit(input: UpdateUnitInput!): Unit!
   updateWarehouse(id: String!, input: UpdateWarehouseInput!): Warehouse!
-  updateWarehouseSettings(input: UpdateWarehouseSettingsInput!, warehouseId: String!): WarehouseSettings!
   updateWarehouseTransfer(id: String!, input: UpdateTransferInput!): WarehouseTransfer!
   upsertProductBarcodeUnit(input: UpsertProductBarcodeUnitInput!): ProductBarcodeUnit!
   validateCategoryImport(csvContent: String!): String!
@@ -1374,30 +1356,13 @@ input UpdateCompanyInput {
 
 input UpdateCompanySettingsInput {
   allow_negative_stock: Boolean
-  audit_retention_days: Int
   currency: String
-  default_user_role: String
-  enable_audit_logs: Boolean
   enable_expiry_tracking: Boolean
   expiry_warning_days: Int
-  language: String
   low_stock_threshold: Int
-  notifications_enabled: Boolean
-  notify_expiry: Boolean
-  notify_low_stock: Boolean
-  notify_po_status: Boolean
-  notify_transfers: Boolean
-  po_approval_threshold: Float
-  po_auto_receive: Boolean
-  po_default_payment_terms: String
-  po_require_approval: Boolean
   restrict_manager_catalog: Boolean
-  restrict_staff_stock: Boolean
-  session_timeout_minutes: Int
   stock_valuation_method: String
-  theme: String
   timezone: String
-  track_stock_adjustments: Boolean
 }
 
 input UpdateGRNInput {
@@ -1496,15 +1461,6 @@ input UpdateWarehouseInput {
   type: String
 }
 
-input UpdateWarehouseSettingsInput {
-  allow_inbound_transfers: Boolean
-  allow_negative_stock: Boolean
-  allow_outbound_transfers: Boolean
-  expiry_warning_days: Float
-  low_stock_threshold: Float
-  require_transfer_approval: Boolean
-}
-
 input UpsertProductBarcodeUnitInput {
   barcode_value: String!
   id: ID
@@ -1588,6 +1544,7 @@ type ValidateInviteResponse {
   email: String!
   role: String!
   status: String!
+  userExists: Boolean!
 }
 
 type Warehouse {
@@ -1662,14 +1619,8 @@ type WarehouseRiskMetric {
 }
 
 type WarehouseSettings {
-  allow_inbound_transfers: Boolean!
-  allow_negative_stock: Boolean
-  allow_outbound_transfers: Boolean!
   created_at: DateTime!
-  expiry_warning_days: Float
   id: ID!
-  low_stock_threshold: Float
-  require_transfer_approval: Boolean!
   warehouse_id: String!
 }
 

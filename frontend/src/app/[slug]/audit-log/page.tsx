@@ -9,7 +9,7 @@ import { DateRange } from 'react-day-picker';
 import { GET_COMPANY_AUDIT_LOGS, GET_COMPANY_MEMBERS } from '@/lib/graphql/audit';
 import { GET_COMPANY_BY_SLUG } from '@/lib/graphql/company';
 import CompanyGuard from '@/components/CompanyGuard';
-import RoleGuard from '@/components/guards/RoleGuard';
+import RoleGuard from '@/components/guards/role-guard';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

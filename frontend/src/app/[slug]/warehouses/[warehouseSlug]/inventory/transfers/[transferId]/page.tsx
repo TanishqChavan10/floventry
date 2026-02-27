@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useParams, useRouter } from 'next/navigation';
-import RoleGuard from '@/components/guards/RoleGuard';
+import RoleGuard from '@/components/guards/role-guard';
 import { useAuth } from '@/context/auth-context';
 import { useWarehouse } from '@/context/warehouse-context';
+import { useRbac } from '@/hooks/use-rbac';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +38,9 @@ import {
   FileText,
   CheckCircle,
   ArrowRight,
+  Info,
 } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import {
   GET_WAREHOUSE_TRANSFER,
   POST_WAREHOUSE_TRANSFER,
@@ -95,7 +98,7 @@ function TransferDetailContent() {
   });
 
   const transfer = data?.warehouseTransfer;
-  const userRole = user?.companies?.find((c: any) => c.slug === companySlug)?.role;
+  const rbac = useRbac();
 
   // Detect if this is an incoming transfer (destination warehouse view)
   const isIncoming =
@@ -137,12 +140,8 @@ function TransferDetailContent() {
   };
 
   // Only source warehouse can post/cancel - destination warehouse is READ-ONLY
-  const canPost =
-    isOutgoing &&
-    transfer?.status === 'DRAFT' &&
-    ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole || '');
-  const canCancel =
-    isOutgoing && transfer?.status === 'DRAFT' && ['OWNER', 'ADMIN'].includes(userRole || '');
+  const canPost = isOutgoing && transfer?.status === 'DRAFT' && rbac.canPost;
+  const canCancel = isOutgoing && transfer?.status === 'DRAFT' && rbac.canCancel;
 
   if (loading) {
     return (
@@ -240,6 +239,16 @@ function TransferDetailContent() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8 space-y-6">
+        {rbac.isStaff && (
+          <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300">
+            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertTitle className="text-blue-800 dark:text-blue-300">View Only Access</AlertTitle>
+            <AlertDescription className="text-blue-700 dark:text-blue-400">
+              As a Warehouse Staff member, you can view this Transfer Note. Posting or cancelling requires Manager approval.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Warehouse Info */}
         <div className="grid gap-6 md:grid-cols-2">
           <Card>

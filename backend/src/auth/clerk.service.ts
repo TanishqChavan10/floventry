@@ -61,7 +61,19 @@ export class ClerkService {
     });
 
     if (!user) {
-      user = await this.syncUser(clerkId);
+      await this.syncUser(clerkId);
+      user = await this.userRepository.findOne({
+        where: { id: clerkId },
+        relations: [
+          'userCompanies',
+          'userCompanies.company',
+          'userWarehouses',
+          'userWarehouses.warehouse',
+        ],
+      });
+      if (!user) {
+        throw new Error('Failed to find user after sync');
+      }
     }
 
     return user;

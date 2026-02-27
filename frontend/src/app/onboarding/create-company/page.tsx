@@ -18,10 +18,12 @@ import { useMutation } from '@apollo/client';
 import { CREATE_COMPANY } from '@/lib/graphql/company';
 import { GET_CURRENT_USER } from '@/lib/graphql/auth';
 import { toast } from 'sonner';
+import { useApolloClient } from '@apollo/client';
 
 export default function CreateCompanyPage() {
   const router = useRouter();
   const { user } = useUser();
+  const apolloClient = useApolloClient();
   const [companyName, setCompanyName] = React.useState('');
 
   const generateSlug = (name: string) =>
@@ -54,7 +56,9 @@ export default function CreateCompanyPage() {
       if (data?.createCompany) {
         toast.success('Company created successfully!');
         await user?.reload();
-        router.push(`/${generateSlug(companyName)}/settings`);
+        await apolloClient.clearStore();
+        const createdSlug = data.createCompany.slug || generateSlug(companyName);
+        window.location.href = `/${createdSlug}/settings`;
       }
     }).catch((error: any) => {
       console.error('Error creating company:', error);

@@ -2,12 +2,10 @@ import { Resolver, Query, Mutation, Args, Int, ID } from '@nestjs/graphql';
 import { UseGuards, BadRequestException } from '@nestjs/common';
 import { WarehouseService } from './warehouse.service';
 import { Warehouse } from './warehouse.entity';
-import { WarehouseSettings as WarehouseSettingsModel } from './warehouse-settings.model';
 import { UserWarehouse } from './models/user-warehouse.model';
 import { CreateWarehouseInput } from './dto/create-warehouse.input';
 import {
   UpdateWarehouseInput,
-  UpdateWarehouseSettingsInput,
 } from './dto/update-warehouse.input';
 import { AssignUserToWarehouseInput } from './dto/assign-user-warehouse.input';
 import {
@@ -39,7 +37,7 @@ export class WarehouseResolver {
     private readonly warehouseService: WarehouseService,
     private readonly auditLogService: AuditLogService,
     private readonly notificationsService: NotificationsService,
-  ) {}
+  ) { }
 
   @Mutation(() => Warehouse)
   @UseGuards(ClerkAuthGuard, RolesGuard)
@@ -76,15 +74,6 @@ export class WarehouseResolver {
     return this.warehouseService.update(id, input);
   }
 
-  @Mutation(() => WarehouseSettingsModel)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles(Role.OWNER, Role.ADMIN)
-  async updateWarehouseSettings(
-    @Args('warehouseId') warehouseId: string,
-    @Args('input') input: UpdateWarehouseSettingsInput,
-  ): Promise<WarehouseSettingsModel> {
-    return this.warehouseService.updateSettings(warehouseId, input);
-  }
 
   @Mutation(() => Boolean)
   @UseGuards(ClerkAuthGuard, RolesGuard)

@@ -74,23 +74,6 @@ export function IconRail() {
 
   let filteredSections = filterNavigationByRole(navigationSections, userRole);
 
-  // Same MANAGER restrictions as the sidebar (company context only)
-  if (permissions.isManager && !(warehouseSlug || isWarehousesListPage)) {
-    const allowedHrefs = new Set([
-      `/${companySlug}/dashboard`,
-      `/${companySlug}/warehouses`,
-      `/${companySlug}/purchase-orders`,
-      `/${companySlug}/settings/team`,
-    ]);
-
-    filteredSections = filteredSections
-      .map((section) => ({
-        ...section,
-        items: section.items.filter((item) => allowedHrefs.has(item.href)),
-      }))
-      .filter((section) => section.items.length > 0);
-  }
-
   const logoHref = warehouseSlug
     ? `/${companySlug}/warehouses/${warehouseSlug}`
     : `/${companySlug}/dashboard`;

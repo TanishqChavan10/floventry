@@ -80,6 +80,16 @@ export class InviteService {
   }
 
   //------------------------------------------------------------
+  // CHECK IF EMAIL HAS A FLOVENTRY ACCOUNT
+  //------------------------------------------------------------
+  async checkEmailHasAccount(email: string): Promise<boolean> {
+    const user = await this.userRepository.findOne({
+      where: { email: email.toLowerCase() },
+    });
+    return !!user;
+  }
+
+  //------------------------------------------------------------
   // VALIDATE INVITE TOKEN (Used by both validate & accept)
   //------------------------------------------------------------
   async validateInviteToken(

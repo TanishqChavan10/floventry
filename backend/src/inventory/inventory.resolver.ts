@@ -47,6 +47,7 @@ import {
 } from './types/company-inventory.types';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { WarehouseGuard } from '../auth/guards/warehouse.guard';
 import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
@@ -70,6 +71,8 @@ export class CategoryResolver {
   constructor(private readonly inventoryService: InventoryService) { }
 
   @Mutation(() => Category)
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async createCategory(
     @Args('input') input: CreateCategoryInput,
     @ClerkUser() user: any,
@@ -87,6 +90,8 @@ export class CategoryResolver {
   }
 
   @Mutation(() => Category)
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async updateCategory(
     @Args('input') input: UpdateCategoryInput,
     @ClerkUser() user: any,
@@ -97,6 +102,8 @@ export class CategoryResolver {
   }
 
   @Mutation(() => Boolean)
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async removeCategory(@Args('id') id: string, @ClerkUser() user: any) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -110,6 +117,8 @@ export class ProductResolver {
   constructor(private readonly inventoryService: InventoryService) { }
 
   @Mutation(() => Product)
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async createProduct(
     @Args('input') input: CreateProductInput,
     @ClerkUser() user: any,
@@ -120,6 +129,8 @@ export class ProductResolver {
   }
 
   @Mutation(() => String)
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async generateCompanyBarcode(@ClerkUser() user: any) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -180,6 +191,8 @@ export class ProductResolver {
   }
 
   @Mutation(() => Product)
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async updateProduct(
     @Args('input') input: UpdateProductInput,
     @ClerkUser() user: any,
@@ -216,6 +229,8 @@ export class ProductResolver {
   }
 
   @Mutation(() => ProductBarcodeUnit)
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async upsertProductBarcodeUnit(
     @Args('input') input: UpsertProductBarcodeUnitInput,
     @ClerkUser() user: any,
@@ -229,6 +244,8 @@ export class ProductResolver {
   }
 
   @Mutation(() => Boolean)
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async removeProductBarcodeUnit(
     @Args('id') id: string,
     @ClerkUser() user: any,
@@ -242,6 +259,8 @@ export class ProductResolver {
   }
 
   @Mutation(() => Boolean)
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async removeProduct(@Args('id') id: string, @ClerkUser() user: any) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -257,6 +276,8 @@ export class UnitResolver {
   constructor(private readonly inventoryService: InventoryService) { }
 
   @Mutation(() => Unit)
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async createUnit(
     @Args('input') input: CreateUnitInput,
     @ClerkUser() user: any,
@@ -277,6 +298,8 @@ export class UnitResolver {
   }
 
   @Mutation(() => Unit)
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async updateUnit(
     @Args('input') input: UpdateUnitInput,
     @ClerkUser() user: any,
@@ -287,6 +310,8 @@ export class UnitResolver {
   }
 
   @Mutation(() => Boolean)
+  @UseGuards(RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async removeUnit(@Args('id') id: string, @ClerkUser() user: any) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');

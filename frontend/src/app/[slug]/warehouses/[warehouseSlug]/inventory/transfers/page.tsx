@@ -5,8 +5,9 @@ import { useQuery } from '@apollo/client';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { useWarehouse } from '@/context/warehouse-context';
-import RoleGuard from '@/components/guards/RoleGuard';
+import RoleGuard from '@/components/guards/role-guard';
 import { CreateTransferModal } from '@/components/inventory/CreateTransferModal';
+import { useRbac } from '@/hooks/use-rbac';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -54,10 +55,9 @@ function TransferListContent() {
   const warehouseSlug = params?.warehouseSlug as string;
   const { activeWarehouse } = useWarehouse();
 
-  // Get user role for RBAC
-  const activeCompany = user?.companies?.find((c) => c.id === user.activeCompanyId);
-  const userRole = activeCompany?.role;
-  const canCreateTransfer = userRole ? ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole) : false;
+  const rbac = useRbac();
+  // STAFF and above can create Transfers (drafts)
+  const canCreateTransfer = true; 
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');

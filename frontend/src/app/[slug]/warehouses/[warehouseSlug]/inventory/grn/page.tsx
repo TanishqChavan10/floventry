@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { useAuth } from '@/context/auth-context';
 import { useWarehouse } from '@/context/warehouse-context';
+import { useRbac } from '@/hooks/use-rbac';
 import { CreateGRNModal } from '@/components/inventory/CreateGRNModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,11 +55,10 @@ function GRNListContent() {
   const companySlug = params?.slug as string;
   const warehouseSlug = params?.warehouseSlug as string;
   const { activeWarehouse } = useWarehouse();
+  const rbac = useRbac();
 
-  // Get user role for RBAC
-  const activeCompany = user?.companies?.find(c => c.id === user.activeCompanyId);
-  const userRole = activeCompany?.role;
-  const canCreateGRN = userRole ? ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole) : false;
+  // STAFF and above can create GRNs (drafts)
+  const canCreateGRN = true; 
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');

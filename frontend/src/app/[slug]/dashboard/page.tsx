@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useParams } from 'next/navigation';
-import { usePermissions } from '@/hooks/usePermissions';
+import { useRbac } from '@/hooks/use-rbac';
 import { WarehouseOverview } from '@/components/company-dashboard/WarehouseOverview';
 import { InventorySnapshot } from '@/components/company-dashboard/InventorySnapshot';
 import { RecentActivity } from '@/components/company-dashboard/RecentActivity';
@@ -16,10 +16,10 @@ import AnalyticsCharts from '@/components/dashboard/AnalyticsCharts';
 function CompanyDashboardContent() {
   const params = useParams();
   const companySlug = params.slug as string;
-  const permissions = usePermissions();
+  const rbac = useRbac();
 
   // Only OWNER and ADMIN can access company dashboard
-  if (!permissions.isOwner && !permissions.isAdmin) {
+  if (!rbac.canViewCompanyLevel) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="max-w-md mx-auto text-center space-y-4">

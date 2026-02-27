@@ -24,7 +24,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { usePermissions } from '@/hooks/usePermissions';
+import { useRbac } from '@/hooks/use-rbac';
 import { SEND_INVITE } from '@/lib/graphql/invite';
 
 interface Warehouse {
@@ -37,6 +37,7 @@ interface InviteUserDialogProps {
   companyId: string;
   warehouses: Warehouse[];
   managedWarehouses?: string[]; // For MANAGER users
+  preselectedWarehouseId?: string; // Automatically assign and lock this warehouse
   onSuccess: () => void;
 }
 
@@ -44,6 +45,7 @@ export function InviteUserDialog({
   companyId,
   warehouses,
   managedWarehouses = [],
+  preselectedWarehouseId,
   onSuccess,
 }: InviteUserDialogProps) {
   const [open, setOpen] = useState(false);
@@ -52,27 +54,31 @@ export function InviteUserDialog({
   const [selectedWarehouses, setSelectedWarehouses] = useState<string[]>([]);
   const [managedWarehouseIds, setManagedWarehouseIds] = useState<string[]>([]);
 
-  const permissions = usePermissions();
+  const rbac = useRbac();
   const [sendInviteMutation, { loading: isLoading }] = useMutation(SEND_INVITE);
 
   // Managers can only invite STAFF (role fixed)
   useEffect(() => {
-    if (permissions.isManager) {
+    if (rbac.isManager) {
       setRole('STAFF');
       setManagedWarehouseIds([]);
     }
-  }, [permissions.isManager]);
+  }, [rbac.isManager]);
 
   // Available warehouses for assignment
-  const availableWarehouses = permissions.isManager
+  const availableWarehouses = rbac.isManager && !preselectedWarehouseId
     ? warehouses.filter((w) => managedWarehouses.includes(w.id))
     : warehouses;
 
-  // Reset selections when role changes
+  // Reset selections when role changes or preselection changes
   useEffect(() => {
-    setSelectedWarehouses([]);
+    if (preselectedWarehouseId) {
+      setSelectedWarehouses([preselectedWarehouseId]);
+    } else {
+      setSelectedWarehouses([]);
+    }
     setManagedWarehouseIds([]);
-  }, [role]);
+  }, [role, preselectedWarehouseId, open]);
 
   const needsWarehouseAssignment = role === 'MANAGER' || role === 'STAFF';
 
@@ -102,7 +108,7 @@ export function InviteUserDialog({
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (permissions.isManager && role !== 'STAFF') {
+    if (rbac.isManager && role !== 'STAFF') {
       toast.error('Managers can only invite STAFF');
       return;
     }
@@ -121,12 +127,12 @@ export function InviteUserDialog({
     try {
       const input: any = {
         email,
-        role: permissions.isManager ? 'STAFF' : role,
+        role: rbac.isManager ? 'STAFF' : role,
       };
 
       if (needsWarehouseAssignment) {
         input.warehouseIds = selectedWarehouses;
-        if (!permissions.isManager && role === 'MANAGER') {
+        if (!rbac.isManager && role === 'MANAGER') {
           input.managesWarehouseIds = managedWarehouseIds;
         }
       }
@@ -148,7 +154,8 @@ export function InviteUserDialog({
   };
 
   // Don't show button if user doesn't have permission
-  if (!permissions.canInviteUsers) {
+  const canInviteUsers = rbac.isOwner || rbac.isAdmin || rbac.isManager;
+  if (!canInviteUsers) {
     return null;
   }
 
@@ -188,7 +195,7 @@ export function InviteUserDialog({
               <Label htmlFor="role" className="text-sm">
                 Role
               </Label>
-              {permissions.isManager ? (
+              {rbac.isManager ? (
                 <p className="text-sm text-muted-foreground">Staff</p>
               ) : (
                 <Select value={role} onValueChange={setRole}>
@@ -196,13 +203,13 @@ export function InviteUserDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {permissions.isOwner && (
+                    {rbac.isOwner && (
                       <>
                         <SelectItem value="OWNER">Owner</SelectItem>
                         <SelectItem value="ADMIN">Admin</SelectItem>
                       </>
                     )}
-                    {(permissions.isOwner || permissions.isAdmin) && (
+                    {(rbac.isOwner || rbac.isAdmin) && (
                       <SelectItem value="MANAGER">Manager</SelectItem>
                     )}
                     <SelectItem value="STAFF">Staff</SelectItem>
@@ -218,7 +225,11 @@ export function InviteUserDialog({
                   {role === 'MANAGER' ? 'Managed warehouses' : 'Warehouse access'}
                 </Label>
                 <div className="border rounded-md max-h-50 overflow-y-auto divide-y">
-                  {availableWarehouses.length === 0 ? (
+                  {preselectedWarehouseId ? (
+                    <div className="p-3 text-sm text-muted-foreground bg-muted/30">
+                      Warehouse is automatically assigned to this location.
+                    </div>
+                  ) : availableWarehouses.length === 0 ? (
                     <p className="p-3 text-sm text-muted-foreground">No warehouses available.</p>
                   ) : (
                     availableWarehouses.map((warehouse) => {

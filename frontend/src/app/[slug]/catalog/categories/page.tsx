@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import CompanyGuard from '@/components/CompanyGuard';
+import RoleGuard from '@/components/guards/role-guard';
+import { useRbac } from '@/hooks/use-rbac';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -48,6 +50,7 @@ import { useToast } from '@/components/ui/use-toast';
 function CatalogCategoriesContent() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const rbac = useRbac();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('active'); // active, archived, all
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -101,12 +104,7 @@ function CatalogCategoriesContent() {
 
   const [restoreCategoryQuiet] = useMutation(UPDATE_CATEGORY);
 
-  // Get role from active company (role is company-specific, not user-level)
-  const activeCompany = user?.companies?.find((c) => c.id === user.activeCompanyId);
-  const userRole = activeCompany?.role;
-
-  const isOwnerOrAdmin = userRole === 'OWNER' || userRole === 'ADMIN';
-  const canEdit = isOwnerOrAdmin;
+  const canEdit = rbac.canEditCatalog; // Owner/Admin/Manager can edit/create categories
 
   const categories = data?.categories || [];
 
@@ -681,7 +679,9 @@ function CatalogCategoriesContent() {
 export default function CatalogCategoriesPage() {
   return (
     <CompanyGuard>
-      <CatalogCategoriesContent />
+      <RoleGuard allowedRoles={['OWNER', 'ADMIN', 'MANAGER']}>
+        <CatalogCategoriesContent />
+      </RoleGuard>
     </CompanyGuard>
   );
 }

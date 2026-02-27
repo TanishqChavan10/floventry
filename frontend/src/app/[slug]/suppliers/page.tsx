@@ -5,6 +5,8 @@ import { useQuery, useMutation } from '@apollo/client';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
 import CompanyGuard from '@/components/CompanyGuard';
+import RoleGuard from '@/components/guards/role-guard';
+import { useRbac } from '@/hooks/use-rbac';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -43,6 +45,7 @@ import SupplierDetailDrawer from '@/components/catalog/SupplierDetailDrawer';
 function SuppliersContent() {
   const { slug } = useParams();
   const { user } = useAuth();
+  const rbac = useRbac();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('active');
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
@@ -95,13 +98,8 @@ function SuppliersContent() {
     },
   });
 
-  // Get role from active company (role is company-specific)
-  const activeCompany = user?.companies?.find((c) => c.id === user.activeCompanyId);
-  const userRole = activeCompany?.role;
-
-  const isOwnerOrAdmin = userRole === 'OWNER' || userRole === 'ADMIN';
-  const canEdit = isOwnerOrAdmin; // Only Owner/Admin can edit/create suppliers
-  const canArchive = isOwnerOrAdmin; // Only Owner/Admin can archive suppliers
+  const canEdit = rbac.isAdmin || rbac.isOwner; // Only Owner/Admin can edit/create suppliers
+  const canArchive = rbac.isAdmin || rbac.isOwner; // Only Owner/Admin can archive suppliers
 
   const suppliers = suppliersData?.suppliers || [];
 
@@ -439,7 +437,9 @@ function SuppliersContent() {
 export default function SuppliersPage() {
   return (
     <CompanyGuard>
-      <SuppliersContent />
+      <RoleGuard allowedRoles={['OWNER', 'ADMIN', 'MANAGER']}>
+        <SuppliersContent />
+      </RoleGuard>
     </CompanyGuard>
   );
 }

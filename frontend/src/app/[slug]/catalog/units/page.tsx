@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import CompanyGuard from '@/components/CompanyGuard';
-import RoleGuard from '@/components/guards/RoleGuard';
+import RoleGuard from '@/components/guards/role-guard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';

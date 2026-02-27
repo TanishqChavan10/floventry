@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
 import LandingPage from '@/components/landing/LandingPage';
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Floventry — Smart Inventory Management for Growing Businesses',
@@ -18,13 +16,6 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const { userId } = await auth();
-
-  // If user is authenticated, redirect to their dashboard
-  if (userId) {
-    redirect('/auth-redirect');
-  }
-
   return (
     <>
       {/* JSON-LD Structured Data for rich Google results */}

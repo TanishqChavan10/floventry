@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
 import { useParams, useRouter } from 'next/navigation';
-import RoleGuard from '@/components/guards/RoleGuard';
+import RoleGuard from '@/components/guards/role-guard';
 import { useAuth } from '@/context/auth-context';
+import { useRbac } from '@/hooks/use-rbac';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +37,9 @@ import {
   FileText,
   CheckCircle,
   ExternalLink,
+  Info,
 } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { GET_GRN, POST_GRN, CANCEL_GRN, GET_GRNS } from '@/lib/graphql/grn';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -88,7 +91,7 @@ function GRNDetailContent() {
   });
 
   const grn = data?.grn;
-  const userRole = user?.companies?.find((c: any) => c.slug === companySlug)?.role;
+  const rbac = useRbac();
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -123,8 +126,8 @@ function GRNDetailContent() {
     }
   };
 
-  const canPost = grn?.status === 'DRAFT' && ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole || '');
-  const canCancel = grn?.status === 'DRAFT' && ['OWNER', 'ADMIN'].includes(userRole || '');
+  const canPost = grn?.status === 'DRAFT' && rbac.canPost;
+  const canCancel = grn?.status === 'DRAFT' && rbac.canCancel;
 
   if (loading) {
     return (
@@ -221,6 +224,16 @@ function GRNDetailContent() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8 space-y-6">
+        {rbac.isStaff && (
+          <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300">
+            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertTitle className="text-blue-800 dark:text-blue-300">View Only Access</AlertTitle>
+            <AlertDescription className="text-blue-700 dark:text-blue-400">
+              As a Warehouse Staff member, you can view this Goods Receipt Note. Posting or cancelling requires Manager approval.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* PO & Supplier Info */}
         <div className="grid gap-6 md:grid-cols-2">
           <Card>

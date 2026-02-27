@@ -73,6 +73,7 @@ export class InviteResolver {
       throw new BadRequestException('Token is required');
     }
     const invite = await this.inviteService.validateInviteToken(token);
+    const userExists = await this.inviteService.checkEmailHasAccount(invite.email);
     return {
       email: invite.email,
       companyName: invite.company?.name || 'Unknown Company',
@@ -80,6 +81,7 @@ export class InviteResolver {
       role: invite.role,
       companyId: invite.company_id,
       status: invite.status,
+      userExists,
     };
   }
 

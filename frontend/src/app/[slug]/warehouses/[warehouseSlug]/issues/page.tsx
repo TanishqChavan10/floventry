@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery } from '@apollo/client';
 import { GET_ISSUE_NOTES_BY_WAREHOUSE } from '@/lib/graphql/issues';
+import RoleGuard from '@/components/guards/role-guard';
+import { useRbac } from '@/hooks/use-rbac';
 import { ArrowUpDown, Loader2, Plus, Search } from 'lucide-react';
 import { CreateIssueModal } from '@/components/issues/CreateIssueModal';
 import { Button } from '@/components/ui/button';
@@ -30,11 +32,15 @@ import { StatusBadge } from '@/components/sales/StatusBadge';
 import { useWarehouse } from '@/context/warehouse-context';
 import { format } from 'date-fns';
 
-export default function IssueNotesPage() {
+function IssueNotesContent() {
   const params = useParams();
   const { activeWarehouse } = useWarehouse();
   const companySlug = params.slug as string;
   const warehouseSlug = params.warehouseSlug as string;
+
+  const rbac = useRbac();
+  // Staff and above can create DRAFT issues
+  const canCreate = true;
 
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,10 +72,12 @@ export default function IssueNotesPage() {
                 Track goods issued from {activeWarehouse?.name || 'warehouse'}
               </p>
             </div>
-            <Button className="gap-2" onClick={() => setIsCreateModalOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Create Issue
-            </Button>
+            {canCreate && (
+              <Button className="gap-2" onClick={() => setIsCreateModalOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Create Issue
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -197,5 +205,13 @@ export default function IssueNotesPage() {
         />
       </main>
     </div>
+  );
+}
+
+export default function IssueNotesPage() {
+  return (
+    <RoleGuard allowedRoles={['OWNER', 'ADMIN', 'MANAGER', 'STAFF']}>
+      <IssueNotesContent />
+    </RoleGuard>
   );
 }

@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useMutation } from '@apollo/client';
+import RoleGuard from '@/components/guards/role-guard';
+import { useRbac } from '@/hooks/use-rbac';
 import { GET_ISSUE_NOTE, POST_ISSUE_NOTE, CANCEL_ISSUE_NOTE } from '@/lib/graphql/issues';
 import { Loader2, ArrowLeft, Send, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -33,12 +35,13 @@ import { ExpiryBadge } from '@/components/issues/ExpiryBadge';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 
-export default function IssueNoteDetailPage() {
+function IssueNoteDetailContent() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
+  const rbac = useRbac();
 
   const issueId = params.issueId as string;
   const companySlug = params.slug as string;
@@ -112,8 +115,8 @@ export default function IssueNoteDetailPage() {
   }
 
   const issue = data.issueNote;
-  const canPost = issue.status === 'DRAFT';
-  const canCancel = issue.status === 'DRAFT';
+  const canPost = issue.status === 'DRAFT' && rbac.canPost;
+  const canCancel = issue.status === 'DRAFT' && rbac.canCancel;
   const isPosted = issue.status === 'POSTED';
 
   return (
@@ -157,6 +160,16 @@ export default function IssueNoteDetailPage() {
       </header>
 
       <main className="container mx-auto px-6 py-8 space-y-6">
+        {rbac.isStaff && (
+          <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300">
+            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertTitle className="text-blue-800 dark:text-blue-300">View Only Access</AlertTitle>
+            <AlertDescription className="text-blue-700 dark:text-blue-400">
+              As a Warehouse Staff member, you can view this Issue Note. Posting or cancelling requires Manager approval.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Success Alert (if posted) */}
         {isPosted && (
           <Alert>
@@ -332,5 +345,13 @@ export default function IssueNoteDetailPage() {
         </AlertDialog>
       </main>
     </div>
+  );
+}
+
+export default function IssueNoteDetailPage() {
+  return (
+    <RoleGuard allowedRoles={['OWNER', 'ADMIN', 'MANAGER', 'STAFF']}>
+      <IssueNoteDetailContent />
+    </RoleGuard>
   );
 }

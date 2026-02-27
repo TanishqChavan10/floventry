@@ -9,6 +9,7 @@ import {
 } from './dto/issue-note.input';
 import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { WarehouseGuard } from '../auth/guards/warehouse.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
 import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
@@ -17,9 +18,10 @@ import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
 export class IssuesResolver {
   constructor(private readonly issuesService: IssuesService) { }
 
+  // Warehouse-scoped: Staff allowed (WarehouseGuard enforces assignment)
   @Query(() => [IssueNote])
-  @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  @UseGuards(ClerkAuthGuard, RolesGuard, WarehouseGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
   async issueNotesByWarehouse(
     @Args('warehouseId', { type: () => ID }) warehouseId: string,
     @Args('limit', { type: () => Int, nullable: true }) limit: number,
@@ -28,9 +30,10 @@ export class IssuesResolver {
     return this.issuesService.findAll(warehouseId, limit, offset);
   }
 
+  // Company-wide view: OWNER and ADMIN only (cross-warehouse aggregation)
   @Query(() => [IssueNote])
   @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  @Roles(Role.OWNER, Role.ADMIN)
   async issueNotesByCompany(
     @Args('limit', { type: () => Int, nullable: true }) limit: number,
     @Args('offset', { type: () => Int, nullable: true }) offset: number,
@@ -44,16 +47,17 @@ export class IssuesResolver {
 
   @Query(() => IssueNote)
   @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
   async issueNote(
     @Args('id', { type: () => ID }) id: string,
   ): Promise<IssueNote> {
     return this.issuesService.findOne(id);
   }
 
+  // Staff can create draft issue notes — WarehouseGuard checks input.warehouse_id
   @Mutation(() => IssueNote)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  @UseGuards(ClerkAuthGuard, RolesGuard, WarehouseGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
   async createIssueNote(
     @Args('input') input: CreateIssueNoteInput,
     @ClerkUser() user: any,
@@ -64,9 +68,10 @@ export class IssuesResolver {
     return this.issuesService.create(input, user.activeCompanyId);
   }
 
+  // Staff can create FEFO draft issue notes
   @Mutation(() => IssueNote)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  @UseGuards(ClerkAuthGuard, RolesGuard, WarehouseGuard)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
   async createIssueNoteWithFEFO(
     @Args('input') input: CreateFEFOIssueNoteInput,
     @ClerkUser() user: any,
@@ -77,9 +82,10 @@ export class IssuesResolver {
     return this.issuesService.createWithFEFO(input, user.activeCompanyId);
   }
 
+  // Staff can edit draft issue notes
   @Mutation(() => IssueNote)
   @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
   async updateIssueNote(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateIssueNoteInput,
@@ -87,6 +93,7 @@ export class IssuesResolver {
     return this.issuesService.update(id, input);
   }
 
+  // Post: MANAGER+ only — staff cannot post
   @Mutation(() => IssueNote)
   @UseGuards(ClerkAuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
@@ -97,9 +104,10 @@ export class IssuesResolver {
     return this.issuesService.postIssueNote(id, user.id);
   }
 
+  // Cancel posted issue: OWNER and ADMIN only
   @Mutation(() => IssueNote)
   @UseGuards(ClerkAuthGuard, RolesGuard)
-  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
+  @Roles(Role.OWNER, Role.ADMIN)
   async cancelIssueNote(
     @Args('id', { type: () => ID }) id: string,
   ): Promise<IssueNote> {

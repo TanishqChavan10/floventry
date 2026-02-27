@@ -45,23 +45,3 @@ export class UpdateWarehouseInput {
   is_default?: boolean;
 }
 
-@InputType()
-export class UpdateWarehouseSettingsInput {
-  @Field({ nullable: true })
-  low_stock_threshold?: number;
-
-  @Field({ nullable: true })
-  expiry_warning_days?: number;
-
-  @Field({ nullable: true })
-  allow_negative_stock?: boolean;
-
-  @Field({ nullable: true })
-  allow_inbound_transfers?: boolean;
-
-  @Field({ nullable: true })
-  allow_outbound_transfers?: boolean;
-
-  @Field({ nullable: true })
-  require_transfer_approval?: boolean;
-}

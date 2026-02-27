@@ -1,19 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation } from '@apollo/client';
 import { toast } from 'sonner';
 import CompanyGuard from '@/components/CompanyGuard';
-import RoleGuard from '@/components/guards/RoleGuard';
+import RoleGuard from '@/components/guards/role-guard';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useRbac } from '@/hooks/use-rbac';
+import { AlertCircle, Lock } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-  CardFooter,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,11 +40,8 @@ import {
   Save,
   ShieldAlert,
   Settings2,
-  Package,
   Clock,
   Phone,
-  ArrowLeftRight,
-  CalendarClock,
   Star,
   Loader2,
   RefreshCw,
@@ -50,7 +49,6 @@ import {
 import {
   GET_WAREHOUSE_WITH_SETTINGS,
   UPDATE_WAREHOUSE,
-  UPDATE_WAREHOUSE_SETTINGS,
   GET_WAREHOUSES_BY_COMPANY,
   REACTIVATE_WAREHOUSE,
 } from '@/lib/graphql/company';
@@ -60,7 +58,8 @@ function WarehouseSettingsContent() {
   const companySlug = params.slug as string;
   const warehouseSlug = params.warehouseSlug as string;
   const permissions = usePermissions();
-  const isReadOnly = permissions.isManager;
+  const rbac = useRbac();
+  const isReadOnly = !rbac.canEditWarehouseSettings;
 
   // Fetch warehouse data
   const { data: warehousesData, loading: loadingWarehouses } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
@@ -81,11 +80,9 @@ function WarehouseSettingsContent() {
 
   // Mutations
   const [updateWarehouse, { loading: updatingWarehouse }] = useMutation(UPDATE_WAREHOUSE);
-  const [updateWarehouseSettings, { loading: updatingSettings }] =
-    useMutation(UPDATE_WAREHOUSE_SETTINGS);
   const [reactivateWarehouse, { loading: reactivating }] = useMutation(REACTIVATE_WAREHOUSE);
 
-  // Form state - Warehouse
+  // Form state
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [type, setType] = useState('MAIN');
@@ -97,17 +94,8 @@ function WarehouseSettingsContent() {
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [country, setCountry] = useState('');
-  const [postal, setPostal] = useState('');
   const [status, setStatus] = useState('active');
   const [isDefault, setIsDefault] = useState(false);
-
-  // Form state - Settings
-  const [lowStockThreshold, setLowStockThreshold] = useState(10);
-  const [expiryWarningDays, setExpiryWarningDays] = useState(30);
-  const [allowNegativeStock, setAllowNegativeStock] = useState(false);
-  const [allowInboundTransfers, setAllowInboundTransfers] = useState(true);
-  const [allowOutboundTransfers, setAllowOutboundTransfers] = useState(true);
-  const [requireTransferApproval, setRequireTransferApproval] = useState(false);
 
   // Dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -128,15 +116,6 @@ function WarehouseSettingsContent() {
       setCountry(warehouse.country || '');
       setStatus(warehouse.status || 'active');
       setIsDefault(warehouse.is_default || false);
-
-      if (warehouse.settings) {
-        setLowStockThreshold(warehouse.settings.low_stock_threshold || 10);
-        setExpiryWarningDays(warehouse.settings.expiry_warning_days || 30);
-        setAllowNegativeStock(warehouse.settings.allow_negative_stock || false);
-        setAllowInboundTransfers(warehouse.settings.allow_inbound_transfers ?? true);
-        setAllowOutboundTransfers(warehouse.settings.allow_outbound_transfers ?? true);
-        setRequireTransferApproval(warehouse.settings.require_transfer_approval || false);
-      }
     }
   }, [warehouse]);
 
@@ -151,7 +130,6 @@ function WarehouseSettingsContent() {
     }
 
     try {
-      // Update warehouse
       await updateWarehouse({
         variables: {
           id: warehouse.id,
@@ -169,21 +147,6 @@ function WarehouseSettingsContent() {
             contact_phone: contactPhone,
             status,
             is_default: isDefault,
-          },
-        },
-      });
-
-      // Update warehouse settings
-      await updateWarehouseSettings({
-        variables: {
-          warehouseId: warehouse.id,
-          input: {
-            low_stock_threshold: lowStockThreshold,
-            expiry_warning_days: expiryWarningDays,
-            allow_negative_stock: allowNegativeStock,
-            allow_inbound_transfers: allowInboundTransfers,
-            allow_outbound_transfers: allowOutboundTransfers,
-            require_transfer_approval: requireTransferApproval,
           },
         },
       });
@@ -228,7 +191,7 @@ function WarehouseSettingsContent() {
     );
   }
 
-  const isSaving = updatingWarehouse || updatingSettings;
+  const isSaving = updatingWarehouse;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -241,7 +204,7 @@ function WarehouseSettingsContent() {
               Warehouse Settings
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Configure general preferences, location, and access controls
+              Configure general preferences, location, and team access
             </p>
             {isReadOnly && (
               <p className="text-amber-700 dark:text-amber-300 text-xs mt-2">
@@ -268,13 +231,23 @@ function WarehouseSettingsContent() {
       </div>
 
       <main className="container mx-auto px-6 py-8 max-w-5xl">
+        {isReadOnly && (
+          <Alert className="mb-6 border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300">
+            <Lock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertTitle className="text-blue-800 dark:text-blue-300">View Only Access</AlertTitle>
+            <AlertDescription className="text-blue-700 dark:text-blue-400">
+              As a Warehouse Manager, you can view these settings but cannot change the warehouse structure.
+              Contact an Administrator to update information, manage access, or archive this location.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Tabs defaultValue="general" className="space-y-6">
           <TabsList
-            className={`grid w-full ${isReadOnly ? 'grid-cols-4' : 'grid-cols-5'} lg:w-[500px]`}
+            className={`grid w-full ${isReadOnly ? 'grid-cols-3' : 'grid-cols-4'} lg:w-[400px]`}
           >
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="location">Location</TabsTrigger>
-            <TabsTrigger value="inventory">Inventory</TabsTrigger>
             <TabsTrigger value="staff">Staff</TabsTrigger>
             {!isReadOnly && <TabsTrigger value="danger">Danger</TabsTrigger>}
           </TabsList>
@@ -441,7 +414,7 @@ function WarehouseSettingsContent() {
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-indigo-600" />
-                  <CardTitle>Address & Location</CardTitle>
+                  <CardTitle>Address &amp; Location</CardTitle>
                 </div>
                 <CardDescription>Physical address for shipping and receiving</CardDescription>
               </CardHeader>
@@ -477,153 +450,37 @@ function WarehouseSettingsContent() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="postal">Postal Code</Label>
+                    <Label htmlFor="country">Country</Label>
                     <Input
-                      id="postal"
-                      value={postal}
-                      onChange={(e) => setPostal(e.target.value)}
+                      id="country"
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
                       disabled={isReadOnly}
                     />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="country">Country</Label>
-                  <Input
-                    id="country"
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    disabled={isReadOnly}
-                  />
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Inventory & Transfer Settings */}
-          <TabsContent value="inventory" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-indigo-600" />
-                  <CardTitle>Inventory Rules</CardTitle>
-                </div>
-                <CardDescription>Default settings for stock management</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Low Stock Threshold</Label>
-                    <Input
-                      type="number"
-                      value={lowStockThreshold}
-                      onChange={(e) => setLowStockThreshold(parseInt(e.target.value) || 0)}
-                      disabled={isReadOnly}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Alert when stock falls below this amount
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-1">
-                      <CalendarClock className="h-3.5 w-3.5" />
-                      Expiry Warning (Days)
-                    </Label>
-                    <Input
-                      type="number"
-                      value={expiryWarningDays}
-                      onChange={(e) => setExpiryWarningDays(parseInt(e.target.value) || 0)}
-                      disabled={isReadOnly}
-                    />
-                    <p className="text-xs text-muted-foreground">Warn before items expire</p>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Allow Negative Stock</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Continue selling when out of stock
-                    </p>
-                  </div>
-                  <Switch
-                    checked={allowNegativeStock}
-                    onCheckedChange={setAllowNegativeStock}
-                    disabled={isReadOnly}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <ArrowLeftRight className="h-5 w-5 text-indigo-600" />
-                  <CardTitle>Transfer Rules</CardTitle>
-                </div>
-                <CardDescription>
-                  Configure stock transfer permissions for this warehouse
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Allow Inbound Transfers</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Accept stock from other warehouses
-                    </p>
-                  </div>
-                  <Switch
-                    checked={allowInboundTransfers}
-                    onCheckedChange={setAllowInboundTransfers}
-                    disabled={isReadOnly}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Allow Outbound Transfers</Label>
-                    <p className="text-sm text-muted-foreground">Send stock to other warehouses</p>
-                  </div>
-                  <Switch
-                    checked={allowOutboundTransfers}
-                    onCheckedChange={setAllowOutboundTransfers}
-                    disabled={isReadOnly}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between rounded-lg border p-4 bg-muted/30">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Require Transfer Approval</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Manager approval needed for transfers
-                    </p>
-                  </div>
-                  <Switch
-                    checked={requireTransferApproval}
-                    onCheckedChange={setRequireTransferApproval}
-                    disabled={isReadOnly}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Staff Settings */}
+          {/* Staff */}
           <TabsContent value="staff" className="space-y-6">
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-primary" />
-                  <CardTitle>Staff & Manager</CardTitle>
+                  <CardTitle>Staff &amp; Manager</CardTitle>
                 </div>
                 <CardDescription>View warehouse staff and manager assignments</CardDescription>
               </CardHeader>
               <CardContent>
-                {warehouse?.id && (
-                  <WarehouseAccessList warehouseId={warehouse.id} companySlug={companySlug} />
+                {warehouse?.id && warehousesData?.companyBySlug?.id && (
+                  <WarehouseAccessList 
+                    warehouseId={warehouse.id} 
+                    companySlug={companySlug} 
+                    companyId={warehousesData.companyBySlug.id}
+                    warehouseName={warehouse.name}
+                  />
                 )}
               </CardContent>
             </Card>
@@ -708,7 +565,6 @@ function WarehouseSettingsContent() {
           warehouseName={warehouse.name}
           companySlug={companySlug}
           onSuccess={() => {
-            // Redirect to warehouse list or company dashboard after successful deletion
             window.location.href = `/${companySlug}/warehouses`;
           }}
         />

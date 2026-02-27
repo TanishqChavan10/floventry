@@ -86,32 +86,14 @@ export const GET_COMPANY_BY_SLUG = gql`
         is_premium
         currency
         timezone
-        language
         # Inventory
         low_stock_threshold
         expiry_warning_days
         enable_expiry_tracking
         allow_negative_stock
         stock_valuation_method
-        # PO
-        po_require_approval
-        po_approval_threshold
-        po_auto_receive
-        po_default_payment_terms
-        # Notifications
-        notify_low_stock
-        notify_expiry
-        notify_po_status
-        notify_transfers
         # Access
-        default_user_role
         restrict_manager_catalog
-        restrict_staff_stock
-        session_timeout_minutes
-        # Audit
-        enable_audit_logs
-        audit_retention_days
-        track_stock_adjustments
       }
     }
   }
@@ -152,6 +134,9 @@ export const UPDATE_COMPANY_SETTINGS = gql`
       currency
       timezone
       low_stock_threshold
+      enable_expiry_tracking
+      expiry_warning_days
+      restrict_manager_catalog
     }
   }
 `;
@@ -193,15 +178,6 @@ export const GET_WAREHOUSE_WITH_SETTINGS = gql`
       contact_phone
       status
       is_default
-      settings {
-        id
-        low_stock_threshold
-        expiry_warning_days
-        allow_negative_stock
-        allow_inbound_transfers
-        allow_outbound_transfers
-        require_transfer_approval
-      }
     }
   }
 `;
@@ -247,12 +223,6 @@ export const UPDATE_WAREHOUSE_SETTINGS = gql`
   mutation UpdateWarehouseSettings($warehouseId: String!, $input: UpdateWarehouseSettingsInput!) {
     updateWarehouseSettings(warehouseId: $warehouseId, input: $input) {
       id
-      low_stock_threshold
-      expiry_warning_days
-      allow_negative_stock
-      allow_inbound_transfers
-      allow_outbound_transfers
-      require_transfer_approval
     }
   }
 `;

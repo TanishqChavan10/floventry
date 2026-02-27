@@ -13,7 +13,6 @@ import { StockMovement } from '../inventory/entities/stock-movement.entity';
 import { Between } from 'typeorm';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 import { UpdateWarehouseDto } from './dto/update-warehouse.dto';
-import { UpdateWarehouseSettingsInput } from './dto/update-warehouse.input';
 import slugify from 'slugify';
 
 @Injectable()
@@ -30,7 +29,7 @@ export class WarehouseService {
     @InjectRepository(StockMovement)
     private stockMovementRepository: Repository<StockMovement>,
     private dataSource: DataSource,
-  ) {}
+  ) { }
 
   async getKPIs(warehouseId: string): Promise<any> {
     const totalProducts = await this.stockRepository.count({
@@ -460,28 +459,6 @@ export class WarehouseService {
     });
   }
 
-  async updateSettings(
-    warehouseId: string,
-    input: UpdateWarehouseSettingsInput,
-  ): Promise<WarehouseSettings> {
-    // Check if settings exist
-    let settings = await this.warehouseSettingsRepository.findOne({
-      where: { warehouse_id: warehouseId },
-    });
-
-    if (!settings) {
-      // Create new settings if they don't exist
-      settings = this.warehouseSettingsRepository.create({
-        warehouse_id: warehouseId,
-        ...input,
-      });
-    } else {
-      // Update existing settings
-      Object.assign(settings, input);
-    }
-
-    return this.warehouseSettingsRepository.save(settings);
-  }
 
   // ============================================
   // Warehouse Reports

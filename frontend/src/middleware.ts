@@ -19,6 +19,11 @@ export default clerkMiddleware((auth, request) => {
 
   // Protect all other pages
   auth.protect();
+}, {
+  signInUrl: process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || '/auth/sign-in',
+  signUpUrl: process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL || '/auth/sign-up',
+  afterSignInUrl: process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL || '/auth-redirect',
+  afterSignUpUrl: process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL || '/auth-redirect',
 });
 
 export const config = {

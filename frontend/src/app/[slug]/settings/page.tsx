@@ -6,6 +6,7 @@ import { useQuery } from '@apollo/client';
 import { GET_COMPANY_BY_SLUG } from '@/lib/graphql/company';
 import { Loader2 } from 'lucide-react';
 import CompanySettingsContent from './CompanySettingsContent';
+import RoleGuard from '@/components/guards/role-guard';
 
 export default function CompanySettingsPage() {
   const params = useParams();
@@ -39,10 +40,12 @@ export default function CompanySettingsPage() {
   }
 
   return (
-    <div className="min-h-full bg-background p-6 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        <CompanySettingsContent company={company} />
+    <RoleGuard companyLevelOnly>
+      <div className="min-h-full bg-background p-6 md:p-8">
+        <div className="max-w-6xl mx-auto">
+          <CompanySettingsContent company={company} />
+        </div>
       </div>
-    </div>
+    </RoleGuard>
   );
 }

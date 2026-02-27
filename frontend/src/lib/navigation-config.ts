@@ -51,6 +51,7 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
                     label: 'Dashboard',
                     href: `${basePath}/dashboard`,
                     icon: IconHome,
+                    roles: ['OWNER', 'ADMIN'],
                 },
                 {
                     label: 'Warehouses',
@@ -66,11 +67,13 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
                     label: 'Products',
                     href: `${basePath}/catalog/products`,
                     icon: IconBoxSeam,
+                    roles: ['OWNER', 'ADMIN', 'MANAGER', 'STAFF'],
                 },
                 {
                     label: 'Categories',
                     href: `${basePath}/catalog/categories`,
                     icon: IconCategory,
+                    roles: ['OWNER', 'ADMIN', 'MANAGER'],
                 },
                 {
                     label: 'Units',
@@ -96,18 +99,19 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
                     label: 'Suppliers',
                     href: `${basePath}/suppliers`,
                     icon: IconTruck,
+                    roles: ['OWNER', 'ADMIN', 'MANAGER'], // Staff shouldn't access Suppliers
                 },
                 {
                     label: 'Purchase Orders',
                     href: `${basePath}/purchase-orders`,
                     icon: IconShoppingCart,
-                    roles: ['OWNER', 'ADMIN', 'MANAGER'], // Only OWNER, ADMIN, and MANAGER can access
+                    roles: ['OWNER', 'ADMIN', 'MANAGER'],
                 },
                 {
                     label: 'Inventory Reports',
                     href: `${basePath}/inventory/reports`,
                     icon: IconClipboardList,
-                    roles: ['OWNER', 'ADMIN'],
+                    roles: ['OWNER', 'ADMIN'], // Only Owner/Admin for Company level
                 },
             ],
         },
@@ -117,6 +121,7 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
                     label: 'Audit Log',
                     href: `${basePath}/audit-log`,
                     icon: IconHistory,
+                    roles: ['OWNER', 'ADMIN'],
                 },
             ]
         },
@@ -126,7 +131,7 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
                     label: 'Team',
                     href: `${basePath}/settings/team`,
                     icon: IconUsers,
-                    roles: ['MANAGER'], // Only for MANAGER; OWNER/ADMIN access via Settings menu
+                    roles: ['OWNER', 'ADMIN'], // Matrix: Manager cannot access team management
                 },
             ],
         },
@@ -183,7 +188,7 @@ export function getWarehouseNavigation(
                     label: 'Adjustments',
                     href: `${basePath}/inventory/adjustments`,
                     icon: IconAdjustments,
-                    roles: ['OWNER', 'ADMIN', 'MANAGER', 'STAFF'],
+                    roles: ['OWNER', 'ADMIN', 'MANAGER'], // Staff cannot access Adjustments
                 },
                 {
                     label: 'GRN',
@@ -225,6 +230,7 @@ export function getWarehouseNavigation(
                     label: 'Settings',
                     href: `${basePath}/settings`,
                     icon: IconSettings,
+                    roles: ['OWNER', 'ADMIN', 'MANAGER'], // Managers restricted via useRbac on the page
                 },
             ],
         },

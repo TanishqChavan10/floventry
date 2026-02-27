@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/auth-context';
+import { useRbac } from '@/hooks/use-rbac';
 import CompanyGuard from '@/components/CompanyGuard';
 import {
   Package,
@@ -23,11 +24,8 @@ function CatalogLandingContent() {
 
   const { data, loading, error } = useQuery(GET_CATALOG_STATS);
 
-  // Get role from active company (role is company-specific)
-  const activeCompany = user?.companies?.find(c => c.id === user.activeCompanyId);
-  const userRole = activeCompany?.role;
-  
-  const isOwnerOrAdmin = userRole === 'OWNER' || userRole === 'ADMIN';
+  const rbac = useRbac();
+  const isOwnerOrAdmin = rbac.isAdmin || rbac.isOwner;
 
   // Calculate stats from catalog data
   const totalProducts = data?.products?.length || 0;

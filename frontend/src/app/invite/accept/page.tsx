@@ -4,9 +4,9 @@ import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useMutation, useApolloClient } from '@apollo/client';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, useClerk } from '@clerk/nextjs';
 import { ACCEPT_INVITE, VALIDATE_INVITE } from '@/lib/graphql/invite';
 
 function BrandHeader() {
@@ -38,6 +38,7 @@ function InviteAcceptContent() {
   const router = useRouter();
   const client = useApolloClient();
   const { isSignedIn, isLoaded } = useAuth();
+  const { signOut } = useClerk();
 
   /** ✅ Token persistence (SSO safe) */
   const urlToken = searchParams.get('token');
@@ -50,11 +51,14 @@ function InviteAcceptContent() {
     companySlug: string;
     role: string;
     status: string;
+    userExists: boolean;
   } | null>(null);
 
   const [error, setError] = useState<string | null>(null);
+  const [emailMismatch, setEmailMismatch] = useState(false);
   const [hasAccepted, setHasAccepted] = useState(false);
   const [alreadyAccepted, setAlreadyAccepted] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const [acceptInvite, { loading: isAccepting }] = useMutation(ACCEPT_INVITE);
 
@@ -125,7 +129,10 @@ function InviteAcceptContent() {
         localStorage.removeItem('inviteToken');
         toast.success('Joined company successfully');
 
-        router.replace(`/${inviteDetails.companySlug}/dashboard`);
+        // Hard redirect (not SPA) so the auth context re-initialises with fresh
+        // data that includes the newly joined company — prevents CompanyGuard
+        // from seeing stale empty-companies state and bouncing to /onboarding.
+        window.location.href = `/${inviteDetails.companySlug}/dashboard`;
       } catch (err: any) {
         const msg: string = err.message || 'Failed to accept invite';
         // Already accepted (e.g. race condition / double-click) → just redirect
@@ -135,7 +142,13 @@ function InviteAcceptContent() {
         ) {
           localStorage.removeItem('inviteToken');
           toast.success('You already joined this company');
-          router.replace(`/${inviteDetails.companySlug}/dashboard`);
+          window.location.href = `/${inviteDetails.companySlug}/dashboard`;
+          return;
+        }
+        // Email mismatch — user is signed in with a different email than the invite
+        if (msg.toLowerCase().includes('please sign in with that email')) {
+          setHasAccepted(false);
+          setEmailMismatch(true);
           return;
         }
         setHasAccepted(false);
@@ -189,9 +202,114 @@ function InviteAcceptContent() {
   }
 
   /** -----------------------------
-   *  Not signed in -> Sign in
+   *  Email mismatch -> Sign out & re-auth
+   * ----------------------------- */
+  if (emailMismatch && inviteDetails) {
+    const invitePageUrl = window.location.href;
+    return (
+      <PageShell>
+        <div
+          className="rounded-xl border bg-white p-8 text-center space-y-6"
+          style={{ borderColor: '#f0f0f0', boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}
+        >
+          <div
+            className="mx-auto h-12 w-12 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: '#fff0f0' }}
+          >
+            <LogOut className="h-6 w-6" style={{ color: '#e05252' }} />
+          </div>
+
+          <div className="space-y-1">
+            <h2 className="text-xl font-semibold text-gray-900">Wrong account</h2>
+            <p className="text-sm text-gray-500">
+              This invite was sent to{' '}
+              <span className="font-medium text-gray-800">{inviteDetails.email}</span>. You&apos;re
+              signed in with a different email.
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              Sign out and then sign in or create an account with{' '}
+              <span className="font-medium text-gray-800">{inviteDetails.email}</span> to accept.
+            </p>
+          </div>
+
+          <button
+            className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            style={{ backgroundColor: '#e05252' }}
+            disabled={isSigningOut}
+            onClick={async () => {
+              setIsSigningOut(true);
+              await signOut();
+              // After sign out, the page will re-render and show the sign-in/sign-up options
+              setEmailMismatch(false);
+              setHasAccepted(false);
+              setIsSigningOut(false);
+            }}
+          >
+            {isSigningOut ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Signing out...
+              </span>
+            ) : (
+              'Sign out & switch account'
+            )}
+          </button>
+        </div>
+      </PageShell>
+    );
+  }
+
+  /** -----------------------------
+   *  Not signed in -> Sign in OR Create account
    * ----------------------------- */
   if (!isSignedIn) {
+    // User already has a Floventry account — just sign in
+    if (inviteDetails.userExists) {
+      return (
+        <PageShell>
+          <div
+            className="rounded-xl border bg-white p-8 text-center space-y-6"
+            style={{ borderColor: '#f0f0f0', boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}
+          >
+            <div
+              className="mx-auto h-12 w-12 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: '#fff0f0' }}
+            >
+              <CheckCircle className="h-6 w-6" style={{ color: '#e05252' }} />
+            </div>
+
+            <div className="space-y-1">
+              <h2 className="text-xl font-semibold text-gray-900">You're invited</h2>
+              <p className="text-sm text-gray-500">
+                Join <span className="font-medium text-gray-800">{inviteDetails.companyName}</span>{' '}
+                as{' '}
+                <span className="font-medium text-gray-800">
+                  {inviteDetails.role.charAt(0) + inviteDetails.role.slice(1).toLowerCase()}
+                </span>
+              </p>
+            </div>
+
+            <button
+              className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: '#e05252' }}
+              onClick={() =>
+                router.push(
+                  `/auth/sign-in?redirect_url=${encodeURIComponent(window.location.pathname + window.location.search)}`,
+                )
+              }
+            >
+              Sign in to accept
+            </button>
+
+            <p className="text-xs text-gray-400">
+              Invited to <span className="font-medium">{inviteDetails.email}</span>
+            </p>
+          </div>
+        </PageShell>
+      );
+    }
+
+    // User does NOT have a Floventry account — prompt to create one
     return (
       <PageShell>
         <div
@@ -205,13 +323,19 @@ function InviteAcceptContent() {
             <CheckCircle className="h-6 w-6" style={{ color: '#e05252' }} />
           </div>
 
-          <div className="space-y-1">
-            <h2 className="text-xl font-semibold text-gray-900">You're invited</h2>
-            <p className="text-sm text-gray-500">
-              Join <span className="font-medium text-gray-800">{inviteDetails.companyName}</span> as{' '}
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-gray-900">You're invited!</h2>
+            <p className="text-sm text-gray-600">
+              To join <span className="font-medium text-gray-800">{inviteDetails.companyName}</span>{' '}
+              as{' '}
               <span className="font-medium text-gray-800">
                 {inviteDetails.role.charAt(0) + inviteDetails.role.slice(1).toLowerCase()}
               </span>
+              , you need to create a Floventry account.
+            </p>
+            <p className="text-xs text-gray-400">
+              Make sure to sign up with{' '}
+              <span className="font-medium text-gray-700">{inviteDetails.email}</span>
             </p>
           </div>
 
@@ -219,15 +343,13 @@ function InviteAcceptContent() {
             className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
             style={{ backgroundColor: '#e05252' }}
             onClick={() =>
-              router.push(`/auth/sign-in?redirect_url=${encodeURIComponent(window.location.href)}`)
+              router.push(
+                `/auth/sign-up?redirect_url=${encodeURIComponent(window.location.pathname + window.location.search)}`,
+              )
             }
           >
-            Sign in to accept
+            Create account to accept
           </button>
-
-          <p className="text-xs text-gray-400">
-            Invited to <span className="font-medium">{inviteDetails.email}</span>
-          </p>
         </div>
       </PageShell>
     );

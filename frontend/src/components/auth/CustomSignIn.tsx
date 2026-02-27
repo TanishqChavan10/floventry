@@ -44,12 +44,16 @@ export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) 
   };
 
   // Handle OAuth sign in
+  // Note: if the Google account is new to Clerk it transfers to sign-up;
+  // Google OAuth requires an absolute redirect_uri — use window.location.origin.
   const signInWith = (strategy: 'oauth_google') => {
     if (!isLoaded) return;
 
+    const callbackUrl = `${window.location.origin}/sso-callback`;
+
     return signIn.authenticateWithRedirect({
       strategy,
-      redirectUrl: '/sso-callback',
+      redirectUrl: callbackUrl,
       redirectUrlComplete: postAuthUrl,
     });
   };
@@ -60,6 +64,7 @@ export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) 
 
     void run(async () => {
       setError('');
+
       const result = await signIn.create({
         identifier: email,
         password,
@@ -76,7 +81,7 @@ export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) 
       }
     }).catch((err: any) => {
       const errorMessage =
-        err.errors?.[0]?.longMessage || err.message || 'Invalid email or password';
+        err?.errors?.[0]?.longMessage || err?.message || 'Invalid email or password';
 
       if (errorMessage.toLowerCase().includes('already signed in')) {
         router.push(postAuthUrl);
@@ -158,6 +163,9 @@ export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) 
                 </button>
               </div>
             </div>
+
+            {/* Clerk's CAPTCHA widget (required for Smart CAPTCHA in custom flows) */}
+            <div id="clerk-captcha" data-cl-theme="auto" />
 
             <Button
               type="submit"
