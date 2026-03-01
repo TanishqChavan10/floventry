@@ -17,7 +17,7 @@ import { UserWarehouse } from './user-warehouse.entity';
 export class User {
   @Field(() => ID)
   @PrimaryColumn({ type: 'text' })
-  id: string; // Clerk ID
+  id: string; // Supabase ID
 
   @Field()
   @Column({ type: 'text' })

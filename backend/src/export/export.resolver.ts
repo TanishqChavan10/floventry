@@ -1,11 +1,11 @@
 import { Resolver, Mutation, Args } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { ExportService } from './export.service';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
-import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ExportFiltersInput } from './dto/export-filters.input';
 
 @Resolver()
@@ -13,9 +13,9 @@ export class ExportResolver {
   constructor(private readonly exportService: ExportService) {}
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async exportStockSnapshot(
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
     @Args('warehouseId') warehouseId: string,
     @Args('filters', { type: () => ExportFiltersInput, nullable: true })
     filters?: ExportFiltersInput,
@@ -28,9 +28,9 @@ export class ExportResolver {
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async exportStockMovements(
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
     @Args('warehouseId') warehouseId: string,
     @Args('filters', { type: () => ExportFiltersInput, nullable: true })
     filters?: ExportFiltersInput,
@@ -43,9 +43,9 @@ export class ExportResolver {
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async exportAdjustments(
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
     @Args('warehouseId') warehouseId: string,
     @Args('filters', { type: () => ExportFiltersInput, nullable: true })
     filters?: ExportFiltersInput,
@@ -58,9 +58,9 @@ export class ExportResolver {
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async exportExpiryLots(
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
     @Args('warehouseId') warehouseId: string,
     @Args('filters', { type: () => ExportFiltersInput, nullable: true })
     filters?: ExportFiltersInput,
@@ -73,10 +73,10 @@ export class ExportResolver {
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async exportInventorySummary(
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
     @Args('filters', { type: () => ExportFiltersInput, nullable: true })
     filters?: ExportFiltersInput,
   ): Promise<string> {
@@ -87,10 +87,10 @@ export class ExportResolver {
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async exportCompanyMovements(
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
     @Args('filters', { type: () => ExportFiltersInput, nullable: true })
     filters?: ExportFiltersInput,
   ): Promise<string> {
@@ -101,10 +101,10 @@ export class ExportResolver {
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async exportExpiryRisk(
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
     @Args('filters', { type: () => ExportFiltersInput, nullable: true })
     filters?: ExportFiltersInput,
   ): Promise<string> {

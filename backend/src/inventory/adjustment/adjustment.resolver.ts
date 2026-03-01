@@ -4,10 +4,10 @@ import { InventoryService } from '../inventory.service';
 import { Stock } from '../entities/stock.entity';
 import { StockMovement } from '../entities/stock-movement.entity';
 import { CreateInventoryAdjustmentInput } from './dto/adjustment.input';
-import { ClerkAuthGuard } from '../../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../../auth/guards/auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { WarehouseGuard } from '../../auth/guards/warehouse.guard';
-import { ClerkUser } from '../../auth/decorators/clerk-user.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Role } from '../../auth/enums/role.enum';
 
@@ -24,7 +24,7 @@ class InventoryAdjustmentResult {
 }
 
 @Resolver()
-@UseGuards(ClerkAuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard)
 export class AdjustmentResolver {
   constructor(private readonly inventoryService: InventoryService) { }
 
@@ -37,7 +37,7 @@ export class AdjustmentResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async createInventoryAdjustment(
     @Args('input') input: CreateInventoryAdjustmentInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<InventoryAdjustmentResult> {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');

@@ -5,8 +5,8 @@ import {
   WarehouseStockHealthResult,
   CompanyStockHealthResult,
 } from './stock-health.types';
-import { ClerkAuthGuard } from '../../auth/guards/clerk-auth.guard';
-import { ClerkUser } from '../../auth/decorators/clerk-user.decorator';
+import { AuthGuard } from '../../auth/guards/auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @Resolver()
 export class StockHealthResolver {
@@ -20,9 +20,9 @@ export class StockHealthResolver {
   }
 
   @Query(() => [CompanyStockHealthResult])
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async companyStockHealth(
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<CompanyStockHealthResult[]> {
     if (!user.activeCompanyId) {
       throw new Error('No active company');

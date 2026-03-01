@@ -8,18 +8,18 @@ import { CreateCompanyInput } from './dto/create-company.input';
 import { UpdateCompanyInput } from './dto/update-company.input';
 import { UpdateCompanySettingsInput } from './dto/update-company-settings.input';
 import { UpdateCompanyBarcodeSettingsInput } from './dto/update-company-barcode-settings.input';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
-import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
-import { ClerkService } from '../auth/clerk.service';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { AuthService } from '../auth/auth.service';
 
 @Resolver(() => Company)
 export class CompanyResolver {
   constructor(
     private readonly companyService: CompanyService,
-    private readonly clerkService: ClerkService,
+    private readonly authService: AuthService,
   ) {}
 
   // --- Barcode settings fields (resolved from Company entity snake_case columns) ---
@@ -37,7 +37,7 @@ export class CompanyResolver {
   @ResolveField(() => Float, { name: 'barcodeNextNumber', nullable: true })
   barcodeNextNumber(
     @Parent() company: any,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): number | null {
     // Admin/owner only; also only for the active company.
     const role = typeof user?.role === 'string' ? user.role.toUpperCase() : '';
@@ -56,14 +56,14 @@ export class CompanyResolver {
   }
 
   @Query(() => [Company])
-  @UseGuards(ClerkAuthGuard)
-  async companies(@ClerkUser() clerkUser: { clerkId: string } | null) {
-    if (!clerkUser?.clerkId) {
+  @UseGuards(AuthGuard)
+  async companies(@CurrentUser() authUser: { authId: string } | null) {
+    if (!authUser?.authId) {
       return [];
     }
 
     // Ensure user exists in database
-    const user = await this.clerkService.syncUser(clerkUser.clerkId);
+    const user = await this.authService.syncUser(authUser.authId);
     if (!user) {
       return [];
     }
@@ -72,35 +72,35 @@ export class CompanyResolver {
   }
 
   @Query(() => Company)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async company(@Args('id') id: string) {
     return this.companyService.getCompanyById(id);
   }
 
   @Query(() => Company)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async companyBySlug(@Args('slug') slug: string) {
     return this.companyService.getCompanyBySlug(slug);
   }
 
   @Query(() => CompanyStats)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async companyStats(@Args('companyId') companyId: string) {
     return this.companyService.getCompanyStats(companyId);
   }
 
   @Mutation(() => Company)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async createCompany(
     @Args('input') input: CreateCompanyInput,
-    @ClerkUser() clerkUser: { clerkId: string } | null,
+    @CurrentUser() authUser: { authId: string } | null,
   ) {
-    if (!clerkUser?.clerkId) {
+    if (!authUser?.authId) {
       throw new Error('User not authenticated');
     }
 
-    // Ensure user exists in database (sync from Clerk if needed)
-    const user = await this.clerkService.syncUser(clerkUser.clerkId);
+    // Ensure user exists in database (sync from Supabase if needed)
+    const user = await this.authService.syncUser(authUser.authId);
     if (!user) {
       throw new Error('Failed to create user');
     }
@@ -109,12 +109,12 @@ export class CompanyResolver {
   }
 
   @Mutation(() => CompanySettings)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
   async updateCompanySettings(
     @Args('companyId') companyId: string,
     @Args('input') input: UpdateCompanySettingsInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     // Security check: ensure user belongs to company (Role guard handles role, but need to check if company matches active or owned)
     if (user.activeCompanyId !== companyId) {
@@ -126,12 +126,12 @@ export class CompanyResolver {
   }
 
   @Mutation(() => Company)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.OWNER)
   async updateCompanyBarcodeSettings(
     @Args('companyId') companyId: string,
     @Args('input') input: UpdateCompanyBarcodeSettingsInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (user.activeCompanyId !== companyId) {
       throw new Error(
@@ -143,12 +143,12 @@ export class CompanyResolver {
   }
 
   @Mutation(() => Company)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
   async updateCompany(
     @Args('id') id: string,
     @Args('input') input: UpdateCompanyInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     // Security check: ensure user belongs to company or is owner
     if (user.activeCompanyId !== id) {
@@ -158,17 +158,17 @@ export class CompanyResolver {
   }
 
   @Mutation(() => SwitchCompanyResponse)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async switchCompany(
     @Args('companyId') companyId: string,
-    @ClerkUser() clerkUser: { clerkId: string } | null,
+    @CurrentUser() authUser: { authId: string } | null,
   ) {
-    if (!clerkUser?.clerkId) {
+    if (!authUser?.authId) {
       throw new Error('User not authenticated');
     }
 
     // Ensure user exists in database
-    const user = await this.clerkService.syncUser(clerkUser.clerkId);
+    const user = await this.authService.syncUser(authUser.authId);
     if (!user) {
       throw new Error('User not found');
     }

@@ -25,7 +25,8 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     }
 
     // Check if user has required role (if specified)
-    if (!loading && isAuthenticated && requiredRole && user?.role !== requiredRole) {
+    const activeCompany = user?.companies?.find((c) => c.isActive);
+    if (!loading && isAuthenticated && requiredRole && activeCompany?.role !== requiredRole) {
       const timer = setTimeout(() => {
         router.push('/');
       }, 100);
@@ -41,5 +42,6 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
   }
 
   // Only render children if authenticated and (no required role or has required role)
-  return isAuthenticated && (!requiredRole || user?.role === requiredRole) ? <>{children}</> : null;
+  const userRole = user?.companies?.find((c) => c.isActive)?.role;
+  return isAuthenticated && (!requiredRole || userRole === requiredRole) ? <>{children}</> : null;
 }

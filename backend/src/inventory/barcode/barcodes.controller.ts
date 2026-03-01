@@ -2,7 +2,7 @@ import { BadRequestException, Controller, Get, Query, Req, Res, UseGuards } from
 import type { Response } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ClerkAuthGuard } from '../../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../../auth/guards/auth.guard';
 import { Product } from '../entities/product.entity';
 
 function csvEscape(value: unknown): string {
@@ -13,7 +13,7 @@ function csvEscape(value: unknown): string {
 }
 
 @Controller('barcodes')
-@UseGuards(ClerkAuthGuard)
+@UseGuards(AuthGuard)
 export class BarcodesController {
   constructor(
     @InjectRepository(Product)

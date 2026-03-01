@@ -6,30 +6,30 @@ import { SendInviteInput } from './dto/send-invite.input';
 import { AcceptInviteInput } from './dto/accept-invite.input';
 import { ValidateInviteResponse } from './dto/validate-invite-response';
 import { UserCompany } from '../user-company/user-company.model';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
 
-import { ClerkService } from '../auth/clerk.service';
+import { AuthService } from '../auth/auth.service';
 import { BadRequestException } from '@nestjs/common';
 
 @Resolver(() => Invite)
 export class InviteResolver {
   constructor(
     private readonly inviteService: InviteService,
-    private readonly clerkService: ClerkService,
+    private readonly authService: AuthService,
   ) {}
 
   @Mutation(() => Invite)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
   async sendInvite(
     @Args('input') input: SendInviteInput,
     @Context() context: any,
   ) {
-    const user = await this.clerkService.syncUser(context.req.user.clerkId);
-    const activeCompanyId = context.req.user.activeCompanyId; // Get from Clerk metadata
+    const user = await this.authService.syncUser(context.req.user.authId);
+    const activeCompanyId = context.req.user.activeCompanyId; // Get from Supabase metadata
 
     if (!activeCompanyId) {
       throw new BadRequestException(
@@ -41,18 +41,18 @@ export class InviteResolver {
   }
 
   @Mutation(() => UserCompany)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async acceptInvite(
     @Args('input') input: AcceptInviteInput,
     @Context() context: any,
   ) {
-    const user = await this.clerkService.syncUser(context.req.user.clerkId);
+    const user = await this.authService.syncUser(context.req.user.authId);
     const result = await this.inviteService.acceptInvite(input, user.id);
     return result.membership;
   }
 
   @Mutation(() => Boolean)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
   async cancelInvite(
     @Args('inviteId', { type: () => String }) inviteId: string,
@@ -86,7 +86,7 @@ export class InviteResolver {
   }
 
   @Query(() => [Invite])
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async companyInvites(
     @Args('companyId', { type: () => String }) companyId: string,
@@ -97,13 +97,13 @@ export class InviteResolver {
   }
 
   @Query(() => [Invite])
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async myPendingInvites(@Context() context: any) {
-    if (!context.req.user?.clerkId) {
+    if (!context.req.user?.authId) {
       return [];
     }
-    const user = await this.clerkService.getUserByClerkId(
-      context.req.user.clerkId,
+    const user = await this.authService.getUserById(
+      context.req.user.authId,
     );
     if (!user || !user.email) {
       return [];

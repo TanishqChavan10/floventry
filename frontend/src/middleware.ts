@@ -1,30 +1,54 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { type NextRequest, NextResponse } from 'next/server';
+import { createSupabaseMiddlewareClient } from '@/lib/supabase/middleware';
 
-const isPublicRoute = createRouteMatcher([
+/**
+ * Routes that do NOT require authentication.
+ */
+const PUBLIC_PATHS = [
   '/',
   '/about',
-  '/auth/sign-in(.*)',
-  '/auth/sign-up(.*)',
+  '/auth/sign-in',
+  '/auth/sign-up',
+  '/auth/callback',
+  '/auth/forgot-password',
+  '/auth/reset-password',
   '/auth-redirect',
-  '/sso-callback(.*)',
-  '/invite/accept(.*)',
-  '/onboarding(.*)',
-  '/api/webhooks(.*)',   // Webhooks should remain public
-  '/api/public(.*)',      // Optional: your public APIs
-]);
+  '/invite/accept',
+  '/onboarding',
+  '/api/webhooks',
+  '/api/public',
+];
 
-export default clerkMiddleware((auth, request) => {
-  // Skip auth for public routes
-  if (isPublicRoute(request)) return;
+function isPublicRoute(pathname: string): boolean {
+  return PUBLIC_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`) || pathname.startsWith(`${p}?`),
+  );
+}
 
-  // Protect all other pages
-  auth.protect();
-}, {
-  signInUrl: process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || '/auth/sign-in',
-  signUpUrl: process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL || '/auth/sign-up',
-  afterSignInUrl: process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL || '/auth-redirect',
-  afterSignUpUrl: process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL || '/auth-redirect',
-});
+export async function middleware(request: NextRequest) {
+  const { supabase, response } = createSupabaseMiddlewareClient(request);
+
+  // Refresh the session (important — keeps cookies alive)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { pathname } = request.nextUrl;
+
+  // Allow public routes through
+  if (isPublicRoute(pathname)) {
+    return response;
+  }
+
+  // If no session, redirect to sign-in
+  if (!user) {
+    const signInUrl = new URL('/auth/sign-in', request.url);
+    signInUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(signInUrl);
+  }
+
+  return response;
+}
 
 export const config = {
   matcher: [

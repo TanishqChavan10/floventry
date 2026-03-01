@@ -5,7 +5,7 @@ import { Settings, Bell, Search, Menu, Package, Tags, Truck, Ruler } from 'lucid
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { UserButton } from '@clerk/nextjs';
+import { UserAvatar } from '@/components/auth/UserAvatar';
 import WarehouseSwitcher from './WarehouseSwitcher';
 import CompanySwitcher from './CompanySwitcher';
 import {
@@ -125,7 +125,7 @@ export default function DashboardHeader() {
           </a>
         </Button>
 
-        <UserButton />
+        <UserAvatar />
       </div>
     </header>
   );

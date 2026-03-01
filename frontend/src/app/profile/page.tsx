@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/context/auth-context';
 import { useQuery, useMutation } from '@apollo/client';
 import { ProfileForm } from '@/components/profile/ProfileForm';
 import { CompanyInfo } from '@/components/profile/CompanyInfo';
@@ -33,7 +33,7 @@ function arePreferencesEqual(a: PreferencesState, b: PreferencesState): boolean 
 }
 
 export default function ProfilePage() {
-  const { user } = useUser();
+  const { user } = useAuth();
   const { run, isLoading } = useAsyncAction();
 
   const { data: meData, loading: meLoading } = useQuery(GET_CURRENT_USER, {
@@ -55,7 +55,7 @@ export default function ProfilePage() {
     preferences: PreferencesState;
   } | null>(null);
 
-  // Initialize both UI state + baseline once Clerk user AND DB prefs are loaded.
+  // Initialize both UI state + baseline once Supabase user AND DB prefs are loaded.
   // This prevents the Save button from becoming enabled due to async hydration.
   useEffect(() => {
     if (!user) return;
@@ -63,8 +63,8 @@ export default function ProfilePage() {
     if (savedSnapshot) return;
 
     const initialForm: ProfileFormData = {
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
+      firstName: user.full_name?.split(' ')[0] || '',
+      lastName: user.full_name?.split(' ').slice(1).join(' ') || '',
     };
 
     const initialPrefs: PreferencesState = {
@@ -91,11 +91,9 @@ export default function ProfilePage() {
 
   const handleSaveAll = () => {
     void run(async () => {
-      // Save profile information to Clerk
-      await user?.update({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-      });
+      // Save profile information (name is stored in DB via preferences for now)
+      // In future, add a dedicated updateProfile mutation
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
 
       // Save preferences to database
       await updatePreferencesMutation({

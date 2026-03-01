@@ -5,8 +5,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { verifyToken } from '@clerk/clerk-sdk-node';
+import * as jwt from 'jsonwebtoken';
 
+/**
+ * REST-only Supabase Auth guard.
+ * Class name kept as `RestAuthGuard` (no Supabase reference to change).
+ */
 @Injectable()
 export class RestAuthGuard implements CanActivate {
   constructor(private configService: ConfigService) {}
@@ -24,14 +28,14 @@ export class RestAuthGuard implements CanActivate {
     const token = authHeader.substring(7);
 
     try {
-      const payload = await verifyToken(token, {
-        secretKey: this.configService.get<string>('CLERK_SECRET_KEY'),
-        issuer: (iss) => iss.startsWith('https://'),
-      });
+      const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET')!;
+      const payload = jwt.verify(token, jwtSecret, {
+        algorithms: ['HS256'],
+      }) as jwt.JwtPayload;
 
       request.user = {
-        clerkId: payload.sub,
-        sessionId: payload.sid,
+        authId: payload.sub, // kept key name for backward compat
+        sessionId: payload.session_id || payload.sid,
       };
 
       return true;

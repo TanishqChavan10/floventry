@@ -7,8 +7,8 @@ import { Role } from './entities/role.entity';
 import { UserCompany } from '../user-company/user-company.entity';
 import { UserWarehouse } from './entities/user-warehouse.entity';
 import { Warehouse } from '../warehouse/warehouse.entity';
-import { ClerkService } from './clerk.service';
-import { ClerkAuthGuard } from './guards/clerk-auth.guard';
+import { AuthService } from './auth.service';
+import { AuthGuard } from './guards/auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { WarehouseGuard } from './guards/warehouse.guard';
 import { UserWarehouseService } from './user-warehouse.service';
@@ -20,15 +20,15 @@ import { UserWarehouseService } from './user-warehouse.service';
   ],
   providers: [
     AuthResolver,
-    ClerkService,
-    ClerkAuthGuard,
+    AuthService,
+    AuthGuard,
     RolesGuard,
     WarehouseGuard,
     UserWarehouseService,
   ],
   exports: [
-    ClerkService,
-    ClerkAuthGuard,
+    AuthService,
+    AuthGuard,
     RolesGuard,
     WarehouseGuard,
     UserWarehouseService,

@@ -1,11 +1,11 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import { UseGuards, BadRequestException } from '@nestjs/common';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
-import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GlobalSearchResponse } from './global-search.types';
 import { GlobalSearchService } from './global-search.service';
 
-type ClerkRequestUser = {
+type SupabaseRequestUser = {
   id?: string;
   userId?: string;
   activeCompanyId?: string;
@@ -17,10 +17,10 @@ export class GlobalSearchResolver {
   constructor(private readonly globalSearchService: GlobalSearchService) {}
 
   @Query(() => GlobalSearchResponse, { name: 'globalSearch' })
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async globalSearch(
     @Args('query') query: string,
-    @ClerkUser() user: ClerkRequestUser,
+    @CurrentUser() user: SupabaseRequestUser,
   ): Promise<GlobalSearchResponse> {
     const emptyResponse = {
       products: [],

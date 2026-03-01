@@ -9,7 +9,7 @@ import { UserCompany } from '../user-company/user-company.entity';
 import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
 import { Warehouse } from '../warehouse/warehouse.entity';
 import { Stock } from '../inventory/entities/stock.entity';
-import { ClerkService } from '../auth/clerk.service';
+import { AuthService } from '../auth/auth.service';
 
 @Module({
   imports: [
@@ -23,7 +23,7 @@ import { ClerkService } from '../auth/clerk.service';
       Stock,
     ]),
   ],
-  providers: [CompanyService, CompanyResolver, ClerkService],
+  providers: [CompanyService, CompanyResolver, AuthService],
   exports: [CompanyService],
 })
 export class CompanyModule {}

@@ -15,19 +15,19 @@ import { Repository } from 'typeorm';
 import { WarehouseService } from './warehouse.service';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 import { UpdateWarehouseDto } from './dto/update-warehouse.dto';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
-import { ClerkService } from '../auth/clerk.service';
+import { AuthService } from '../auth/auth.service';
 import { UserCompany } from '../user-company/user-company.entity';
 
 @Controller('warehouses')
-@UseGuards(ClerkAuthGuard)
+@UseGuards(AuthGuard)
 export class WarehouseController {
   constructor(
     private readonly warehouseService: WarehouseService,
-    private readonly clerkService: ClerkService,
+    private readonly authService: AuthService,
     @InjectRepository(UserCompany)
     private userCompanyRepository: Repository<UserCompany>,
   ) {}
@@ -39,7 +39,7 @@ export class WarehouseController {
     @Body() createWarehouseDto: CreateWarehouseDto,
     @Req() req: any,
   ) {
-    const user = await this.clerkService.syncUser(req.user.clerkId);
+    const user = await this.authService.syncUser(req.user.authId);
     if (!user.activeCompanyId) {
       throw new BadRequestException(
         'User does not have an active company selected',
@@ -54,7 +54,7 @@ export class WarehouseController {
 
   @Get()
   async findAll(@Req() req: any) {
-    const user = await this.clerkService.syncUser(req.user.clerkId);
+    const user = await this.authService.syncUser(req.user.authId);
 
     // Get company ID from user's activeCompanyId or first company
     let companyId = user.activeCompanyId;

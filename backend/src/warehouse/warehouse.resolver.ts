@@ -22,11 +22,11 @@ import {
   AdjustmentFilters,
 } from './dto/warehouse-reports.types';
 import { WarehouseHealthSummary } from '../inventory/types/company-inventory.types';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
-import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuditLogService } from '../audit/audit-log.service';
 import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -40,11 +40,11 @@ export class WarehouseResolver {
   ) { }
 
   @Mutation(() => Warehouse)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async createWarehouse(
     @Args('input') input: CreateWarehouseInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<Warehouse> {
     if (!user.activeCompanyId) {
       throw new Error('No active company');
@@ -65,7 +65,7 @@ export class WarehouseResolver {
   }
 
   @Mutation(() => Warehouse)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async updateWarehouse(
     @Args('id') id: string,
@@ -76,11 +76,11 @@ export class WarehouseResolver {
 
 
   @Mutation(() => Boolean)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async deleteWarehouse(
     @Args('id', { type: () => ID }) id: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<boolean> {
     const warehouse = await this.warehouseService.findOne(id);
     await this.warehouseService.remove(id);
@@ -104,7 +104,7 @@ export class WarehouseResolver {
   }
 
   @Mutation(() => UserWarehouse)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async assignUserToWarehouse(
     @Args('warehouseId', { type: () => ID }) warehouseId: string,
@@ -127,7 +127,7 @@ export class WarehouseResolver {
   }
 
   @Mutation(() => Boolean)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async removeUserFromWarehouse(
     @Args('warehouseId', { type: () => ID }) warehouseId: string,
@@ -138,11 +138,11 @@ export class WarehouseResolver {
   }
 
   @Mutation(() => Warehouse)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER) // OWNER only
   async reactivateWarehouse(
     @Args('id', { type: () => ID }) id: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<Warehouse> {
     const warehouse = await this.warehouseService.reactivate(id);
 
@@ -159,14 +159,14 @@ export class WarehouseResolver {
   }
 
   @Query(() => Warehouse)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async warehouse(@Args('id') id: string): Promise<Warehouse> {
     return this.warehouseService.findOne(id);
   }
 
   @Query(() => [Warehouse])
-  @UseGuards(ClerkAuthGuard)
-  async warehouses(@ClerkUser() user: any): Promise<Warehouse[]> {
+  @UseGuards(AuthGuard)
+  async warehouses(@CurrentUser() user: any): Promise<Warehouse[]> {
     if (!user.activeCompanyId) {
       return [];
     }
@@ -174,7 +174,7 @@ export class WarehouseResolver {
   }
 
   @Query(() => WarehouseKPIs)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async warehouseKPIs(
     @Args('warehouseId', { type: () => ID }) warehouseId: string,
   ): Promise<WarehouseKPIs> {
@@ -182,7 +182,7 @@ export class WarehouseResolver {
   }
 
   @Query(() => [LowStockPreviewItem])
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async lowStockPreview(
     @Args('warehouseId', { type: () => ID }) warehouseId: string,
     @Args('limit', { type: () => Int, nullable: true, defaultValue: 5 })
@@ -195,7 +195,7 @@ export class WarehouseResolver {
   }
 
   @Query(() => [DashboardMovementItem])
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async recentMovements(
     @Args('warehouseId', { type: () => ID }) warehouseId: string,
     @Args('limit', { type: () => Int, nullable: true, defaultValue: 10 })
@@ -209,7 +209,7 @@ export class WarehouseResolver {
   // ============================================
 
   @Query(() => StockSnapshotResult)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async stockSnapshot(
     @Args('warehouseId', { type: () => ID }) warehouseId: string,
     @Args('filters', { nullable: true }) filters?: StockSnapshotFilters,
@@ -218,7 +218,7 @@ export class WarehouseResolver {
   }
 
   @Query(() => StockMovementResult)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async stockMovements(
     @Args('warehouseId', { type: () => ID }) warehouseId: string,
     @Args('filters') filters: StockMovementFilters,
@@ -227,7 +227,7 @@ export class WarehouseResolver {
   }
 
   @Query(() => AdjustmentResult)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async adjustmentReport(
     @Args('warehouseId', { type: () => ID }) warehouseId: string,
     @Args('filters') filters: AdjustmentFilters,

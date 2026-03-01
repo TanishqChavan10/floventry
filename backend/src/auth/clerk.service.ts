@@ -1,34 +1,63 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
-import { clerkClient } from '@clerk/clerk-sdk-node';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { User } from './entities/user.entity';
 
+/**
+ * Auth service — replaces Supabase with Supabase Auth.
+ * Class name kept as `AuthService` so 30+ resolver imports remain untouched.
+ * Will be renamed to `AuthService` in Phase 6 (cleanup).
+ */
 @Injectable()
-export class ClerkService {
+export class AuthService {
+  private supabaseAdmin: SupabaseClient;
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    this.supabaseAdmin = createClient(
+      this.configService.get<string>('SUPABASE_URL')!,
+      this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY')!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+  }
 
   /**
-   * Sync Clerk user with local database
+   * Sync Supabase Auth user with local database.
+   * @param supabaseUserId – The Supabase Auth UUID (from JWT `sub`).
    */
-  async syncUser(clerkId: string): Promise<User> {
-    // 1. Fetch user from Clerk
-    const clerkUser = await clerkClient.users.getUser(clerkId);
+  async syncUser(supabaseUserId: string): Promise<User> {
+    // 1. Fetch user from Supabase Auth (admin)
+    const { data: authUser, error } =
+      await this.supabaseAdmin.auth.admin.getUserById(supabaseUserId);
 
-    // 2. Try to find local user (PK = clerkId)
+    if (error || !authUser?.user) {
+      throw new Error(`Failed to fetch Supabase user: ${error?.message}`);
+    }
+
+    const sbUser = authUser.user;
+
+    // 2. Try to find local user
     let user = await this.userRepository.findOne({
-      where: { id: clerkId },
+      where: { id: supabaseUserId },
     });
 
     // Data to sync (never overwrite PK)
     const userData = {
-      email: clerkUser.emailAddresses[0]?.emailAddress || '',
+      email: sbUser.email || '',
       fullName:
-        `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim(),
-      avatarUrl: clerkUser.imageUrl || undefined,
+        (sbUser.user_metadata?.full_name as string) ||
+        (sbUser.user_metadata?.name as string) ||
+        `${sbUser.user_metadata?.first_name || ''} ${sbUser.user_metadata?.last_name || ''}`.trim() ||
+        '',
+      avatarUrl:
+        (sbUser.user_metadata?.avatar_url as string) ||
+        (sbUser.user_metadata?.picture as string) ||
+        undefined,
     };
 
     if (user) {
@@ -39,7 +68,7 @@ export class ClerkService {
 
     // 3. If user does not exist → create new user
     user = this.userRepository.create({
-      id: clerkId, // PK stays Clerk ID
+      id: supabaseUserId, // PK = Supabase Auth UUID
       ...userData,
     });
 
@@ -47,11 +76,12 @@ export class ClerkService {
   }
 
   /**
-   * Get an internal user by Clerk ID
+   * Get an internal user by their auth ID.
+   * Method name kept as `getUserById` for backward compatibility.
    */
-  async getUserByClerkId(clerkId: string): Promise<User> {
+  async getUserById(userId: string): Promise<User> {
     let user = await this.userRepository.findOne({
-      where: { id: clerkId },
+      where: { id: userId },
       relations: [
         'userCompanies',
         'userCompanies.company',
@@ -61,9 +91,9 @@ export class ClerkService {
     });
 
     if (!user) {
-      await this.syncUser(clerkId);
+      await this.syncUser(userId);
       user = await this.userRepository.findOne({
-        where: { id: clerkId },
+        where: { id: userId },
         relations: [
           'userCompanies',
           'userCompanies.company',
@@ -80,25 +110,23 @@ export class ClerkService {
   }
 
   /**
-   * Update Clerk metadata (activeCompanyId, activeRole)
-   * Also updates the local database
+   * Update user metadata.
+   * Stores in Supabase Auth user_metadata AND local database.
    */
   async updateUserMetadata(
-    clerkId: string,
+    userId: string,
     metadata: { activeCompanyId?: string; activeRole?: string },
   ) {
     try {
-      // Update Clerk metadata
-      await clerkClient.users.updateUserMetadata(clerkId, {
-        publicMetadata: {
-          ...metadata,
-        },
+      // Update Supabase Auth user metadata
+      await this.supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: metadata,
       });
 
       // Also update the local database if activeCompanyId is provided
       if (metadata.activeCompanyId !== undefined) {
         const user = await this.userRepository.findOne({
-          where: { id: clerkId },
+          where: { id: userId },
         });
 
         if (user) {
@@ -112,11 +140,11 @@ export class ClerkService {
   }
 
   /**
-   * Update user preferences in the database
+   * Update user preferences in the database.
    */
-  async updatePreferences(clerkId: string, preferences: any): Promise<User> {
+  async updatePreferences(userId: string, preferences: any): Promise<User> {
     const user = await this.userRepository.findOne({
-      where: { id: clerkId },
+      where: { id: userId },
     });
 
     if (!user) {
@@ -125,5 +153,16 @@ export class ClerkService {
 
     user.preferences = preferences;
     return this.userRepository.save(user);
+  }
+
+  /**
+   * Get the Supabase Auth user (email, metadata, etc.)
+   * Used by the guard to fetch additional user info.
+   */
+  async getSupabaseAuthUser(userId: string) {
+    const { data, error } =
+      await this.supabaseAdmin.auth.admin.getUserById(userId);
+    if (error) return null;
+    return data.user;
   }
 }

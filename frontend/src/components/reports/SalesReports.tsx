@@ -8,7 +8,7 @@ import { addDays } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
-import { useAuth } from '@clerk/nextjs';
+import { useAuth } from '@/context/auth-context';
 import { API_URL } from '@/config/env';
 
 export function SalesReports() {

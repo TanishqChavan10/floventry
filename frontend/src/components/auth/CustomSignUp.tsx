@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
-import { useSignUp } from '@clerk/nextjs';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
@@ -11,8 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+const supabase = createSupabaseBrowserClient();
+
 export default function CustomSignUp({ redirectUrl }: { redirectUrl?: string }) {
-  const { isLoaded, signUp, setActive } = useSignUp();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [firstName, setFirstName] = React.useState('');
@@ -22,79 +23,65 @@ export default function CustomSignUp({ redirectUrl }: { redirectUrl?: string }) 
   const [error, setError] = React.useState('');
   const [pendingVerification, setPendingVerification] = React.useState(false);
   const [code, setCode] = React.useState('');
+  const [resendCooldown, setResendCooldown] = React.useState(0);
   const router = useRouter();
 
   /** Where to send the user after successful authentication */
   const postAuthUrl = redirectUrl?.startsWith('/') ? redirectUrl : '/onboarding';
 
-  // ── Handle OAuth continuation (e.g. /auth/sign-up/continue) ──────
-  // After the SSO callback, Clerk may redirect here if the sign-up has
-  // unresolved requirements (captcha, etc.). Detect and auto-complete.
-  React.useEffect(() => {
-    if (!isLoaded || !signUp) return;
-
-    // Sign-up already complete → activate session and redirect
-    if (signUp.status === 'complete' && signUp.createdSessionId) {
-      void setActive({ session: signUp.createdSessionId }).then(() => {
-        router.push(postAuthUrl);
-      });
-      return;
-    }
-
-    const ea = signUp.verifications?.externalAccount;
-    if (!ea) return;
-
-    // OAuth identity belongs to an existing user → hand off to sign-in
-    if (ea.status === 'transferable') {
-      router.replace(`/auth/sign-in?redirect_url=${encodeURIComponent(postAuthUrl)}`);
-      return;
-    }
-
-    // Provider returned an error
-    if (ea.status === 'unverified' && ea.error) {
-      setError(ea.error.longMessage || ea.error.message || 'OAuth verification failed');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, signUp?.status, signUp?.verifications?.externalAccount?.status]);
-
-  // Handle OAuth sign up
-  const signUpWith = (strategy: 'oauth_google') => {
-    if (!isLoaded) return;
-
+  // Handle OAuth sign up with Google
+  const signUpWithGoogle = async () => {
     setError('');
-
-    // Google OAuth requires an absolute redirect_uri — use window.location.origin
-    const callbackUrl = `${window.location.origin}/sso-callback`;
-
-    return signUp
-      .authenticateWithRedirect({
-        strategy,
-        redirectUrl: callbackUrl,
-        redirectUrlComplete: '/auth-redirect',
-      })
-      .catch((err: any) => {
-        setError(err?.errors?.[0]?.longMessage || err?.message || 'Could not start Google sign-up');
-      });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      setError(error.message || 'Could not start Google sign-up');
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoaded) return;
 
     void run(async () => {
       setError('');
 
-      await signUp.create({
-        emailAddress: email,
+      const { data, error } = await supabase.auth.signUp({
+        email,
         password,
-        firstName,
-        lastName,
+        options: {
+          data: {
+            full_name: `${firstName} ${lastName}`.trim(),
+            avatar_url: '',
+          },
+        },
       });
 
-      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
-      setPendingVerification(true);
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Supabase returns identities = [] when the email is already registered
+      // (email enumeration protection hides this as a normal success).
+      if (data.user && data.user.identities?.length === 0) {
+        throw new Error('An account with this email already exists. Please sign in instead.');
+      }
+
+      // If email confirmation is required, Supabase returns a user with
+      // identities = [] (or a confirmation email is sent).
+      // Check if session was created (auto-confirm enabled) or needs verification.
+      if (data.session) {
+        // Auto-confirmed — redirect immediately
+        router.push(postAuthUrl);
+      } else {
+        // Email confirmation required — show OTP verification
+        setPendingVerification(true);
+      }
     }).catch((err: any) => {
-      const errorMessage = err?.errors?.[0]?.longMessage || err?.message || 'Invalid data';
+      const errorMessage = err?.message || 'Invalid data';
       console.error('error', errorMessage);
       setError(errorMessage);
     });
@@ -102,25 +89,52 @@ export default function CustomSignUp({ redirectUrl }: { redirectUrl?: string }) 
 
   const handleVerification = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoaded) return;
 
     void run(async () => {
       setError('');
-      const completeSignUp = await signUp.attemptEmailAddressVerification({
-        code,
+
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: code,
+        type: 'signup',
       });
 
-      if (completeSignUp.status === 'complete') {
-        await setActive({ session: completeSignUp.createdSessionId });
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data.session) {
         router.push(postAuthUrl);
       } else {
-        console.log(completeSignUp);
         setError('Verification failed. Please try again.');
       }
     }).catch((err: any) => {
-      console.error('error', err.errors[0].longMessage);
-      setError(err.errors[0].longMessage || 'Invalid code');
+      console.error('error', err.message);
+      setError(err.message || 'Invalid code');
     });
+  };
+
+  const handleResend = async () => {
+    setError('');
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+    });
+    if (error) {
+      setError(error.message || 'Could not resend code');
+    } else {
+      // Start 60-second cooldown
+      setResendCooldown(60);
+      const interval = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
   };
 
   if (pendingVerification) {
@@ -163,7 +177,7 @@ export default function CustomSignUp({ redirectUrl }: { redirectUrl?: string }) 
 
               <Button
                 type="submit"
-                className="h-11 w-full bg-neutral-200 text-neutral-900 hover:bg-neutral-300"
+                className="h-11 w-full bg-[#E53935] text-white hover:bg-[#D32F2F]"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -176,6 +190,18 @@ export default function CustomSignUp({ redirectUrl }: { redirectUrl?: string }) 
                 )}
               </Button>
             </form>
+
+            <p className="mt-4 text-center text-sm text-neutral-600">
+              Didn&apos;t receive a code?{' '}
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendCooldown > 0}
+                className="font-semibold text-neutral-900 hover:text-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
+              </button>
+            </p>
           </div>
         </div>
 
@@ -244,7 +270,7 @@ export default function CustomSignUp({ redirectUrl }: { redirectUrl?: string }) 
             <Button
               type="button"
               variant="outline"
-              onClick={() => signUpWith('oauth_google')}
+              onClick={signUpWithGoogle}
               className="h-11 w-full border-neutral-300"
             >
               <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
@@ -348,12 +374,9 @@ export default function CustomSignUp({ redirectUrl }: { redirectUrl?: string }) 
               </div>
             </div>
 
-            {/* Clerk's CAPTCHA widget (required for Smart CAPTCHA in custom flows) */}
-            <div id="clerk-captcha" data-cl-theme="auto" />
-
             <Button
               type="submit"
-              className="h-11 w-full bg-neutral-200 text-neutral-900 hover:bg-neutral-300"
+              className="h-11 w-full bg-[#E53935] text-white hover:bg-[#D32F2F]"
               disabled={isLoading}
             >
               {isLoading ? (

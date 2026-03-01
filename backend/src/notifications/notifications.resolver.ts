@@ -2,17 +2,17 @@ import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { Notification } from './entities/notification.entity';
-import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { AuthGuard } from '../auth/guards/auth.guard';
 
 @Resolver(() => Notification)
-@UseGuards(ClerkAuthGuard)
+@UseGuards(AuthGuard)
 export class NotificationsResolver {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Query(() => [Notification])
   async notifications(
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
     @Args('limit', { type: () => Int, nullable: true, defaultValue: 50 })
     limit: number,
     @Args('offset', { type: () => Int, nullable: true, defaultValue: 0 })
@@ -25,7 +25,7 @@ export class NotificationsResolver {
   }
 
   @Query(() => Int)
-  async unreadNotificationCount(@ClerkUser() user: any): Promise<number> {
+  async unreadNotificationCount(@CurrentUser() user: any): Promise<number> {
     if (!user || !user.id) {
       throw new Error('Unauthorized');
     }
@@ -35,7 +35,7 @@ export class NotificationsResolver {
   @Mutation(() => Notification)
   async markNotificationAsRead(
     @Args('id') id: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<Notification> {
     if (!user || !user.id) {
       throw new Error('Unauthorized');
@@ -44,7 +44,7 @@ export class NotificationsResolver {
   }
 
   @Mutation(() => Int)
-  async markAllNotificationsAsRead(@ClerkUser() user: any): Promise<number> {
+  async markAllNotificationsAsRead(@CurrentUser() user: any): Promise<number> {
     if (!user || !user.id) {
       throw new Error('Unauthorized');
     }

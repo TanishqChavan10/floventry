@@ -3,7 +3,7 @@
 import React from 'react';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/context/auth-context';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,7 +22,7 @@ import { useApolloClient } from '@apollo/client';
 
 export default function CreateCompanyPage() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user } = useAuth();
   const apolloClient = useApolloClient();
   const [companyName, setCompanyName] = React.useState('');
 
@@ -55,7 +55,6 @@ export default function CreateCompanyPage() {
 
       if (data?.createCompany) {
         toast.success('Company created successfully!');
-        await user?.reload();
         await apolloClient.clearStore();
         const createdSlug = data.createCompany.slug || generateSlug(companyName);
         window.location.href = `/${createdSlug}/settings`;

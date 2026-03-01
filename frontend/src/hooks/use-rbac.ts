@@ -21,7 +21,7 @@ export function useRbac() {
 
     // Active company role
     const activeCompany = user?.companies?.find((c) => c.slug === companySlug) || user?.companies?.[0];
-    const roleName = (activeCompany?.role || user?.role || 'STAFF').toUpperCase() as Role;
+    const roleName = (activeCompany?.role || 'STAFF').toUpperCase() as Role;
 
     // Ranks
     const userRank = ROLE_RANK[roleName] || 0;

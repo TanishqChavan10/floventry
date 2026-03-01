@@ -1,31 +1,31 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { UserModel } from './models/user.model';
-import { ClerkAuthGuard } from './guards/clerk-auth.guard';
-import { ClerkUser } from './decorators/clerk-user.decorator';
-import { ClerkService } from './clerk.service';
+import { AuthGuard } from './guards/auth.guard';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { AuthService } from './auth.service';
 import { GraphQLError } from 'graphql';
 
 @Resolver(() => UserModel)
 export class AuthResolver {
-  constructor(private clerkService: ClerkService) {}
+  constructor(private authService: AuthService) {}
 
   @Query(() => UserModel, { nullable: true })
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async me(
-    @ClerkUser() clerkUser: { clerkId: string } | null,
+    @CurrentUser() authUser: { authId: string } | null,
   ): Promise<UserModel | null> {
-    // If ClerkUser is null → return null (no redirect, no loop)
-    if (!clerkUser?.clerkId) return null;
+    // If CurrentUser is null → return null (no redirect, no loop)
+    if (!authUser?.authId) return null;
 
-    const user = await this.clerkService.getUserByClerkId(clerkUser.clerkId);
+    const user = await this.authService.getUserById(authUser.authId);
 
     // If user doesn't exist → return null (again, no loop)
     if (!user) return null;
 
     return {
       id: user.id,
-      clerk_id: user.id,
+      auth_id: user.id,
       email: user.email,
       full_name: user.fullName,
       avatar_url: user.avatarUrl,
@@ -64,24 +64,24 @@ export class AuthResolver {
   }
 
   @Mutation(() => UserModel)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async updatePreferences(
-    @ClerkUser() clerkUser: { clerkId: string } | null,
+    @CurrentUser() authUser: { authId: string } | null,
     @Args('preferences', { type: () => String }) preferencesJson: string,
   ): Promise<UserModel> {
-    if (!clerkUser?.clerkId) {
+    if (!authUser?.authId) {
       throw new GraphQLError('Unauthorized');
     }
 
     const preferences = JSON.parse(preferencesJson);
-    const user = await this.clerkService.updatePreferences(
-      clerkUser.clerkId,
+    const user = await this.authService.updatePreferences(
+      authUser.authId,
       preferences,
     );
 
     return {
       id: user.id,
-      clerk_id: user.id,
+      auth_id: user.id,
       email: user.email,
       full_name: user.fullName,
       avatar_url: user.avatarUrl,

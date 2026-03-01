@@ -1,15 +1,22 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { ConfigService } from '@nestjs/config';
-import { verifyToken, clerkClient } from '@clerk/clerk-sdk-node';
+import * as jwt from 'jsonwebtoken';
 import { GraphQLError } from 'graphql';
-import { ClerkService } from '../clerk.service';
+import { AuthService } from '../auth.service';
 
+/**
+ * Supabase Auth guard (class name kept as `AuthGuard` for backward compat
+ * with 30+ resolver imports — will be renamed in Phase 6 cleanup).
+ *
+ * Verifies the Supabase JWT from the Authorization header, syncs the user into
+ * the local database, and attaches the enriched user object to `request.user`.
+ */
 @Injectable()
-export class ClerkAuthGuard implements CanActivate {
+export class AuthGuard implements CanActivate {
   constructor(
     private configService: ConfigService,
-    private clerkService: ClerkService,
+    private authService: AuthService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -37,38 +44,32 @@ export class ClerkAuthGuard implements CanActivate {
     const token = authHeader.substring(7);
 
     try {
-      // Verify Clerk token
-      const payload = await verifyToken(token, {
-        secretKey: this.configService.get<string>('CLERK_SECRET_KEY'),
-        issuer: (iss) => iss.startsWith('https://'),
-      });
+      // Verify Supabase JWT using the project's JWT secret
+      const jwtSecret = this.configService.get<string>('SUPABASE_JWT_SECRET')!;
+      const payload = jwt.verify(token, jwtSecret, {
+        algorithms: ['HS256'],
+      }) as jwt.JwtPayload;
 
-      const clerkId = payload.sub;
-
-      //-------------------------------------------------------
-      // 1️⃣ Sync user into local DB (ensures internal user exists)
-      //-------------------------------------------------------
-      await this.clerkService.syncUser(clerkId);
+      const supabaseUserId = payload.sub;
+      if (!supabaseUserId) {
+        throw new GraphQLError('Invalid token: no subject');
+      }
 
       //-------------------------------------------------------
-      // 2️⃣ Fetch internal user (your DB user) for correct UUID
+      // 1. Sync user into local DB (ensures internal user exists)
       //-------------------------------------------------------
-      const internalUser = await this.clerkService.getUserByClerkId(clerkId);
+      await this.authService.syncUser(supabaseUserId);
 
       //-------------------------------------------------------
-      // 3️⃣ Fetch metadata from Clerk Dashboard
+      // 2. Fetch internal user (your DB user) with relations
       //-------------------------------------------------------
-      const clerkUser = await clerkClient.users.getUser(clerkId);
-      const metadata = clerkUser.publicMetadata as {
-        activeCompanyId?: string;
-        activeRole?: string;
-      };
+      const internalUser =
+        await this.authService.getUserById(supabaseUserId);
 
-      // Prefer DB as the source of truth (membership-validated by switchCompany/createCompany).
-      // Clerk metadata can be temporarily stale (or fail to update), which would cause company-
-      // scoped queries (like products) to return empty arrays.
-      const activeCompanyId =
-        (internalUser as any)?.activeCompanyId ?? metadata.activeCompanyId;
+      //-------------------------------------------------------
+      // 3. Determine activeCompanyId and role from DB
+      //-------------------------------------------------------
+      const activeCompanyId = internalUser?.activeCompanyId ?? undefined;
 
       const dbRoleForActiveCompany = activeCompanyId
         ? (internalUser as any)?.userCompanies?.find(
@@ -76,25 +77,27 @@ export class ClerkAuthGuard implements CanActivate {
           )?.role
         : undefined;
 
-      const activeRole =
-        (dbRoleForActiveCompany ?? metadata.activeRole) || undefined;
+      const activeRole = dbRoleForActiveCompany || undefined;
 
       //-------------------------------------------------------
-      // 4️⃣ Attach the CORRECT user object for RolesGuard
+      // 4. Get email from Supabase Auth user (or fallback to DB)
+      //-------------------------------------------------------
+      const email = payload.email || internalUser?.email;
+
+      //-------------------------------------------------------
+      // 5. Attach the user object for downstream guards/resolvers
       //-------------------------------------------------------
       request.user = {
-        // NOTE: historically many resolvers/services expect `user.userId`.
-        // Keep both `id` and `userId` for backwards compatibility.
-        id: internalUser?.id, // 🟩 Internal user id (Clerk ID in this project)
+        id: internalUser?.id,
         userId: internalUser?.id,
-        clerkId: clerkId,
-        sessionId: payload.sid,
+        authId: supabaseUserId, // kept for backward compat
+        sessionId: payload.session_id || payload.sid || undefined,
         activeCompanyId,
         role:
           typeof activeRole === 'string'
             ? activeRole.toUpperCase()
             : activeRole,
-        email: clerkUser.emailAddresses[0]?.emailAddress,
+        email,
       };
 
       // Keep compatibility with older code

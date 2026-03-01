@@ -40,7 +40,7 @@ export class UserModel {
   id: string;
 
   @Field()
-  clerk_id: string;
+  auth_id: string;
 
   @Field()
   email: string;

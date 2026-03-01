@@ -1,7 +1,7 @@
 import { Resolver, Mutation, Args } from '@nestjs/graphql';
 import { UseGuards, BadRequestException } from '@nestjs/common';
-import { ClerkAuthGuard } from '../../auth/guards/clerk-auth.guard';
-import { ClerkUser } from '../../auth/decorators/clerk-user.decorator';
+import { AuthGuard } from '../../auth/guards/auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { BarcodeLabelService } from './barcode-label.service';
 import { GenerateBarcodeLabelsInput } from './dto/generate-barcode-labels.input';
 import { BarcodeLabelResult } from './types/barcode-label.types';
@@ -11,10 +11,10 @@ export class BarcodeLabelResolver {
   constructor(private readonly barcodeLabelService: BarcodeLabelService) {}
 
   @Mutation(() => BarcodeLabelResult)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async generateBarcodeLabels(
     @Args('input') input: GenerateBarcodeLabelsInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<BarcodeLabelResult> {
     const companyId = user?.activeCompanyId;
     if (!companyId) {

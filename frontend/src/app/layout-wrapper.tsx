@@ -16,7 +16,7 @@ import {
   type UserRole,
 } from '@/lib/config/navigation';
 import { IconUser, IconBell, IconLogout } from '@tabler/icons-react';
-import { useClerk, UserButton } from '@clerk/nextjs';
+import { UserAvatar } from '@/components/auth/UserAvatar';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { motion } from 'motion/react';
@@ -31,11 +31,11 @@ import {
 } from '@/lib/utils/warehouse-pending-route';
 
 function BottomSection() {
-  const { user, isClerkSignedIn } = useAuth();
+  const { user, isSignedIn } = useAuth();
   const { open } = useSidebar();
 
-  // Show skeleton bottom row while DB user is loading but Clerk confirms signed-in.
-  if (!user && isClerkSignedIn) {
+  // Show skeleton bottom row while DB user is loading but Supabase confirms signed-in.
+  if (!user && isSignedIn) {
     return (
       <div className="border-t border-border pt-2">
         <div
@@ -67,33 +67,15 @@ function BottomSection() {
           'hover:bg-muted',
         )}
       >
-        {/* Clerk UserButton with custom appearance */}
+        {/* User avatar with dropdown */}
         <div className="flex-shrink-0">
-          <UserButton
-            appearance={{
-              elements: {
-                avatarBox: 'h-9 w-9',
-                userButtonPopoverCard: 'shadow-none border border-border',
-              },
-            }}
-            afterSignOutUrl="/"
-          >
-            <UserButton.MenuItems>
-              <UserButton.Link
-                label="Profile"
-                labelIcon={<IconUser className="h-4 w-4" />}
-                href="/profile"
-              />
-            </UserButton.MenuItems>
-          </UserButton>
+          <UserAvatar />
         </div>
 
         {/* User Info - Only visible when sidebar is open */}
         {open && (
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">
-              {user.firstName} {user.lastName}
-            </p>
+            <p className="text-sm font-medium text-foreground truncate">{user.full_name}</p>
             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
           </div>
         )}
@@ -103,7 +85,7 @@ function BottomSection() {
 }
 
 function AppSidebarContent() {
-  const { user, isClerkSignedIn } = useAuth();
+  const { user, isSignedIn } = useAuth();
   const permissions = usePermissions();
   const params = useParams();
   const pathname = usePathname();
@@ -111,11 +93,11 @@ function AppSidebarContent() {
   const warehouseSlug = params?.warehouseSlug as string;
 
   // Don't show sidebar if no user is authenticated
-  if (!user && !isClerkSignedIn) {
+  if (!user && !isSignedIn) {
     return null;
   }
 
-  // Clerk confirms signed-in but DB user is still loading — show a skeleton shell
+  // Supabase confirms signed-in but DB user is still loading Ã¢â‚¬â€ show a skeleton shell
   // so the layout structure is already visible when data arrives.
   if (!user) {
     return (
@@ -289,8 +271,8 @@ function ArchivedWarehouseBanner() {
 
   return (
     <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
-      <span className="font-medium">Archived warehouse.</span> Read-only access — restore it to
-      resume operations.
+      <span className="font-medium">Archived warehouse.</span> Read-only access Ã¢â‚¬â€ restore it
+      to resume operations.
     </div>
   );
 }

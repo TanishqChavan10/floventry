@@ -1,9 +1,9 @@
 import { saveAs } from 'file-saver';
 import { API_URL } from '@/config/env';
 
-function getClerkSessionToken(): string | null {
+function getSessionToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return (window as any).__clerk_session_token ?? null;
+  return (window as any).__supabase_access_token ?? null;
 }
 
 async function readErrorMessage(response: Response): Promise<string> {
@@ -25,7 +25,7 @@ export async function downloadBarcodesCsv(params?: {
   productIds?: string[];
   filename?: string;
 }): Promise<void> {
-  const token = getClerkSessionToken();
+  const token = getSessionToken();
   const ids = params?.productIds?.filter(Boolean) ?? [];
   const url = new URL(`${API_URL}/barcodes/export.csv`);
   if (ids.length) url.searchParams.set('productIds', ids.join(','));

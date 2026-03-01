@@ -5,7 +5,7 @@ import { UserCompany } from './user-company.model';
 import { CompanyMemberDetails } from './dto/company-member-details';
 import { WarehouseMember } from './dto/warehouse-member.dto';
 import { UpdateRoleInput } from './dto/update-role.input';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
@@ -15,21 +15,21 @@ export class UserCompanyResolver {
   constructor(private readonly userCompanyService: UserCompanyService) { }
 
   @Query(() => [UserCompany])
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async usersInCompany(@Context() context: any) {
     const companyId = '00000000-0000-0000-0000-000000000001'; // TODO: Get from context dummy UUID
     return this.userCompanyService.listUsersInCompany(companyId);
   }
 
   @Query(() => [UserCompany], { name: 'myCompanies' })
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async myCompanies(@Context() context: any) {
     const userId = context.req.user.id;
     return this.userCompanyService.listForUser(userId);
   }
 
   @Mutation(() => UserCompany)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
   async updateRole(
     @Args('input') input: UpdateRoleInput,
@@ -41,7 +41,7 @@ export class UserCompanyResolver {
   }
 
   @Mutation(() => Boolean)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.MANAGER, Role.OWNER)
   async removeUser(
     @Args('membershipId', { type: () => String }) membershipId: string,
@@ -56,7 +56,7 @@ export class UserCompanyResolver {
   // NEW: Get company members with warehouse details
   //------------------------------------------------------------
   @Query(() => [CompanyMemberDetails], { name: 'companyMembers' })
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async getCompanyMembers(
     @Args('companyId', { type: () => String }) companyId: string,
@@ -70,7 +70,7 @@ export class UserCompanyResolver {
   // NEW: Remove member with validation
   //------------------------------------------------------------
   @Mutation(() => Boolean, { name: 'removeMemberValidated' })
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async removeMemberValidated(
     @Args('membershipId', { type: () => String }) membershipId: string,
@@ -92,7 +92,7 @@ export class UserCompanyResolver {
   // NEW: Update member warehouses
   //------------------------------------------------------------
   @Mutation(() => Boolean, { name: 'updateMemberWarehouses' })
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async updateMemberWarehouses(
     @Args('membershipId', { type: () => String }) membershipId: string,
@@ -116,7 +116,7 @@ export class UserCompanyResolver {
   // NEW: Get warehouse members
   //------------------------------------------------------------
   @Query(() => [WarehouseMember], { name: 'warehouseMembers' })
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async getWarehouseMembers(
     @Args('warehouseId', { type: () => String }) warehouseId: string,
     @Context() context: any,
@@ -138,7 +138,7 @@ export class UserCompanyResolver {
   // NEW: Switch default warehouse
   //------------------------------------------------------------
   @Mutation(() => Boolean, { name: 'switchWarehouse' })
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async switchWarehouse(
     @Args('warehouseId', { type: () => String }) warehouseId: string,
     @Context() context: any,

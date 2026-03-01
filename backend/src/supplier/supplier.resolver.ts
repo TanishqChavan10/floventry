@@ -12,14 +12,14 @@ import { SupplierService } from './supplier.service';
 import { Supplier } from './supplier.entity';
 import { CreateSupplierInput, UpdateSupplierInput } from './dto/supplier.input';
 import { SupplierProduct } from './dto/supplier-product.model';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
-import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver(() => Supplier)
-@UseGuards(ClerkAuthGuard)
+@UseGuards(AuthGuard)
 export class SupplierResolver {
   constructor(private readonly supplierService: SupplierService) {}
 
@@ -28,7 +28,7 @@ export class SupplierResolver {
   @Roles(Role.OWNER, Role.ADMIN)
   async createSupplier(
     @Args('input') createSupplierInput: CreateSupplierInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId) {
       throw new BadRequestException(
@@ -43,7 +43,7 @@ export class SupplierResolver {
 
   @Query(() => [Supplier], { name: 'suppliers' })
   async findAll(
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
     @Args('includeArchived', {
       type: () => Boolean,
       nullable: true,
@@ -60,7 +60,7 @@ export class SupplierResolver {
   }
 
   @Query(() => Supplier, { name: 'supplier' })
-  async findOne(@Args('id') id: string, @ClerkUser() user: any) {
+  async findOne(@Args('id') id: string, @CurrentUser() user: any) {
     if (!user.activeCompanyId) {
       throw new BadRequestException(
         'Action requires an active company context',
@@ -74,7 +74,7 @@ export class SupplierResolver {
   @Roles(Role.OWNER, Role.ADMIN)
   async updateSupplier(
     @Args('input') updateSupplierInput: UpdateSupplierInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId) {
       throw new BadRequestException(
@@ -90,7 +90,7 @@ export class SupplierResolver {
   @Mutation(() => Supplier)
   @UseGuards(RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
-  async archiveSupplier(@Args('id') id: string, @ClerkUser() user: any) {
+  async archiveSupplier(@Args('id') id: string, @CurrentUser() user: any) {
     if (!user.activeCompanyId) {
       throw new BadRequestException(
         'Action requires an active company context',
@@ -102,7 +102,7 @@ export class SupplierResolver {
   @Mutation(() => Supplier)
   @UseGuards(RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
-  async unarchiveSupplier(@Args('id') id: string, @ClerkUser() user: any) {
+  async unarchiveSupplier(@Args('id') id: string, @CurrentUser() user: any) {
     if (!user.activeCompanyId) {
       throw new BadRequestException(
         'Action requires an active company context',

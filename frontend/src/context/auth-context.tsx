@@ -1,9 +1,10 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useQuery } from '@apollo/client';
-import { useAuth as useClerkAuth, useUser } from '@clerk/nextjs';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { GET_CURRENT_USER } from '@/lib/graphql/auth';
+import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 interface Company {
   id: string;
@@ -22,94 +23,112 @@ interface Warehouse {
 
 interface User {
   id: string;
-  clerkId: string;
+  auth_id: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
-  imageUrl?: string;
-  username?: string;
-  role: string;
-  isActive: boolean;
-  companies?: Company[];
+  full_name: string;
+  avatar_url?: string;
   activeCompanyId?: string;
+  companies?: Company[];
   warehouses?: Warehouse[];
   defaultWarehouseId?: string;
+  preferences?: any;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
-  /** True once Clerk SDK has initialized (happens in milliseconds). */
-  isClerkLoaded: boolean;
-  /** True if Clerk considers the user signed in (even before DB user loads). */
-  isClerkSignedIn: boolean;
+  /** True once Supabase session has been checked. */
+  isLoaded: boolean;
+  /** True if Supabase has an active session. */
+  isSignedIn: boolean;
   error: Error | null;
-  clerkUser: any;
+  supabaseUser: SupabaseUser | null;
   signOut: () => void;
+  /** Get the current access token for API calls. */
+  getToken: () => Promise<string | null>;
+  /** The raw Supabase session (null when signed out). */
+  session: Session | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const { isSignedIn, isLoaded, signOut, getToken } = useClerkAuth();
-  const { user: clerkUser } = useUser();
+const supabase = createSupabaseBrowserClient();
 
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [internalLoading, setInternalLoading] = useState(true);
-  const [tokenReady, setTokenReady] = useState(false);
 
-  // Ensure token is available before making queries
+  const isSignedIn = !!session;
+
+  // Initialize: get current session + listen for changes
   useEffect(() => {
-    const setupToken = async () => {
-      if (isSignedIn && isLoaded) {
-        try {
-          const token = await getToken();
-          if (token && typeof window !== 'undefined') {
-            (window as any).__clerk_session_token = token;
-            // Small delay to ensure token is set before queries run
-            setTimeout(() => setTokenReady(true), 100);
-          } else {
-            setTokenReady(false);
-          }
-        } catch (err) {
-          console.error('Error setting up token:', err);
-          setTokenReady(false);
-        }
-      } else {
-        setTokenReady(false);
-      }
-    };
-    setupToken();
-  }, [isSignedIn, isLoaded, getToken]);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s);
+      setSupabaseUser(s?.user ?? null);
+      setIsLoaded(true);
+    });
+
+    // Listen for auth state changes (sign in, sign out, token refresh)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+      setSupabaseUser(s?.user ?? null);
+      setIsLoaded(true);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Store token on window for REST API helpers (barcode-labels, etc.)
+  useEffect(() => {
+    if (session?.access_token && typeof window !== 'undefined') {
+      (window as any).__supabase_access_token = session.access_token;
+    } else if (typeof window !== 'undefined') {
+      (window as any).__supabase_access_token = null;
+    }
+  }, [session]);
+
+  const getToken = useCallback(async (): Promise<string | null> => {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token ?? null;
+  }, []);
 
   const { data, loading, error } = useQuery(GET_CURRENT_USER, {
-    skip: !isSignedIn || !isLoaded || !tokenReady,
-    fetchPolicy: 'network-only', // Always fetch fresh user data
-    errorPolicy: 'all', // Don't throw on errors, handle them gracefully
+    skip: !isSignedIn || !isLoaded,
+    fetchPolicy: 'network-only',
+    errorPolicy: 'all',
     onCompleted: (data) => {
       setUser(data?.me || null);
       setInternalLoading(false);
     },
-    onError: (err) => {
-      // Silently handle auth errors - user will just not be authenticated
+    onError: () => {
       setUser(null);
       setInternalLoading(false);
     },
   });
 
-  // When Clerk signs out: only clear state once Clerk is fully loaded.
-  // Guarding with `isLoaded` prevents a premature `internalLoading = false`
-  // on initial mount before the Clerk SDK has hydrated (where isSignedIn is
-  // temporarily falsy), which would make `loading` briefly false before the
-  // DB user query has even started and cause redirect loops.
+  // When signed out: clear state
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
       setUser(null);
       setInternalLoading(false);
-      setTokenReady(false);
     }
   }, [isLoaded, isSignedIn]);
+
+  const handleSignOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+    setSupabaseUser(null);
+  }, []);
 
   const isAuthResolved = isLoaded && !internalLoading;
 
@@ -117,13 +136,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!isSignedIn && !!user,
+        isAuthenticated: isSignedIn && !!user,
         loading: !isAuthResolved || loading,
-        isClerkLoaded: isLoaded,
-        isClerkSignedIn: !!isSignedIn,
+        isLoaded: isLoaded,
+        isSignedIn: isSignedIn,
         error: error || null,
-        clerkUser,
-        signOut,
+        supabaseUser: supabaseUser,
+        signOut: handleSignOut,
+        getToken,
+        session,
       }}
     >
       {children}

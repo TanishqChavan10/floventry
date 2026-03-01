@@ -7,15 +7,15 @@ import {
   UpdateGRNInput,
   GRNFilterInput,
 } from './dto/grn.input';
-import { ClerkAuthGuard } from '../../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../../auth/guards/auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { WarehouseGuard } from '../../auth/guards/warehouse.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Role } from '../../auth/enums/role.enum';
-import { ClerkUser } from '../../auth/decorators/clerk-user.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @Resolver(() => GoodsReceiptNote)
-@UseGuards(ClerkAuthGuard, RolesGuard, WarehouseGuard)
+@UseGuards(AuthGuard, RolesGuard, WarehouseGuard)
 export class GRNResolver {
   constructor(private grnService: GRNService) { }
 
@@ -24,7 +24,7 @@ export class GRNResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
   async getGRNs(
     @Args('filters') filters: GRNFilterInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
@@ -34,7 +34,7 @@ export class GRNResolver {
 
   @Query(() => GoodsReceiptNote, { name: 'grn', nullable: true })
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
-  async getGRN(@Args('id') id: string, @ClerkUser() user: any) {
+  async getGRN(@Args('id') id: string, @CurrentUser() user: any) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
     }
@@ -46,7 +46,7 @@ export class GRNResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
   async createGRN(
     @Args('input') input: CreateGRNInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
@@ -64,7 +64,7 @@ export class GRNResolver {
   async updateGRN(
     @Args('id') id: string,
     @Args('input') input: UpdateGRNInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
@@ -75,7 +75,7 @@ export class GRNResolver {
   // Post and cancel: MANAGER+ only
   @Mutation(() => GoodsReceiptNote)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
-  async postGRN(@Args('id') id: string, @ClerkUser() user: any) {
+  async postGRN(@Args('id') id: string, @CurrentUser() user: any) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
     }
@@ -84,7 +84,7 @@ export class GRNResolver {
 
   @Mutation(() => GoodsReceiptNote)
   @Roles(Role.OWNER)
-  async cancelGRN(@Args('id') id: string, @ClerkUser() user: any) {
+  async cancelGRN(@Args('id') id: string, @CurrentUser() user: any) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
     }

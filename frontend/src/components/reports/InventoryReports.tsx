@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth } from '@/context/auth-context';
 import {
   Table,
   TableBody,

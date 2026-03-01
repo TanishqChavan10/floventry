@@ -7,14 +7,14 @@ import {
   UpdatePurchaseOrderInput,
   PurchaseOrderFilterInput,
 } from './dto/purchase-order.input';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
-import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver(() => PurchaseOrder)
-@UseGuards(ClerkAuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard)
 export class PurchaseOrdersResolver {
   constructor(private purchaseOrdersService: PurchaseOrdersService) {}
 
@@ -22,7 +22,7 @@ export class PurchaseOrdersResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
   async getPurchaseOrders(
     @Args('filters') filters: PurchaseOrderFilterInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
@@ -36,7 +36,7 @@ export class PurchaseOrdersResolver {
 
   @Query(() => PurchaseOrder, { name: 'purchaseOrder', nullable: true })
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
-  async getPurchaseOrder(@Args('id') id: string, @ClerkUser() user: any) {
+  async getPurchaseOrder(@Args('id') id: string, @CurrentUser() user: any) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
     }
@@ -51,7 +51,7 @@ export class PurchaseOrdersResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async createPurchaseOrder(
     @Args('input') input: CreatePurchaseOrderInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
@@ -70,7 +70,7 @@ export class PurchaseOrdersResolver {
   async updatePurchaseOrder(
     @Args('id') id: string,
     @Args('input') input: UpdatePurchaseOrderInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
@@ -87,7 +87,7 @@ export class PurchaseOrdersResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async markPurchaseOrderOrdered(
     @Args('id') id: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
@@ -101,7 +101,7 @@ export class PurchaseOrdersResolver {
 
   @Mutation(() => PurchaseOrder)
   @Roles(Role.OWNER, Role.ADMIN)
-  async cancelPurchaseOrder(@Args('id') id: string, @ClerkUser() user: any) {
+  async cancelPurchaseOrder(@Args('id') id: string, @CurrentUser() user: any) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
     }

@@ -5,11 +5,11 @@ import {
   ValidationResult,
   ImportResult,
 } from './import.service';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
-import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver()
 export class ImportResolver {
@@ -17,28 +17,28 @@ export class ImportResolver {
 
   // Template Downloads
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async downloadProductTemplate(): Promise<string> {
     return this.importService.generateProductTemplate();
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async downloadCategoryTemplate(): Promise<string> {
     return this.importService.generateCategoryTemplate();
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async downloadSupplierTemplate(): Promise<string> {
     return this.importService.generateSupplierTemplate();
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async downloadOpeningStockTemplate(): Promise<string> {
     return this.importService.generateOpeningStockTemplate();
@@ -46,11 +46,11 @@ export class ImportResolver {
 
   // Validation
   @Mutation(() => String) // Returns JSON string
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async validateProductImport(
     @Args('csvContent') csvContent: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<string> {
     const result = await this.importService.validateProductImport(
       csvContent,
@@ -60,11 +60,11 @@ export class ImportResolver {
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async validateCategoryImport(
     @Args('csvContent') csvContent: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<string> {
     const result = await this.importService.validateCategoryImport(
       csvContent,
@@ -74,11 +74,11 @@ export class ImportResolver {
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async validateSupplierImport(
     @Args('csvContent') csvContent: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<string> {
     const result = await this.importService.validateSupplierImport(
       csvContent,
@@ -88,12 +88,12 @@ export class ImportResolver {
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async validateOpeningStockImport(
     @Args('csvContent') csvContent: string,
     @Args('warehouseId') warehouseId: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<string> {
     const result = await this.importService.validateOpeningStockImport(
       csvContent,
@@ -105,11 +105,11 @@ export class ImportResolver {
 
   // Execution
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async executeProductImport(
     @Args('validatedData') validatedData: string, // JSON string
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
     @Args('autoCreateMissingUnits', { type: () => Boolean, nullable: true })
     autoCreateMissingUnits?: boolean,
     @Args('autoCreateMissingCategories', { type: () => Boolean, nullable: true })
@@ -131,11 +131,11 @@ export class ImportResolver {
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async executeCategoryImport(
     @Args('validatedData') validatedData: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<string> {
     const data = JSON.parse(validatedData);
     const result = await this.importService.executeCategoryImport(
@@ -146,11 +146,11 @@ export class ImportResolver {
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async executeSupplierImport(
     @Args('validatedData') validatedData: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<string> {
     const data = JSON.parse(validatedData);
     const result = await this.importService.executeSupplierImport(
@@ -161,12 +161,12 @@ export class ImportResolver {
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async executeOpeningStockImport(
     @Args('validatedData') validatedData: string,
     @Args('warehouseId') warehouseId: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<string> {
     const data = JSON.parse(validatedData);
     const result = await this.importService.executeOpeningStockImport(
@@ -180,18 +180,18 @@ export class ImportResolver {
 
   // Units Import
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async downloadUnitTemplate(): Promise<string> {
     return this.importService.generateUnitTemplate();
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async validateUnitImport(
     @Args('csvContent') csvContent: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<string> {
     const result = await this.importService.validateUnitImport(
       csvContent,
@@ -201,11 +201,11 @@ export class ImportResolver {
   }
 
   @Mutation(() => String)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async executeUnitImport(
     @Args('validatedData') validatedData: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<string> {
     const data = JSON.parse(validatedData);
     const result = await this.importService.executeUnitImport(

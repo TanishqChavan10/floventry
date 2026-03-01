@@ -22,7 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import { UserButton } from '@clerk/nextjs';
+import { UserAvatar } from '@/components/auth/UserAvatar';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { CreateWarehouseDialog } from '@/components/warehouses/CreateWarehouseDialog';
@@ -251,23 +251,7 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center">
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: 'h-9 w-9',
-                  userButtonPopoverCard: 'shadow-none border border-border',
-                },
-              }}
-              afterSignOutUrl="/"
-            >
-              <UserButton.MenuItems>
-                <UserButton.Link
-                  label="Profile"
-                  labelIcon={<IconUser className="h-4 w-4" />}
-                  href="/profile"
-                />
-              </UserButton.MenuItems>
-            </UserButton>
+            <UserAvatar />
           </div>
         </div>
       </div>

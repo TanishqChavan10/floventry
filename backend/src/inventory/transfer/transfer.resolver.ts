@@ -7,15 +7,15 @@ import {
   UpdateTransferInput,
   TransferFilterInput,
 } from './dto/transfer.input';
-import { ClerkAuthGuard } from '../../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../../auth/guards/auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { WarehouseGuard } from '../../auth/guards/warehouse.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Role } from '../../auth/enums/role.enum';
-import { ClerkUser } from '../../auth/decorators/clerk-user.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @Resolver(() => WarehouseTransfer)
-@UseGuards(ClerkAuthGuard, RolesGuard, WarehouseGuard)
+@UseGuards(AuthGuard, RolesGuard, WarehouseGuard)
 export class TransferResolver {
   constructor(private transferService: TransferService) { }
 
@@ -24,7 +24,7 @@ export class TransferResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
   async getTransfers(
     @Args('filters') filters: TransferFilterInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
@@ -34,7 +34,7 @@ export class TransferResolver {
 
   @Query(() => WarehouseTransfer, { name: 'warehouseTransfer', nullable: true })
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
-  async getTransfer(@Args('id') id: string, @ClerkUser() user: any) {
+  async getTransfer(@Args('id') id: string, @CurrentUser() user: any) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
     }
@@ -46,7 +46,7 @@ export class TransferResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
   async createWarehouseTransfer(
     @Args('input') input: CreateTransferInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
@@ -65,7 +65,7 @@ export class TransferResolver {
   async updateWarehouseTransfer(
     @Args('id') id: string,
     @Args('input') input: UpdateTransferInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
@@ -76,7 +76,7 @@ export class TransferResolver {
   // Post: MANAGER+ only
   @Mutation(() => WarehouseTransfer)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
-  async postWarehouseTransfer(@Args('id') id: string, @ClerkUser() user: any) {
+  async postWarehouseTransfer(@Args('id') id: string, @CurrentUser() user: any) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
     }
@@ -93,7 +93,7 @@ export class TransferResolver {
   @Roles(Role.OWNER)
   async cancelWarehouseTransfer(
     @Args('id') id: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');

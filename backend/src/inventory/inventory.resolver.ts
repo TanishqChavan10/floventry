@@ -45,10 +45,10 @@ import {
   WarehouseHealthSummary,
   CompanyStockHealthOverview,
 } from './types/company-inventory.types';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { WarehouseGuard } from '../auth/guards/warehouse.guard';
-import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
 import { Supplier } from '../supplier/supplier.entity';
@@ -66,7 +66,7 @@ export class PaginatedProductsResult {
 }
 
 @Resolver(() => Category)
-@UseGuards(ClerkAuthGuard)
+@UseGuards(AuthGuard)
 export class CategoryResolver {
   constructor(private readonly inventoryService: InventoryService) { }
 
@@ -75,7 +75,7 @@ export class CategoryResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async createCategory(
     @Args('input') input: CreateCategoryInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -83,7 +83,7 @@ export class CategoryResolver {
   }
 
   @Query(() => [Category], { name: 'categories' })
-  async findAll(@ClerkUser() user: any) {
+  async findAll(@CurrentUser() user: any) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
     return this.inventoryService.findAllCategories(user.activeCompanyId);
@@ -94,7 +94,7 @@ export class CategoryResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async updateCategory(
     @Args('input') input: UpdateCategoryInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -104,7 +104,7 @@ export class CategoryResolver {
   @Mutation(() => Boolean)
   @UseGuards(RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
-  async removeCategory(@Args('id') id: string, @ClerkUser() user: any) {
+  async removeCategory(@Args('id') id: string, @CurrentUser() user: any) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
     return this.inventoryService.removeCategory(id, user.activeCompanyId);
@@ -112,7 +112,7 @@ export class CategoryResolver {
 }
 
 @Resolver(() => Product)
-@UseGuards(ClerkAuthGuard)
+@UseGuards(AuthGuard)
 export class ProductResolver {
   constructor(private readonly inventoryService: InventoryService) { }
 
@@ -121,7 +121,7 @@ export class ProductResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async createProduct(
     @Args('input') input: CreateProductInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -131,14 +131,14 @@ export class ProductResolver {
   @Mutation(() => String)
   @UseGuards(RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
-  async generateCompanyBarcode(@ClerkUser() user: any) {
+  async generateCompanyBarcode(@CurrentUser() user: any) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
     return this.inventoryService.generateCompanyBarcode(user.activeCompanyId);
   }
 
   @Query(() => [Product], { name: 'products' })
-  async findAll(@ClerkUser() user: any) {
+  async findAll(@CurrentUser() user: any) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
     return this.inventoryService.findAllProducts(user.activeCompanyId);
@@ -147,7 +147,7 @@ export class ProductResolver {
   @Query(() => PaginatedProductsResult, { name: 'productsPaginated' })
   async findAllPaginated(
     @Args('pagination', { nullable: true }) pagination: PaginationInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -158,7 +158,7 @@ export class ProductResolver {
   }
 
   @Query(() => Product, { name: 'product' })
-  async findOne(@Args('id') id: string, @ClerkUser() user: any) {
+  async findOne(@Args('id') id: string, @CurrentUser() user: any) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
     return this.inventoryService.findOneProduct(id, user.activeCompanyId);
@@ -167,7 +167,7 @@ export class ProductResolver {
   @Query(() => Product, { name: 'productByBarcode' })
   async productByBarcode(
     @Args('barcode') barcode: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -180,7 +180,7 @@ export class ProductResolver {
   @Query(() => BarcodeLookupResult, { name: 'productByBarcodeDetails' })
   async productByBarcodeDetails(
     @Args('barcode') barcode: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -195,7 +195,7 @@ export class ProductResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async updateProduct(
     @Args('input') input: UpdateProductInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -205,7 +205,7 @@ export class ProductResolver {
   @Query(() => [BarcodeHistory], { name: 'barcodeHistory' })
   async barcodeHistory(
     @Args('productId') productId: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -218,7 +218,7 @@ export class ProductResolver {
   @Query(() => [ProductBarcodeUnit], { name: 'productBarcodeUnits' })
   async productBarcodeUnits(
     @Args('productId') productId: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -233,7 +233,7 @@ export class ProductResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async upsertProductBarcodeUnit(
     @Args('input') input: UpsertProductBarcodeUnitInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -248,7 +248,7 @@ export class ProductResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async removeProductBarcodeUnit(
     @Args('id') id: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -261,7 +261,7 @@ export class ProductResolver {
   @Mutation(() => Boolean)
   @UseGuards(RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
-  async removeProduct(@Args('id') id: string, @ClerkUser() user: any) {
+  async removeProduct(@Args('id') id: string, @CurrentUser() user: any) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
     return this.inventoryService.removeProduct(id, user.activeCompanyId);
@@ -271,7 +271,7 @@ export class ProductResolver {
 }
 
 @Resolver(() => Unit)
-@UseGuards(ClerkAuthGuard)
+@UseGuards(AuthGuard)
 export class UnitResolver {
   constructor(private readonly inventoryService: InventoryService) { }
 
@@ -280,7 +280,7 @@ export class UnitResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async createUnit(
     @Args('input') input: CreateUnitInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -289,7 +289,7 @@ export class UnitResolver {
 
   @Query(() => [Unit], { name: 'units' })
   async findAll(
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
     @Args('includeArchived', { type: () => Boolean, nullable: true }) includeArchived?: boolean,
   ) {
     if (!user.activeCompanyId)
@@ -302,7 +302,7 @@ export class UnitResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async updateUnit(
     @Args('input') input: UpdateUnitInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -312,7 +312,7 @@ export class UnitResolver {
   @Mutation(() => Boolean)
   @UseGuards(RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
-  async removeUnit(@Args('id') id: string, @ClerkUser() user: any) {
+  async removeUnit(@Args('id') id: string, @CurrentUser() user: any) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
     return this.inventoryService.removeUnit(id, user.activeCompanyId);
@@ -320,7 +320,7 @@ export class UnitResolver {
 }
 
 @Resolver(() => Stock)
-@UseGuards(ClerkAuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard)
 export class StockResolver {
   constructor(
     private readonly inventoryService: InventoryService,
@@ -344,7 +344,7 @@ export class StockResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async createOpeningStock(
     @Args('input') input: CreateOpeningStockInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -360,7 +360,7 @@ export class StockResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async createStock(
     @Args('input') input: CreateStockInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -376,7 +376,7 @@ export class StockResolver {
   async getStock(
     @Args('productId') productId: string,
     @Args('warehouseId') warehouseId: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -393,7 +393,7 @@ export class StockResolver {
     @Args('warehouseId') warehouseId: string,
     @Args('limit', { type: () => Int, nullable: true }) limit: number,
     @Args('offset', { type: () => Int, nullable: true }) offset: number,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -409,7 +409,7 @@ export class StockResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
   async getStockByProduct(
     @Args('productId') productId: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -424,7 +424,7 @@ export class StockResolver {
   async getAllStock(
     @Args('limit', { type: () => Int, nullable: true }) limit: number,
     @Args('offset', { type: () => Int, nullable: true }) offset: number,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -439,7 +439,7 @@ export class StockResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async updateStockLevels(
     @Args('input') input: UpdateStockInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -454,7 +454,7 @@ export class StockResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async adjustStock(
     @Args('input') input: AdjustStockInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -470,7 +470,7 @@ export class StockResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
   async getCompanyStockMovements(
     @Args('filters') filters: StockMovementFilterInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -486,7 +486,7 @@ export class StockResolver {
   @Roles(Role.OWNER, Role.ADMIN)
   async getCompanyInventorySummary(
     @Args('filters') filters: CompanyInventorySummaryFilterInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -502,7 +502,7 @@ export class StockResolver {
 
   @Query(() => InventoryHealthStats, { name: 'inventoryHealthStats' })
   @Roles(Role.OWNER, Role.ADMIN)
-  async getInventoryHealthStats(@ClerkUser() user: any) {
+  async getInventoryHealthStats(@CurrentUser() user: any) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
     return this.inventoryService.getInventoryHealthStats(user.activeCompanyId);
@@ -513,7 +513,7 @@ export class StockResolver {
   async getTopStockProducts(
     @Args('limit', { type: () => Number, nullable: true, defaultValue: 10 })
     limit: number,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -528,7 +528,7 @@ export class StockResolver {
   async getCriticalStockProducts(
     @Args('limit', { type: () => Number, nullable: true, defaultValue: 10 })
     limit: number,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -544,7 +544,7 @@ export class StockResolver {
   @Roles(Role.OWNER, Role.ADMIN)
   async getWarehouseStockDistribution(
     @Args('productId') productId: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -556,7 +556,7 @@ export class StockResolver {
 
   @Query(() => [WarehouseHealthScore], { name: 'warehouseHealthScorecard' })
   @Roles(Role.OWNER, Role.ADMIN)
-  async getWarehouseHealthScorecard(@ClerkUser() user: any) {
+  async getWarehouseHealthScorecard(@CurrentUser() user: any) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
     return this.inventoryService.getWarehouseHealthScorecard(
@@ -569,7 +569,7 @@ export class StockResolver {
   async getMovementTrends(
     @Args('days', { type: () => Number, nullable: true, defaultValue: 30 })
     days: number,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -581,7 +581,7 @@ export class StockResolver {
   async getMovementTypeBreakdown(
     @Args('days', { type: () => Number, nullable: true, defaultValue: 30 })
     days: number,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -596,7 +596,7 @@ export class StockResolver {
   async getAdjustmentTrends(
     @Args('days', { type: () => Number, nullable: true, defaultValue: 30 })
     days: number,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -611,7 +611,7 @@ export class StockResolver {
   async getAdjustmentsByWarehouse(
     @Args('days', { type: () => Number, nullable: true, defaultValue: 30 })
     days: number,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -628,7 +628,7 @@ export class StockResolver {
     days: number,
     @Args('limit', { type: () => Number, nullable: true, defaultValue: 10 })
     limit: number,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
@@ -643,7 +643,7 @@ export class StockResolver {
     name: 'companyStockHealthOverview',
   })
   @Roles(Role.OWNER, Role.ADMIN)
-  async getCompanyStockHealthOverview(@ClerkUser() user: any) {
+  async getCompanyStockHealthOverview(@CurrentUser() user: any) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
     return this.inventoryService.getCompanyStockHealthOverview(

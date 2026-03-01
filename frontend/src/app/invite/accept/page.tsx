@@ -6,7 +6,7 @@ import { useMutation, useApolloClient } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle, XCircle, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth, useClerk } from '@clerk/nextjs';
+import { useAuth } from '@/context/auth-context';
 import { ACCEPT_INVITE, VALIDATE_INVITE } from '@/lib/graphql/invite';
 
 function BrandHeader() {
@@ -37,8 +37,7 @@ function InviteAcceptContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const client = useApolloClient();
-  const { isSignedIn, isLoaded } = useAuth();
-  const { signOut } = useClerk();
+  const { isSignedIn: isSignedIn, isLoaded: isLoaded, signOut } = useAuth();
 
   /** ✅ Token persistence (SSO safe) */
   const urlToken = searchParams.get('token');

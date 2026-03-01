@@ -1,9 +1,9 @@
 import { saveAs } from 'file-saver';
 import { API_URL } from '@/config/env';
 
-function getClerkSessionToken(): string | null {
+function getSessionToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return (window as any).__clerk_session_token ?? null;
+  return (window as any).__supabase_access_token ?? null;
 }
 
 async function readErrorMessage(response: Response): Promise<string> {
@@ -28,7 +28,7 @@ async function fetchThermalLabelsZplText(params: {
   copies?: number;
   labelSize?: ThermalLabelSize;
 }): Promise<string> {
-  const token = getClerkSessionToken();
+  const token = getSessionToken();
 
   const response = await fetch(`${API_URL}/thermal/labels/zpl`, {
     method: 'POST',

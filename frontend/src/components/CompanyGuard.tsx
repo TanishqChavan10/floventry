@@ -56,7 +56,7 @@ export default function CompanyGuard({ children }: CompanyGuardProps) {
         }
 
         // Ensure backend "active company" context matches the URL slug.
-        // Many backend resolvers depend on user.activeCompanyId from Clerk metadata.
+        // Many backend resolvers depend on user.activeCompanyId from Supabase metadata.
         const targetCompany = user.companies.find((c) => c.slug === companySlug);
         const targetCompanyId = targetCompany?.id;
         const needsSwitch = !!targetCompanyId && user.activeCompanyId !== targetCompanyId;

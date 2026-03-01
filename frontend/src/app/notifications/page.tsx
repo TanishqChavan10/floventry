@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth } from '@/context/auth-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

@@ -17,7 +17,7 @@ import { User } from '../auth/entities/user.entity';
 import { Company } from '../company/company.entity';
 import { Warehouse } from '../warehouse/warehouse.entity';
 import { EmailService } from '../email/email.service';
-import { ClerkService } from '../auth/clerk.service';
+import { AuthService } from '../auth/auth.service';
 import { UserWarehouseService } from '../auth/user-warehouse.service';
 import { Role } from '../auth/enums/role.enum';
 import { AuditLogService } from '../audit/audit-log.service';
@@ -40,7 +40,7 @@ export class InviteService {
     @InjectRepository(Warehouse)
     private warehouseRepository: Repository<Warehouse>,
     private emailService: EmailService,
-    private clerkService: ClerkService,
+    private authService: AuthService,
     private dataSource: DataSource,
     private userWarehouseService: UserWarehouseService,
     private readonly auditLogService: AuditLogService,
@@ -573,8 +573,8 @@ export class InviteService {
       //------------------------------------------------------------
       await queryRunner.commitTransaction();
 
-      // UPDATE CLERK METADATA
-      await this.clerkService.updateUserMetadata(userId, {
+      // UPDATE Supabase METADATA
+      await this.authService.updateUserMetadata(userId, {
         activeCompanyId: invite.company_id,
         activeRole: invite.role.toUpperCase(),
       });

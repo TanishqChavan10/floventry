@@ -1,19 +1,25 @@
 'use client';
 
-import { AuthenticateWithRedirectCallback } from '@clerk/nextjs';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 /**
- * Clerk posts back here after every OAuth/SSO flow.
- * Providing signUpUrl / signInUrl prevents Clerk from falling back to
- * the hosted *.accounts.dev pages when it needs to redirect a new user.
+ * Legacy SSO callback page.
+ * Supabase OAuth now uses /auth/callback route handler instead.
+ * Redirect any stale bookmarks/links there.
  */
 export default function SSOCallback() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Forward to auth callback with any query params
+    const params = new URLSearchParams(window.location.search);
+    router.replace(`/auth/callback?${params.toString()}`);
+  }, [router]);
+
   return (
-    <AuthenticateWithRedirectCallback
-      signInUrl="/auth/sign-in"
-      signUpUrl="/auth/sign-up"
-      signUpForceRedirectUrl="/auth-redirect"
-      signInForceRedirectUrl="/auth-redirect"
-    />
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-muted-foreground">Completing authentication...</p>
+    </div>
   );
 }

@@ -51,7 +51,6 @@ const INITIAL_WAREHOUSES: Warehouse[] = [
   },
 ];
 
-import { useAuth as useClerkAuth } from '@clerk/nextjs';
 import { useAuth } from '@/context/auth-context';
 import { toast } from 'sonner';
 import { useParams } from 'next/navigation';
@@ -61,8 +60,7 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [activeWarehouseId, setActiveWarehouseId] = useState<string | 'ALL'>('ALL');
   const [isLoading, setIsLoading] = useState(true);
-  const { getToken, isSignedIn } = useClerkAuth();
-  const { user, loading: authLoading } = useAuth(); // Get user from auth context
+  const { user, loading: authLoading, isSignedIn: isSignedIn, getToken } = useAuth();
   const params = useParams();
 
   const fetchWarehouses = async () => {

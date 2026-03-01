@@ -1,25 +1,20 @@
 'use client';
 
 import { ApolloProvider } from '@apollo/client';
-import { useAuth } from '@clerk/nextjs';
 import React from 'react';
 import { createApolloClient } from '@/lib/apollo-client';
 import { AuthProvider } from '@/context/auth-context';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+
+const supabase = createSupabaseBrowserClient();
 
 export function ApolloAppProvider({ children }: { children: React.ReactNode }) {
-  const { isLoaded, getToken, isSignedIn } = useAuth();
-
   const client = React.useMemo(() => {
     return createApolloClient(async () => {
-      if (!isLoaded || !isSignedIn) return null;
-      return getToken();
+      const { data } = await supabase.auth.getSession();
+      return data.session?.access_token ?? null;
     });
-  }, [getToken, isLoaded, isSignedIn]);
-
-  if (!isLoaded) {
-    // Prevent Apollo from running before Clerk is ready
-    return null;
-  }
+  }, []);
 
   return (
     <ApolloProvider client={client}>

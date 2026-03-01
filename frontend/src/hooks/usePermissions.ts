@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/context/auth-context';
 import { useMemo } from 'react';
 
 export enum Role {
@@ -24,10 +24,12 @@ interface PermissionsReturn {
 }
 
 export function usePermissions(): PermissionsReturn {
-    const { user } = useUser();
+    const { user } = useAuth();
 
     const role = useMemo(() => {
-        const activeRole = user?.publicMetadata?.activeRole as string;
+        // Get role from the active company in our DB user
+        const activeCompany = user?.companies?.find((c) => c.isActive);
+        const activeRole = activeCompany?.role;
         if (!activeRole) return null;
 
         // Normalize role to enum

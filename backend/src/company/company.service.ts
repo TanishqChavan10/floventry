@@ -18,7 +18,7 @@ import { Warehouse } from '../warehouse/warehouse.entity';
 import { Stock } from '../inventory/entities/stock.entity';
 import { Product } from '../inventory/entities/product.entity';
 import { Role } from '../auth/enums/role.enum';
-import { ClerkService } from '../auth/clerk.service';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class CompanyService {
@@ -37,7 +37,7 @@ export class CompanyService {
     private warehouseRepository: Repository<Warehouse>,
     @InjectRepository(Stock)
     private stockRepository: Repository<Stock>,
-    private clerkService: ClerkService,
+    private authService: AuthService,
   ) {}
 
   async createCompany(
@@ -98,8 +98,8 @@ export class CompanyService {
       { activeCompanyId: savedCompany.id },
     );
 
-    // UPDATE CLERK METADATA
-    await this.clerkService.updateUserMetadata(ownerId, {
+    // UPDATE Supabase METADATA
+    await this.authService.updateUserMetadata(ownerId, {
       activeCompanyId: savedCompany.id,
       activeRole: Role.OWNER,
     });
@@ -169,8 +169,8 @@ export class CompanyService {
       { activeCompanyId: companyId },
     );
 
-    // UPDATE CLERK METADATA
-    await this.clerkService.updateUserMetadata(userId, {
+    // UPDATE Supabase METADATA
+    await this.authService.updateUserMetadata(userId, {
       activeCompanyId: companyId,
       activeRole: membership.role.toUpperCase(),
     });

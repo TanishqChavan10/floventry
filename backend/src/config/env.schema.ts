@@ -15,20 +15,25 @@ export const envValidationSchema = Joi.object({
     .required()
     .description('PostgreSQL database connection URL'),
 
-  // JWT Configuration
+  // JWT Configuration (uses Supabase JWT secret)
   JWT_SECRET: Joi.string()
     .min(32)
-    .required()
-    .description('JWT secret key (minimum 32 characters)'),
+    .optional()
+    .description('JWT secret key — defaults to SUPABASE_JWT_SECRET'),
 
-  // Clerk Configuration
-  CLERK_SECRET_KEY: Joi.string()
+  // Supabase Configuration
+  SUPABASE_URL: Joi.string()
+    .uri()
     .required()
-    .description('Clerk secret key for backend verification'),
+    .description('Supabase project URL'),
 
-  CLERK_PUBLISHABLE_KEY: Joi.string()
+  SUPABASE_SERVICE_ROLE_KEY: Joi.string()
     .required()
-    .description('Clerk publishable key'),
+    .description('Supabase service role key (backend only)'),
+
+  SUPABASE_JWT_SECRET: Joi.string()
+    .required()
+    .description('Supabase JWT secret for token verification'),
 
   // GraphQL Configuration
   GRAPHQL_PLAYGROUND: Joi.boolean()

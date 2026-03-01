@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { UserCompany } from './user-company.entity';
 import { UpdateRoleInput } from './dto/update-role.input';
-import { ClerkService } from '../auth/clerk.service';
+import { AuthService } from '../auth/auth.service';
 import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
 import { Warehouse } from '../warehouse/warehouse.entity';
 import { AuditLogService } from '../audit/audit-log.service';
@@ -23,7 +23,7 @@ export class UserCompanyService {
     private userWarehouseRepository: Repository<UserWarehouse>,
     @InjectRepository(Warehouse)
     private warehouseRepository: Repository<Warehouse>,
-    private clerkService: ClerkService,
+    private authService: AuthService,
     private readonly auditLogService: AuditLogService,
     private readonly notificationsService: NotificationsService,
   ) { }
@@ -501,15 +501,15 @@ export class UserCompanyService {
       )
       .execute();
 
-    // CRITICAL: Clear Clerk metadata to revoke access immediately
+    // CRITICAL: Clear Supabase metadata to revoke access immediately
     // If this was their active company, they'll need to switch companies on next request
     try {
-      await this.clerkService.updateUserMetadata(membership.user_id, {
+      await this.authService.updateUserMetadata(membership.user_id, {
         activeCompanyId: undefined,
         activeRole: undefined,
       });
     } catch (error) {
-      console.error('Failed to clear Clerk metadata for removed user:', error);
+      console.error('Failed to clear Supabase metadata for removed user:', error);
       // Don't throw - member is already marked inactive in DB
     }
   }
@@ -539,25 +539,20 @@ export class UserCompanyService {
 
     const result = await this.userCompanyRepository.query(query, [warehouseId]);
 
-    // Lazy import clerkClient to avoid circular dependencies
-    const { clerkClient } = await import('@clerk/clerk-sdk-node');
-
-    // Enrich with Clerk user data
+    // Enrich with user data from local DB (synced from Supabase Auth)
     const enrichedMembers = await Promise.all(
       result.map(async (member: any) => {
         try {
-          const clerkUser = await clerkClient.users.getUser(member.user_id);
+          const user = await this.authService.getUserById(member.user_id);
           return {
             user_id: member.user_id,
-            email: clerkUser.emailAddresses[0]?.emailAddress || '',
-            fullName:
-              `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() ||
-              null,
+            email: user?.email || '',
+            fullName: user?.fullName || null,
             role: member.role,
             is_manager: member.is_manager,
           };
         } catch (error) {
-          console.error(`Failed to fetch Clerk user ${member.user_id}:`, error);
+          console.error(`Failed to fetch user ${member.user_id}:`, error);
           return {
             user_id: member.user_id,
             email: 'Unknown',
@@ -580,7 +575,7 @@ export class UserCompanyService {
     warehouseId: string,
   ): Promise<void> {
     // Get user's active company (stored in DB)
-    const user = await this.clerkService.getUserByClerkId(userId);
+    const user = await this.authService.getUserById(userId);
 
     if (!user || !user.activeCompanyId) {
       throw new BadRequestException('User does not have an active company');

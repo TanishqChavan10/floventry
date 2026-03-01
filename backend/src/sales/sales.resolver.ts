@@ -6,22 +6,22 @@ import {
   CreateSalesOrderInput,
   UpdateSalesOrderInput,
 } from './dto/sales-order.input';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
-import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver(() => SalesOrder)
 export class SalesResolver {
   constructor(private readonly salesService: SalesService) { }
 
   @Query(() => [SalesOrder])
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async salesOrders(
     @Args('limit', { type: () => Int, nullable: true }) limit: number,
     @Args('offset', { type: () => Int, nullable: true }) offset: number,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<SalesOrder[]> {
     if (!user.activeCompanyId) {
       return [];
@@ -30,7 +30,7 @@ export class SalesResolver {
   }
 
   @Query(() => SalesOrder)
-  @UseGuards(ClerkAuthGuard)
+  @UseGuards(AuthGuard)
   async salesOrder(
     @Args('id', { type: () => ID }) id: string,
   ): Promise<SalesOrder> {
@@ -38,11 +38,11 @@ export class SalesResolver {
   }
 
   @Mutation(() => SalesOrder)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async createSalesOrder(
     @Args('input') input: CreateSalesOrderInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<SalesOrder> {
     if (!user.activeCompanyId) {
       throw new Error('No active company');
@@ -51,18 +51,18 @@ export class SalesResolver {
   }
 
   @Mutation(() => SalesOrder)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async updateSalesOrder(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateSalesOrderInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<SalesOrder> {
     return this.salesService.update(id, input, user.id);
   }
 
   @Mutation(() => SalesOrder)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async confirmSalesOrder(
     @Args('id', { type: () => ID }) id: string,
@@ -71,7 +71,7 @@ export class SalesResolver {
   }
 
   @Mutation(() => SalesOrder)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
   async cancelSalesOrder(
     @Args('id', { type: () => ID }) id: string,

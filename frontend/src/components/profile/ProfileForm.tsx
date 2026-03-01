@@ -1,4 +1,4 @@
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/context/auth-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,7 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ formData, onFormDataChange }: ProfileFormProps) {
-  const { user } = useUser();
+  const { user } = useAuth();
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -28,19 +28,14 @@ export function ProfileForm({ formData, onFormDataChange }: ProfileFormProps) {
         {/* Avatar Section */}
         <div className="flex flex-col sm:flex-row items-center gap-6 rounded-xl border bg-muted/20 p-4">
           <Avatar className="h-24 w-24 border-2 border-border shadow-sm">
-            <AvatarImage src={user?.imageUrl} className="object-cover" />
-            <AvatarFallback className="text-2xl bg-muted">
-              {user?.firstName?.[0]}
-              {user?.lastName?.[0]}
-            </AvatarFallback>
+            <AvatarImage src={user?.avatar_url} className="object-cover" />
+            <AvatarFallback className="text-2xl bg-muted">{user?.full_name?.[0]}</AvatarFallback>
           </Avatar>
 
           <div className="flex-1 space-y-2 text-center sm:text-left">
             <div>
-              <h3 className="text-xl font-bold tracking-tight">{user?.fullName}</h3>
-              <p className="text-sm text-muted-foreground">
-                {user?.primaryEmailAddress?.emailAddress}
-              </p>
+              <h3 className="text-xl font-bold tracking-tight">{user?.full_name}</h3>
+              <p className="text-sm text-muted-foreground">{user?.email}</p>
             </div>
           </div>
         </div>
@@ -85,7 +80,7 @@ export function ProfileForm({ formData, onFormDataChange }: ProfileFormProps) {
             </Label>
             <Input
               id="email"
-              value={user?.primaryEmailAddress?.emailAddress || ''}
+              value={user?.email || ''}
               disabled
               className="bg-muted/50 text-muted-foreground"
             />

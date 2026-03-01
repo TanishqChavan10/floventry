@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
-import { useSignIn } from '@clerk/nextjs';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
@@ -12,119 +12,195 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/context/auth-context';
 
+const supabase = createSupabaseBrowserClient();
+
 export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) {
-  const { isLoaded, signIn, setActive } = useSignIn();
-  const { user, isClerkLoaded, isClerkSignedIn } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const { run, isLoading } = useAsyncAction();
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState('');
+  const [pendingVerification, setPendingVerification] = React.useState(false);
+  const [code, setCode] = React.useState('');
+  const [resendCooldown, setResendCooldown] = React.useState(0);
+  const [maybeUnverified, setMaybeUnverified] = React.useState(false);
   const router = useRouter();
 
   /** Where to send the user after successful authentication */
   const postAuthUrl = redirectUrl?.startsWith('/') ? redirectUrl : '/auth-redirect';
 
-  // Redirect signed-in users away from sign-in page — no need to wait for DB user
+  // Redirect signed-in users away from sign-in page
   React.useEffect(() => {
-    if (!isClerkLoaded) return;
-    if (isClerkSignedIn) {
+    if (!isLoaded) return;
+    if (isSignedIn) {
       router.replace(postAuthUrl);
     }
-  }, [isClerkLoaded, isClerkSignedIn, router, postAuthUrl]);
+  }, [isLoaded, isSignedIn, router, postAuthUrl]);
 
-  // ── Handle OAuth continuation (e.g. /auth/sign-in/continue) ──────
-  // After the SSO callback, Clerk may redirect here if the sign-in has
-  // unresolved requirements. Detect and auto-complete or transfer.
-  React.useEffect(() => {
-    if (!isLoaded || !signIn) return;
-
-    // Sign-in already complete → activate session and redirect
-    if (signIn.status === 'complete' && signIn.createdSessionId) {
-      void setActive({ session: signIn.createdSessionId }).then(() => {
-        router.push(postAuthUrl);
-      });
-      return;
-    }
-
-    const ea = signIn.firstFactorVerification;
-
-    // OAuth identity has no matching account → transfer to sign-up
-    if (ea?.status === 'transferable') {
-      router.replace(`/auth/sign-up?redirect_url=${encodeURIComponent(postAuthUrl)}`);
-      return;
-    }
-
-    // Provider returned an error
-    if (ea?.status === 'unverified' && ea?.error) {
-      setError(ea.error.longMessage || ea.error.message || 'OAuth verification failed');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, signIn?.status, signIn?.firstFactorVerification?.status]);
-
-  // Helper to get redirect URL based on user's companies
-  const getRedirectUrl = () => {
-    if (!user || !user.companies || user.companies.length === 0) {
-      return '/onboarding/create-company';
-    }
-    const activeCompany = user.companies.find((c) => c.isActive);
-    const targetCompany = activeCompany || user.companies[0];
-    return `/${targetCompany.slug}/dashboard`;
-  };
-
-  // Handle OAuth sign in
-  // Note: if the Google account is new to Clerk it transfers to sign-up;
-  // Google OAuth requires an absolute redirect_uri — use window.location.origin.
-  const signInWith = (strategy: 'oauth_google') => {
-    if (!isLoaded) return;
-
+  // Handle OAuth sign in with Google
+  const signInWithGoogle = async () => {
     setError('');
-    const callbackUrl = `${window.location.origin}/sso-callback`;
-
-    return signIn
-      .authenticateWithRedirect({
-        strategy,
-        redirectUrl: callbackUrl,
-        redirectUrlComplete: postAuthUrl,
-      })
-      .catch((err: any) => {
-        setError(err?.errors?.[0]?.longMessage || err?.message || 'Could not start Google sign-in');
-      });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      setError(error.message || 'Could not start Google sign-in');
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoaded) return;
 
     void run(async () => {
       setError('');
 
-      const result = await signIn.create({
-        identifier: email,
+      // 1. Try signing in with existing credentials
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
         password,
       });
 
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId });
-        // Wait a bit for auth context to update, then redirect
-        setTimeout(() => {
-          router.push(postAuthUrl);
-        }, 500);
-      } else {
-        setError('Something went wrong. Please try again.');
-      }
-    }).catch((err: any) => {
-      const errorMessage =
-        err?.errors?.[0]?.longMessage || err?.message || 'Invalid email or password';
-
-      if (errorMessage.toLowerCase().includes('already signed in')) {
-        router.push(postAuthUrl);
+      if (!signInError) {
+        // Sign-in successful — redirect
+        setTimeout(() => router.push(postAuthUrl), 300);
         return;
       }
 
+      // Email explicitly not confirmed (when enumeration protection is off)
+      if (signInError.message.toLowerCase().includes('email not confirmed')) {
+        setPendingVerification(true);
+        await supabase.auth.resend({ type: 'signup', email });
+        return;
+      }
+
+      if (signInError.message === 'Invalid login credentials') {
+        // Could be wrong password OR an unverified account (Supabase hides the
+        // distinction when email enumeration protection is enabled).
+        // Show the error but surface an option to verify.
+        setMaybeUnverified(true);
+        throw new Error('Invalid email or password.');
+      }
+
+      throw new Error(signInError.message);
+    }).catch((err: any) => {
+      const errorMessage = err?.message || 'Invalid email or password';
       setError(errorMessage);
     });
   };
+
+  const handleVerification = (e: React.FormEvent) => {
+    e.preventDefault();
+    void run(async () => {
+      setError('');
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: code,
+        type: 'signup',
+      });
+      if (error) throw new Error(error.message);
+      if (data.session) {
+        router.push(postAuthUrl);
+      } else {
+        setError('Verification failed. Please try again.');
+      }
+    }).catch((err: any) => {
+      setError(err.message || 'Invalid code');
+    });
+  };
+
+  const handleResend = async () => {
+    setError('');
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    if (error) {
+      setError(error.message || 'Could not resend code');
+    } else {
+      setResendCooldown(60);
+      const interval = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+  };
+
+  if (pendingVerification) {
+    return (
+      <div className="grid min-h-screen w-full lg:grid-cols-2">
+        <div className="flex flex-col justify-center px-8 py-12 lg:px-16">
+          <div className="mx-auto w-full max-w-[440px]">
+            <Link href="/" className="mb-12 inline-block">
+              <img src="/2.svg" alt="Floventry" className="h-10 w-auto" />
+            </Link>
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-neutral-900">Check your email</h1>
+              <p className="mt-2 text-sm text-neutral-600">
+                We sent a verification code to <span className="font-medium">{email}</span>
+              </p>
+            </div>
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <form onSubmit={handleVerification} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="code" className="text-sm text-neutral-700">
+                  Verification Code
+                </Label>
+                <Input
+                  id="code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="Enter 6-digit code"
+                  required
+                  className="h-11 border-neutral-300 text-center text-lg tracking-widest"
+                />
+              </div>
+              <Button
+                type="submit"
+                className="h-11 w-full bg-neutral-200 text-neutral-900 hover:bg-neutral-300"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  'Verify Email'
+                )}
+              </Button>
+            </form>
+            <p className="mt-4 text-center text-sm text-neutral-600">
+              Didn&apos;t receive a code?{' '}
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendCooldown > 0}
+                className="font-semibold text-neutral-900 hover:text-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
+              </button>
+            </p>
+          </div>
+        </div>
+        <div className="hidden lg:flex lg:items-center lg:justify-center lg:p-16">
+          <div className="max-w-lg">
+            <img src="/signin-illustration.jpg" alt="" className="w-full h-auto rounded-2xl" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid min-h-screen w-full lg:grid-cols-2">
@@ -146,7 +222,23 @@ export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) 
           {error && (
             <Alert variant="destructive" className="mb-6">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>
+                {error}
+                {maybeUnverified && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMaybeUnverified(false);
+                      setError('');
+                      setPendingVerification(true);
+                      void supabase.auth.resend({ type: 'signup', email });
+                    }}
+                    className="ml-2 underline font-semibold hover:no-underline"
+                  >
+                    Verify your email instead?
+                  </button>
+                )}
+              </AlertDescription>
             </Alert>
           )}
 
@@ -198,12 +290,9 @@ export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) 
               </div>
             </div>
 
-            {/* Clerk's CAPTCHA widget (required for Smart CAPTCHA in custom flows) */}
-            <div id="clerk-captcha" data-cl-theme="auto" />
-
             <Button
               type="submit"
-              className="h-11 w-full bg-neutral-200 text-neutral-900 hover:bg-neutral-300"
+              className="h-11 w-full bg-[#E53935] text-white hover:bg-[#D32F2F]"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -232,7 +321,7 @@ export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) 
             <Button
               type="button"
               variant="outline"
-              onClick={() => signInWith('oauth_google')}
+              onClick={signInWithGoogle}
               className="h-11 w-full border-neutral-300"
             >
               <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">

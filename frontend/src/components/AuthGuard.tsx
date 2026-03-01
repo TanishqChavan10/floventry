@@ -14,7 +14,7 @@ interface AuthGuardProps {
 }
 
 export default function AuthGuard({ children }: AuthGuardProps) {
-  const { user, isAuthenticated, loading, isClerkLoaded, isClerkSignedIn } = useAuth();
+  const { user, isAuthenticated, loading, isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -138,28 +138,28 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         if (!activeSlug) return;
 
         /**
-         * 🎯 ROLE-BASED REDIRECT LOGIC
+         * Ã°Å¸Å½Â¯ ROLE-BASED REDIRECT LOGIC
          *
-         * OWNER & ADMIN → Company Dashboard
-         * MANAGER → Company Dashboard (data filtered to their warehouses)
-         * STAFF → Primary Warehouse Dashboard
+         * OWNER & ADMIN Ã¢â€ â€™ Company Dashboard
+         * MANAGER Ã¢â€ â€™ Company Dashboard (data filtered to their warehouses)
+         * STAFF Ã¢â€ â€™ Primary Warehouse Dashboard
          */
 
         if (userRole === 'OWNER' || userRole === 'ADMIN') {
-          // ✅ OWNER/ADMIN: Redirect to company dashboard
+          // Ã¢Å“â€¦ OWNER/ADMIN: Redirect to company dashboard
           console.log('[AuthGuard] OWNER/ADMIN detected, redirecting to company dashboard');
           router.push(`/${activeSlug}/dashboard`);
           return;
         }
 
         if (userRole === 'MANAGER') {
-          // ✅ MANAGER: Redirect to company dashboard
+          // Ã¢Å“â€¦ MANAGER: Redirect to company dashboard
           router.push(`/${activeSlug}/dashboard`);
           return;
         }
 
         if (userRole === 'STAFF') {
-          // ✅ STAFF: Redirect to default warehouse
+          // Ã¢Å“â€¦ STAFF: Redirect to default warehouse
           const defaultWarehouseId = user?.defaultWarehouseId;
 
           if (defaultWarehouseId) {
@@ -206,11 +206,11 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     }
   }, [isAuthenticated, user, loading, pathname, router, isPublicRoute, isOnboardingRoute]);
 
-  // Show loading spinner ONLY while Clerk SDK itself is initializing.
-  // This takes milliseconds (Clerk is already hydrated from SSR).
-  // Once Clerk resolves we know if the user is signed in or not, so we can
+  // Show loading spinner ONLY while Supabase SDK itself is initializing.
+  // This takes milliseconds (Supabase is already hydrated from SSR).
+  // Once Supabase resolves we know if the user is signed in or not, so we can
   // immediately render the layout shell and let page data load in the background.
-  if (!isClerkLoaded) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900">
         <div className="text-center">
@@ -221,9 +221,9 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
-  // Clerk is loaded. If the user is definitely not signed in and this is a
-  // protected route, don't flash the layout — the redirect effect will fire shortly.
-  if (!isClerkSignedIn && !isPublicRoute && !isOnboardingRoute) {
+  // Supabase is loaded. If the user is definitely not signed in and this is a
+  // protected route, don't flash the layout Ã¢â‚¬â€ the redirect effect will fire shortly.
+  if (!isSignedIn && !isPublicRoute && !isOnboardingRoute) {
     return null;
   }
 

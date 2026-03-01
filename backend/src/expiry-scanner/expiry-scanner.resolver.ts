@@ -5,7 +5,7 @@ import { CronExpression } from '@nestjs/schedule';
 
 import { ExpiryScannerService } from './expiry-scanner.service';
 import { ExpiryScanResult, ExpiryScanStatus } from './expiry-scanner.types';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
@@ -22,7 +22,7 @@ export class ExpiryScannerResolver {
   ) {}
 
   @Query(() => ExpiryScanStatus)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async expiryScanStatus(): Promise<ExpiryScanStatus> {
     const enabled = process.env.EXPIRY_SCAN_ENABLED === 'true';
@@ -58,7 +58,7 @@ export class ExpiryScannerResolver {
   }
 
   @Mutation(() => ExpiryScanResult)
-  @UseGuards(ClerkAuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
   async triggerExpiryScan(): Promise<ExpiryScanResult> {
     return this.expiryScannerService.triggerManualScan();

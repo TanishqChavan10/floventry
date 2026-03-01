@@ -1508,8 +1508,8 @@ type UserDetails {
 
 type UserModel {
   activeCompanyId: String
+  auth_id: String!
   avatar_url: String
-  clerk_id: String!
   companies: [UserCompanyInfo!]!
   created_at: DateTime!
   defaultWarehouseId: String

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 import { addDays } from 'date-fns';
 import { DateRange } from 'react-day-picker';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth } from '@/context/auth-context';
 import {
   Table,
   TableBody,

@@ -9,7 +9,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { IsArray, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-import { ClerkAuthGuard } from '../../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../../auth/guards/auth.guard';
 import { BarcodeThermalLabelService, type ThermalLabelSize } from './barcode-thermal-label.service';
 
 class GenerateThermalZplDto {
@@ -29,7 +29,7 @@ class GenerateThermalZplDto {
 }
 
 @Controller('thermal/labels')
-@UseGuards(ClerkAuthGuard)
+@UseGuards(AuthGuard)
 export class ThermalLabelController {
   constructor(private readonly thermal: BarcodeThermalLabelService) {}
 

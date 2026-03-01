@@ -1,14 +1,14 @@
-// lib/clerk-apollo-client.ts
+// lib/apollo-client.ts (legacy — prefer ApolloAppProvider)
 
 import { ApolloClient, InMemoryCache, ApolloLink, from } from "@apollo/client";
 import { onError } from "@apollo/client/link/error";
 import { HttpLink } from "@apollo/client/link/http";
 import { GRAPHQL_URL } from "@/config/env";
 
-// Auth link that gets fresh token from window (updated by ApolloAppProvider)
+// Auth link that gets fresh token from window (updated by AuthProvider)
 const authLink = new ApolloLink((operation, forward) => {
   const token = typeof window !== 'undefined'
-    ? (window as any).__clerk_session_token
+    ? (window as any).__supabase_access_token
     : null;
 
   operation.setContext(({ headers = {} }) => ({

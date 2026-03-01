@@ -9,12 +9,12 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { ClerkAuthGuard } from '../../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../../auth/guards/auth.guard';
 import { GenerateBarcodeLabelsDto } from './dto/generate-barcode-labels.dto';
 import { BarcodeLabelService } from './barcode-label.service';
 
 @Controller('barcode-labels')
-@UseGuards(ClerkAuthGuard)
+@UseGuards(AuthGuard)
 export class BarcodeLabelController {
   constructor(private readonly barcodeLabelService: BarcodeLabelService) {}
 

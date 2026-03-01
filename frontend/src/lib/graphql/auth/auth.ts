@@ -4,7 +4,7 @@ export const GET_CURRENT_USER = gql`
   query Me {
     me {
       id
-      clerk_id
+      auth_id
       email
       full_name
       avatar_url

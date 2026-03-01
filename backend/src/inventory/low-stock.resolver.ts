@@ -4,14 +4,14 @@ import { Stock } from './entities/stock.entity';
 import { StockHealthItem } from './types/stock-health.types';
 import { UpdateStockThresholdsInput } from './dto/stock-health.input';
 import { InventoryService } from './inventory.service';
-import { ClerkAuthGuard } from '../auth/guards/clerk-auth.guard';
+import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
-import { ClerkUser } from '../auth/decorators/clerk-user.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver()
-@UseGuards(ClerkAuthGuard, RolesGuard)
+@UseGuards(AuthGuard, RolesGuard)
 export class LowStockResolver {
   constructor(private inventoryService: InventoryService) {}
 
@@ -23,7 +23,7 @@ export class LowStockResolver {
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
   async getLowStockItems(
     @Args('warehouseId') warehouseId: string,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<StockHealthItem[]> {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
@@ -47,7 +47,7 @@ export class LowStockResolver {
   async updateStockThresholds(
     @Args('stockId') stockId: string,
     @Args('input') input: UpdateStockThresholdsInput,
-    @ClerkUser() user: any,
+    @CurrentUser() user: any,
   ): Promise<Stock> {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');

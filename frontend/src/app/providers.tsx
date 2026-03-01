@@ -1,6 +1,5 @@
 'use client';
 
-import { ClerkThemeProvider } from '@/components/ClerkThemeProvider';
 import { ApolloAppProvider } from '@/components/ApolloAppProvider';
 import { WarehouseProvider } from '@/context/warehouse-context';
 import { ThemeProvider } from '@/context/theme-context';
@@ -18,19 +17,17 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <DesktopOnlyOverlay />
       <LoadingProvider>
         <ThemeProvider>
-          <ClerkThemeProvider>
-            <ApolloAppProvider>
-              <WarehouseProvider>
-                <GlobalSearchProvider>
-                  <PageWrapper>
-                    <GlobalLoadingBar />
-                    <AppLayoutWrapper>{children}</AppLayoutWrapper>
-                    <Toaster richColors position="top-center" />
-                  </PageWrapper>
-                </GlobalSearchProvider>
-              </WarehouseProvider>
-            </ApolloAppProvider>
-          </ClerkThemeProvider>
+          <ApolloAppProvider>
+            <WarehouseProvider>
+              <GlobalSearchProvider>
+                <PageWrapper>
+                  <GlobalLoadingBar />
+                  <AppLayoutWrapper>{children}</AppLayoutWrapper>
+                  <Toaster richColors position="top-center" />
+                </PageWrapper>
+              </GlobalSearchProvider>
+            </WarehouseProvider>
+          </ApolloAppProvider>
         </ThemeProvider>
       </LoadingProvider>
     </>
