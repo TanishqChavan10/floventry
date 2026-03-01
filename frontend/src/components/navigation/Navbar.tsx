@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { UserButton } from '@clerk/nextjs';
 import NotificationBell from '@/components/notifications/NotificationBell';
-import { useGlobalSearch } from '@/components/search/useGlobalSearch';
+import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { CreateWarehouseDialog } from '@/components/warehouses/CreateWarehouseDialog';
 
 export function Navbar() {

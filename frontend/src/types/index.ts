@@ -1,4 +1,4 @@
-import { formatIndianRupee } from '@/lib/formatters';
+import { formatIndianRupee } from '@/lib/utils/formatters';
 
 // Centralized type definitions for better TypeScript performance
 

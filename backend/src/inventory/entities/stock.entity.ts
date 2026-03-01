@@ -12,7 +12,7 @@ import {
 import { Product } from './product.entity';
 import { Warehouse } from '../../warehouse/warehouse.entity';
 import { Company } from '../../company/company.entity';
-import { StockLot } from './stock-lot.entity';
+import { StockLot } from '../stock-lot/entities/stock-lot.entity';
 
 @ObjectType()
 @Entity('stock')

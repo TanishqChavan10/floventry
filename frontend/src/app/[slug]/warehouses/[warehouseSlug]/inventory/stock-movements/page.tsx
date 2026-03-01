@@ -28,7 +28,8 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { GET_STOCK_MOVEMENTS, GET_STOCK_BY_WAREHOUSE } from '@/lib/graphql/stock';
+import { GET_STOCK_BY_WAREHOUSE } from '@/lib/graphql/stock';
+import { GET_STOCK_MOVEMENTS } from '@/lib/graphql/inventory';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/context/auth-context';
 import { GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';

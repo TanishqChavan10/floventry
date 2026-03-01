@@ -1,5 +1,5 @@
 import { ObjectType, Field, Int, registerEnumType } from '@nestjs/graphql';
-import { StockLot } from '../entities/stock-lot.entity';
+import { StockLot } from '../stock-lot/entities/stock-lot.entity';
 
 export enum ExpiryStatus {
   OK = 'OK',

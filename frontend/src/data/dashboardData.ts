@@ -1,6 +1,6 @@
 
 // Dashboard data based on ER Diagram entities
-import { formatIndianRupee } from '@/lib/formatters';
+import { formatIndianRupee } from '@/lib/utils/formatters';
 
 // Types
 export interface StatDetails {

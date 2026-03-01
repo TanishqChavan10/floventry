@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Stock } from '../inventory/entities/stock.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
-import { StockLot } from '../inventory/entities/stock-lot.entity';
+import { StockLot } from '../inventory/stock-lot/entities/stock-lot.entity';
 import * as Papa from 'papaparse';
 import { normalizeExpiryToEndOfDayUTC } from '../common/utils/expiry-date';
 

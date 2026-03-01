@@ -6,7 +6,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { saveAs } from 'file-saver';
 import { toast } from 'sonner';
-import { formatIndianRupee } from '@/lib/formatters';
+import { formatIndianRupee } from '@/lib/utils/formatters';
 
 export interface ExportProgress {
   isExporting: boolean;

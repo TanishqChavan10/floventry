@@ -10,20 +10,14 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useRbac } from '@/hooks/use-rbac';
 import { AlertCircle, Lock } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { WarehouseAccessList } from '@/components/warehouse/WarehouseAccessList';
+import { WarehouseAccessList } from '@/components/warehouses/WarehouseAccessList';
 import { DeleteWarehouseDialog } from '@/components/warehouses/DeleteWarehouseDialog';
 import {
   Select,
@@ -236,8 +230,9 @@ function WarehouseSettingsContent() {
             <Lock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             <AlertTitle className="text-blue-800 dark:text-blue-300">View Only Access</AlertTitle>
             <AlertDescription className="text-blue-700 dark:text-blue-400">
-              As a Warehouse Manager, you can view these settings but cannot change the warehouse structure.
-              Contact an Administrator to update information, manage access, or archive this location.
+              As a Warehouse Manager, you can view these settings but cannot change the warehouse
+              structure. Contact an Administrator to update information, manage access, or archive
+              this location.
             </AlertDescription>
           </Alert>
         )}
@@ -475,9 +470,9 @@ function WarehouseSettingsContent() {
               </CardHeader>
               <CardContent>
                 {warehouse?.id && warehousesData?.companyBySlug?.id && (
-                  <WarehouseAccessList 
-                    warehouseId={warehouse.id} 
-                    companySlug={companySlug} 
+                  <WarehouseAccessList
+                    warehouseId={warehouse.id}
+                    companySlug={companySlug}
                     companyId={warehousesData.companyBySlug.id}
                     warehouseName={warehouse.name}
                   />

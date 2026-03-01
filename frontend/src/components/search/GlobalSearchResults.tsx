@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { GlobalSearchDocumentType, GlobalSearchResultsData } from './useGlobalSearch';
+import type { GlobalSearchDocumentType, GlobalSearchResultsData } from '@/hooks/useGlobalSearch';
 import { cn } from '@/lib/utils';
 import { CopyButton } from '@/components/common/CopyButton';
 

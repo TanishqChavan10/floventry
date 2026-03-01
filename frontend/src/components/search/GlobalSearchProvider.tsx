@@ -10,7 +10,7 @@ import {
   type GlobalSearchContextValue,
   type GlobalSearchDocumentType,
   type GlobalSearchResultsData,
-} from './useGlobalSearch';
+} from '@/hooks/useGlobalSearch';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import {
   GLOBAL_SEARCH,

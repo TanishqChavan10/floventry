@@ -11,9 +11,9 @@ import {
   ExpiryScannerCard,
   AccessSecurityForm,
   DangerZone,
-} from './components';
-import type { FormHandle } from './components/CompanyProfileForm';
-import type { InventoryFormHandle } from './components/InventorySettingsForm';
+} from '@/components/settings/forms';
+import type { FormHandle } from '@/components/settings/forms/CompanyProfileForm';
+import type { InventoryFormHandle } from '@/components/settings/forms/InventorySettingsForm';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Users, UserCog, CreditCard, Shield } from 'lucide-react';
@@ -36,15 +36,17 @@ export default function CompanySettingsContent({ company }: CompanySettingsProps
   const inventoryRef = useRef<InventoryFormHandle>(null);
   const accessRef = useRef<FormHandle>(null);
 
-  const managedRefs: Record<ManagedTab, React.RefObject<FormHandle | InventoryFormHandle | null>> = {
+  const managedRefs: Record<
+    ManagedTab,
+    React.RefObject<FormHandle | InventoryFormHandle | null>
+  > = {
     profile: profileRef,
     business: businessRef,
     inventory: inventoryRef,
     access: accessRef,
   };
 
-  const isManagedTab = (tab: string): tab is ManagedTab =>
-    tab in managedRefs;
+  const isManagedTab = (tab: string): tab is ManagedTab => tab in managedRefs;
 
   const activeRef = isManagedTab(activeTab) ? managedRefs[activeTab].current : null;
   const isDirty = activeRef?.isDirty ?? false;
@@ -66,23 +68,23 @@ export default function CompanySettingsContent({ company }: CompanySettingsProps
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-foreground">Company Settings</h1>
         {isManagedTab(activeTab) && (
-          <Button
-            onClick={handleSave}
-            disabled={!isDirty || isSaving}
-          >
-            {isSaving
-              ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</>
-              : <><Save className="mr-2 h-4 w-4" />Save Changes</>
-            }
+          <Button onClick={handleSave} disabled={!isDirty || isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving…
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Save Changes
+              </>
+            )}
           </Button>
         )}
       </div>
 
-      <Tabs
-        defaultValue="profile"
-        className="space-y-6"
-        onValueChange={(v) => setActiveTab(v)}
-      >
+      <Tabs defaultValue="profile" className="space-y-6" onValueChange={(v) => setActiveTab(v)}>
         <TabsList className="flex flex-wrap h-auto p-1 bg-muted rounded-lg">
           <TabsTrigger value="profile" className="flex-1 min-w-30">
             <Building2 className="w-4 h-4 mr-2" /> Profile

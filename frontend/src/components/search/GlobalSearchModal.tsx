@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { IconSearch } from '@tabler/icons-react';
 import { useParams } from 'next/navigation';
 
-import { useGlobalSearch } from './useGlobalSearch';
+import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { GlobalSearchResults, type FlattenedSearchItem } from './GlobalSearchResults';
 
 function flattenResults(args: {

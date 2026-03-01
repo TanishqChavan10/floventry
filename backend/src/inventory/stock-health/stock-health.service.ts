@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Stock } from '../entities/stock.entity';
-import { StockLot } from '../entities/stock-lot.entity';
+import { StockLot } from '../stock-lot/entities/stock-lot.entity';
 import { Product } from '../entities/product.entity';
 import {
   WarehouseStockHealthResult,

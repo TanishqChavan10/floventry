@@ -4,11 +4,8 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useWarehouse } from '@/context/warehouse-context';
 import { useQuery } from '@apollo/client';
-import {
-  GET_STOCK_SNAPSHOT,
-  GET_STOCK_MOVEMENTS,
-  GET_ADJUSTMENT_REPORT,
-} from '@/lib/graphql/warehouse-reports';
+import { GET_STOCK_SNAPSHOT, GET_ADJUSTMENT_REPORT } from '@/lib/graphql/warehouse-reports';
+import { GET_STOCK_MOVEMENTS } from '@/lib/graphql/inventory';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

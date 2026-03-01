@@ -1,5 +1,5 @@
 import { differenceInDays } from 'date-fns';
-import { StockLot } from '../entities/stock-lot.entity';
+import { StockLot } from '../stock-lot/entities/stock-lot.entity';
 import { StockHealthState } from './stock-health.types';
 
 /**

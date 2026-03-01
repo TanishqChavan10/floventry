@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, Not, IsNull } from 'typeorm';
-import { StockLot } from '../inventory/entities/stock-lot.entity';
+import { StockLot } from '../inventory/stock-lot/entities/stock-lot.entity';
 import { CompanySettings } from '../company/company-settings.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import {

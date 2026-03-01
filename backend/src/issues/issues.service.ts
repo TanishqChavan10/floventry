@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import { IssueNote, IssueNoteStatus } from './entities/issue-note.entity';
 import { IssueNoteItem } from './entities/issue-note-item.entity';
-import { StockLot } from '../inventory/entities/stock-lot.entity';
+import { StockLot } from '../inventory/stock-lot/entities/stock-lot.entity';
 import { normalizeExpiryToEndOfDayUTC } from '../common/utils/expiry-date';
 import { Stock } from '../inventory/entities/stock.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
@@ -22,7 +22,7 @@ import {
   MovementType,
   ReferenceType,
 } from '../inventory/entities/stock-movement.entity';
-import { AuditLogService } from '../audit/services/audit-log.service';
+import { AuditLogService } from '../audit/audit-log.service';
 import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
 
 @Injectable()

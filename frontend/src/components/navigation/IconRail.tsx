@@ -13,11 +13,11 @@ import {
   type NavigationItem,
   type NavigationSection,
   type UserRole,
-} from '@/lib/navigation-config';
+} from '@/lib/config/navigation';
 import {
   extractWarehouseRouteSuffix,
   setPendingWarehouseRoute,
-} from '@/lib/warehouse-pending-route';
+} from '@/lib/utils/warehouse-pending-route';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 

@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2 } from 'lucide-react';
-import { formatIndianRupee } from '@/lib/formatters';
+import { formatIndianRupee } from '@/lib/utils/formatters';
 
 type Product = {
   id: string;

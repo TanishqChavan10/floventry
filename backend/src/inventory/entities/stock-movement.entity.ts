@@ -20,7 +20,7 @@ import { Product } from './product.entity';
 import { Warehouse } from '../../warehouse/warehouse.entity';
 import { Company } from '../../company/company.entity';
 import { User } from '../../auth/entities/user.entity';
-import { StockLot } from './stock-lot.entity';
+import { StockLot } from '../stock-lot/entities/stock-lot.entity';
 
 export enum MovementType {
   // Phase 1: Stock & Stock Movements

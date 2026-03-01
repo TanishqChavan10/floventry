@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
-import { GET_UNITS, CREATE_UNIT, DELETE_UNIT } from '@/lib/graphql/settings';
+import { GET_UNITS, CREATE_UNIT, DELETE_UNIT } from '@/lib/graphql/catalog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -43,7 +43,7 @@ export default function UnitManager() {
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState('');
   const [shortCode, setShortCode] = useState('');
-  const [unitToDelete, setUnitToDelete] = useState<{id: string, name: string} | null>(null);
+  const [unitToDelete, setUnitToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,13 +160,16 @@ export default function UnitManager() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Unit?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{unitToDelete?.name}</strong>? 
-              This action cannot be undone.
+              Are you sure you want to delete <strong>{unitToDelete?.name}</strong>? This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Delete Unit
             </AlertDialogAction>
           </AlertDialogFooter>

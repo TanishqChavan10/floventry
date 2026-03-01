@@ -14,7 +14,7 @@ import {
   getCompanyNavigation,
   getWarehouseNavigation,
   type UserRole,
-} from '@/lib/navigation-config';
+} from '@/lib/config/navigation';
 import { IconUser, IconBell, IconLogout } from '@tabler/icons-react';
 import { useClerk, UserButton } from '@clerk/nextjs';
 import Link from 'next/link';
@@ -28,7 +28,7 @@ import { toast } from 'sonner';
 import {
   extractWarehouseRouteSuffix,
   setPendingWarehouseRoute,
-} from '@/lib/warehouse-pending-route';
+} from '@/lib/utils/warehouse-pending-route';
 
 function BottomSection() {
   const { user, isClerkSignedIn } = useAuth();

@@ -17,7 +17,7 @@ import { Category } from './entities/category.entity';
 import { Product } from './entities/product.entity';
 import { Unit } from './entities/unit.entity';
 import { Stock } from './entities/stock.entity';
-import { StockLot, LotSourceType } from './entities/stock-lot.entity';
+import { StockLot, LotSourceType } from './stock-lot/entities/stock-lot.entity';
 import {
   StockMovement,
   MovementType,
@@ -37,12 +37,12 @@ import {
   CreateStockLotInput,
   UpdateStockLotQuantityInput,
   StockLotFilterInput,
-} from './dto/stock-lot.input';
+} from './stock-lot/dto/stock-lot.input';
 import { UpdateStockThresholdsInput } from './dto/stock-health.input';
 import {
   CreateInventoryAdjustmentInput,
   AdjustmentType,
-} from './dto/adjustment.input';
+} from './adjustment/dto/adjustment.input';
 import { Warehouse } from '../warehouse/warehouse.entity';
 import {
   StockHealthItem,
@@ -78,14 +78,14 @@ import {
   calculateUsableStock,
   determineStockHealthState,
 } from './stock-health/stock-health.utils';
-import { BarcodeService } from './barcode.service';
-import { BarcodeFormatService } from './barcode-format.service';
-import { AuditLogService } from '../audit/services/audit-log.service';
+import { BarcodeService } from './barcode/barcode.service';
+import { BarcodeFormatService } from './barcode/barcode-format.service';
+import { AuditLogService } from '../audit/audit-log.service';
 import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
 import { NotificationsService } from '../notifications/notifications.service';
-import { BarcodeHistory, BarcodeHistoryChangeType } from './entities/barcode-history.entity';
-import { ProductBarcodeUnit, ProductBarcodeUnitType } from './entities/product-barcode-unit.entity';
-import { UpsertProductBarcodeUnitInput } from './dto/product-barcode-unit.input';
+import { BarcodeHistory, BarcodeHistoryChangeType } from './barcode/entities/barcode-history.entity';
+import { ProductBarcodeUnit, ProductBarcodeUnitType } from './barcode/entities/product-barcode-unit.entity';
+import { UpsertProductBarcodeUnitInput } from './barcode/dto/product-barcode-unit.input';
 import { PaginationInput, PageInfo } from '../common/dto/pagination.types';
 import { ILike } from 'typeorm';
 

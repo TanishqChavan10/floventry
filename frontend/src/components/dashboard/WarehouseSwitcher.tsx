@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 import {
   clearPendingWarehouseRoute,
   getPendingWarehouseRoute,
-} from '@/lib/warehouse-pending-route';
+} from '@/lib/utils/warehouse-pending-route';
 
 export default function WarehouseSwitcher() {
   const params = useParams();

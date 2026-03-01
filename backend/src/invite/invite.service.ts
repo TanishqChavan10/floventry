@@ -20,7 +20,7 @@ import { EmailService } from '../email/email.service';
 import { ClerkService } from '../auth/clerk.service';
 import { UserWarehouseService } from '../auth/user-warehouse.service';
 import { Role } from '../auth/enums/role.enum';
-import { AuditLogService } from '../audit/services/audit-log.service';
+import { AuditLogService } from '../audit/audit-log.service';
 import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
 import { NotificationsService } from '../notifications/notifications.service';
 

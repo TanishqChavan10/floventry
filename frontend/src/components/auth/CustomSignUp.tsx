@@ -27,18 +27,54 @@ export default function CustomSignUp({ redirectUrl }: { redirectUrl?: string }) 
   /** Where to send the user after successful authentication */
   const postAuthUrl = redirectUrl?.startsWith('/') ? redirectUrl : '/onboarding';
 
+  // ── Handle OAuth continuation (e.g. /auth/sign-up/continue) ──────
+  // After the SSO callback, Clerk may redirect here if the sign-up has
+  // unresolved requirements (captcha, etc.). Detect and auto-complete.
+  React.useEffect(() => {
+    if (!isLoaded || !signUp) return;
+
+    // Sign-up already complete → activate session and redirect
+    if (signUp.status === 'complete' && signUp.createdSessionId) {
+      void setActive({ session: signUp.createdSessionId }).then(() => {
+        router.push(postAuthUrl);
+      });
+      return;
+    }
+
+    const ea = signUp.verifications?.externalAccount;
+    if (!ea) return;
+
+    // OAuth identity belongs to an existing user → hand off to sign-in
+    if (ea.status === 'transferable') {
+      router.replace(`/auth/sign-in?redirect_url=${encodeURIComponent(postAuthUrl)}`);
+      return;
+    }
+
+    // Provider returned an error
+    if (ea.status === 'unverified' && ea.error) {
+      setError(ea.error.longMessage || ea.error.message || 'OAuth verification failed');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, signUp?.status, signUp?.verifications?.externalAccount?.status]);
+
   // Handle OAuth sign up
   const signUpWith = (strategy: 'oauth_google') => {
     if (!isLoaded) return;
 
+    setError('');
+
     // Google OAuth requires an absolute redirect_uri — use window.location.origin
     const callbackUrl = `${window.location.origin}/sso-callback`;
 
-    return signUp.authenticateWithRedirect({
-      strategy,
-      redirectUrl: callbackUrl,
-      redirectUrlComplete: '/auth-redirect',
-    });
+    return signUp
+      .authenticateWithRedirect({
+        strategy,
+        redirectUrl: callbackUrl,
+        redirectUrlComplete: '/auth-redirect',
+      })
+      .catch((err: any) => {
+        setError(err?.errors?.[0]?.longMessage || err?.message || 'Could not start Google sign-up');
+      });
   };
 
   const handleSubmit = (e: React.FormEvent) => {

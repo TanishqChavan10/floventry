@@ -11,13 +11,13 @@ import { UseGuards, BadRequestException } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { Category } from './entities/category.entity';
 import { Product } from './entities/product.entity';
-import { BarcodeHistory } from './entities/barcode-history.entity';
+import { BarcodeHistory } from './barcode/entities/barcode-history.entity';
 import { Stock } from './entities/stock.entity';
 import { StockMovement } from './entities/stock-movement.entity';
-import { StockLot } from './entities/stock-lot.entity';
-import { BarcodeLookupResult } from './models/barcode-lookup.model';
-import { ProductBarcodeUnit } from './entities/product-barcode-unit.entity';
-import { UpsertProductBarcodeUnitInput } from './dto/product-barcode-unit.input';
+import { StockLot } from './stock-lot/entities/stock-lot.entity';
+import { BarcodeLookupResult } from './barcode/models/barcode-lookup.model';
+import { ProductBarcodeUnit } from './barcode/entities/product-barcode-unit.entity';
+import { UpsertProductBarcodeUnitInput } from './barcode/dto/product-barcode-unit.input';
 import { CreateCategoryInput, UpdateCategoryInput } from './dto/category.input';
 import { CreateProductInput, UpdateProductInput } from './dto/product.input';
 import { CreateUnitInput, UpdateUnitInput } from './dto/unit.input';
@@ -54,7 +54,7 @@ import { Role } from '../auth/enums/role.enum';
 import { Supplier } from '../supplier/supplier.entity';
 import { PaginationInput, PageInfo } from '../common/dto/pagination.types';
 import { ObjectType, Field } from '@nestjs/graphql';
-import { StockLotLoader } from './stock-lot.loader';
+import { StockLotLoader } from './stock-lot/stock-lot.loader';
 
 @ObjectType()
 export class PaginatedProductsResult {

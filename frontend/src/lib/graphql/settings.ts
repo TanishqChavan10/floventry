@@ -21,45 +21,10 @@ export const GET_COMPANY_SETTINGS = gql`
   }
 `;
 
-export const UPDATE_COMPANY = gql`
-  mutation UpdateCompany($id: String!, $input: UpdateCompanyInput!) {
-    updateCompany(id: $id, input: $input) {
-      id
-      name
-      phone
-      email
-      website
-    }
-  }
-`;
-
-export const GET_UNITS = gql`
-  query GetUnits {
-    units {
-      id
-      name
-      shortCode
-      isDefault
-    }
-  }
-`;
-
-export const CREATE_UNIT = gql`
-  mutation CreateUnit($input: CreateUnitInput!) {
-    createUnit(input: $input) {
-      id
-      name
-      shortCode
-      isDefault
-    }
-  }
-`;
-
-export const DELETE_UNIT = gql`
-  mutation RemoveUnit($id: String!) {
-    removeUnit(id: $id)
-  }
-`;
+// UPDATE_COMPANY → canonical in company/company.ts
+// GET_UNITS      → canonical in catalog/catalog.ts
+// CREATE_UNIT    → canonical in catalog/catalog.ts
+// DELETE_UNIT    → canonical in catalog/catalog.ts
 
 export const TOGGLE_CATEGORY_ACTIVE = gql`
   mutation ToggleCategoryActive($input: UpdateCategoryInput!) {

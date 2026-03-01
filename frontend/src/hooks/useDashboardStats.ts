@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@apollo/client';
 import { GET_DASHBOARD_STATS, DashboardStats } from '@/lib/graphql/dashboard';
-import { formatIndianRupee } from '@/lib/formatters';
+import { formatIndianRupee } from '@/lib/utils/formatters';
 import { StatData } from '@/data/dashboardData';
 
 interface UseDashboardStatsReturn {

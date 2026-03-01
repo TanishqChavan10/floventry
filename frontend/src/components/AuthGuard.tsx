@@ -6,7 +6,8 @@ import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation } from '@apollo/client';
-import { SWITCH_COMPANY, GET_CURRENT_USER } from '@/lib/graphql/auth';
+import { GET_CURRENT_USER } from '@/lib/graphql/auth';
+import { SWITCH_COMPANY } from '@/lib/graphql/company';
 
 interface AuthGuardProps {
   children: React.ReactNode;

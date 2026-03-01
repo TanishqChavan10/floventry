@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import { IssueNote } from './issue-note.entity';
 import { Product } from '../../inventory/entities/product.entity';
-import { StockLot } from '../../inventory/entities/stock-lot.entity';
+import { StockLot } from '../../inventory/stock-lot/entities/stock-lot.entity';
 
 @ObjectType()
 @Entity('issue_note_items')

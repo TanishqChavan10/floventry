@@ -4,7 +4,7 @@ import { ExportService } from './export.service';
 import { ExportResolver } from './export.resolver';
 import { Stock } from '../inventory/entities/stock.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
-import { StockLot } from '../inventory/entities/stock-lot.entity';
+import { StockLot } from '../inventory/stock-lot/entities/stock-lot.entity';
 import { CompanySettings } from '../company/company-settings.entity';
 import { AuthModule } from '../auth/auth.module';
 

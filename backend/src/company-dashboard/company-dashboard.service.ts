@@ -4,12 +4,12 @@ import { IsNull, Repository } from 'typeorm';
 import { Product } from '../inventory/entities/product.entity';
 import { Warehouse } from '../warehouse/warehouse.entity';
 import { Stock } from '../inventory/entities/stock.entity';
-import { StockLot } from '../inventory/entities/stock-lot.entity';
+import { StockLot } from '../inventory/stock-lot/entities/stock-lot.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
 import {
   GoodsReceiptNote,
   GRNStatus,
-} from '../inventory/entities/goods-receipt-note.entity';
+} from '../inventory/grn/entities/goods-receipt-note.entity';
 import {
   IssueNote,
   IssueNoteStatus,
@@ -17,7 +17,7 @@ import {
 import {
   WarehouseTransfer,
   TransferStatus,
-} from '../inventory/entities/warehouse-transfer.entity';
+} from '../inventory/transfer/entities/warehouse-transfer.entity';
 import {
   Notification,
   NotificationType,

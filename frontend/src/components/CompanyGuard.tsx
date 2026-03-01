@@ -5,7 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
 import { useMutation } from '@apollo/client';
-import { SWITCH_COMPANY, GET_CURRENT_USER } from '@/lib/graphql/auth';
+import { GET_CURRENT_USER } from '@/lib/graphql/auth';
+import { SWITCH_COMPANY } from '@/lib/graphql/company';
 
 interface CompanyGuardProps {
   children: React.ReactNode;

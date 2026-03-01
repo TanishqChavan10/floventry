@@ -33,6 +33,35 @@ export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) 
     }
   }, [isClerkLoaded, isClerkSignedIn, router, postAuthUrl]);
 
+  // ── Handle OAuth continuation (e.g. /auth/sign-in/continue) ──────
+  // After the SSO callback, Clerk may redirect here if the sign-in has
+  // unresolved requirements. Detect and auto-complete or transfer.
+  React.useEffect(() => {
+    if (!isLoaded || !signIn) return;
+
+    // Sign-in already complete → activate session and redirect
+    if (signIn.status === 'complete' && signIn.createdSessionId) {
+      void setActive({ session: signIn.createdSessionId }).then(() => {
+        router.push(postAuthUrl);
+      });
+      return;
+    }
+
+    const ea = signIn.firstFactorVerification;
+
+    // OAuth identity has no matching account → transfer to sign-up
+    if (ea?.status === 'transferable') {
+      router.replace(`/auth/sign-up?redirect_url=${encodeURIComponent(postAuthUrl)}`);
+      return;
+    }
+
+    // Provider returned an error
+    if (ea?.status === 'unverified' && ea?.error) {
+      setError(ea.error.longMessage || ea.error.message || 'OAuth verification failed');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, signIn?.status, signIn?.firstFactorVerification?.status]);
+
   // Helper to get redirect URL based on user's companies
   const getRedirectUrl = () => {
     if (!user || !user.companies || user.companies.length === 0) {
@@ -49,13 +78,18 @@ export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) 
   const signInWith = (strategy: 'oauth_google') => {
     if (!isLoaded) return;
 
+    setError('');
     const callbackUrl = `${window.location.origin}/sso-callback`;
 
-    return signIn.authenticateWithRedirect({
-      strategy,
-      redirectUrl: callbackUrl,
-      redirectUrlComplete: postAuthUrl,
-    });
+    return signIn
+      .authenticateWithRedirect({
+        strategy,
+        redirectUrl: callbackUrl,
+        redirectUrlComplete: postAuthUrl,
+      })
+      .catch((err: any) => {
+        setError(err?.errors?.[0]?.longMessage || err?.message || 'Could not start Google sign-in');
+      });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
