@@ -16,12 +16,12 @@ const poppins = Poppins({
 const SITE_URL = 'https://floventry.online';
 const SITE_NAME = 'Floventry';
 const DESCRIPTION =
-  'Floventry — Smart inventory management built for Indian businesses. Track stock across warehouses, scan barcodes, manage suppliers, and streamline operations from one dashboard.';
+  'Floventry: Smart inventory management built for Indian businesses. Track stock across warehouses, scan barcodes, manage suppliers, and streamline operations from one dashboard.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — Smart Inventory Management`,
+    default: `${SITE_NAME} — Inventory, Done Right.`,
     template: `%s | ${SITE_NAME}`,
   },
   description: DESCRIPTION,
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
   // Twitter / X card
   twitter: {
     card: 'summary_large_image',
-    title: `${SITE_NAME} — Smart Inventory Management`,
+    title: `${SITE_NAME} — Inventory, Simplified`,
     description: DESCRIPTION,
     images: ['/opengraph-image'],
   },

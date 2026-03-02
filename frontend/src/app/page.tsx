@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import LandingPage from '@/components/landing/LandingPage';
 
 export const metadata: Metadata = {
-  title: 'Floventry — Smart Inventory Management for Growing Businesses',
+  title: 'Floventry: Inventory, Done Right.',
   description:
     'Track stock across warehouses, scan barcodes, manage suppliers, handle purchase orders, and streamline your entire inventory workflow — built for Indian businesses.',
   openGraph: {
-    title: 'Floventry — Smart Inventory Management',
+    title: 'Floventry: Inventory, Done Right.',
     description: 'Track stock, scan barcodes, manage warehouses and suppliers from one dashboard.',
     url: 'https://floventry.online',
   },

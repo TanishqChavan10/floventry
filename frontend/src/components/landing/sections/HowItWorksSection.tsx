@@ -1,57 +1,61 @@
 import { Zap, Box, BarChart3 } from 'lucide-react';
 
+const steps = [
+  {
+    step: '01',
+    title: 'Connect',
+    desc: 'Import your existing inventory via CSV and set up your warehouses in minutes.',
+    icon: Zap,
+  },
+  {
+    step: '02',
+    title: 'Automate',
+    desc: 'Define low-stock thresholds, preferred suppliers, and purchase order workflows.',
+    icon: Box,
+  },
+  {
+    step: '03',
+    title: 'Optimize',
+    desc: 'Get insights on stock movement, dead stock, expiry risk, and profit margins.',
+    icon: BarChart3,
+  },
+];
+
 export default function HowItWorksSection() {
   return (
-    <section
-      id="how-it-works"
-      className="py-24 bg-slate-50 border-y border-slate-200 dark:bg-slate-900 dark:border-slate-700"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-slate-900 mb-4 dark:text-white">
+    <section id="how-it-works" className="py-24 bg-white">
+      <div className="mx-auto max-w-[1200px] px-6">
+        {/* Heading */}
+        <div className="text-center mb-20">
+          <h2 className="text-3xl font-semibold tracking-tight text-neutral-900 md:text-4xl">
             Simple setup. Powerful results.
           </h2>
-          <p className="text-slate-500 dark:text-slate-400">
+          <p className="mt-4 text-lg text-neutral-600">
             Get up and running in less than 15 minutes.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
-          {/* Connecting Line (Desktop) */}
-          <div className="hidden md:block absolute top-12 left-[16%] right-[16%] h-0.5 bg-slate-200 z-0 dark:bg-slate-700"></div>
+        {/* Steps */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+          {/* Connecting line — desktop */}
+          <div className="hidden md:block absolute top-[52px] left-[calc(16.66%+32px)] right-[calc(16.66%+32px)] h-px bg-neutral-200 z-0" />
 
-          {[
-            {
-              step: '01',
-              title: 'Connect',
-              desc: 'Import your data via CSV or sync with your existing eCommerce store in minutes.',
-              icon: <Zap className="h-6 w-6 text-indigo-600" />,
-            },
-            {
-              step: '02',
-              title: 'Automate',
-              desc: 'Define low-stock thresholds, preferred suppliers, and approval workflows.',
-              icon: <Box className="h-6 w-6 text-indigo-600" />,
-            },
-            {
-              step: '03',
-              title: 'Optimize',
-              desc: 'Get insights on best-selling items, dead stock, and profit margins.',
-              icon: <BarChart3 className="h-6 w-6 text-indigo-600" />,
-            },
-          ].map((item, i) => (
-            <div key={i} className="relative z-10 flex flex-col items-center text-center">
-              <div className="w-24 h-24 bg-white rounded-full border border-slate-200 flex items-center justify-center shadow-sm mb-6 dark:bg-slate-800 dark:border-slate-700">
-                <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center dark:bg-indigo-900">
-                  {item.icon}
+          {steps.map(({ step, title, desc, icon: Icon }, i) => (
+            <div key={i} className="relative z-10 flex flex-col items-center text-center px-4">
+              {/* Icon circle */}
+              <div className="flex h-[104px] w-[104px] items-center justify-center rounded-full border border-neutral-200 bg-white shadow-sm mb-8">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#E53935]/8 border border-[#E53935]/20">
+                  <Icon className="h-7 w-7 text-[#E53935]" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3 dark:text-white">
-                {item.title}
-              </h3>
-              <p className="text-slate-500 leading-relaxed max-w-xs dark:text-slate-400">
-                {item.desc}
-              </p>
+
+              {/* Step label */}
+              <span className="mb-2 text-xs font-bold uppercase tracking-widest text-neutral-400">
+                Step {step}
+              </span>
+
+              <h3 className="text-xl font-semibold text-neutral-900 mb-3">{title}</h3>
+              <p className="text-sm leading-relaxed text-neutral-600 max-w-xs">{desc}</p>
             </div>
           ))}
         </div>

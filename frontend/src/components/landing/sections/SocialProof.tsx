@@ -1,22 +1,30 @@
+const brands = [
+  'Acme Retail',
+  'Nexus Warehousing',
+  'Urban Hub',
+  'TechDistro',
+  'GreenLeaf Foods',
+  'BoltParts',
+  'Skyline Traders',
+];
+
 export default function SocialProof() {
   return (
-    <section className="py-12 border-y border-slate-100 bg-slate-50/50 dark:border-slate-700 dark:bg-slate-900/50">
-      <div className="max-w-7xl mx-auto px-4 text-center">
-        <p className="text-sm font-medium text-slate-500 mb-8 dark:text-slate-400">
-          POWERING OPERATIONS FOR 500+ MODERN RETAILERS
+    <section className="border-y border-neutral-200 bg-neutral-50 py-14">
+      <div className="mx-auto max-w-[1200px] px-6 text-center">
+        <p className="text-base font-semibold text-neutral-900 md:text-lg">
+          Over 500 Indian businesses trust Floventry to track their inventory.
         </p>
-        <div className="flex flex-wrap justify-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-          {['Acme Retail', 'Nexus Warehousing', 'Urban Outfitters', 'TechDistro', 'GreenLeaf'].map(
-            (brand) => (
-              <span
-                key={brand}
-                className="text-xl font-bold text-slate-400 flex items-center gap-2 dark:text-slate-500"
-              >
-                <div className="w-6 h-6 bg-slate-300 rounded-full dark:bg-slate-600"></div>
-                {brand}
-              </span>
-            ),
-          )}
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-10 gap-y-6 md:gap-x-16">
+          {brands.map((brand) => (
+            <span
+              key={brand}
+              className="flex items-center gap-2 text-sm font-semibold tracking-wide text-neutral-400"
+            >
+              <span className="inline-block h-4 w-4 rounded-full bg-neutral-300" />
+              {brand}
+            </span>
+          ))}
         </div>
       </div>
     </section>

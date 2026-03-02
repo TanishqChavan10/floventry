@@ -5,8 +5,8 @@ export default function HeroSection() {
   return (
     <section className="py-16">
       <div className="mx-auto max-w-[1200px] px-6">
-        <div className="grid grid-cols-1 gap-16 lg:grid-cols-2 lg:items-center">
-          <div className="flex flex-col justify-center">
+        <div className="grid grid-cols-1 gap-16 lg:grid-cols-2 lg:items-start">
+          <div className="flex flex-col">
             <p className="text-sm font-semibold uppercase tracking-wide text-neutral-600">
               Inventory, purchasing, receiving — in one place
             </p>
@@ -48,7 +48,6 @@ export default function HeroSection() {
                 See features
               </Link>
             </div>
-            <p className="mt-4 text-sm text-neutral-600">No credit card required.</p>
           </div>
 
           <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-6">

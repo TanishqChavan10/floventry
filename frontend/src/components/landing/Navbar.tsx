@@ -21,6 +21,16 @@ interface NavbarProps {
 export default function Navbar({ isMenuOpen, setIsMenuOpen }: NavbarProps) {
   const [isFeaturesOpen, setIsFeaturesOpen] = React.useState(false);
   const featuresMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const closeTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openFeatures = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setIsFeaturesOpen(true);
+  };
+
+  const scheduleClose = () => {
+    closeTimer.current = setTimeout(() => setIsFeaturesOpen(false), 200);
+  };
 
   React.useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -55,28 +65,16 @@ export default function Navbar({ isMenuOpen, setIsMenuOpen }: NavbarProps) {
           <div
             ref={featuresMenuRef}
             className="relative"
-            onMouseEnter={() => setIsFeaturesOpen(true)}
-            onMouseLeave={() => setIsFeaturesOpen(false)}
-            onFocusCapture={() => setIsFeaturesOpen(true)}
-            onBlurCapture={() => {
-              // Close only if focus moves outside the dropdown container
-              setTimeout(() => {
-                const active = document.activeElement;
-                if (
-                  active &&
-                  featuresMenuRef.current &&
-                  !featuresMenuRef.current.contains(active)
-                ) {
-                  setIsFeaturesOpen(false);
-                }
-              }, 0);
-            }}
+            onMouseEnter={openFeatures}
+            onMouseLeave={scheduleClose}
+            onFocusCapture={openFeatures}
+            onBlurCapture={scheduleClose}
           >
             <button
               type="button"
               aria-haspopup="menu"
               aria-expanded={isFeaturesOpen}
-              onClick={() => setIsFeaturesOpen(true)}
+              onClick={openFeatures}
               className={
                 'inline-flex items-center gap-1 rounded-full px-4 py-2 text-sm font-medium hover:text-neutral-900 ' +
                 (isFeaturesOpen
@@ -96,6 +94,8 @@ export default function Navbar({ isMenuOpen, setIsMenuOpen }: NavbarProps) {
               <div
                 role="menu"
                 aria-label="Features"
+                onMouseEnter={openFeatures}
+                onMouseLeave={scheduleClose}
                 className="fixed left-0 right-0 top-[95px] -mt-2 border-y border-neutral-200 bg-white pt-2"
               >
                 <div className="mx-auto grid max-w-[1200px] grid-cols-12 gap-8 px-6 py-10">
@@ -174,16 +174,6 @@ export default function Navbar({ isMenuOpen, setIsMenuOpen }: NavbarProps) {
                         </Link>
                       ))}
                     </div>
-
-                    <div className="mt-10">
-                      <Link
-                        href="#features"
-                        onClick={() => setIsFeaturesOpen(false)}
-                        className="inline-flex h-10 items-center justify-center rounded-full border border-neutral-300 bg-white px-5 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
-                      >
-                        View all features
-                      </Link>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -191,7 +181,7 @@ export default function Navbar({ isMenuOpen, setIsMenuOpen }: NavbarProps) {
           </div>
 
           <Link
-            href="#pricing"
+            href="/pricing"
             className="inline-flex items-center gap-1 rounded-full px-4 py-2 text-sm font-medium text-neutral-700 hover:text-neutral-900"
           >
             Pricing

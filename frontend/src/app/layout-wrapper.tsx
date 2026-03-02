@@ -234,6 +234,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     !pathname?.startsWith('/onboarding') &&
     !pathname?.startsWith('/invite') &&
     !pathname?.startsWith('/notifications') &&
+    !pathname?.startsWith('/pricing') &&
     pathname !== '/';
 
   return (
