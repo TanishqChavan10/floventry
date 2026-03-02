@@ -108,10 +108,10 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
                     roles: ['OWNER', 'ADMIN', 'MANAGER'],
                 },
                 {
-                    label: 'Inventory Reports',
-                    href: `${basePath}/inventory/reports`,
+                    label: 'Reports',
+                    href: `${basePath}/reports`,
                     icon: IconClipboardList,
-                    roles: ['OWNER', 'ADMIN'], // Only Owner/Admin for Company level
+                    roles: ['OWNER', 'ADMIN', 'MANAGER'], // Only Owner/Admin/Manager for Company level
                 },
             ],
         },

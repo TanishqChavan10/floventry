@@ -1,27 +1,81 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import React from 'react';
+import {
+  BarChart3,
+  TrendingUp,
+  ShieldCheck,
+  SlidersHorizontal,
+  ShoppingCart,
+  Package,
+} from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import CompanyGuard from '@/components/CompanyGuard';
+import { OverviewReport } from '@/components/reports/OverviewReport';
+import { InventoryMovementsReport } from '@/components/reports/InventoryMovementsReport';
+import { StockHealthReport } from '@/components/reports/StockHealthReport';
+import { AdjustmentsReport } from '@/components/reports/AdjustmentsReport';
+import { PurchaseOrdersReport } from '@/components/reports/PurchaseOrdersReport';
+import { SalesOrdersReport } from '@/components/reports/SalesOrdersReport';
 
-/**
- * Legacy reports hub - redirects to new inventory reports
- * This page is deprecated as of Phase 4 (Reports Redesign)
- */
-export default function ReportsRedirect() {
-  const params = useParams();
-  const router = useRouter();
-  
-  useEffect(() => {
-    // Redirect to new inventory reports page
-    router.replace(`/${params.slug}/inventory/reports`);
-  }, [params.slug, router]);
-  
+const TABS = [
+  { id: 'overview', label: 'Overview', icon: BarChart3 },
+  { id: 'inventory', label: 'Movements', icon: TrendingUp },
+  { id: 'health', label: 'Stock Health', icon: ShieldCheck },
+  { id: 'adjustments', label: 'Adjustments', icon: SlidersHorizontal },
+  { id: 'purchase', label: 'Purchase Orders', icon: ShoppingCart },
+  { id: 'sales', label: 'Sales Orders', icon: Package },
+] as const;
+
+function ReportsHub() {
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
-        <p className="text-sm text-muted-foreground">Redirecting to reports...</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <main className="container mx-auto px-6 py-8 space-y-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Reports</h1>
+          <p className="text-sm text-muted-foreground">
+            Insights across inventory, orders, and operations
+          </p>
+        </div>
+
+        <Tabs defaultValue="overview">
+          <TabsList className="mb-4">
+            {TABS.map(({ id, label, icon: Icon }) => (
+              <TabsTrigger key={id} value={id} className="gap-1.5">
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          <TabsContent value="overview">
+            <OverviewReport />
+          </TabsContent>
+          <TabsContent value="inventory">
+            <InventoryMovementsReport />
+          </TabsContent>
+          <TabsContent value="health">
+            <StockHealthReport />
+          </TabsContent>
+          <TabsContent value="adjustments">
+            <AdjustmentsReport />
+          </TabsContent>
+          <TabsContent value="purchase">
+            <PurchaseOrdersReport />
+          </TabsContent>
+          <TabsContent value="sales">
+            <SalesOrdersReport />
+          </TabsContent>
+        </Tabs>
+      </main>
     </div>
+  );
+}
+
+export default function ReportsPage() {
+  return (
+    <CompanyGuard>
+      <ReportsHub />
+    </CompanyGuard>
   );
 }

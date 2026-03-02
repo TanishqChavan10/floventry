@@ -19,7 +19,7 @@ export default function CTASection() {
             Start free trial
           </Link>
           <Link
-            href="#pricing"
+            href="/pricing"
             className="inline-flex h-12 items-center justify-center rounded-full border border-neutral-300 bg-white px-7 text-base font-semibold text-neutral-900 hover:bg-neutral-50"
           >
             See all plans
