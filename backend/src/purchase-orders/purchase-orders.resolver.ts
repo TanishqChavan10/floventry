@@ -12,6 +12,8 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { CursorPaginationInput } from '../common/dto/pagination.types';
+import { PurchaseOrderConnection } from '../common/dto/connections';
 
 @Resolver(() => PurchaseOrder)
 @UseGuards(AuthGuard, RolesGuard)
@@ -31,6 +33,23 @@ export class PurchaseOrdersResolver {
     return this.purchaseOrdersService.getPurchaseOrders(
       filters,
       user.activeCompanyId,
+    );
+  }
+
+  @Query(() => PurchaseOrderConnection, { name: 'purchaseOrdersConnection' })
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
+  async getPurchaseOrdersConnection(
+    @Args('input', { type: () => CursorPaginationInput, nullable: true })
+    input: CursorPaginationInput,
+    @CurrentUser() user: any,
+  ) {
+    if (!user.activeCompanyId) {
+      throw new BadRequestException('Active company required');
+    }
+
+    return this.purchaseOrdersService.getPurchaseOrdersConnection(
+      user.activeCompanyId,
+      input,
     );
   }
 

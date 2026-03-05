@@ -27,6 +27,7 @@ import { CompanyDashboardModule } from './company-dashboard/company-dashboard.mo
 import { ExpiryScannerModule } from './expiry-scanner/expiry-scanner.module';
 import { AuditModule } from './audit/audit.module';
 import { GlobalSearchModule } from './search/global-search.module';
+import { PubSubModule } from './common/pubsub/pubsub.module';
 
 @Module({
   imports: [
@@ -40,6 +41,11 @@ import { GlobalSearchModule } from './search/global-search.module';
       sortSchema: true,
       playground: true,
       path: '/api/graphql',
+      subscriptions: {
+        'graphql-ws': {
+          path: '/api/graphql',
+        },
+      },
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -82,6 +88,7 @@ import { GlobalSearchModule } from './search/global-search.module';
     AuditModule, // Company audit logs
     RoleModule,
     GlobalSearchModule,
+    PubSubModule,
   ],
   controllers: [AppController],
   providers: [AppService],

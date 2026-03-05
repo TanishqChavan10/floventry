@@ -10,7 +10,8 @@ import {
   AuditLogResponse,
   AuditLogFilterInput,
 } from './dto/audit-log.dto';
-import { PaginationInput } from '../common/dto/pagination.types';
+import { PaginationInput, CursorPaginationInput } from '../common/dto/pagination.types';
+import { AuditLogConnection } from '../common/dto/connections';
 
 @Resolver()
 export class AuditLogResolver {
@@ -37,5 +38,24 @@ export class AuditLogResolver {
     }
 
     return this.auditLogService.findAll(companyId, filters, pagination);
+  }
+
+  @Query(() => AuditLogConnection, { name: 'auditLogsConnection' })
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.OWNER, Role.ADMIN)
+  async auditLogsConnection(
+    @Args('filters', { type: () => AuditLogFilterInput, nullable: true })
+    filters: AuditLogFilterInput,
+    @Args('input', { type: () => CursorPaginationInput, nullable: true })
+    input: CursorPaginationInput,
+    @CurrentUser() user: any,
+  ) {
+    const companyId = user?.activeCompanyId;
+
+    if (!companyId) {
+      throw new Error('Active company required');
+    }
+
+    return this.auditLogService.findAllConnection(companyId, filters, input);
   }
 }

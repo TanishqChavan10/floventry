@@ -52,7 +52,8 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
 import { Supplier } from '../supplier/supplier.entity';
-import { PaginationInput, PageInfo } from '../common/dto/pagination.types';
+import { PaginationInput, PageInfo, CursorPaginationInput } from '../common/dto/pagination.types';
+import { ProductConnection, StockMovementConnection } from '../common/dto/connections';
 import { ObjectType, Field } from '@nestjs/graphql';
 import { StockLotLoader } from './stock-lot/stock-lot.loader';
 
@@ -152,6 +153,19 @@ export class ProductResolver {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
     return this.inventoryService.findAllProductsPaginated(
+      user.activeCompanyId,
+      pagination,
+    );
+  }
+
+  @Query(() => ProductConnection, { name: 'productsConnection' })
+  async findProductsConnection(
+    @Args('pagination', { nullable: true }) pagination: CursorPaginationInput,
+    @CurrentUser() user: any,
+  ) {
+    if (!user.activeCompanyId)
+      throw new BadRequestException('Active company required');
+    return this.inventoryService.findProductsConnection(
       user.activeCompanyId,
       pagination,
     );
@@ -477,6 +491,21 @@ export class StockResolver {
     return this.inventoryService.getStockMovements(
       filters,
       user.activeCompanyId,
+    );
+  }
+
+  @Query(() => StockMovementConnection, { name: 'stockMovementsConnection' })
+  @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER, Role.STAFF)
+  async getStockMovementsConnection(
+    @Args('input', { type: () => CursorPaginationInput, nullable: true })
+    input: CursorPaginationInput,
+    @CurrentUser() user: any,
+  ) {
+    if (!user.activeCompanyId)
+      throw new BadRequestException('Active company required');
+    return this.inventoryService.getStockMovementsConnection(
+      user.activeCompanyId,
+      input,
     );
   }
 

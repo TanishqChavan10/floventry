@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, Repository } from 'typeorm';
+import { PubSub } from 'graphql-subscriptions';
 import {
   Notification,
   NotificationType,
@@ -9,6 +10,8 @@ import {
 import { UserCompany } from '../user-company/user-company.entity';
 import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
 import { Role } from '../auth/enums/role.enum';
+import { CursorPaginationInput, encodeCursor, decodeCursor } from '../common/dto/pagination.types';
+import { PUB_SUB } from '../common/pubsub/pubsub.module';
 
 @Injectable()
 export class NotificationsService {
@@ -19,6 +22,7 @@ export class NotificationsService {
     private userCompanyRepository: Repository<UserCompany>,
     @InjectRepository(UserWarehouse)
     private userWarehouseRepository: Repository<UserWarehouse>,
+    @Inject(PUB_SUB) private pubSub: PubSub,
   ) {}
 
   /**
@@ -92,7 +96,16 @@ export class NotificationsService {
       }),
     );
 
-    return this.notificationRepository.save(notifications);
+    const saved = await this.notificationRepository.save(notifications);
+
+    // Publish each notification to its user's subscription channel
+    for (const notification of saved) {
+      this.pubSub.publish(`notificationCreated:${notification.user_id}`, {
+        notificationCreated: notification,
+      });
+    }
+
+    return saved;
   }
 
   /**
@@ -109,6 +122,32 @@ export class NotificationsService {
       take: limit,
       skip: offset,
     });
+  }
+
+  async getForUserConnection(userId: string, input?: CursorPaginationInput) {
+    const first = Math.min(input?.first || 20, 100);
+    const offset = input?.after ? decodeCursor(input.after) + 1 : 0;
+
+    const [items, totalCount] = await this.notificationRepository.findAndCount({
+      where: { user_id: userId },
+      order: { created_at: 'DESC' },
+      take: first,
+      skip: offset,
+    });
+
+    const edges = items.map((node, i) => ({
+      node,
+      cursor: encodeCursor(offset + i),
+    }));
+
+    return {
+      edges,
+      pageInfo: {
+        hasNextPage: offset + items.length < totalCount,
+        endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null,
+        totalCount,
+      },
+    };
   }
 
   /**

@@ -3,6 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CompanyAuditLog } from './entities/company-audit-log.entity';
 import { AuditAction, AuditEntityType } from './enums/audit.enums';
+import {
+  CursorPaginationInput,
+  encodeCursor,
+  decodeCursor,
+} from '../common/dto/pagination.types';
 
 export interface RecordAuditLogInput {
   companyId: string;
@@ -153,6 +158,75 @@ export class AuditLogService {
         limit,
         hasNextPage: skip + items.length < total,
         hasPreviousPage: page > 1,
+      },
+    };
+  }
+
+  /**
+   * Query audit logs with cursor-based pagination (relay-style)
+   */
+  async findAllConnection(
+    companyId: string,
+    filters?: AuditLogFilters,
+    input?: CursorPaginationInput,
+  ) {
+    const first = Math.min(input?.first || 20, 100);
+    const offset = input?.after ? decodeCursor(input.after) + 1 : 0;
+
+    const queryBuilder = this.auditLogRepository
+      .createQueryBuilder('audit')
+      .where('audit.company_id = :companyId', { companyId })
+      .leftJoinAndSelect('audit.actor', 'user');
+
+    if (filters?.action) {
+      queryBuilder.andWhere('audit.action = :action', {
+        action: filters.action,
+      });
+    }
+
+    if (filters?.entityType) {
+      queryBuilder.andWhere('audit.entity_type = :entityType', {
+        entityType: filters.entityType,
+      });
+    }
+
+    if (filters?.actorUserId) {
+      queryBuilder.andWhere('audit.actor_user_id = :actorUserId', {
+        actorUserId: filters.actorUserId,
+      });
+    }
+
+    if (filters?.dateFrom) {
+      queryBuilder.andWhere('audit.created_at >= :dateFrom', {
+        dateFrom: filters.dateFrom,
+      });
+    }
+
+    if (filters?.dateTo) {
+      queryBuilder.andWhere('audit.created_at <= :dateTo', {
+        dateTo: filters.dateTo,
+      });
+    }
+
+    queryBuilder.orderBy('audit.created_at', 'DESC');
+
+    const totalCount = await queryBuilder.getCount();
+
+    queryBuilder.skip(offset).take(first);
+
+    const items = await queryBuilder.getMany();
+
+    const edges = items.map((node, i) => ({
+      node,
+      cursor: encodeCursor(offset + i),
+    }));
+
+    return {
+      edges,
+      pageInfo: {
+        hasNextPage: offset + items.length < totalCount,
+        endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null,
+        totalCount,
       },
     };
   }

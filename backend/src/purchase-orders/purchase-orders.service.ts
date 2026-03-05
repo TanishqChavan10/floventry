@@ -17,6 +17,11 @@ import {
   UpdatePurchaseOrderInput,
   PurchaseOrderFilterInput,
 } from './dto/purchase-order.input';
+import {
+  CursorPaginationInput,
+  encodeCursor,
+  decodeCursor,
+} from '../common/dto/pagination.types';
 
 @Injectable()
 export class PurchaseOrdersService {
@@ -75,6 +80,42 @@ export class PurchaseOrdersService {
       take: filters.limit || 50,
       skip: filters.offset || 0,
     });
+  }
+
+  /**
+   * Get purchase orders with cursor-based pagination (relay-style)
+   */
+  async getPurchaseOrdersConnection(
+    companyId: string,
+    input?: CursorPaginationInput,
+  ) {
+    const first = Math.min(input?.first || 20, 100);
+    const offset = input?.after ? decodeCursor(input.after) + 1 : 0;
+
+    const where: any = { company_id: companyId };
+
+    const [items, totalCount] =
+      await this.purchaseOrderRepository.findAndCount({
+        where,
+        relations: ['warehouse', 'supplier', 'user', 'items', 'items.product'],
+        order: { created_at: 'DESC' },
+        take: first,
+        skip: offset,
+      });
+
+    const edges = items.map((node, i) => ({
+      node,
+      cursor: encodeCursor(offset + i),
+    }));
+
+    return {
+      edges,
+      pageInfo: {
+        hasNextPage: offset + items.length < totalCount,
+        endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null,
+        totalCount,
+      },
+    };
   }
 
   /**

@@ -86,7 +86,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { BarcodeHistory, BarcodeHistoryChangeType } from './barcode/entities/barcode-history.entity';
 import { ProductBarcodeUnit, ProductBarcodeUnitType } from './barcode/entities/product-barcode-unit.entity';
 import { UpsertProductBarcodeUnitInput } from './barcode/dto/product-barcode-unit.input';
-import { PaginationInput, PageInfo } from '../common/dto/pagination.types';
+import { PaginationInput, PageInfo, CursorPaginationInput, encodeCursor, decodeCursor } from '../common/dto/pagination.types';
 import { ILike } from 'typeorm';
 
 @Injectable()
@@ -357,6 +357,41 @@ export class InventoryService {
         limit,
         hasNextPage: skip + items.length < total,
         hasPreviousPage: page > 1,
+      },
+    };
+  }
+
+  async findProductsConnection(
+    companyId: string,
+    input?: CursorPaginationInput,
+  ) {
+    const first = Math.min(input?.first || 20, 100);
+    const offset = input?.after ? decodeCursor(input.after) + 1 : 0;
+
+    const where: any = { company_id: companyId };
+    if (input?.search) {
+      where.name = ILike(`%${input.search}%`);
+    }
+
+    const [items, totalCount] = await this.productRepository.findAndCount({
+      where,
+      order: { created_at: 'DESC' },
+      relations: ['category', 'supplier'],
+      take: first,
+      skip: offset,
+    });
+
+    const edges = items.map((node, i) => ({
+      node,
+      cursor: encodeCursor(offset + i),
+    }));
+
+    return {
+      edges,
+      pageInfo: {
+        hasNextPage: offset + items.length < totalCount,
+        endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null,
+        totalCount,
       },
     };
   }
@@ -1186,6 +1221,43 @@ export class InventoryService {
       take: filters.limit || 50,
       skip: filters.offset || 0,
     });
+  }
+
+  /**
+   * Get stock movements with cursor-based pagination (relay-style)
+   */
+  async getStockMovementsConnection(
+    companyId: string,
+    input?: CursorPaginationInput,
+  ) {
+    const first = Math.min(input?.first || 20, 100);
+    const offset = input?.after ? decodeCursor(input.after) + 1 : 0;
+
+    const where: any = { company_id: companyId };
+
+    const [items, totalCount] = await this.stockMovementRepository.findAndCount(
+      {
+        where,
+        relations: ['product', 'warehouse', 'user', 'stock'],
+        order: { created_at: 'DESC' },
+        take: first,
+        skip: offset,
+      },
+    );
+
+    const edges = items.map((node, i) => ({
+      node,
+      cursor: encodeCursor(offset + i),
+    }));
+
+    return {
+      edges,
+      pageInfo: {
+        hasNextPage: offset + items.length < totalCount,
+        endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null,
+        totalCount,
+      },
+    };
   }
 
   // --- Low Stock & Stock Health ---
