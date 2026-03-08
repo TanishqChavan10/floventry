@@ -3,14 +3,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { useAuth } from '@/context/auth-context';
-import { useQuery, useMutation } from '@apollo/client';
 import { ProfileForm } from '@/components/profile/ProfileForm';
 import { CompanyInfo } from '@/components/profile/CompanyInfo';
 import { Preferences } from '@/components/profile/Preferences';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { GET_CURRENT_USER, UPDATE_PREFERENCES } from '@/lib/graphql/auth';
+import { useCurrentUser, useUpdatePreferences } from '@/hooks/apollo';
 
 const DEFAULT_PREFERENCES = {
   language: 'en',
@@ -36,11 +35,9 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const { run, isLoading } = useAsyncAction();
 
-  const { data: meData, loading: meLoading } = useQuery(GET_CURRENT_USER, {
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data: meData, loading: meLoading } = useCurrentUser();
 
-  const [updatePreferencesMutation] = useMutation(UPDATE_PREFERENCES);
+  const [updatePreferencesMutation] = useUpdatePreferences();
 
   const [formData, setFormData] = useState<ProfileFormData>({
     firstName: '',

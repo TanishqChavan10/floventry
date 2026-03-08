@@ -3,12 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useQuery, useMutation } from '@apollo/client';
-import {
-  GET_WAREHOUSES_BY_COMPANY,
-  GET_COMPANY_STATS,
-  REACTIVATE_WAREHOUSE,
-} from '@/lib/graphql/company';
+import { useWarehousesByCompany, useReactivateWarehouse } from '@/hooks/apollo';
+import { useCompanyStats } from '@/hooks/apollo';
 import { Loader2, RefreshCw, Archive } from 'lucide-react';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
@@ -44,10 +40,7 @@ function WarehousesContent() {
   const activeCompany = user?.companies?.find((c) => c.isActive) || user?.companies?.[0];
   const isOwner = activeCompany?.role === 'OWNER';
 
-  const { data, loading, error } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
-    variables: { slug: companySlug },
-    skip: !companySlug,
-  });
+  const { data, loading, error } = useWarehousesByCompany(companySlug);
 
   const warehouses = (data?.companyBySlug?.warehouses ?? []) as WarehouseSummary[];
   const companyId = data?.companyBySlug?.id;
@@ -55,9 +48,7 @@ function WarehousesContent() {
   // Filter warehouses by status
   const filteredWarehouses = warehouses.filter((w) => w.status === statusFilter);
 
-  const [reactivateWarehouse, { loading: reactivating }] = useMutation(REACTIVATE_WAREHOUSE, {
-    refetchQueries: [{ query: GET_WAREHOUSES_BY_COMPANY, variables: { slug: companySlug } }],
-  });
+  const [reactivateWarehouse, { loading: reactivating }] = useReactivateWarehouse();
 
   const handleReactivate = async (id: string, name: string) => {
     try {
@@ -69,10 +60,7 @@ function WarehousesContent() {
     }
   };
 
-  const { data: statsData, loading: statsLoading } = useQuery(GET_COMPANY_STATS, {
-    variables: { companyId },
-    skip: !companyId,
-  });
+  const { data: statsData, loading: statsLoading } = useCompanyStats(companyId ?? '');
 
   // Auto-redirect STAFF/MANAGER to their assigned warehouse
   useEffect(() => {

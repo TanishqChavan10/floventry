@@ -3,8 +3,7 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@apollo/client';
-import { CREATE_SUPPLIER, UPDATE_SUPPLIER, GET_SUPPLIERS } from '@/lib/graphql/catalog';
+import { useCreateSupplier, useUpdateSupplier } from '@/hooks/apollo';
 import { supplierSchema, type SupplierFormData } from '@/lib/validators/catalog';
 import {
   Dialog,
@@ -54,31 +53,9 @@ export function SupplierModal({ open, onOpenChange, supplier, onSuccess }: Suppl
     },
   });
 
-  const [createSupplier, { loading: creating }] = useMutation(CREATE_SUPPLIER, {
-    refetchQueries: [{ query: GET_SUPPLIERS }],
-    onCompleted: () => {
-      toast.success('Supplier created successfully');
-      onOpenChange(false);
-      reset();
-      onSuccess?.();
-    },
-    onError: (error) => {
-      toast.error(`Failed to create supplier: ${error.message}`);
-    },
-  });
+  const [createSupplier, { loading: creating }] = useCreateSupplier();
 
-  const [updateSupplier, { loading: updating }] = useMutation(UPDATE_SUPPLIER, {
-    refetchQueries: [{ query: GET_SUPPLIERS }],
-    onCompleted: () => {
-      toast.success('Supplier updated successfully');
-      onOpenChange(false);
-      reset();
-      onSuccess?.();
-    },
-    onError: (error) => {
-      toast.error(`Failed to update supplier: ${error.message}`);
-    },
-  });
+  const [updateSupplier, { loading: updating }] = useUpdateSupplier();
 
   // Update form when supplier changes
   useEffect(() => {
@@ -101,30 +78,39 @@ export function SupplierModal({ open, onOpenChange, supplier, onSuccess }: Suppl
     }
   }, [supplier, reset]);
 
-  const onSubmit = (data: SupplierFormData) => {
-    if (isEditing) {
-      updateSupplier({
-        variables: {
-          input: {
-            id: supplier.id,
-            name: data.name,
-            email: data.email || null,
-            phone: data.phone || null,
-            address: data.address || null,
+  const onSubmit = async (data: SupplierFormData) => {
+    try {
+      if (isEditing) {
+        await updateSupplier({
+          variables: {
+            input: {
+              id: supplier.id,
+              name: data.name,
+              email: data.email || null,
+              phone: data.phone || null,
+              address: data.address || null,
+            },
           },
-        },
-      });
-    } else {
-      createSupplier({
-        variables: {
-          input: {
-            name: data.name,
-            email: data.email || null,
-            phone: data.phone || null,
-            address: data.address || null,
+        });
+        toast.success('Supplier updated successfully');
+      } else {
+        await createSupplier({
+          variables: {
+            input: {
+              name: data.name,
+              email: data.email || null,
+              phone: data.phone || null,
+              address: data.address || null,
+            },
           },
-        },
-      });
+        });
+        toast.success('Supplier created successfully');
+      }
+      onOpenChange(false);
+      reset();
+      onSuccess?.();
+    } catch (error: any) {
+      toast.error(`Failed to ${isEditing ? 'update' : 'create'} supplier: ${error.message}`);
     }
   };
 

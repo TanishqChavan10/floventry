@@ -13,8 +13,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/auth-context';
-import { useMutation, useApolloClient } from '@apollo/client';
-import { SWITCH_COMPANY } from '@/lib/graphql/company';
+import { useApolloClient } from '@apollo/client';
+import { useSwitchCompany } from '@/hooks/apollo';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
@@ -22,7 +22,7 @@ export default function CompanySwitcher() {
   const { user } = useAuth();
   const router = useRouter();
   const apolloClient = useApolloClient();
-  const [switchCompany] = useMutation(SWITCH_COMPANY);
+  const [switchCompany] = useSwitchCompany();
 
   const activeCompany = user?.companies?.find((c) => c.isActive) || user?.companies?.[0];
 
@@ -35,8 +35,10 @@ export default function CompanySwitcher() {
       const { data } = await switchCompany({ variables: { companyId } });
 
       if (data?.switchCompany?.success) {
-        // Clear Apollo cache so all queries refetch fresh data for the new company
-        await apolloClient.clearStore();
+        // Full tenant-safe cache reset: clears in-memory + persisted cache, then refetches active queries
+        const { clearPersistedCache: clearPersisted } = await import('@/lib/apollo/client');
+        clearPersisted();
+        await apolloClient.resetStore();
         toast.success(`Switched to ${targetCompany?.name || 'company'}`);
         // Hard-navigate to the new company's dashboard so [slug] param changes
         router.push(`/${targetCompany?.slug}`);

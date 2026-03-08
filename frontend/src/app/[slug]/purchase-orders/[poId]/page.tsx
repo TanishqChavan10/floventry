@@ -2,7 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation } from '@apollo/client';
+import {
+  usePurchaseOrder,
+  useUpdatePurchaseOrder,
+  useMarkPurchaseOrderOrdered,
+  useCancelPurchaseOrder,
+  useGRNs,
+  useSuppliers,
+  useWarehouseStock,
+} from '@/hooks/apollo';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { Button } from '@/components/ui/button';
@@ -45,16 +53,6 @@ import {
   AlertCircle,
   Eye,
 } from 'lucide-react';
-import {
-  GET_PURCHASE_ORDER,
-  MARK_PURCHASE_ORDER_ORDERED,
-  CANCEL_PURCHASE_ORDER,
-  UPDATE_PURCHASE_ORDER,
-  GET_PURCHASE_ORDERS,
-} from '@/lib/graphql/purchase-orders';
-import { GET_GRNS } from '@/lib/graphql/grn';
-import { GET_SUPPLIERS } from '@/lib/graphql/catalog';
-import { GET_STOCK_BY_WAREHOUSE } from '@/lib/graphql/stock';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import {
@@ -96,14 +94,11 @@ function GRNSection({
   const router = useRouter();
 
   // Fetch GRNs for this PO
-  const { data: grnsData, loading: grnsLoading } = useQuery(GET_GRNS, {
-    variables: {
-      filters: {
-        purchase_order_id: poId,
-        limit: 50,
-      },
+  const { data: grnsData, loading: grnsLoading } = useGRNs({
+    filters: {
+      purchase_order_id: poId,
+      limit: 50,
     },
-    fetchPolicy: 'cache-and-network',
   });
 
   const grns = grnsData?.grns || [];
@@ -239,43 +234,19 @@ function PurchaseOrderDetailContent() {
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
   // Fetch PO details
-  const { data, loading, error } = useQuery(GET_PURCHASE_ORDER, {
-    variables: { id: poId },
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data, loading, error } = usePurchaseOrder(poId);
 
   // Fetch suppliers for edit mode
-  const { data: suppliersData } = useQuery(GET_SUPPLIERS, {
-    variables: { includeArchived: false },
-    skip: !isEditing,
-  });
+  const { data: suppliersData } = useSuppliers({ includeArchived: false });
 
   // Fetch stock for current stock context
-  const { data: stockData } = useQuery(GET_STOCK_BY_WAREHOUSE, {
-    variables: { warehouseId: data?.purchaseOrder?.warehouse?.id || '' },
-    skip: !data?.purchaseOrder?.warehouse?.id,
-  });
+  const { data: stockData } = useWarehouseStock(data?.purchaseOrder?.warehouse?.id || '');
 
-  const [markOrdered, { loading: orderingLoading }] = useMutation(MARK_PURCHASE_ORDER_ORDERED, {
-    refetchQueries: [
-      { query: GET_PURCHASE_ORDER, variables: { id: poId } },
-      { query: GET_PURCHASE_ORDERS, variables: { filters: { limit: 100 } } },
-    ],
-  });
+  const [markOrdered, { loading: orderingLoading }] = useMarkPurchaseOrderOrdered();
 
-  const [cancelPO, { loading: cancellingLoading }] = useMutation(CANCEL_PURCHASE_ORDER, {
-    refetchQueries: [
-      { query: GET_PURCHASE_ORDER, variables: { id: poId } },
-      { query: GET_PURCHASE_ORDERS, variables: { filters: { limit: 100 } } },
-    ],
-  });
+  const [cancelPO, { loading: cancellingLoading }] = useCancelPurchaseOrder();
 
-  const [updatePO, { loading: savingLoading }] = useMutation(UPDATE_PURCHASE_ORDER, {
-    refetchQueries: [
-      { query: GET_PURCHASE_ORDER, variables: { id: poId } },
-      { query: GET_PURCHASE_ORDERS, variables: { filters: { limit: 100 } } },
-    ],
-  });
+  const [updatePO, { loading: savingLoading }] = useUpdatePurchaseOrder();
 
   const po = data?.purchaseOrder;
   const suppliers = suppliersData?.suppliers || [];

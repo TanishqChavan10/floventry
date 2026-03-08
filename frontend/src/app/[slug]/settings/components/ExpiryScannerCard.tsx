@@ -1,10 +1,9 @@
 'use client';
 
 import React from 'react';
-import { useQuery, useMutation } from '@apollo/client';
 import { Loader2, Play, Clock, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import { GET_EXPIRY_SCAN_STATUS, TRIGGER_EXPIRY_SCAN } from '@/lib/graphql/expiry-scanner';
+import { useExpiryScanStatus, useTriggerExpiryScan } from '@/hooks/apollo';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,24 +33,9 @@ function timeAgo(dateStr?: string | null): string {
 }
 
 export function ExpiryScannerCard() {
-  const { data, loading, error, refetch } = useQuery(GET_EXPIRY_SCAN_STATUS, {
-    fetchPolicy: 'network-only',
-  });
+  const { data, loading, error, refetch } = useExpiryScanStatus();
 
-  const [triggerScan, { loading: scanning }] = useMutation(TRIGGER_EXPIRY_SCAN, {
-    onCompleted: (result) => {
-      const scan = result.triggerExpiryScan;
-      if (scan.success) {
-        toast.success(`Scan complete — ${scan.lotsScanned} lots checked`);
-      } else {
-        toast.error(scan.message);
-      }
-      refetch();
-    },
-    onError: (err) => {
-      toast.error('Scan failed: ' + err.message);
-    },
-  });
+  const [triggerScan, { loading: scanning }] = useTriggerExpiryScan();
 
   if (loading) {
     return (
@@ -162,7 +146,21 @@ export function ExpiryScannerCard() {
             size="sm"
             variant="outline"
             disabled={scanning || !status.enabled}
-            onClick={() => triggerScan()}
+            onClick={() =>
+              triggerScan()
+                .then((result) => {
+                  const scan = result.data?.triggerExpiryScan;
+                  if (scan?.success) {
+                    toast.success(`Scan complete — ${scan.lotsScanned} lots checked`);
+                  } else {
+                    toast.error(scan?.message ?? 'Scan failed');
+                  }
+                  refetch();
+                })
+                .catch((err) => {
+                  toast.error('Scan failed: ' + err.message);
+                })
+            }
           >
             {scanning ? (
               <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />

@@ -1,7 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
+import {
+  useProductsPaginated,
+  useCategories,
+  useSuppliers,
+  useDeleteProduct,
+  useUpdateProduct,
+  useGenerateBarcodeLabels,
+} from '@/hooks/apollo';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
 import CompanyGuard from '@/components/CompanyGuard';
@@ -60,13 +67,6 @@ import { saveAs } from 'file-saver';
 import { useAuth } from '@/context/auth-context';
 import { useRbac } from '@/hooks/use-rbac';
 import RoleGuard from '@/components/guards/role-guard';
-import {
-  GET_PRODUCTS_PAGINATED,
-  GET_CATEGORIES,
-  GET_SUPPLIERS,
-  DELETE_PRODUCT,
-  UPDATE_PRODUCT,
-} from '@/lib/graphql/catalog';
 import ProductModal from '@/components/catalog/ProductModal';
 import ProductDetailDrawer from '@/components/catalog/ProductDetailDrawer';
 import { BulkEntryModal } from '@/components/catalog/BulkEntryModal';
@@ -75,7 +75,6 @@ import {
   copyThermalLabelsZplToClipboard,
   downloadThermalLabelsZpl,
 } from '@/lib/api/thermal-labels';
-import { GENERATE_BARCODE_LABELS } from '@/lib/graphql/barcode';
 
 function CatalogProductsContent() {
   const { slug } = useParams();
@@ -106,53 +105,26 @@ function CatalogProductsContent() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const { data: productsData, loading, error, refetch } = useQuery(GET_PRODUCTS_PAGINATED, {
-    variables: {
-      pagination: {
-        page: currentPage,
-        limit: pageSize,
-        ...(debouncedSearch ? { search: debouncedSearch } : {}),
-      },
+  const {
+    data: productsData,
+    loading,
+    error,
+    refetch,
+  } = useProductsPaginated({
+    pagination: {
+      page: currentPage,
+      limit: pageSize,
+      ...(debouncedSearch ? { search: debouncedSearch } : {}),
     },
-  });
-  const { data: categoriesData } = useQuery(GET_CATEGORIES);
-  const { data: suppliersData } = useQuery(GET_SUPPLIERS);
+  } as any);
+  const { data: categoriesData } = useCategories();
+  const { data: suppliersData } = useSuppliers();
 
-  const [deleteProduct] = useMutation(DELETE_PRODUCT, {
-    onCompleted: () => {
-      toast({
-        title: 'Product archived',
-        description: 'Product has been archived successfully',
-      });
-      refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+  const [deleteProduct] = useDeleteProduct();
 
-  const [updateProduct] = useMutation(UPDATE_PRODUCT, {
-    onCompleted: () => {
-      toast({
-        title: 'Product unarchived',
-        description: 'Product has been restored successfully',
-      });
-      refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+  const [updateProduct] = useUpdateProduct();
 
-  const [generateBarcodeLabels] = useMutation(GENERATE_BARCODE_LABELS);
+  const [generateBarcodeLabels] = useGenerateBarcodeLabels();
 
   const handleDownloadBarcodeLabelPdf = async (product: any) => {
     if (!product?.id) return;
@@ -465,15 +437,23 @@ function CatalogProductsContent() {
     if (productToArchive) {
       try {
         await deleteProduct({ variables: { id: productToArchive.id } });
-      } catch {
-        // onError handles user-facing messaging
+        toast({
+          title: 'Product archived',
+          description: 'Product has been archived successfully',
+        });
+        refetch();
+      } catch (error: any) {
+        toast({
+          title: 'Error',
+          description: error.message,
+          variant: 'destructive',
+        });
       }
       setProductToArchive(null);
     }
   };
 
   const handleUnarchiveProduct = async (product: any) => {
-    // Backend updateProduct automatically sets is_active=true
     try {
       await updateProduct({
         variables: {
@@ -481,14 +461,23 @@ function CatalogProductsContent() {
             id: product.id,
             name: product.name,
             sku: product.sku,
-            unit: product.unit, // Unit is already a string ID in the product object
+            unit: product.unit,
             cost_price: product.cost_price,
             selling_price: product.selling_price,
           },
         },
       });
-    } catch {
-      // onError handles user-facing messaging
+      toast({
+        title: 'Product unarchived',
+        description: 'Product has been restored successfully',
+      });
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -961,7 +950,9 @@ function CatalogProductsContent() {
                 {pageInfo && (
                   <div className="flex items-center justify-between pt-4 border-t">
                     <p className="text-sm text-muted-foreground">
-                      Showing {((pageInfo.page - 1) * pageInfo.limit) + 1}–{Math.min(pageInfo.page * pageInfo.limit, pageInfo.total)} of {pageInfo.total} products
+                      Showing {(pageInfo.page - 1) * pageInfo.limit + 1}–
+                      {Math.min(pageInfo.page * pageInfo.limit, pageInfo.total)} of {pageInfo.total}{' '}
+                      products
                     </p>
                     <div className="flex items-center gap-2">
                       <Button

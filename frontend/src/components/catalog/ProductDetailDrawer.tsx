@@ -1,7 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useMutation, useQuery } from '@apollo/client';
+import {
+  useBarcodeHistory,
+  useProductBarcodeUnits,
+  useUpsertProductBarcodeUnit,
+  useRemoveProductBarcodeUnit,
+  useUpdateProduct,
+} from '@/hooks/apollo';
 import {
   Sheet,
   SheetContent,
@@ -27,13 +33,6 @@ import { Edit, Package, Tag, Building2, Ruler, IndianRupee } from 'lucide-react'
 import { CopyButton } from '@/components/common/CopyButton';
 import type { BarcodeLabelLayout } from '@/lib/graphql/barcode';
 import { toast } from 'sonner';
-import {
-  BARCODE_HISTORY,
-  PRODUCT_BARCODE_UNITS,
-  REMOVE_PRODUCT_BARCODE_UNIT,
-  UPSERT_PRODUCT_BARCODE_UNIT,
-} from '@/lib/graphql/barcode';
-import { UPDATE_PRODUCT } from '@/lib/graphql/catalog';
 
 interface ProductDetailDrawerProps {
   product: any;
@@ -73,11 +72,9 @@ export default function ProductDetailDrawer({
     return noWhitespace.toUpperCase();
   };
 
-  const { data: historyData, loading: historyLoading } = useQuery(BARCODE_HISTORY, {
-    variables: { productId: drawerProduct?.id },
-    skip: !open || !drawerProduct?.id,
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data: historyData, loading: historyLoading } = useBarcodeHistory(
+    open && drawerProduct?.id ? drawerProduct.id : '',
+  );
 
   const historyRows = (historyData?.barcodeHistory ?? []) as Array<any>;
 
@@ -85,11 +82,7 @@ export default function ProductDetailDrawer({
     data: unitsData,
     loading: unitsLoading,
     refetch: refetchUnits,
-  } = useQuery(PRODUCT_BARCODE_UNITS, {
-    variables: { productId: drawerProduct?.id },
-    skip: !open || !drawerProduct?.id,
-    fetchPolicy: 'cache-and-network',
-  });
+  } = useProductBarcodeUnits(open && drawerProduct?.id ? drawerProduct.id : '');
 
   const units = (unitsData?.productBarcodeUnits ?? []) as Array<any>;
 
@@ -100,31 +93,11 @@ export default function ProductDetailDrawer({
     is_primary: false,
   });
 
-  const [upsertUnit, { loading: savingUnit }] = useMutation(UPSERT_PRODUCT_BARCODE_UNIT, {
-    onCompleted: async () => {
-      setNewUnit({
-        barcode_value: '',
-        unit_type: 'PIECE',
-        quantity_multiplier: '1',
-        is_primary: false,
-      });
-      await refetchUnits();
-      toast.success('Packaging barcode saved');
-    },
-    onError: (e) => toast.error(e.message || 'Failed to save packaging barcode'),
-  });
+  const [upsertUnit, { loading: savingUnit }] = useUpsertProductBarcodeUnit();
 
-  const [removeUnit, { loading: removingUnit }] = useMutation(REMOVE_PRODUCT_BARCODE_UNIT, {
-    onCompleted: async () => {
-      await refetchUnits();
-      toast.success('Packaging barcode removed');
-    },
-    onError: (e) => toast.error(e.message || 'Failed to remove packaging barcode'),
-  });
+  const [removeUnit, { loading: removingUnit }] = useRemoveProductBarcodeUnit();
 
-  const [updateProduct, { loading: savingAlternates }] = useMutation(UPDATE_PRODUCT, {
-    onError: (e) => toast.error(e.message || 'Failed to save alternate barcodes'),
-  });
+  const [updateProduct, { loading: savingAlternates }] = useUpdateProduct();
 
   if (!product) return null;
 
@@ -165,8 +138,8 @@ export default function ProductDetailDrawer({
       } else {
         toast.success('Alternate barcodes saved');
       }
-    } catch {
-      // onError handles user-facing messaging
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save alternate barcodes');
     }
   };
 
@@ -505,7 +478,13 @@ export default function ProductDetailDrawer({
                         size="sm"
                         disabled={removingUnit}
                         onClick={async () => {
-                          await removeUnit({ variables: { id: u.id } });
+                          try {
+                            await removeUnit({ variables: { id: u.id } });
+                            await refetchUnits();
+                            toast.success('Packaging barcode removed');
+                          } catch (e: any) {
+                            toast.error(e.message || 'Failed to remove packaging barcode');
+                          }
                         }}
                       >
                         Remove
@@ -583,17 +562,29 @@ export default function ProductDetailDrawer({
                     Number(newUnit.quantity_multiplier) <= 0
                   }
                   onClick={async () => {
-                    await upsertUnit({
-                      variables: {
-                        input: {
-                          product_id: drawerProduct.id,
-                          barcode_value: newUnit.barcode_value,
-                          unit_type: newUnit.unit_type,
-                          quantity_multiplier: Number(newUnit.quantity_multiplier),
-                          is_primary: newUnit.is_primary,
+                    try {
+                      await upsertUnit({
+                        variables: {
+                          input: {
+                            product_id: drawerProduct.id,
+                            barcode_value: newUnit.barcode_value,
+                            unit_type: newUnit.unit_type,
+                            quantity_multiplier: Number(newUnit.quantity_multiplier),
+                            is_primary: newUnit.is_primary,
+                          },
                         },
-                      },
-                    });
+                      });
+                      setNewUnit({
+                        barcode_value: '',
+                        unit_type: 'PIECE',
+                        quantity_multiplier: '1',
+                        is_primary: false,
+                      });
+                      await refetchUnits();
+                      toast.success('Packaging barcode saved');
+                    } catch (e: any) {
+                      toast.error(e.message || 'Failed to save packaging barcode');
+                    }
                   }}
                 >
                   {savingUnit ? 'Saving…' : 'Add Packaging Barcode'}

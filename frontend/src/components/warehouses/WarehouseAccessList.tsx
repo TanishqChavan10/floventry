@@ -1,26 +1,13 @@
 'use client';
 
 import React from 'react';
-import { useQuery } from '@apollo/client';
-import { gql } from '@apollo/client';
+import { useWarehouseMembers } from '@/hooks/apollo';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ExternalLink } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { InviteUserDialog } from '@/components/settings/team/InviteUserDialog';
 import { useRbac } from '@/hooks/use-rbac';
-
-const GET_WAREHOUSE_MEMBERS = gql`
-  query GetWarehouseMembers($warehouseId: String!) {
-    warehouseMembers(warehouseId: $warehouseId) {
-      userId
-      email
-      fullName
-      role
-      isManager
-    }
-  }
-`;
 
 interface WarehouseMember {
   userId: string;
@@ -50,12 +37,14 @@ function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-export function WarehouseAccessList({ warehouseId, warehouseName, companySlug, companyId }: WarehouseAccessListProps) {
+export function WarehouseAccessList({
+  warehouseId,
+  warehouseName,
+  companySlug,
+  companyId,
+}: WarehouseAccessListProps) {
   const rbac = useRbac();
-  const { data, loading, error, refetch } = useQuery(GET_WAREHOUSE_MEMBERS, {
-    variables: { warehouseId },
-    skip: !warehouseId,
-  });
+  const { data, loading, error, refetch } = useWarehouseMembers(warehouseId);
 
   if (loading) {
     return (
@@ -66,11 +55,7 @@ export function WarehouseAccessList({ warehouseId, warehouseName, companySlug, c
   }
 
   if (error) {
-    return (
-      <p className="text-sm text-destructive">
-        Failed to load members: {error.message}
-      </p>
-    );
+    return <p className="text-sm text-destructive">Failed to load members: {error.message}</p>;
   }
 
   const members: WarehouseMember[] = data?.warehouseMembers || [];
@@ -83,11 +68,11 @@ export function WarehouseAccessList({ warehouseId, warehouseName, companySlug, c
           {members.length} {members.length === 1 ? 'member' : 'members'} with access
         </p>
         <div className="flex items-center gap-4">
-          <InviteUserDialog 
-            companyId={companyId} 
-            warehouses={[{ id: warehouseId, name: warehouseName, slug: warehouseId }]} 
+          <InviteUserDialog
+            companyId={companyId}
+            warehouses={[{ id: warehouseId, name: warehouseName, slug: warehouseId }]}
             preselectedWarehouseId={warehouseId}
-            onSuccess={() => refetch()} 
+            onSuccess={() => refetch()}
           />
           <Link
             href={`/${companySlug}/settings/team`}

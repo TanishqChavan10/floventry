@@ -2,7 +2,12 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useMutation, useQuery } from '@apollo/client';
+import {
+  usePurchaseOrders,
+  useCreateGRN,
+  usePostGRN,
+  useWarehouseStockHealth,
+} from '@/hooks/apollo';
 import { differenceInCalendarDays, format } from 'date-fns';
 import { useWarehouse } from '@/context/warehouse-context';
 import { Button } from '@/components/ui/button';
@@ -43,9 +48,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { AlertTriangle, Loader2 } from 'lucide-react';
-import { CREATE_GRN, POST_GRN, GET_GRNS } from '@/lib/graphql/grn';
-import { GET_PURCHASE_ORDERS } from '@/lib/graphql/purchase-orders';
-import { GET_WAREHOUSE_STOCK_HEALTH } from '@/lib/graphql/stock-health';
 import { CopyButton } from '@/components/common/CopyButton';
 import { toast } from 'sonner';
 import { SafeBarcodeScanInput } from '@/components/barcode/SafeBarcodeScanInput';
@@ -88,34 +90,22 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
     sku: string;
   } | null>(null);
 
-  const { data: posData, loading: loadingPOs } = useQuery(GET_PURCHASE_ORDERS, {
-    variables: {
-      filters: {
-        status: 'ORDERED',
-        limit: 100,
-      },
+  const { data: posData, loading: loadingPOs } = usePurchaseOrders({
+    filters: {
+      status: 'ORDERED',
+      limit: 100,
     },
-    skip: !activeWarehouse?.id,
-    fetchPolicy: 'cache-and-network',
   });
 
-  const [createGRN, { loading: creating }] = useMutation(CREATE_GRN, {
-    refetchQueries: [{ query: GET_GRNS, variables: { filters: { limit: 100 } } }],
-  });
+  const [createGRN, { loading: creating }] = useCreateGRN();
 
-  const [postGRN, { loading: posting }] = useMutation(POST_GRN, {
-    refetchQueries: [{ query: GET_GRNS, variables: { filters: { limit: 100 } } }],
-  });
+  const [postGRN, { loading: posting }] = usePostGRN();
 
   const purchaseOrders = (posData?.purchaseOrders || []).filter(
     (po: any) => po.warehouse?.id === activeWarehouse?.id,
   );
 
-  const { data: stockHealthData } = useQuery(GET_WAREHOUSE_STOCK_HEALTH, {
-    variables: { warehouseId: activeWarehouse?.id || '' },
-    skip: !activeWarehouse?.id,
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data: stockHealthData } = useWarehouseStockHealth(activeWarehouse?.id ?? '');
 
   const stockHealthByProductId = useMemo(() => {
     const rows = (stockHealthData?.warehouseStockHealth ?? []) as any[];

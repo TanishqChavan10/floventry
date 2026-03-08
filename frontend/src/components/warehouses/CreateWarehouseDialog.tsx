@@ -3,8 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useMutation } from '@apollo/client';
-import { CREATE_WAREHOUSE, GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
+import { useCreateWarehouse } from '@/hooks/apollo';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import {
@@ -57,9 +56,7 @@ export function CreateWarehouseDialog({
   onOpenChange,
   companySlug,
 }: CreateWarehouseDialogProps) {
-  const [createWarehouse, { loading }] = useMutation(CREATE_WAREHOUSE, {
-    refetchQueries: [{ query: GET_WAREHOUSES_BY_COMPANY, variables: { slug: companySlug } }],
-  });
+  const [createWarehouse, { loading }] = useCreateWarehouse();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

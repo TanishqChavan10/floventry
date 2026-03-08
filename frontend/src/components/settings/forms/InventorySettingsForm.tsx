@@ -6,8 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Crown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMutation } from '@apollo/client';
-import { UPDATE_COMPANY_BARCODE_SETTINGS, UPDATE_COMPANY_SETTINGS } from '@/lib/graphql/company';
+import { useUpdateCompanySettings, useUpdateCompanyBarcodeSettings } from '@/hooks/apollo';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -76,11 +75,8 @@ interface InventorySettingsFormProps {
 
 export const InventorySettingsForm = forwardRef<InventoryFormHandle, InventorySettingsFormProps>(
   function InventorySettingsForm({ companyId, settings, barcodeSettings }, ref) {
-    const [updateSettings, { loading }] = useMutation(UPDATE_COMPANY_SETTINGS);
-    const [updateBarcodeSettings, { loading: savingBarcode }] = useMutation(
-      UPDATE_COMPANY_BARCODE_SETTINGS,
-      { refetchQueries: ['GetCompanyBySlug'] },
-    );
+    const [updateSettings, { loading }] = useUpdateCompanySettings();
+    const [updateBarcodeSettings, { loading: savingBarcode }] = useUpdateCompanyBarcodeSettings();
 
     const { user } = useAuth();
     const { isPro } = usePlanTier();
@@ -123,8 +119,12 @@ export const InventorySettingsForm = forwardRef<InventoryFormHandle, InventorySe
 
     useImperativeHandle(ref, () => ({
       submit: () => form.handleSubmit(onSubmit)(),
-      get isDirty() { return form.formState.isDirty; },
-      get loading() { return loading; },
+      get isDirty() {
+        return form.formState.isDirty;
+      },
+      get loading() {
+        return loading;
+      },
     }));
 
     const previewPrefix = barcodeForm.watch('barcodePrefix') || 'FLO-';
@@ -229,7 +229,9 @@ export const InventorySettingsForm = forwardRef<InventoryFormHandle, InventorySe
                               type="number"
                               {...field}
                               disabled={!isPro}
-                              onClick={() => { if (!isPro) setUpgradeOpen(true); }}
+                              onClick={() => {
+                                if (!isPro) setUpgradeOpen(true);
+                              }}
                             />
                           </FormControl>
                           <FormDescription>
@@ -378,5 +380,5 @@ export const InventorySettingsForm = forwardRef<InventoryFormHandle, InventorySe
         <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
       </div>
     );
-  }
+  },
 );

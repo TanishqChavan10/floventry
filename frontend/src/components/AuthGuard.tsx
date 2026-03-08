@@ -5,9 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMutation } from '@apollo/client';
-import { GET_CURRENT_USER } from '@/lib/graphql/auth';
-import { SWITCH_COMPANY } from '@/lib/graphql/company';
+import { useSwitchCompany } from '@/hooks/apollo';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -19,9 +17,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const pathname = usePathname();
 
   const autoSwitchCompanyAttemptedRef = useRef(false);
-  const [switchCompany] = useMutation(SWITCH_COMPANY, {
-    refetchQueries: [{ query: GET_CURRENT_USER }],
-  });
+  const [switchCompany] = useSwitchCompany();
 
   // Define public routes that don't require authentication
   // Define public routes that don't require authentication
@@ -36,8 +32,11 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     if (loading) return; // Still loading, don't redirect yet
 
     if (!isAuthenticated && !isPublicRoute && !isOnboardingRoute) {
-      // User is not authenticated and trying to access protected route
-      router.push('/auth/sign-in');
+      // Only redirect if Supabase confirms no session.
+      // If signed in via Supabase but backend is unreachable, avoid redirect loop.
+      if (!isSignedIn) {
+        router.push('/auth/sign-in');
+      }
       return;
     }
 

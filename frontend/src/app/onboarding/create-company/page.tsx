@@ -14,9 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useMutation } from '@apollo/client';
-import { CREATE_COMPANY } from '@/lib/graphql/company';
-import { GET_CURRENT_USER } from '@/lib/graphql/auth';
+import { useCreateCompany } from '@/hooks/apollo';
 import { toast } from 'sonner';
 import { useApolloClient } from '@apollo/client';
 
@@ -35,9 +33,7 @@ export default function CreateCompanyPage() {
       .replace(/-+/g, '-')
       .slice(0, 50);
 
-  const [createCompany] = useMutation(CREATE_COMPANY, {
-    refetchQueries: [{ query: GET_CURRENT_USER }],
-  });
+  const [createCompany] = useCreateCompany();
 
   const { run, isLoading } = useAsyncAction();
 

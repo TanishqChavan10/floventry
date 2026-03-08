@@ -5,8 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { useMutation } from '@apollo/client';
-import { UPDATE_COMPANY_SETTINGS } from '@/lib/graphql/company';
+import { useUpdateCompanySettings } from '@/hooks/apollo';
 import {
   Form,
   FormControl,
@@ -30,7 +29,7 @@ interface AccessSecurityFormProps {
 
 export const AccessSecurityForm = forwardRef<FormHandle, AccessSecurityFormProps>(
   function AccessSecurityForm({ companyId, settings }, ref) {
-    const [updateSettings, { loading }] = useMutation(UPDATE_COMPANY_SETTINGS);
+    const [updateSettings, { loading }] = useUpdateCompanySettings();
 
     const form = useForm<z.infer<typeof formSchema>>({
       resolver: zodResolver(formSchema) as any,
@@ -51,17 +50,19 @@ export const AccessSecurityForm = forwardRef<FormHandle, AccessSecurityFormProps
 
     useImperativeHandle(ref, () => ({
       submit: () => form.handleSubmit(onSubmit)(),
-      get isDirty() { return form.formState.isDirty; },
-      get loading() { return loading; },
+      get isDirty() {
+        return form.formState.isDirty;
+      },
+      get loading() {
+        return loading;
+      },
     }));
 
     return (
       <Card>
         <CardHeader>
           <CardTitle>Access Control</CardTitle>
-          <CardDescription>
-            Control what actions different team roles can perform.
-          </CardDescription>
+          <CardDescription>Control what actions different team roles can perform.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -74,7 +75,8 @@ export const AccessSecurityForm = forwardRef<FormHandle, AccessSecurityFormProps
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">Restrict Product Creation</FormLabel>
                       <FormDescription>
-                        When enabled, only Admins and Owners can create new products. Managers are limited to viewing the catalog.
+                        When enabled, only Admins and Owners can create new products. Managers are
+                        limited to viewing the catalog.
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -88,5 +90,5 @@ export const AccessSecurityForm = forwardRef<FormHandle, AccessSecurityFormProps
         </CardContent>
       </Card>
     );
-  }
+  },
 );

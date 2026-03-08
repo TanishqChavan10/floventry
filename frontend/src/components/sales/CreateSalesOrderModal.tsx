@@ -2,9 +2,7 @@
 
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
-import { useMutation, useQuery } from '@apollo/client';
-import { CREATE_SALES_ORDER, GET_SALES_ORDERS } from '@/lib/graphql/sales';
-import { GET_PRODUCTS } from '@/lib/graphql/product';
+import { useCreateSalesOrder, useProducts } from '@/hooks/apollo';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,11 +49,10 @@ export function CreateSalesOrderModal({
   const [expectedDate, setExpectedDate] = useState('');
   const [items, setItems] = useState<SalesOrderItem[]>([{ product_id: '', ordered_quantity: 0 }]);
 
-  const { data: productsData } = useQuery(GET_PRODUCTS);
+  const { data: productsData } = useProducts();
   const products = productsData?.products || [];
 
-  const [createOrder, { loading }] = useMutation(CREATE_SALES_ORDER, {
-    refetchQueries: [{ query: GET_SALES_ORDERS }],
+  const [createOrder, { loading }] = useCreateSalesOrder({
     onCompleted: () => {
       toast.success('Sales order created successfully');
       handleClose();

@@ -1,44 +1,15 @@
 import { gql } from '@apollo/client';
+import { STOCK_WITH_LOTS_FRAGMENT, STOCK_CORE_FRAGMENT } from '../fragments/stock.fragment';
+import { WAREHOUSE_REF_FRAGMENT } from '../fragments/warehouse.fragment';
 
 // Query to get all stock for a specific warehouse
 export const GET_WAREHOUSE_STOCK = gql`
   query GetStockByWarehouse($warehouseId: String!) {
     stockByWarehouse(warehouseId: $warehouseId) {
-      id
-      product {
-        id
-        name
-        sku
-        unit
-        category {
-          id
-          name
-        }
-        supplier {
-          id
-          name
-        }
-        cost_price
-        selling_price
-      }
-      warehouse {
-        id
-        name
-      }
-      quantity
-      min_stock_level
-      max_stock_level
-      reorder_point
-      lots {
-        id
-        quantity
-        expiry_date
-        received_at
-      }
-      created_at
-      updated_at
+      ...StockWithLots
     }
   }
+  ${STOCK_WITH_LOTS_FRAGMENT}
 `;
 
 // Mutation to create opening stock
@@ -52,16 +23,14 @@ export const CREATE_OPENING_STOCK = gql`
         sku
       }
       warehouse {
-        id
-        name
+        ...WarehouseRef
       }
-      quantity
-      min_stock_level
-      max_stock_level
-      reorder_point
+      ...StockCore
       created_at
     }
   }
+  ${WAREHOUSE_REF_FRAGMENT}
+  ${STOCK_CORE_FRAGMENT}
 `;
 
 // Query to get stock movements with filters
@@ -97,13 +66,13 @@ export const ADJUST_STOCK = gql`
         sku
       }
       warehouse {
-        id
-        name
+        ...WarehouseRef
       }
       quantity
       updated_at
     }
   }
+  ${WAREHOUSE_REF_FRAGMENT}
 `;
 
 // Mutation to update stock levels (min/max/reorder)
@@ -147,8 +116,7 @@ export const GET_STOCK_BY_PRODUCT = gql`
     stockByProduct(productId: $productId) {
       id
       warehouse {
-        id
-        name
+        ...WarehouseRef
       }
       quantity
       min_stock_level
@@ -157,6 +125,7 @@ export const GET_STOCK_BY_PRODUCT = gql`
       updated_at
     }
   }
+  ${WAREHOUSE_REF_FRAGMENT}
 `;
 
 export const GET_COMPANY_STOCK_MOVEMENTS = gql`

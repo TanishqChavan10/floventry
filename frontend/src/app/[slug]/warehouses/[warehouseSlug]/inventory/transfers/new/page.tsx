@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { useMutation, useQuery } from '@apollo/client';
+import {
+  useWarehousesByCompany,
+  useWarehouseStock,
+  useWarehouseStockHealth,
+  useCreateWarehouseTransfer,
+  usePostWarehouseTransfer,
+} from '@/hooks/apollo';
 import { differenceInCalendarDays, format } from 'date-fns';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { useWarehouse } from '@/context/warehouse-context';
@@ -40,14 +46,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ArrowLeft, Save, Send, AlertTriangle, Plus, X } from 'lucide-react';
-import {
-  CREATE_WAREHOUSE_TRANSFER,
-  POST_WAREHOUSE_TRANSFER,
-  GET_WAREHOUSE_TRANSFERS,
-} from '@/lib/graphql/transfers';
-import { GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
-import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
-import { GET_WAREHOUSE_STOCK_HEALTH } from '@/lib/graphql/stock-health';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { SafeBarcodeScanInput } from '@/components/barcode/SafeBarcodeScanInput';
@@ -95,30 +93,16 @@ function CreateTransferContent() {
   }, [highlightIndex]);
 
   // Fetch all company warehouses (excluding current one for destination)
-  const { data: warehousesData, loading: loadingWarehouses } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
-    variables: { slug: companySlug },
-    skip: !companySlug,
-  });
+  const { data: warehousesData, loading: loadingWarehouses } = useWarehousesByCompany(companySlug);
 
   // Fetch source warehouse stock
-  const { data: stockData, loading: loadingStock } = useQuery(GET_WAREHOUSE_STOCK, {
-    variables: { warehouseId: activeWarehouse?.id || '' },
-    skip: !activeWarehouse?.id,
-  });
+  const { data: stockData, loading: loadingStock } = useWarehouseStock(activeWarehouse?.id || '');
 
-  const { data: stockHealthData } = useQuery(GET_WAREHOUSE_STOCK_HEALTH, {
-    variables: { warehouseId: activeWarehouse?.id || '' },
-    skip: !activeWarehouse?.id,
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data: stockHealthData } = useWarehouseStockHealth(activeWarehouse?.id || '');
 
-  const [createTransfer, { loading: creating }] = useMutation(CREATE_WAREHOUSE_TRANSFER, {
-    refetchQueries: [{ query: GET_WAREHOUSE_TRANSFERS, variables: { filters: { limit: 100 } } }],
-  });
+  const [createTransfer, { loading: creating }] = useCreateWarehouseTransfer();
 
-  const [postTransfer, { loading: posting }] = useMutation(POST_WAREHOUSE_TRANSFER, {
-    refetchQueries: [{ query: GET_WAREHOUSE_TRANSFERS, variables: { filters: { limit: 100 } } }],
-  });
+  const [postTransfer, { loading: posting }] = usePostWarehouseTransfer();
 
   const warehouses = (warehousesData?.companyBySlug?.warehouses || []).filter(
     (w: any) => w.id !== activeWarehouse?.id,

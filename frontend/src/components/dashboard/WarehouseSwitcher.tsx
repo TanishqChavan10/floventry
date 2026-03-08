@@ -18,9 +18,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMutation } from '@apollo/client';
-import { SWITCH_WAREHOUSE } from '@/lib/graphql/auth';
-import { GET_CURRENT_USER } from '@/lib/graphql/auth';
+import { useSwitchWarehouse } from '@/hooks/apollo';
 import { toast } from 'sonner';
 import {
   clearPendingWarehouseRoute,
@@ -34,9 +32,7 @@ export default function WarehouseSwitcher() {
   const { warehouses, activeWarehouse, activeWarehouseId, setActiveWarehouseId, isLoading } =
     useWarehouse();
 
-  const [switchWarehouse] = useMutation(SWITCH_WAREHOUSE, {
-    refetchQueries: [{ query: GET_CURRENT_USER }],
-  });
+  const [switchWarehouse] = useSwitchWarehouse();
 
   if (isLoading) {
     return <div className="w-[180px] h-9 bg-slate-100 dark:bg-slate-800 animate-pulse rounded" />;

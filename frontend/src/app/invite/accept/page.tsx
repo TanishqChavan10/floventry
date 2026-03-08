@@ -2,12 +2,11 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useMutation, useApolloClient } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle, XCircle, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/auth-context';
-import { ACCEPT_INVITE, VALIDATE_INVITE } from '@/lib/graphql/invite';
+import { useAcceptInvite, useLazyValidateInvite } from '@/hooks/apollo';
 
 function BrandHeader() {
   return (
@@ -36,7 +35,7 @@ function PageShell({ children }: { children: React.ReactNode }) {
 function InviteAcceptContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const client = useApolloClient();
+  const [validateInvite] = useLazyValidateInvite();
   const { isSignedIn: isSignedIn, isLoaded: isLoaded, signOut } = useAuth();
 
   /** ✅ Token persistence (SSO safe) */
@@ -59,7 +58,7 @@ function InviteAcceptContent() {
   const [alreadyAccepted, setAlreadyAccepted] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const [acceptInvite, { loading: isAccepting }] = useMutation(ACCEPT_INVITE);
+  const [acceptInvite, { loading: isAccepting }] = useAcceptInvite();
 
   /** -----------------------------
    *  1️⃣ Validate invite token (ONCE)
@@ -77,11 +76,7 @@ function InviteAcceptContent() {
 
     (async () => {
       try {
-        const { data } = await client.query({
-          query: VALIDATE_INVITE,
-          variables: { token },
-          fetchPolicy: 'network-only',
-        });
+        const { data } = await validateInvite({ variables: { token } });
 
         if (!data?.validateInvite) {
           throw new Error('Invite not found or expired');
@@ -107,7 +102,7 @@ function InviteAcceptContent() {
         setError(msg);
       }
     })();
-  }, [token, client, inviteDetails, hasAccepted]);
+  }, [token, validateInvite, inviteDetails, hasAccepted]);
 
   /** ------------------------------------
    *  2️⃣ Auto-accept AFTER SSO login

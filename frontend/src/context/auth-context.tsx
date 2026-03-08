@@ -1,9 +1,10 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { useQuery } from '@apollo/client';
+import { useApolloClient } from '@apollo/client';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { GET_CURRENT_USER } from '@/lib/graphql/auth';
+import { clearPersistedCache } from '@/lib/apollo/client';
+import { useCurrentUser } from '@/hooks/apollo';
 import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 interface Company {
@@ -65,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [internalLoading, setInternalLoading] = useState(true);
 
   const isSignedIn = !!session;
+  const apolloClient = useApolloClient();
 
   // Initialize: get current session + listen for changes
   useEffect(() => {
@@ -101,19 +103,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data.session?.access_token ?? null;
   }, []);
 
-  const { data, loading, error } = useQuery(GET_CURRENT_USER, {
-    skip: !isSignedIn || !isLoaded,
-    fetchPolicy: 'network-only',
-    errorPolicy: 'all',
-    onCompleted: (data) => {
+  const { data, loading, error } = useCurrentUser();
+
+  // Sync user state from query result
+  useEffect(() => {
+    if (!loading && data) {
       setUser(data?.me || null);
       setInternalLoading(false);
-    },
-    onError: () => {
+    }
+  }, [data, loading]);
+
+  useEffect(() => {
+    if (error) {
       setUser(null);
       setInternalLoading(false);
-    },
-  });
+    }
+  }, [error]);
 
   // When signed out: clear state
   useEffect(() => {
@@ -124,11 +129,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [isLoaded, isSignedIn]);
 
   const handleSignOut = useCallback(async () => {
+    // Clear Apollo in-memory cache (no refetch) + wipe persisted cache
+    clearPersistedCache();
+    await apolloClient.clearStore();
+
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setSupabaseUser(null);
-  }, []);
+  }, [apolloClient]);
 
   const isAuthResolved = isLoaded && !internalLoading;
 

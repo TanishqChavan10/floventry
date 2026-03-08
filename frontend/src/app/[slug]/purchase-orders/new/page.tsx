@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { useMutation, useQuery } from '@apollo/client';
+import {
+  useCreatePurchaseOrder,
+  useWarehousesByCompany,
+  useSuppliers,
+  useWarehouseStock,
+} from '@/hooks/apollo';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { Button } from '@/components/ui/button';
@@ -18,10 +23,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ArrowLeft, Plus, X, Save } from 'lucide-react';
-import { CREATE_PURCHASE_ORDER, GET_PURCHASE_ORDERS } from '@/lib/graphql/purchase-orders';
-import { GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
-import { GET_SUPPLIERS } from '@/lib/graphql/catalog';
-import { GET_STOCK_BY_WAREHOUSE } from '@/lib/graphql/stock';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
@@ -48,27 +49,15 @@ function CreatePurchaseOrderContent() {
   const [hasPrefilledData, setHasPrefilledData] = useState(false);
 
   // Fetch warehouses
-  const { data: warehousesData } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
-    variables: { slug: companySlug },
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data: warehousesData } = useWarehousesByCompany(companySlug);
 
   // Fetch suppliers
-  const { data: suppliersData } = useQuery(GET_SUPPLIERS, {
-    variables: { includeArchived: false },
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data: suppliersData } = useSuppliers({ includeArchived: false });
 
   // Fetch products for selected warehouse
-  const { data: productsData } = useQuery(GET_STOCK_BY_WAREHOUSE, {
-    variables: { warehouseId: selectedWarehouse },
-    skip: !selectedWarehouse,
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data: productsData } = useWarehouseStock(selectedWarehouse);
 
-  const [createPO, { loading }] = useMutation(CREATE_PURCHASE_ORDER, {
-    refetchQueries: [{ query: GET_PURCHASE_ORDERS, variables: { filters: { limit: 100 } } }],
-  });
+  const [createPO, { loading }] = useCreatePurchaseOrder();
 
   // Get user role and assigned warehouses
   const userRole = user?.companies?.find((c: any) => c.slug === companySlug)?.role;

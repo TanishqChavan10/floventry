@@ -2,8 +2,7 @@
 
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation } from '@apollo/client';
-import { GET_SALES_ORDER, CONFIRM_SALES_ORDER, CANCEL_SALES_ORDER } from '@/lib/graphql/sales';
+import { useSalesOrder, useConfirmSalesOrder, useCancelSalesOrder } from '@/hooks/apollo';
 import { Loader2, ArrowLeft, CheckCircle, XCircle, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,11 +39,9 @@ export default function SalesOrderDetailPage() {
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [cancelOpen, setCancelOpen] = React.useState(false);
 
-  const { data, loading, error, refetch } = useQuery(GET_SALES_ORDER, {
-    variables: { id: orderId },
-  });
+  const { data, loading, error, refetch } = useSalesOrder(orderId);
 
-  const [confirmOrder] = useMutation(CONFIRM_SALES_ORDER, {
+  const [confirmOrder] = useConfirmSalesOrder({
     onCompleted: () => {
       toast({
         title: 'Order Confirmed',
@@ -62,7 +59,7 @@ export default function SalesOrderDetailPage() {
     },
   });
 
-  const [cancelOrder] = useMutation(CANCEL_SALES_ORDER, {
+  const [cancelOrder] = useCancelSalesOrder({
     onCompleted: () => {
       toast({
         title: 'Order Cancelled',

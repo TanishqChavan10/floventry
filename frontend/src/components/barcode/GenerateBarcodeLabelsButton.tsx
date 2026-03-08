@@ -2,10 +2,10 @@
 
 import { useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
-import { useMutation } from '@apollo/client';
 import { saveAs } from 'file-saver';
 import { Button } from '@/components/ui/button';
-import { GENERATE_BARCODE_LABELS, type BarcodeLabelLayout } from '@/lib/graphql/barcode';
+import { useGenerateBarcodeLabels } from '@/hooks/apollo';
+import type { BarcodeLabelLayout } from '@/lib/graphql/barcode';
 
 type Props = {
   productIds: string[];
@@ -26,7 +26,7 @@ export function GenerateBarcodeLabelsButton({
   size,
   variant,
 }: Props) {
-  const [generateLabels, { loading: isLoading }] = useMutation(GENERATE_BARCODE_LABELS);
+  const [generateLabels, { loading: isLoading }] = useGenerateBarcodeLabels();
 
   const onClick = async () => {
     if (disabled) return;

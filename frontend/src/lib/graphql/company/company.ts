@@ -1,4 +1,5 @@
 import { gql } from "@apollo/client";
+import { WAREHOUSE_LIST_FRAGMENT, WAREHOUSE_SLUG_FRAGMENT, WAREHOUSE_DETAIL_FRAGMENT, WAREHOUSE_REF_FRAGMENT } from '../fragments/warehouse.fragment';
 
 export const CREATE_COMPANY = gql`
   mutation CreateCompany($input: CreateCompanyInput!) {
@@ -77,9 +78,7 @@ export const GET_COMPANY_BY_SLUG = gql`
       barcodeNextNumber
       barcodeSuffix
       warehouses {
-        id
-        name
-        slug
+        ...WarehouseSlug
       }
       settings {
         id
@@ -97,6 +96,7 @@ export const GET_COMPANY_BY_SLUG = gql`
       }
     }
   }
+  ${WAREHOUSE_SLUG_FRAGMENT}
 `;
 
 export const UPDATE_COMPANY_BARCODE_SETTINGS = gql`
@@ -146,40 +146,20 @@ export const GET_WAREHOUSES_BY_COMPANY = gql`
     companyBySlug(slug: $slug) {
       id
       warehouses {
-        id
-        name
-        slug
-        address
-        type
-        code
-        timezone
-        status
-        created_at
+        ...WarehouseList
       }
     }
   }
+  ${WAREHOUSE_LIST_FRAGMENT}
 `;
 
 export const GET_WAREHOUSE_WITH_SETTINGS = gql`
   query GetWarehouse($id: String!) {
     warehouse(id: $id) {
-      id
-      name
-      slug
-      description
-      type
-      code
-      timezone
-      address
-      city
-      state
-      country
-      contact_person
-      contact_phone
-      status
-      is_default
+      ...WarehouseDetail
     }
   }
+  ${WAREHOUSE_DETAIL_FRAGMENT}
 `;
 
 export const CREATE_WAREHOUSE = gql`
@@ -200,23 +180,10 @@ export const CREATE_WAREHOUSE = gql`
 export const UPDATE_WAREHOUSE = gql`
   mutation UpdateWarehouse($id: String!, $input: UpdateWarehouseInput!) {
     updateWarehouse(id: $id, input: $input) {
-      id
-      name
-      slug
-      description
-      type
-      code
-      timezone
-      address
-      city
-      state
-      country
-      contact_person
-      contact_phone
-      status
-      is_default
+      ...WarehouseDetail
     }
   }
+  ${WAREHOUSE_DETAIL_FRAGMENT}
 `;
 
 export const UPDATE_WAREHOUSE_SETTINGS = gql`
@@ -258,6 +225,18 @@ export const ASSIGN_USER_TO_WAREHOUSE = gql`
 export const REMOVE_USER_FROM_WAREHOUSE = gql`
   mutation RemoveUserFromWarehouse($warehouseId: ID!, $userId: ID!) {
     removeUserFromWarehouse(warehouseId: $warehouseId, userId: $userId)
+  }
+`;
+
+export const GET_WAREHOUSE_MEMBERS = gql`
+  query GetWarehouseMembers($warehouseId: String!) {
+    warehouseMembers(warehouseId: $warehouseId) {
+      userId
+      email
+      fullName
+      role
+      isManager
+    }
   }
 `;
 

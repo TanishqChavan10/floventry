@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
+import { useCategories, useDeleteCategory, useUpdateCategory } from '@/hooks/apollo';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/role-guard';
 import { useRbac } from '@/hooks/use-rbac';
@@ -43,7 +43,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Plus, Search, Edit, Archive, FolderTree, PackagePlus, MoreHorizontal } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
-import { GET_CATEGORIES, DELETE_CATEGORY, UPDATE_CATEGORY } from '@/lib/graphql/catalog';
 import { CategoryModal } from '@/components/catalog/CategoryModal';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -60,49 +59,14 @@ function CatalogCategoriesContent() {
   const [bulkArchiveCategoryIds, setBulkArchiveCategoryIds] = useState<string[] | null>(null);
   const [bulkRestoreCategoryIds, setBulkRestoreCategoryIds] = useState<string[] | null>(null);
 
-  const { data, loading, error, refetch } = useQuery(GET_CATEGORIES);
-  const [deleteCategory] = useMutation(DELETE_CATEGORY, {
-    onCompleted: () => {
-      toast({
-        title: 'Category archived',
-        description: 'Category has been archived successfully',
-      });
-      refetch();
-    },
-    onError: (error) => {
-      // Enhanced error message for categories with products
-      const message = error.message.includes('products')
-        ? 'Cannot archive category: Products are still assigned to this category. Please reassign or remove products first.'
-        : error.message;
+  const { data, loading, error, refetch } = useCategories();
+  const [deleteCategory] = useDeleteCategory();
 
-      toast({
-        title: 'Cannot archive category',
-        description: message,
-        variant: 'destructive',
-      });
-    },
-  });
+  const [archiveCategoryQuiet] = useDeleteCategory();
 
-  const [archiveCategoryQuiet] = useMutation(DELETE_CATEGORY);
+  const [updateCategory] = useUpdateCategory();
 
-  const [updateCategory] = useMutation(UPDATE_CATEGORY, {
-    onCompleted: () => {
-      toast({
-        title: 'Category unarchived',
-        description: 'Category has been restored successfully',
-      });
-      refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const [restoreCategoryQuiet] = useMutation(UPDATE_CATEGORY);
+  const [restoreCategoryQuiet] = useUpdateCategory();
 
   const canEdit = rbac.canEditCatalog; // Owner/Admin/Manager can edit/create categories
 
@@ -179,7 +143,23 @@ function CatalogCategoriesContent() {
 
   const confirmArchive = async () => {
     if (categoryToArchive) {
-      await deleteCategory({ variables: { id: categoryToArchive.id } });
+      try {
+        await deleteCategory({ variables: { id: categoryToArchive.id } });
+        toast({
+          title: 'Category archived',
+          description: 'Category has been archived successfully',
+        });
+        refetch();
+      } catch (error: any) {
+        const message = error.message.includes('products')
+          ? 'Cannot archive category: Products are still assigned to this category. Please reassign or remove products first.'
+          : error.message;
+        toast({
+          title: 'Cannot archive category',
+          description: message,
+          variant: 'destructive',
+        });
+      }
       setCategoryToArchive(null);
     }
   };
@@ -293,16 +273,28 @@ function CatalogCategoriesContent() {
   };
 
   const handleUnarchiveCategory = async (category: any) => {
-    // Backend updateCategory automatically sets isActive to true
-    await updateCategory({
-      variables: {
-        input: {
-          id: category.id,
-          name: category.name,
-          description: category.description || '',
+    try {
+      await updateCategory({
+        variables: {
+          input: {
+            id: category.id,
+            name: category.name,
+            description: category.description || '',
+          },
         },
-      },
-    });
+      });
+      toast({
+        title: 'Category unarchived',
+        description: 'Category has been restored successfully',
+      });
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   if (loading) {

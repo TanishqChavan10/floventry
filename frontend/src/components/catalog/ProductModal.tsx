@@ -1,7 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useMutation, useQuery } from '@apollo/client';
+import {
+  useCategories,
+  useSuppliers,
+  useUnits,
+  useCreateProduct,
+  useUpdateProduct,
+  useGenerateCompanyBarcode,
+} from '@/hooks/apollo';
 import { useToast } from '@/components/ui/use-toast';
 import {
   Dialog,
@@ -25,14 +32,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  CREATE_PRODUCT,
-  UPDATE_PRODUCT,
-  GET_CATEGORIES,
-  GET_SUPPLIERS,
-  GET_UNITS,
-  GENERATE_COMPANY_BARCODE,
-} from '@/lib/graphql/catalog';
 
 interface ProductModalProps {
   product?: any;
@@ -80,44 +79,15 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
     description: '',
   });
 
-  const { data: categoriesData } = useQuery(GET_CATEGORIES);
-  const { data: suppliersData } = useQuery(GET_SUPPLIERS);
-  const { data: unitsData } = useQuery(GET_UNITS);
+  const { data: categoriesData } = useCategories();
+  const { data: suppliersData } = useSuppliers();
+  const { data: unitsData } = useUnits();
 
-  const [createProduct, { loading: creating }] = useMutation(CREATE_PRODUCT, {
-    onCompleted: () => {
-      toast({
-        title: 'Product created',
-        description: 'Product has been created successfully',
-      });
-      onClose();
-    },
-    onError: showProductMutationError,
-  });
+  const [createProduct, { loading: creating }] = useCreateProduct();
 
-  const [updateProduct, { loading: updating }] = useMutation(UPDATE_PRODUCT, {
-    onCompleted: () => {
-      toast({
-        title: 'Product updated',
-        description: 'Product has been updated successfully',
-      });
-      onClose();
-    },
-    onError: showProductMutationError,
-  });
+  const [updateProduct, { loading: updating }] = useUpdateProduct();
 
-  const [generateCompanyBarcode, { loading: generatingBarcode }] = useMutation(
-    GENERATE_COMPANY_BARCODE,
-    {
-      onError: (error) => {
-        toast({
-          title: 'Error',
-          description: error.message,
-          variant: 'destructive',
-        });
-      },
-    },
-  );
+  const [generateCompanyBarcode, { loading: generatingBarcode }] = useGenerateCompanyBarcode();
 
   useEffect(() => {
     if (product) {
@@ -215,16 +185,26 @@ export default function ProductModal({ product, open, onClose }: ProductModalPro
             },
           },
         });
-      } catch {
-        // onError handles user-facing messaging
+        toast({
+          title: 'Product updated',
+          description: 'Product has been updated successfully',
+        });
+        onClose();
+      } catch (error: any) {
+        showProductMutationError(error);
       }
     } else {
       try {
         await createProduct({
           variables: { input },
         });
-      } catch {
-        // onError handles user-facing messaging
+        toast({
+          title: 'Product created',
+          description: 'Product has been created successfully',
+        });
+        onClose();
+      } catch (error: any) {
+        showProductMutationError(error);
       }
     }
   };

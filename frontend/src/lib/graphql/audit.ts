@@ -39,3 +39,15 @@ export const GET_COMPANY_MEMBERS = gql`
     }
   }
 `;
+
+export const REMOVE_MEMBER = gql`
+  mutation RemoveMember($membershipId: String!) {
+    removeMemberValidated(membershipId: $membershipId)
+  }
+`;
+
+export const UPDATE_MEMBER_WAREHOUSES = gql`
+  mutation UpdateMemberWarehouses($membershipId: String!, $warehouseIds: [String!]!) {
+    updateMemberWarehouses(membershipId: $membershipId, warehouseIds: $warehouseIds)
+  }
+`;

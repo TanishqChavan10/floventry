@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@apollo/client';
+import { useSupplier } from '@/hooks/apollo';
 import {
   Sheet,
   SheetContent,
@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Edit, Building2, Mail, Phone, MapPin, Package, Calendar, Loader2 } from 'lucide-react';
-import { GET_SUPPLIER } from '@/lib/graphql/catalog';
 
 interface SupplierDetailDrawerProps {
   supplier: any;
@@ -27,11 +26,7 @@ export default function SupplierDetailDrawer({
   onClose,
   onEdit,
 }: SupplierDetailDrawerProps) {
-  const { data, loading } = useQuery(GET_SUPPLIER, {
-    variables: { id: supplier?.id },
-    skip: !open || !supplier,
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data, loading } = useSupplier(open && supplier?.id ? supplier.id : '');
 
   if (!supplier) return null;
 

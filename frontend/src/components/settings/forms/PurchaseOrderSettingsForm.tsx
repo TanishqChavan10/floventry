@@ -6,8 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMutation } from '@apollo/client';
-import { UPDATE_COMPANY_SETTINGS } from '@/lib/graphql/company';
+import { useUpdateCompanySettings } from '@/hooks/apollo';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -21,7 +20,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const formSchema = z.object({
   po_require_approval: z.boolean(),
@@ -36,7 +41,7 @@ interface PurchaseOrderSettingsFormProps {
 }
 
 export function PurchaseOrderSettingsForm({ companyId, settings }: PurchaseOrderSettingsFormProps) {
-  const [updateSettings, { loading }] = useMutation(UPDATE_COMPANY_SETTINGS);
+  const [updateSettings, { loading }] = useUpdateCompanySettings();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema) as any,
@@ -85,10 +90,7 @@ export function PurchaseOrderSettingsForm({ companyId, settings }: PurchaseOrder
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}
@@ -121,14 +123,12 @@ export function PurchaseOrderSettingsForm({ companyId, settings }: PurchaseOrder
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">Auto-mark Details</FormLabel>
                     <FormDescription>
-                      Automatically list items as received when PO is marked as delivered (skips manual count).
+                      Automatically list items as received when PO is marked as delivered (skips
+                      manual count).
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}

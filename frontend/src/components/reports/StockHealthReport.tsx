@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { useQuery } from '@apollo/client';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Legend } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -20,10 +19,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  GET_INVENTORY_HEALTH_STATS,
-  GET_WAREHOUSE_HEALTH_SCORECARD,
-  GET_COMPANY_STOCK_HEALTH_OVERVIEW,
-} from '@/lib/graphql/inventory';
+  useInventoryHealthStats,
+  useWarehouseHealthScorecard,
+  useCompanyStockHealthOverview,
+} from '@/hooks/apollo';
 
 const healthPieConfig = {
   healthy: { label: 'Healthy', color: 'var(--chart-2)' },
@@ -56,24 +55,30 @@ function scoreColor(score: number) {
 }
 
 export function StockHealthReport() {
-  const { data: healthData, loading: healthLoading } = useQuery(GET_INVENTORY_HEALTH_STATS, {
-    fetchPolicy: 'cache-and-network',
-  });
-  const { data: scorecardData, loading: scorecardLoading } = useQuery(GET_WAREHOUSE_HEALTH_SCORECARD, {
-    fetchPolicy: 'cache-and-network',
-  });
-  const { data: overviewData, loading: overviewLoading } = useQuery(GET_COMPANY_STOCK_HEALTH_OVERVIEW, {
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data: healthData, loading: healthLoading } = useInventoryHealthStats();
+  const { data: scorecardData, loading: scorecardLoading } = useWarehouseHealthScorecard();
+  const { data: overviewData, loading: overviewLoading } = useCompanyStockHealthOverview();
 
   const stats = healthData?.inventoryHealthStats;
-  const scorecards: Array<{ warehouseId: string; warehouseName: string; okCount: number; warningCount: number; criticalCount: number }> =
-    scorecardData?.warehouseHealthScorecard ?? [];
+  const scorecards: Array<{
+    warehouseId: string;
+    warehouseName: string;
+    okCount: number;
+    warningCount: number;
+    criticalCount: number;
+  }> = scorecardData?.warehouseHealthScorecard ?? [];
   const overview = overviewData?.companyStockHealthOverview;
-  const riskMetrics: Array<{ warehouseId: string; warehouseName: string; healthScore: number; expiredPercentage: number; expiringSoonPercentage: number; blockedProductCount: number }> =
-    overview?.warehouseRiskMetrics ?? [];
+  const riskMetrics: Array<{
+    warehouseId: string;
+    warehouseName: string;
+    healthScore: number;
+    expiredPercentage: number;
+    expiringSoonPercentage: number;
+    blockedProductCount: number;
+  }> = overview?.warehouseRiskMetrics ?? [];
 
-  const totalSkus = (stats?.okCount ?? 0) + (stats?.warningCount ?? 0) + (stats?.criticalCount ?? 0);
+  const totalSkus =
+    (stats?.okCount ?? 0) + (stats?.warningCount ?? 0) + (stats?.criticalCount ?? 0);
 
   const pieData = [
     { name: 'healthy', value: stats?.okCount ?? 0, fill: 'var(--color-healthy)' },
@@ -98,14 +103,30 @@ export function StockHealthReport() {
             <CardDescription>SKU-level distribution</CardDescription>
           </CardHeader>
           <CardContent>
-            {healthLoading && !healthData ? <Skeleton className="h-[200px] w-full" /> :
-             totalSkus === 0 ? <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">No SKUs found</div> :
-            <ChartContainer config={healthPieConfig} className="mx-auto aspect-square max-h-[200px]">
-              <PieChart>
-                <ChartTooltip content={<ChartTooltipContent nameKey="name" />} />
-                <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={45} outerRadius={75} paddingAngle={2} />
-              </PieChart>
-            </ChartContainer>}
+            {healthLoading && !healthData ? (
+              <Skeleton className="h-[200px] w-full" />
+            ) : totalSkus === 0 ? (
+              <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
+                No SKUs found
+              </div>
+            ) : (
+              <ChartContainer
+                config={healthPieConfig}
+                className="mx-auto aspect-square max-h-[200px]"
+              >
+                <PieChart>
+                  <ChartTooltip content={<ChartTooltipContent nameKey="name" />} />
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={45}
+                    outerRadius={75}
+                    paddingAngle={2}
+                  />
+                </PieChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -132,7 +153,9 @@ export function StockHealthReport() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Blocked Products</p>
-                    <p className="text-xl font-bold text-destructive mt-0.5">{overview.totalBlockedProducts}</p>
+                    <p className="text-xl font-bold text-destructive mt-0.5">
+                      {overview.totalBlockedProducts}
+                    </p>
                   </div>
                   <p className="text-xs text-muted-foreground">{overview.lastUpdated}</p>
                 </div>
@@ -149,20 +172,42 @@ export function StockHealthReport() {
           <CardDescription>SKUs per health state per warehouse</CardDescription>
         </CardHeader>
         <CardContent>
-          {scorecardLoading && !scorecardData ? <Skeleton className="h-[240px] w-full" /> :
-           barData.length === 0 ? <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">No warehouses</div> :
-          <ChartContainer config={scorecardConfig} className="w-full" style={{ height: Math.max(200, barData.length * 48) }}>
-            <BarChart data={barData} layout="vertical">
-              <CartesianGrid horizontal={false} vertical={false} />
-              <XAxis type="number" tickLine={false} axisLine={false} className="text-xs" />
-              <YAxis dataKey="name" type="category" width={120} tickLine={false} axisLine={false} className="text-xs" />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Legend />
-              <Bar dataKey="OK" fill="var(--color-OK)" stackId="a" />
-              <Bar dataKey="Warning" fill="var(--color-Warning)" stackId="a" />
-              <Bar dataKey="Critical" fill="var(--color-Critical)" stackId="a" radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ChartContainer>}
+          {scorecardLoading && !scorecardData ? (
+            <Skeleton className="h-[240px] w-full" />
+          ) : barData.length === 0 ? (
+            <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground">
+              No warehouses
+            </div>
+          ) : (
+            <ChartContainer
+              config={scorecardConfig}
+              className="w-full"
+              style={{ height: Math.max(200, barData.length * 48) }}
+            >
+              <BarChart data={barData} layout="vertical">
+                <CartesianGrid horizontal={false} vertical={false} />
+                <XAxis type="number" tickLine={false} axisLine={false} className="text-xs" />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  width={120}
+                  tickLine={false}
+                  axisLine={false}
+                  className="text-xs"
+                />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Legend />
+                <Bar dataKey="OK" fill="var(--color-OK)" stackId="a" />
+                <Bar dataKey="Warning" fill="var(--color-Warning)" stackId="a" />
+                <Bar
+                  dataKey="Critical"
+                  fill="var(--color-Critical)"
+                  stackId="a"
+                  radius={[0, 4, 4, 0]}
+                />
+              </BarChart>
+            </ChartContainer>
+          )}
         </CardContent>
       </Card>
 
@@ -174,37 +219,56 @@ export function StockHealthReport() {
             <CardDescription>Expiry and health breakdown per warehouse</CardDescription>
           </CardHeader>
           <CardContent>
-            {overviewLoading && !overviewData ? <Skeleton className="h-32 w-full" /> :
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Warehouse</TableHead>
-                  <TableHead className="text-right">Health</TableHead>
-                  <TableHead className="text-right">Expired</TableHead>
-                  <TableHead className="text-right">Expiring</TableHead>
-                  <TableHead className="text-right">Blocked</TableHead>
-                  <TableHead className="w-[100px]">Bar</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {riskMetrics.map((m) => (
-                  <TableRow key={m.warehouseId}>
-                    <TableCell className="font-medium">{m.warehouseName}</TableCell>
-                    <TableCell className="text-right">
-                      <span className={`font-bold ${scoreColor(m.healthScore)}`}>{m.healthScore.toFixed(1)}%</span>
-                    </TableCell>
-                    <TableCell className="text-right text-destructive">{m.expiredPercentage.toFixed(1)}%</TableCell>
-                    <TableCell className="text-right text-[var(--chart-4)]">{m.expiringSoonPercentage.toFixed(1)}%</TableCell>
-                    <TableCell className="text-right">
-                      {m.blockedProductCount > 0 ? <span className="text-destructive font-medium">{m.blockedProductCount}</span> : <span className="text-muted-foreground">0</span>}
-                    </TableCell>
-                    <TableCell>
-                      <HealthBar ok={m.healthScore} warning={m.expiringSoonPercentage} critical={m.expiredPercentage} />
-                    </TableCell>
+            {overviewLoading && !overviewData ? (
+              <Skeleton className="h-32 w-full" />
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Warehouse</TableHead>
+                    <TableHead className="text-right">Health</TableHead>
+                    <TableHead className="text-right">Expired</TableHead>
+                    <TableHead className="text-right">Expiring</TableHead>
+                    <TableHead className="text-right">Blocked</TableHead>
+                    <TableHead className="w-[100px]">Bar</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>}
+                </TableHeader>
+                <TableBody>
+                  {riskMetrics.map((m) => (
+                    <TableRow key={m.warehouseId}>
+                      <TableCell className="font-medium">{m.warehouseName}</TableCell>
+                      <TableCell className="text-right">
+                        <span className={`font-bold ${scoreColor(m.healthScore)}`}>
+                          {m.healthScore.toFixed(1)}%
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right text-destructive">
+                        {m.expiredPercentage.toFixed(1)}%
+                      </TableCell>
+                      <TableCell className="text-right text-[var(--chart-4)]">
+                        {m.expiringSoonPercentage.toFixed(1)}%
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {m.blockedProductCount > 0 ? (
+                          <span className="text-destructive font-medium">
+                            {m.blockedProductCount}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">0</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <HealthBar
+                          ok={m.healthScore}
+                          warning={m.expiringSoonPercentage}
+                          critical={m.expiredPercentage}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       )}

@@ -1,7 +1,12 @@
 'use client';
 
 import React from 'react';
-import { useQuery } from '@apollo/client';
+import {
+  useWarehousesByCompany,
+  useWarehouseStock,
+  useCategories,
+  useWarehouseStockHealth,
+} from '@/hooks/apollo';
 import { useParams, useSearchParams } from 'next/navigation';
 import CompanyGuard from '@/components/CompanyGuard';
 import { Button } from '@/components/ui/button';
@@ -26,9 +31,6 @@ import {
 } from '@/components/ui/select';
 import { Plus, Search, Package, PackagePlus } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
-import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
-import { GET_CATEGORIES } from '@/lib/graphql/catalog';
-import { GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
 import OpeningStockModal from '@/components/inventory/OpeningStockModal';
 import StockDrawer from '@/components/inventory/StockDrawer';
 import { LotBreakdownModal } from '@/components/inventory/LotBreakdownModal';
@@ -40,7 +42,7 @@ import {
 } from '@/lib/utils/expiry';
 import type { LotWithExpiry } from '@/lib/utils/expiry';
 import { format } from 'date-fns';
-import { GET_WAREHOUSE_STOCK_HEALTH, WarehouseStockHealth } from '@/lib/graphql/stock-health';
+import type { WarehouseStockHealth } from '@/lib/graphql/stock-health';
 import { StockHealthBadge } from '@/components/inventory/stock-health-badge';
 
 type Category = { id: string; name: string };
@@ -50,6 +52,7 @@ type StockLot = {
   quantity: string | number;
   expiry_date?: string | null;
   received_at?: string | null;
+  source_type?: string | null;
 };
 
 type StockItem = {
@@ -90,7 +93,8 @@ function StockPageContent() {
   const [isOpeningStockModalOpen, setIsOpeningStockModalOpen] = React.useState(false);
   const [selectedStock, setSelectedStock] = React.useState<StockItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
-  const [lotBreakdownProduct, setLotBreakdownProduct] = React.useState<StockItemWithConvertedLots | null>(null);
+  const [lotBreakdownProduct, setLotBreakdownProduct] =
+    React.useState<StockItemWithConvertedLots | null>(null);
   const [isLotModalOpen, setIsLotModalOpen] = React.useState(false);
 
   // Get warehouse ID from context or user data
@@ -103,10 +107,8 @@ function StockPageContent() {
   const userRole = activeCompany?.role;
 
   // For OWNER/ADMIN, fetch all company warehouses as fallback
-  const { data: companyData } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
-    variables: { slug: companySlug },
-    skip: !companySlug || !!activeWarehouse || !['OWNER', 'ADMIN'].includes(userRole || ''),
-  });
+  const needsCompanyFallback = !activeWarehouse && ['OWNER', 'ADMIN'].includes(userRole || '');
+  const { data: companyData } = useWarehousesByCompany(needsCompanyFallback ? companySlug : '');
 
   // Try to get warehouse from company data if not in user.warehouses
   const warehouseFromCompany = companyData?.companyBySlug?.warehouses?.find(
@@ -115,23 +117,12 @@ function StockPageContent() {
 
   const warehouseId = activeWarehouse?.warehouseId || warehouseFromCompany?.id;
 
-  const {
-    data: stockData,
-    loading,
-    error,
-    refetch,
-  } = useQuery(GET_WAREHOUSE_STOCK, {
-    variables: { warehouseId: warehouseId || '' },
-    skip: !warehouseId,
-  });
+  const { data: stockData, loading, error, refetch } = useWarehouseStock(warehouseId || '');
 
-  const { data: categoriesData } = useQuery(GET_CATEGORIES);
+  const { data: categoriesData } = useCategories();
 
   // Get stock health data
-  const { data: stockHealthData } = useQuery(GET_WAREHOUSE_STOCK_HEALTH, {
-    variables: { warehouseId: warehouseId || '' },
-    skip: !warehouseId,
-  });
+  const { data: stockHealthData } = useWarehouseStockHealth(warehouseId || '');
 
   const canModifyStock = userRole ? ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole) : false;
 
@@ -198,8 +189,7 @@ function StockPageContent() {
       ...stockItem,
       lots: (stockItem.lots ?? []).map((lot) => ({
         id: lot.id,
-        quantity:
-          typeof lot.quantity === 'string' ? Number.parseFloat(lot.quantity) : lot.quantity,
+        quantity: typeof lot.quantity === 'string' ? Number.parseFloat(lot.quantity) : lot.quantity,
         expiry_date: lot.expiry_date ?? null,
         received_at: lot.received_at ?? '',
       })),

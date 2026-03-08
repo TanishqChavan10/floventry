@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useMutation } from '@apollo/client';
-import { gql } from '@apollo/client';
+import { useUpdateMemberWarehouses } from '@/hooks/apollo';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -17,12 +16,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePermissions } from '@/hooks/usePermissions';
-
-const UPDATE_MEMBER_WAREHOUSES = gql`
-  mutation UpdateMemberWarehouses($membershipId: String!, $warehouseIds: [String!]!) {
-    updateMemberWarehouses(membershipId: $membershipId, warehouseIds: $warehouseIds)
-  }
-`;
 
 interface Warehouse {
   id: string;
@@ -61,7 +54,7 @@ export function EditMemberDialog({
   onSuccess,
 }: EditMemberDialogProps) {
   const [selectedWarehouses, setSelectedWarehouses] = useState<string[]>([]);
-  const [updateWarehouses, { loading }] = useMutation(UPDATE_MEMBER_WAREHOUSES);
+  const [updateWarehouses, { loading }] = useUpdateMemberWarehouses();
   const permissions = usePermissions();
 
   // Filter warehouses based on current user's role

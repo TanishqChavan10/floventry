@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@apollo/client';
 import { useParams, useRouter } from 'next/navigation';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/role-guard';
@@ -27,7 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Search, Eye, FileText, Clock, CheckCircle, XCircle, Package } from 'lucide-react';
-import { GET_PURCHASE_ORDERS } from '@/lib/graphql/purchase-orders';
+import { usePurchaseOrders } from '@/hooks/apollo';
 import Link from 'next/link';
 
 // Status badge helper
@@ -64,15 +63,12 @@ function CompanyPurchaseOrdersContent() {
   const rbac = useRbac();
 
   // Fetch purchase orders
-  const { data, loading, error, refetch } = useQuery(GET_PURCHASE_ORDERS, {
-    variables: {
-      filters: {
-        ...(statusFilter !== 'all' && { status: statusFilter }),
-        limit: 100,
-        offset: 0,
-      },
+  const { data, loading, error, refetch } = usePurchaseOrders({
+    filters: {
+      ...(statusFilter !== 'all' && { status: statusFilter }),
+      limit: 100,
+      offset: 0,
     },
-    fetchPolicy: 'cache-and-network',
   });
 
   const purchaseOrders = data?.purchaseOrders || [];

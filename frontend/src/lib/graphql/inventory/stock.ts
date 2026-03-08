@@ -1,43 +1,16 @@
 import { gql } from '@apollo/client';
+import { STOCK_WITH_PRODUCT_FRAGMENT } from '../fragments/stock.fragment';
+import { WAREHOUSE_REF_FRAGMENT } from '../fragments/warehouse.fragment';
 
 // Query to get all stock for a specific warehouse
 export const GET_STOCK_BY_WAREHOUSE = gql`
   query GetStockByWarehouse($warehouseId: String!) {
     stockByWarehouse(warehouseId: $warehouseId) {
-      id
-      product {
-        id
-        name
-        sku
-        unit
-        supplier_id
-        supplier {
-          id
-          name
-        }
-        category {
-          id
-          name
-        }
-        cost_price
-        selling_price
-      }
-      warehouse {
-        id
-        name
-      }
-      quantity
-      min_stock_level
-      max_stock_level
-      reorder_point
-      created_at
-      updated_at
+      ...StockWithProduct
     }
   }
+  ${STOCK_WITH_PRODUCT_FRAGMENT}
 `;
-
-// GET_STOCK_MOVEMENTS → canonical in inventory/inventory.ts
-// GET_LOW_STOCK_ITEMS  → canonical in inventory/low-stock.ts
 
 // Mutation to create stock
 export const CREATE_STOCK = gql`
@@ -49,8 +22,7 @@ export const CREATE_STOCK = gql`
         name
       }
       warehouse {
-        id
-        name
+        ...WarehouseRef
       }
       quantity
       min_stock_level
@@ -58,11 +30,8 @@ export const CREATE_STOCK = gql`
       reorder_point
     }
   }
+  ${WAREHOUSE_REF_FRAGMENT}
 `;
-
-// ADJUST_STOCK → canonical in inventory/inventory.ts
-
-// UPDATE_STOCK_LEVELS → canonical in inventory/inventory.ts
 
 // Query to get a specific stock
 export const GET_STOCK = gql`
@@ -75,13 +44,26 @@ export const GET_STOCK = gql`
         sku
       }
       warehouse {
-        id
-        name
+        ...WarehouseRef
       }
       quantity
       min_stock_level
       max_stock_level
       reorder_point
+    }
+  }
+  ${WAREHOUSE_REF_FRAGMENT}
+`;
+
+// Query to get stock lots for a specific product in a warehouse
+export const GET_STOCK_LOTS = gql`
+  query GetStockLots($productId: ID!, $warehouseId: ID!) {
+    stockLots(productId: $productId, warehouseId: $warehouseId) {
+      id
+      quantity
+      expiry_date
+      received_at
+      source_type
     }
   }
 `;

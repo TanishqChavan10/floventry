@@ -1,39 +1,14 @@
 import { gql } from '@apollo/client';
+import { GRN_LIST_FRAGMENT } from '../fragments/purchaseOrder.fragment';
+import { WAREHOUSE_REF_FRAGMENT } from '../fragments/warehouse.fragment';
 
 export const GET_GRNS = gql`
   query GetGRNs($filters: GRNFilterInput!) {
     grns(filters: $filters) {
-      id
-      grn_number
-      status
-      received_at
-      notes
-      warehouse {
-        id
-        name
-      }
-      purchase_order {
-        id
-        po_number
-        supplier {
-          id
-          name
-        }
-      }
-      user {
-        id
-        fullName
-      }
-      user_role
-      posted_by_user {
-        id
-        fullName
-      }
-      posted_at
-      created_at
-      updated_at
+      ...GRNList
     }
   }
+  ${GRN_LIST_FRAGMENT}
 `;
 
 export const GET_GRN = gql`
@@ -45,8 +20,7 @@ export const GET_GRN = gql`
       received_at
       notes
       warehouse {
-        id
-        name
+        ...WarehouseRef
       }
       purchase_order {
         id
@@ -96,6 +70,7 @@ export const GET_GRN = gql`
       updated_at
     }
   }
+  ${WAREHOUSE_REF_FRAGMENT}
 `;
 
 export const CREATE_GRN = gql`

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useApolloClient } from '@apollo/client';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -13,12 +12,12 @@ import {
 } from '@/hooks/useGlobalSearch';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import {
-  GLOBAL_SEARCH,
-  GET_GRN_FOR_REDIRECT,
-  GET_ISSUE_FOR_REDIRECT,
-  GET_TRANSFER_FOR_REDIRECT,
-} from '@/lib/graphql/search';
-import { PRODUCT_BY_BARCODE } from '@/lib/graphql/barcode';
+  useGlobalSearchQuery,
+  useGrnForRedirect,
+  useIssueForRedirect,
+  useTransferForRedirect,
+  useProductByBarcode,
+} from '@/hooks/apollo';
 import { GlobalSearchModal } from './GlobalSearchModal';
 import { CreateWarehouseDialog } from '@/components/warehouses/CreateWarehouseDialog';
 import { useLoadingContext } from '@/context/loading-context';
@@ -42,10 +41,16 @@ function isAbortLikeError(error: unknown): boolean {
 }
 
 export function GlobalSearchProvider({ children }: { children: React.ReactNode }) {
-  const client = useApolloClient();
   const router = useRouter();
   const params = useParams();
   const companySlug = params?.slug as string | undefined;
+
+  // Lazy query hooks for search & redirects
+  const [searchQuery] = useGlobalSearchQuery();
+  const [lookupBarcode] = useProductByBarcode();
+  const [fetchGrn] = useGrnForRedirect();
+  const [fetchIssue] = useIssueForRedirect();
+  const [fetchTransfer] = useTransferForRedirect();
 
   const companyPlan: 'Standard' | 'Pro' | null = companySlug ? 'Pro' : null;
 
@@ -149,17 +154,15 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
     startSearchLoading();
     setError(null);
 
-    client
-      .query({
-        query: GLOBAL_SEARCH,
-        variables: { query: q },
-        fetchPolicy: 'no-cache',
-        context: {
-          fetchOptions: {
-            signal: controller.signal,
-          },
+    searchQuery({
+      variables: { query: q },
+      fetchPolicy: 'no-cache',
+      context: {
+        fetchOptions: {
+          signal: controller.signal,
         },
-      })
+      },
+    })
       .then((res) => {
         if (disposed) return;
         setResults(res.data?.globalSearch ?? EMPTY_RESULTS);
@@ -182,7 +185,7 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
       controller.abort();
       stopSearchLoading();
     };
-  }, [client, debouncedQuery, open, startSearchLoading, stopSearchLoading]);
+  }, [searchQuery, debouncedQuery, open, startSearchLoading, stopSearchLoading]);
 
   const navigateToResult: GlobalSearchContextValue['navigateToResult'] = useCallback(
     async (item) => {
@@ -212,8 +215,7 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
           if (!normalized) return;
 
           try {
-            const res = await client.query({
-              query: PRODUCT_BY_BARCODE,
+            const res = await lookupBarcode({
               variables: { barcode: normalized },
               fetchPolicy: 'no-cache',
             });
@@ -286,8 +288,7 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
 
         try {
           if (type === 'GRN') {
-            const res = await client.query({
-              query: GET_GRN_FOR_REDIRECT,
+            const res = await fetchGrn({
               variables: { id: item.id },
               fetchPolicy: 'no-cache',
             });
@@ -305,8 +306,7 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
           }
 
           if (type === 'ISSUE') {
-            const res = await client.query({
-              query: GET_ISSUE_FOR_REDIRECT,
+            const res = await fetchIssue({
               variables: { id: item.id },
               fetchPolicy: 'no-cache',
             });
@@ -324,8 +324,7 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
           }
 
           if (type === 'TRANSFER') {
-            const res = await client.query({
-              query: GET_TRANSFER_FOR_REDIRECT,
+            const res = await fetchTransfer({
               variables: { id: item.id },
               fetchPolicy: 'no-cache',
             });
@@ -351,7 +350,7 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
         }
       }
     },
-    [client, companySlug, router],
+    [lookupBarcode, fetchGrn, fetchIssue, fetchTransfer, companySlug, router],
   );
 
   const value: GlobalSearchContextValue = useMemo(

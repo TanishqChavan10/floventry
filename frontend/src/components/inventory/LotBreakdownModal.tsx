@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@apollo/client';
+import { useStockMovements } from '@/hooks/apollo';
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import {
   Table,
@@ -22,7 +23,6 @@ import {
 import { ExpiryStatusBadge } from './ExpiryStatusBadge';
 import { getExpiryStatus, getDaysUntilExpiry, LotWithExpiry } from '@/lib/utils/expiry';
 import { Copy, Package } from 'lucide-react';
-import { GET_STOCK_MOVEMENTS } from '@/lib/graphql/inventory';
 import { toast } from 'sonner';
 import { CopyButton } from '@/components/common/CopyButton';
 
@@ -127,11 +127,9 @@ export function LotBreakdownModal({
     };
   }, [warehouseId, productId]);
 
-  const { data: movementsData } = useQuery(GET_STOCK_MOVEMENTS, {
-    variables: movementQueryVariables ?? undefined,
-    skip: !isOpen || !movementQueryVariables,
-    fetchPolicy: 'cache-first',
-    notifyOnNetworkStatusChange: false,
+  const { data: movementsData } = useStockMovements({
+    warehouseId: isOpen && movementQueryVariables ? movementQueryVariables.warehouseId : '',
+    filters: movementQueryVariables?.filters ?? {},
   });
 
   const discardedLotIdSet = useMemo(() => {
@@ -210,6 +208,7 @@ export function LotBreakdownModal({
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[110px]">Lot ID</TableHead>
+                  <TableHead className="w-[100px]">Source</TableHead>
                   <TableHead className="w-[110px] text-right">Quantity</TableHead>
                   <TableHead className="w-[140px]">Received</TableHead>
                   <TableHead className="w-[140px]">Expiry</TableHead>
@@ -254,6 +253,30 @@ export function LotBreakdownModal({
                             <Copy className="h-3.5 w-3.5" />
                           </Button>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={
+                            lot.source_type === 'ADJUSTMENT'
+                              ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/30 dark:text-blue-300'
+                              : lot.source_type === 'GRN'
+                                ? 'border-green-300 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-950/30 dark:text-green-300'
+                                : lot.source_type === 'TRANSFER'
+                                  ? 'border-purple-300 bg-purple-50 text-purple-700 dark:border-purple-700 dark:bg-purple-950/30 dark:text-purple-300'
+                                  : 'border-gray-300 bg-gray-50 text-gray-700 dark:border-gray-700 dark:bg-gray-950/30 dark:text-gray-300'
+                          }
+                        >
+                          {lot.source_type === 'OPENING'
+                            ? 'Opening'
+                            : lot.source_type === 'ADJUSTMENT'
+                              ? 'Adjustment'
+                              : lot.source_type === 'GRN'
+                                ? 'GRN'
+                                : lot.source_type === 'TRANSFER'
+                                  ? 'Transfer'
+                                  : (lot.source_type ?? '—')}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right font-semibold">
                         {lot.quantity.toFixed(2)}

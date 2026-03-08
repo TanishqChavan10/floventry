@@ -1,20 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useMutation } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useLoadingContext } from '@/context/loading-context';
 import {
-  EXPORT_STOCK_SNAPSHOT,
-  EXPORT_STOCK_MOVEMENTS,
-  EXPORT_ADJUSTMENTS,
-  EXPORT_EXPIRY_LOTS,
-  EXPORT_INVENTORY_SUMMARY,
-  EXPORT_COMPANY_MOVEMENTS,
-  EXPORT_EXPIRY_RISK,
-} from '@/lib/graphql/export';
+  useExportStockSnapshot,
+  useExportStockMovements,
+  useExportAdjustments,
+  useExportExpiryLots,
+  useExportInventorySummary,
+  useExportCompanyMovements,
+  useExportExpiryRisk,
+} from '@/hooks/apollo';
 
 type ExportType =
   | 'stock_snapshot'
@@ -42,16 +41,6 @@ interface ExportButtonProps {
   size?: 'default' | 'sm' | 'lg';
 }
 
-const EXPORT_MUTATIONS = {
-  stock_snapshot: EXPORT_STOCK_SNAPSHOT,
-  stock_movements: EXPORT_STOCK_MOVEMENTS,
-  adjustments: EXPORT_ADJUSTMENTS,
-  expiry_lots: EXPORT_EXPIRY_LOTS,
-  inventory_summary: EXPORT_INVENTORY_SUMMARY,
-  company_movements: EXPORT_COMPANY_MOVEMENTS,
-  expiry_risk: EXPORT_EXPIRY_RISK,
-};
-
 const getExportLabel = (type: ExportType): string => {
   const labels: Record<ExportType, string> = {
     stock_snapshot: 'Stock Snapshot',
@@ -78,41 +67,23 @@ export function ExportButton({
   const [isExporting, setIsExporting] = useState(false);
   const { _increment, _decrement } = useLoadingContext();
 
-  const mutation = EXPORT_MUTATIONS[type];
+  const [exportStockSnapshot] = useExportStockSnapshot();
+  const [exportStockMovements] = useExportStockMovements();
+  const [exportAdjustments] = useExportAdjustments();
+  const [exportExpiryLots] = useExportExpiryLots();
+  const [exportInventorySummary] = useExportInventorySummary();
+  const [exportCompanyMovements] = useExportCompanyMovements();
+  const [exportExpiryRisk] = useExportExpiryRisk();
 
-  const [executeExport] = useMutation(mutation, {
-    onCompleted: (data) => {
-      setIsExporting(false);
-      _decrement();
-      const csvContent = Object.values(data)[0] as string;
-
-      // Create blob and download
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-
-      link.setAttribute('href', url);
-      link.setAttribute('download', `${type}_${new Date().toISOString().slice(0, 10)}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      toast({
-        title: 'Export Successful',
-        description: `${getExportLabel(type)} exported successfully`,
-      });
-    },
-    onError: (error) => {
-      setIsExporting(false);
-      _decrement();
-      toast({
-        title: 'Export Failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+  const exportFns: Record<ExportType, typeof exportStockSnapshot> = {
+    stock_snapshot: exportStockSnapshot,
+    stock_movements: exportStockMovements,
+    adjustments: exportAdjustments,
+    expiry_lots: exportExpiryLots,
+    inventory_summary: exportInventorySummary,
+    company_movements: exportCompanyMovements,
+    expiry_risk: exportExpiryRisk,
+  };
 
   const handleExport = () => {
     setIsExporting(true);
@@ -128,7 +99,39 @@ export function ExportButton({
       variables.filters = filters;
     }
 
-    executeExport({ variables });
+    exportFns[type]({ variables })
+      .then(({ data }) => {
+        setIsExporting(false);
+        _decrement();
+        if (!data) return;
+        const csvContent = Object.values(data)[0] as string;
+
+        // Create blob and download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${type}_${new Date().toISOString().slice(0, 10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast({
+          title: 'Export Successful',
+          description: `${getExportLabel(type)} exported successfully`,
+        });
+      })
+      .catch((error: any) => {
+        setIsExporting(false);
+        _decrement();
+        toast({
+          title: 'Export Failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+      });
   };
 
   return (

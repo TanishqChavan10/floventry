@@ -3,8 +3,7 @@
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useQuery } from '@apollo/client';
-import { GET_SALES_ORDERS } from '@/lib/graphql/sales';
+import { useSalesOrders } from '@/hooks/apollo';
 import { CreateSalesOrderModal } from '@/components/sales/CreateSalesOrderModal';
 import { Loader2, Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -41,7 +40,7 @@ function SalesOrdersContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const { data, loading, error, refetch } = useQuery(GET_SALES_ORDERS);
+  const { data, loading, error, refetch } = useSalesOrders();
 
   const salesOrders = data?.salesOrders || [];
 

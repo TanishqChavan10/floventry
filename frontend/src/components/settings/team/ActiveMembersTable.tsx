@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery } from '@apollo/client';
-import { gql } from '@apollo/client';
+import { useCompanyMembers } from '@/hooks/apollo';
 import {
   Table,
   TableBody,
@@ -23,29 +22,6 @@ import { Loader2, MoreHorizontal, Search, UserCog, UserMinus } from 'lucide-reac
 import { format } from 'date-fns';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/context/auth-context';
-
-// GraphQL Query
-const GET_COMPANY_MEMBERS = gql`
-  query GetCompanyMembers($companyId: String!) {
-    companyMembers(companyId: $companyId) {
-      membership_id
-      user_id
-      role
-      joined_at
-      status
-      invited_by
-      user {
-        email
-        fullName
-      }
-      warehouses {
-        warehouseId
-        warehouseName
-        isManager
-      }
-    }
-  }
-`;
 
 interface Warehouse {
   warehouseId: string;
@@ -93,10 +69,7 @@ export function ActiveMembersTable({
   const managedWarehouseIds =
     user?.warehouses?.filter((w) => w.isManager).map((w) => w.warehouseId) || [];
 
-  const { data, loading, error } = useQuery(GET_COMPANY_MEMBERS, {
-    variables: { companyId },
-    skip: !companyId,
-  });
+  const { data, loading, error } = useCompanyMembers(companyId);
 
   if (loading) {
     return (

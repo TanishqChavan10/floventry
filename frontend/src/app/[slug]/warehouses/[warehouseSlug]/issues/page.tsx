@@ -3,8 +3,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { useQuery } from '@apollo/client';
-import { GET_ISSUE_NOTES_BY_WAREHOUSE } from '@/lib/graphql/issues';
+import { useIssueNotesByWarehouse } from '@/hooks/apollo';
 import RoleGuard from '@/components/guards/role-guard';
 import { useRbac } from '@/hooks/use-rbac';
 import { ArrowUpDown, Loader2, Plus, Search } from 'lucide-react';
@@ -46,10 +45,7 @@ function IssueNotesContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const { data, loading, error, refetch } = useQuery(GET_ISSUE_NOTES_BY_WAREHOUSE, {
-    variables: { warehouseId: activeWarehouse?.id },
-    skip: !activeWarehouse?.id,
-  });
+  const { data, loading, error, refetch } = useIssueNotesByWarehouse(activeWarehouse?.id || '');
 
   const issueNotes = data?.issueNotesByWarehouse || [];
 
@@ -136,63 +132,61 @@ function IssueNotesContent() {
                 </p>
               </div>
             ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="pl-2">Issue #</TableHead>
-                      <TableHead>Linked Order</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Items</TableHead>
-                      <TableHead>Issued By</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredNotes.map((note: any) => (
-                      <TableRow key={note.id} className="hover:bg-muted/50">
-                        <TableCell className="font-mono text-sm font-semibold pl-2">
-                          {note.issue_number}
-                        </TableCell>
-                        <TableCell>
-                          {note.sales_order ? (
-                            <Link
-                              href={`/${companySlug}/sales/orders/${note.sales_order.id}`}
-                              className="text-primary hover:underline underline-offset-4 font-medium"
-                            >
-                              {note.sales_order.order_number || note.sales_order.customer_name}
-                            </Link>
-                          ) : (
-                            <Badge variant="outline" className="gap-1">
-                              Direct issue
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={note.status} />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {note.items?.length || 0} items
-                        </TableCell>
-                        <TableCell>{note.issuer?.fullName || '-'}</TableCell>
-                        <TableCell>
-                          {note.issued_at
-                            ? format(new Date(note.issued_at), 'dd MMM yyyy')
-                            : format(new Date(note.created_at), 'dd MMM yyyy')}
-                        </TableCell>
-                        <TableCell className="text-right">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="pl-2">Issue #</TableHead>
+                    <TableHead>Linked Order</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Items</TableHead>
+                    <TableHead>Issued By</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredNotes.map((note: any) => (
+                    <TableRow key={note.id} className="hover:bg-muted/50">
+                      <TableCell className="font-mono text-sm font-semibold pl-2">
+                        {note.issue_number}
+                      </TableCell>
+                      <TableCell>
+                        {note.sales_order ? (
                           <Link
-                            href={`/${companySlug}/warehouses/${warehouseSlug}/issues/${note.id}`}
+                            href={`/${companySlug}/sales/orders/${note.sales_order.id}`}
+                            className="text-primary hover:underline underline-offset-4 font-medium"
                           >
-                            <Button variant="ghost" size="sm">
-                              View
-                            </Button>
+                            {note.sales_order.order_number || note.sales_order.customer_name}
                           </Link>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        ) : (
+                          <Badge variant="outline" className="gap-1">
+                            Direct issue
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={note.status} />
+                      </TableCell>
+                      <TableCell className="font-medium">{note.items?.length || 0} items</TableCell>
+                      <TableCell>{note.issuer?.fullName || '-'}</TableCell>
+                      <TableCell>
+                        {note.issued_at
+                          ? format(new Date(note.issued_at), 'dd MMM yyyy')
+                          : format(new Date(note.created_at), 'dd MMM yyyy')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Link
+                          href={`/${companySlug}/warehouses/${warehouseSlug}/issues/${note.id}`}
+                        >
+                          <Button variant="ghost" size="sm">
+                            View
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>

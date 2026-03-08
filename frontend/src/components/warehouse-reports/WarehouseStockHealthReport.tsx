@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { useQuery } from '@apollo/client';
 import { Shield, TrendingDown, Clock, AlertTriangle } from 'lucide-react';
 import { Pie, PieChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Cell } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { GET_WAREHOUSE_STOCK_HEALTH } from '@/lib/graphql/stock-health';
+import { useWarehouseStockHealth } from '@/hooks/apollo';
 import { format } from 'date-fns';
 
 const healthChartConfig = {
@@ -88,11 +87,7 @@ interface Props {
 }
 
 export function WarehouseStockHealthReport({ warehouseId }: Props) {
-  const { data, loading } = useQuery(GET_WAREHOUSE_STOCK_HEALTH, {
-    variables: { warehouseId },
-    skip: !warehouseId,
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data, loading } = useWarehouseStockHealth(warehouseId);
 
   const items: any[] = data?.warehouseStockHealth ?? [];
 

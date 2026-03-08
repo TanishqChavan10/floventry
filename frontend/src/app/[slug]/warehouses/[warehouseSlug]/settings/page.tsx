@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation } from '@apollo/client';
+import {
+  useWarehousesByCompany,
+  useWarehouseWithSettings,
+  useUpdateWarehouse,
+  useReactivateWarehouse,
+} from '@/hooks/apollo';
 import { toast } from 'sonner';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/role-guard';
@@ -40,12 +45,6 @@ import {
   Loader2,
   RefreshCw,
 } from 'lucide-react';
-import {
-  GET_WAREHOUSE_WITH_SETTINGS,
-  UPDATE_WAREHOUSE,
-  GET_WAREHOUSES_BY_COMPANY,
-  REACTIVATE_WAREHOUSE,
-} from '@/lib/graphql/company';
 
 function WarehouseSettingsContent() {
   const params = useParams();
@@ -56,25 +55,19 @@ function WarehouseSettingsContent() {
   const isReadOnly = !rbac.canEditWarehouseSettings;
 
   // Fetch warehouse data
-  const { data: warehousesData, loading: loadingWarehouses } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
-    variables: { slug: companySlug },
-    skip: !companySlug,
-  });
+  const { data: warehousesData, loading: loadingWarehouses } = useWarehousesByCompany(companySlug);
 
   const currentWarehouse = warehousesData?.companyBySlug?.warehouses?.find(
     (w: any) => w.slug === warehouseSlug,
   );
 
-  const { data, loading, refetch } = useQuery(GET_WAREHOUSE_WITH_SETTINGS, {
-    variables: { id: currentWarehouse?.id },
-    skip: !currentWarehouse?.id,
-  });
+  const { data, loading, refetch } = useWarehouseWithSettings(currentWarehouse?.id ?? '');
 
   const warehouse = data?.warehouse;
 
   // Mutations
-  const [updateWarehouse, { loading: updatingWarehouse }] = useMutation(UPDATE_WAREHOUSE);
-  const [reactivateWarehouse, { loading: reactivating }] = useMutation(REACTIVATE_WAREHOUSE);
+  const [updateWarehouse, { loading: updatingWarehouse }] = useUpdateWarehouse();
+  const [reactivateWarehouse, { loading: reactivating }] = useReactivateWarehouse();
 
   // Form state
   const [name, setName] = useState('');

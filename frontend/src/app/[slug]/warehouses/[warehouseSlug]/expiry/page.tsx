@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { useQuery } from '@apollo/client';
+import { useWarehouseStock } from '@/hooks/apollo';
 import { useAuth } from '@/context/auth-context';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
@@ -19,7 +19,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
 import { ExpiryStatusBadge } from '@/components/inventory/ExpiryStatusBadge';
 import { LotBreakdownModal } from '@/components/inventory/LotBreakdownModal';
 import { CopyButton } from '@/components/common/CopyButton';
@@ -54,10 +53,7 @@ function ExpiryContent() {
   const warehouseId = activeWarehouse?.warehouseId;
 
   // Fetch stock with lots
-  const { data: stockData, loading } = useQuery(GET_WAREHOUSE_STOCK, {
-    variables: { warehouseId: warehouseId || '' },
-    skip: !warehouseId,
-  });
+  const { data: stockData, loading } = useWarehouseStock(warehouseId || '');
 
   const stock = stockData?.stockByWarehouse || [];
 

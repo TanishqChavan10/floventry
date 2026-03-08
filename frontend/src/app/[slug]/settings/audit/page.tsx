@@ -3,12 +3,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useQuery } from '@apollo/client';
-import { format } from 'date-fns';
+import { useCompanyAuditLogs, useCompanyMembers, useCompanyBySlug } from '@/hooks/apollo';
 import { DateRange } from 'react-day-picker';
 
-import { GET_COMPANY_AUDIT_LOGS, GET_COMPANY_MEMBERS } from '@/lib/graphql/audit';
-import { GET_COMPANY_BY_SLUG } from '@/lib/graphql/company';
+import { format } from 'date-fns';
 import { useAuth } from '@/context/auth-context';
 import RoleGuard from '@/components/guards/RoleGuard';
 
@@ -653,11 +651,7 @@ function AuditLogPageContent() {
   const [showFilters, setShowFilters] = useState(true);
 
   // Queries
-  const { data: companyData } = useQuery(GET_COMPANY_BY_SLUG, {
-    variables: { slug },
-    skip: !slug,
-    fetchPolicy: 'cache-first',
-  });
+  const { data: companyData } = useCompanyBySlug(slug);
 
   const companyId = companyData?.companyBySlug?.id;
 
@@ -671,19 +665,12 @@ function AuditLogPageContent() {
     return Object.keys(f).length > 0 ? f : undefined;
   }, [actionFilter, entityFilter, userFilter, dateRange]);
 
-  const { data, loading, error, refetch } = useQuery(GET_COMPANY_AUDIT_LOGS, {
-    variables: {
-      filters,
-      pagination: { page, limit: PAGE_SIZE },
-    },
-    fetchPolicy: 'cache-and-network',
+  const { data, loading, error, refetch } = useCompanyAuditLogs({
+    filters,
+    pagination: { page, limit: PAGE_SIZE },
   });
 
-  const { data: membersData } = useQuery(GET_COMPANY_MEMBERS, {
-    variables: { companyId: companyId || '' },
-    skip: !companyId,
-    fetchPolicy: 'cache-first',
-  });
+  const { data: membersData } = useCompanyMembers(companyId || '');
 
   // Build member map
   const memberMap = useMemo(() => {

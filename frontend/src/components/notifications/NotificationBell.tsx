@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
 import { Bell, Check, AlertCircle, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,11 +12,11 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
-  GET_NOTIFICATIONS,
-  GET_UNREAD_COUNT,
-  MARK_AS_READ,
-  MARK_ALL_AS_READ,
-} from '@/lib/graphql/notifications';
+  useNotifications,
+  useUnreadNotificationCount,
+  useMarkNotificationAsRead,
+  useMarkAllNotificationsAsRead,
+} from '@/hooks/apollo';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter, useParams } from 'next/navigation';
 
@@ -46,28 +45,16 @@ export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
 
   // Poll unread count every 30 seconds (PRECISE - count only)
-  const { data: countData } = useQuery(GET_UNREAD_COUNT, {
-    pollInterval: 30000, // 30 seconds
-  });
+  const { data: countData } = useUnreadNotificationCount();
 
   // Load recent notifications ONLY when dropdown opens (NO polling)
-  const { data: notificationsData, refetch: refetchNotifications } = useQuery(GET_NOTIFICATIONS, {
-    variables: { limit: 5, offset: 0 },
-    skip: !isOpen, // Only fetch when dropdown is open
+  const { data: notificationsData, refetch: refetchNotifications } = useNotifications({
+    limit: 5,
+    offset: 0,
   });
 
-  const [markAsRead] = useMutation(MARK_AS_READ, {
-    refetchQueries: [
-      { query: GET_UNREAD_COUNT },
-      { query: GET_NOTIFICATIONS, variables: { limit: 5, offset: 0 } },
-    ],
-  });
-  const [markAllAsRead] = useMutation(MARK_ALL_AS_READ, {
-    refetchQueries: [
-      { query: GET_UNREAD_COUNT },
-      { query: GET_NOTIFICATIONS, variables: { limit: 5, offset: 0 } },
-    ],
-  });
+  const [markAsRead] = useMarkNotificationAsRead();
+  const [markAllAsRead] = useMarkAllNotificationsAsRead();
 
   const unreadCount = countData?.unreadNotificationCount || 0;
   const notifications: Notification[] = notificationsData?.notifications || [];

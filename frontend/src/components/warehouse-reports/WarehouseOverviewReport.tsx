@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { useQuery } from '@apollo/client';
 import { Package, AlertTriangle, Activity, TrendingDown } from 'lucide-react';
 import { Pie, PieChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,9 +11,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
-import { GET_WAREHOUSE_DASHBOARD } from '@/lib/graphql/warehouse-dashboard';
-import { GET_STOCK_SNAPSHOT } from '@/lib/graphql/warehouse-reports';
-import { GET_LOW_STOCK_ITEMS } from '@/lib/graphql/low-stock';
+import { useWarehouseDashboard, useLowStockItems, useStockSnapshot } from '@/hooks/apollo';
 import { format } from 'date-fns';
 
 const statusChartConfig = {
@@ -33,20 +30,14 @@ interface Props {
 }
 
 export function WarehouseOverviewReport({ warehouseId }: Props) {
-  const { data: dashData, loading: dashLoading } = useQuery(GET_WAREHOUSE_DASHBOARD, {
-    variables: { warehouseId },
-    fetchPolicy: 'cache-and-network',
+  const { data: dashData, loading: dashLoading } = useWarehouseDashboard(warehouseId);
+
+  const { data: snapData, loading: snapLoading } = useStockSnapshot({
+    warehouseId,
+    filters: { limit: 200, offset: 0 },
   });
 
-  const { data: snapData, loading: snapLoading } = useQuery(GET_STOCK_SNAPSHOT, {
-    variables: { warehouseId, filters: { limit: 200, offset: 0 } },
-    skip: !warehouseId,
-  });
-
-  const { data: lowData, loading: lowLoading } = useQuery(GET_LOW_STOCK_ITEMS, {
-    variables: { warehouseId },
-    skip: !warehouseId,
-  });
+  const { data: lowData, loading: lowLoading } = useLowStockItems(warehouseId);
 
   const kpis = dashData?.warehouseKPIs;
   const recentMovements = dashData?.recentMovements ?? [];

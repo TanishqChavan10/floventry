@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useMutation } from '@apollo/client';
-import { ASSIGN_USER_TO_WAREHOUSE, REMOVE_USER_FROM_WAREHOUSE } from '@/lib/graphql/company';
+import { useAssignUserToWarehouse, useRemoveUserFromWarehouse } from '@/hooks/apollo';
 import { toast } from 'sonner';
 import { UserPlus, X, Loader2 } from 'lucide-react';
 import {
@@ -59,8 +58,8 @@ export function ManageWarehouseUsersDialog({
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<string>('STAFF');
 
-  const [assignUser, { loading: assigning }] = useMutation(ASSIGN_USER_TO_WAREHOUSE);
-  const [removeUser, { loading: removing }] = useMutation(REMOVE_USER_FROM_WAREHOUSE);
+  const [assignUser, { loading: assigning }] = useAssignUserToWarehouse();
+  const [removeUser, { loading: removing }] = useRemoveUserFromWarehouse();
 
   const assignedUserIds = new Set(currentAssignments.map((a) => a.userId));
   const unassignedUsers = availableUsers.filter((u) => !assignedUserIds.has(u.id));
@@ -196,9 +195,7 @@ export function ManageWarehouseUsersDialog({
                       <Badge variant={assignment.isManagerOfWarehouse ? 'default' : 'secondary'}>
                         {assignment.role || 'STAFF'}
                       </Badge>
-                      {assignment.isManagerOfWarehouse && (
-                        <Badge variant="outline">Manager</Badge>
-                      )}
+                      {assignment.isManagerOfWarehouse && <Badge variant="outline">Manager</Badge>}
                       <Button
                         variant="ghost"
                         size="icon"

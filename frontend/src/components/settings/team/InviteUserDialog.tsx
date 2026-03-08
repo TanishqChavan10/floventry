@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useMutation } from '@apollo/client';
+import { useSendInvite } from '@/hooks/apollo';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -25,7 +25,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRbac } from '@/hooks/use-rbac';
-import { SEND_INVITE } from '@/lib/graphql/invite';
 
 interface Warehouse {
   id: string;
@@ -55,7 +54,7 @@ export function InviteUserDialog({
   const [managedWarehouseIds, setManagedWarehouseIds] = useState<string[]>([]);
 
   const rbac = useRbac();
-  const [sendInviteMutation, { loading: isLoading }] = useMutation(SEND_INVITE);
+  const [sendInviteMutation, { loading: isLoading }] = useSendInvite();
 
   // Managers can only invite STAFF (role fixed)
   useEffect(() => {
@@ -66,9 +65,10 @@ export function InviteUserDialog({
   }, [rbac.isManager]);
 
   // Available warehouses for assignment
-  const availableWarehouses = rbac.isManager && !preselectedWarehouseId
-    ? warehouses.filter((w) => managedWarehouses.includes(w.id))
-    : warehouses;
+  const availableWarehouses =
+    rbac.isManager && !preselectedWarehouseId
+      ? warehouses.filter((w) => managedWarehouses.includes(w.id))
+      : warehouses;
 
   // Reset selections when role changes or preselection changes
   useEffect(() => {

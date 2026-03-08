@@ -1,3 +1,4 @@
+export * from './fragments';
 export * from './inventory';
 export * from './catalog';
 export * from './warehouse';
@@ -15,3 +16,4 @@ export * from './issues';
 export * from './notifications';
 export * from './search';
 export * from './settings';
+export * from './connections';

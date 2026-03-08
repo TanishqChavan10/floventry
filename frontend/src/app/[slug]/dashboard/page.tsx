@@ -9,8 +9,7 @@ import { RecentActivity } from '@/components/company-dashboard/RecentActivity';
 import { QuickActions } from '@/components/company-dashboard/QuickActions';
 import CompanyGuard from '@/components/CompanyGuard';
 import { AlertCircle } from 'lucide-react';
-import { useQuery } from '@apollo/client';
-import { GET_COMPANY_DASHBOARD } from '@/lib/graphql/company-dashboard';
+import { useCompanyDashboard } from '@/hooks/apollo';
 import AnalyticsCharts from '@/components/dashboard/AnalyticsCharts';
 
 function CompanyDashboardContent() {
@@ -36,9 +35,7 @@ function CompanyDashboardContent() {
     );
   }
 
-  const { data, loading, error } = useQuery(GET_COMPANY_DASHBOARD, {
-    pollInterval: 30000,
-  });
+  const { data, loading, error } = useCompanyDashboard();
 
   const dashboard = data?.companyDashboard;
 

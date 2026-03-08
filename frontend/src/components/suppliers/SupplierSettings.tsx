@@ -1,16 +1,14 @@
 'use client';
 
 import React from 'react';
-import { useQuery, useMutation } from '@apollo/client';
-import { GET_SUPPLIERS } from '@/lib/graphql/catalog';
-import { TOGGLE_SUPPLIER_ACTIVE } from '@/lib/graphql/settings';
+import { useSuppliers, useToggleSupplierActive } from '@/hooks/apollo';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 export default function SupplierSettings() {
-  const { data, loading, error } = useQuery(GET_SUPPLIERS);
-  const [toggleActive] = useMutation(TOGGLE_SUPPLIER_ACTIVE);
+  const { data, loading, error } = useSuppliers();
+  const [toggleActive] = useToggleSupplierActive();
 
   const handleToggle = async (id: string, currentStatus: boolean, name: string) => {
     try {

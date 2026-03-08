@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useLazyQuery } from '@apollo/client';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Barcode as BarcodeIcon, RotateCcw, Trash2 } from 'lucide-react';
@@ -21,7 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { PRODUCT_BY_BARCODE_DETAILS } from '@/lib/graphql/barcode';
+import { useProductByBarcodeDetails } from '@/hooks/apollo';
 import { parseScanPayload } from '@/lib/barcode/scan-payload';
 
 type BarcodeDetailsResult = {
@@ -62,7 +61,7 @@ function PosNewContent() {
 
   const pendingRef = useRef<{ barcode: string; qty?: number } | null>(null);
 
-  const [lookup, { loading }] = useLazyQuery<BarcodeDetailsResult>(PRODUCT_BY_BARCODE_DETAILS, {
+  const [lookup, { loading }] = useProductByBarcodeDetails({
     fetchPolicy: 'no-cache',
     onCompleted: (data) => {
       const row = data?.productByBarcodeDetails;

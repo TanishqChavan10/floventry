@@ -3,8 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useQuery } from '@apollo/client';
-import { GET_COMPANY_BY_SLUG } from '@/lib/graphql/company';
+import { useCompanyBySlug } from '@/hooks/apollo';
 import { InviteUserDialog } from '@/components/settings/team/InviteUserDialog';
 import { InvitesTable } from '@/components/settings/team/InvitesTable';
 import { ActiveMembersTable } from '@/components/settings/team/ActiveMembersTable';
@@ -24,10 +23,7 @@ function TeamManagementContent() {
   const [editingMember, setEditingMember] = useState<any>(null);
   const [removingMember, setRemovingMember] = useState<any>(null);
 
-  const { data, loading, error } = useQuery(GET_COMPANY_BY_SLUG, {
-    variables: { slug },
-    skip: !slug,
-  });
+  const { data, loading, error } = useCompanyBySlug(slug);
 
   const company = data?.companyBySlug;
 

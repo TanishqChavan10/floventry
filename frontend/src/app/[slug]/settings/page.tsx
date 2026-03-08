@@ -2,8 +2,7 @@
 
 import React from 'react';
 import { useParams } from 'next/navigation';
-import { useQuery } from '@apollo/client';
-import { GET_COMPANY_BY_SLUG } from '@/lib/graphql/company';
+import { useCompanyBySlug } from '@/hooks/apollo';
 import { Loader2 } from 'lucide-react';
 import CompanySettingsContent from './CompanySettingsContent';
 import RoleGuard from '@/components/guards/role-guard';
@@ -12,10 +11,7 @@ export default function CompanySettingsPage() {
   const params = useParams();
   const companySlug = params?.slug as string;
 
-  const { data, loading, error } = useQuery(GET_COMPANY_BY_SLUG, {
-    variables: { slug: companySlug },
-    skip: !companySlug,
-  });
+  const { data, loading, error } = useCompanyBySlug(companySlug);
 
   if (loading) {
     return (

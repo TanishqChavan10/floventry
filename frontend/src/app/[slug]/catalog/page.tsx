@@ -1,28 +1,20 @@
 'use client';
 
-import { useQuery } from '@apollo/client';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/auth-context';
 import { useRbac } from '@/hooks/use-rbac';
 import CompanyGuard from '@/components/CompanyGuard';
-import {
-  Package,
-  FolderTree,
-  Building,
-  Ruler,
-  ArrowRight,
-  PackagePlus,
-} from 'lucide-react';
-import { GET_CATALOG_STATS } from '@/lib/graphql/catalog';
+import { Package, FolderTree, Building, Ruler, ArrowRight, PackagePlus } from 'lucide-react';
+import { useCatalogStats } from '@/hooks/apollo';
 
 function CatalogLandingContent() {
   const { slug } = useParams();
   const router = useRouter();
   const { user } = useAuth();
 
-  const { data, loading, error } = useQuery(GET_CATALOG_STATS);
+  const { data, loading, error } = useCatalogStats();
 
   const rbac = useRbac();
   const isOwnerOrAdmin = rbac.isAdmin || rbac.isOwner;
@@ -135,10 +127,7 @@ function CatalogLandingContent() {
                 </p>
               </div>
               {isOwnerOrAdmin && (
-                <Button
-                  onClick={() => router.push(`/${slug}/catalog/products`)}
-                  className="gap-2"
-                >
+                <Button onClick={() => router.push(`/${slug}/catalog/products`)} className="gap-2">
                   <Package className="h-4 w-4" />
                   Add your first product
                 </Button>
@@ -158,9 +147,7 @@ function CatalogLandingContent() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{totalProducts}</div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Company-wide catalog
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Company-wide catalog</p>
                   </CardContent>
                 </Card>
 
@@ -171,9 +158,7 @@ function CatalogLandingContent() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{activeCategories}</div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Product classifications
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Product classifications</p>
                   </CardContent>
                 </Card>
 
@@ -184,9 +169,7 @@ function CatalogLandingContent() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{activeSuppliers}</div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Vendor relationships
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Vendor relationships</p>
                   </CardContent>
                 </Card>
 
@@ -197,9 +180,7 @@ function CatalogLandingContent() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{unitsInUse}</div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Measurement units
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Measurement units</p>
                   </CardContent>
                 </Card>
               </div>
@@ -228,9 +209,7 @@ function CatalogLandingContent() {
                           </div>
                           <div className="space-y-1">
                             <h3 className="font-semibold text-lg">{card.title}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {card.description}
-                            </p>
+                            <p className="text-sm text-muted-foreground">{card.description}</p>
                           </div>
                           <div className="mt-4 pt-4 border-t">
                             <div className="flex items-center justify-between">

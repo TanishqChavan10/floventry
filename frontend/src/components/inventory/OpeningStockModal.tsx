@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useMutation, useQuery } from '@apollo/client';
+import { useCreateOpeningStock, useProducts, useWarehouseStockHealth } from '@/hooks/apollo';
 import { differenceInCalendarDays, format } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -23,13 +23,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CREATE_OPENING_STOCK } from '@/lib/graphql/inventory';
 import { SafeBarcodeScanInput } from '@/components/barcode/SafeBarcodeScanInput';
-import { GET_WAREHOUSE_STOCK_HEALTH } from '@/lib/graphql/stock-health';
 
 import { CopyButton } from '@/components/common/CopyButton';
-
-import { GET_PRODUCTS } from '@/lib/graphql/catalog';
 
 interface OpeningStockModalProps {
   warehouseId: string;
@@ -54,13 +50,9 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
     note: '',
   });
 
-  const { data: productsData } = useQuery(GET_PRODUCTS);
+  const { data: productsData } = useProducts();
 
-  const { data: stockHealthData } = useQuery(GET_WAREHOUSE_STOCK_HEALTH, {
-    variables: { warehouseId },
-    skip: !warehouseId,
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data: stockHealthData } = useWarehouseStockHealth(warehouseId);
 
   const stockHealthByProductId = useMemo(() => {
     const rows = (stockHealthData?.warehouseStockHealth ?? []) as any[];
@@ -71,28 +63,7 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
     return map;
   }, [stockHealthData]);
 
-  const [createOpeningStock, { loading }] = useMutation(CREATE_OPENING_STOCK, {
-    onCompleted: () => {
-      toast({
-        title: 'Opening stock created',
-        description: 'Opening stock has been created successfully',
-      });
-      setFormData({
-        product_id: '',
-        quantity: '',
-        expiry_date: '',
-        note: '',
-      });
-      onClose();
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+  const [createOpeningStock, { loading }] = useCreateOpeningStock();
 
   const canSubmit = useMemo(() => {
     if (loading) return false;
@@ -130,17 +101,32 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
       return;
     }
 
-    await createOpeningStock({
-      variables: {
-        input: {
-          product_id: formData.product_id,
-          warehouse_id: warehouseId,
-          quantity: parseInt(formData.quantity),
-          expiry_date: formData.expiry_date || undefined,
-          note: formData.note || null,
+    try {
+      await createOpeningStock({
+        variables: {
+          input: {
+            product_id: formData.product_id,
+            warehouse_id: warehouseId,
+            quantity: parseInt(formData.quantity),
+            expiry_date: formData.expiry_date || undefined,
+            note: formData.note || null,
+          },
         },
-      },
-    });
+      });
+      toast({
+        title: 'Opening stock created',
+        description: 'Opening stock has been added successfully',
+      });
+      setFormData({ product_id: '', quantity: '', expiry_date: '', note: '' });
+      setLastScan(null);
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to create opening stock',
+        variant: 'destructive',
+      });
+    }
   };
 
   const products = productsData?.products?.filter((p: any) => p.is_active) || [];

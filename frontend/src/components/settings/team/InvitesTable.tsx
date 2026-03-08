@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useQuery, useMutation } from '@apollo/client';
+import { useCompanyInvites, useCancelInvite } from '@/hooks/apollo';
 import {
   Table,
   TableBody,
@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
-import { COMPANY_INVITES, CANCEL_INVITE } from '@/lib/graphql/invite';
 import { usePermissions } from '@/hooks/usePermissions';
 
 interface Invite {
@@ -33,14 +32,9 @@ interface InvitesTableProps {
 
 export function InvitesTable({ companyId, refreshTrigger }: InvitesTableProps) {
   const permissions = usePermissions();
-  const { data, loading, refetch } = useQuery(COMPANY_INVITES, {
-    variables: { companyId },
-    skip: !companyId,
-  });
+  const { data, loading, refetch } = useCompanyInvites(companyId);
 
-  const [cancelInviteMutation] = useMutation(CANCEL_INVITE, {
-    refetchQueries: [{ query: COMPANY_INVITES, variables: { companyId } }],
-  });
+  const [cancelInviteMutation] = useCancelInvite();
 
   // Refetch when refreshTrigger changes
   React.useEffect(() => {

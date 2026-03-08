@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { useQuery } from '@apollo/client';
 import { Package, Warehouse, AlertTriangle, Activity } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, XAxis, Pie, PieChart } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +11,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
-import { GET_COMPANY_DASHBOARD } from '@/lib/graphql/company-dashboard';
+import { useCompanyDashboard } from '@/hooks/apollo';
 
 const stockChartConfig = {
   healthy: { label: 'Healthy', color: 'var(--chart-2)' },
@@ -27,9 +26,7 @@ const expiryChartConfig = {
 } satisfies ChartConfig;
 
 export function OverviewReport() {
-  const { data, loading } = useQuery(GET_COMPANY_DASHBOARD, {
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data, loading } = useCompanyDashboard();
 
   const dashboard = data?.companyDashboard;
   const kpis = dashboard?.kpis;
@@ -44,8 +41,12 @@ export function OverviewReport() {
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
-              <CardHeader className="pb-1"><Skeleton className="h-4 w-20" /></CardHeader>
-              <CardContent><Skeleton className="h-6 w-12" /></CardContent>
+              <CardHeader className="pb-1">
+                <Skeleton className="h-4 w-20" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-6 w-12" />
+              </CardContent>
             </Card>
           ))}
         </div>
@@ -61,7 +62,11 @@ export function OverviewReport() {
 
   const expiryPieData = [
     { name: 'ok', value: expiryRisk?.ok ?? 0, fill: 'var(--color-ok)' },
-    { name: 'expiringSoon', value: expiryRisk?.expiringSoon ?? 0, fill: 'var(--color-expiringSoon)' },
+    {
+      name: 'expiringSoon',
+      value: expiryRisk?.expiringSoon ?? 0,
+      fill: 'var(--color-expiringSoon)',
+    },
     { name: 'expired', value: expiryRisk?.expired ?? 0, fill: 'var(--color-expired)' },
   ];
 
@@ -112,7 +117,9 @@ export function OverviewReport() {
             <AlertTriangle className="h-4 w-4 text-[var(--chart-4)]" />
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-xl font-bold text-[var(--chart-4)]">{(kpis?.stockAtRisk ?? 0).toLocaleString()}</div>
+            <div className="text-xl font-bold text-[var(--chart-4)]">
+              {(kpis?.stockAtRisk ?? 0).toLocaleString()}
+            </div>
             <p className="text-xs text-muted-foreground mt-0.5">Low/critical + expiring soon</p>
             {(kpis?.expiredStockUnits ?? 0) > 0 && (
               <p className="text-xs text-destructive font-medium mt-0.5">
@@ -149,10 +156,20 @@ export function OverviewReport() {
             <CardDescription>SKUs by stock health</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={stockChartConfig} className="mx-auto aspect-square max-h-[220px]">
+            <ChartContainer
+              config={stockChartConfig}
+              className="mx-auto aspect-square max-h-[220px]"
+            >
               <PieChart>
                 <ChartTooltip content={<ChartTooltipContent nameKey="name" />} />
-                <Pie data={stockPieData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2} />
+                <Pie
+                  data={stockPieData}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={2}
+                />
               </PieChart>
             </ChartContainer>
             <div className="flex justify-center gap-4 mt-2 text-xs text-muted-foreground">
@@ -172,10 +189,20 @@ export function OverviewReport() {
             <CardDescription>Lot-level expiry breakdown</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={expiryChartConfig} className="mx-auto aspect-square max-h-[220px]">
+            <ChartContainer
+              config={expiryChartConfig}
+              className="mx-auto aspect-square max-h-[220px]"
+            >
               <PieChart>
                 <ChartTooltip content={<ChartTooltipContent nameKey="name" />} />
-                <Pie data={expiryPieData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2} />
+                <Pie
+                  data={expiryPieData}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={2}
+                />
               </PieChart>
             </ChartContainer>
             <div className="flex justify-center gap-4 mt-2 text-xs text-muted-foreground">
@@ -199,10 +226,26 @@ export function OverviewReport() {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: '7-day in', value: kpis?.movements7d?.inUnits ?? 0, color: 'text-[var(--chart-2)]' },
-              { label: '7-day out', value: kpis?.movements7d?.outUnits ?? 0, color: 'text-[var(--chart-1)]' },
-              { label: '30-day in', value: kpis?.movements30d?.inUnits ?? 0, color: 'text-[var(--chart-2)]' },
-              { label: '30-day out', value: kpis?.movements30d?.outUnits ?? 0, color: 'text-[var(--chart-1)]' },
+              {
+                label: '7-day in',
+                value: kpis?.movements7d?.inUnits ?? 0,
+                color: 'text-[var(--chart-2)]',
+              },
+              {
+                label: '7-day out',
+                value: kpis?.movements7d?.outUnits ?? 0,
+                color: 'text-[var(--chart-1)]',
+              },
+              {
+                label: '30-day in',
+                value: kpis?.movements30d?.inUnits ?? 0,
+                color: 'text-[var(--chart-2)]',
+              },
+              {
+                label: '30-day out',
+                value: kpis?.movements30d?.outUnits ?? 0,
+                color: 'text-[var(--chart-1)]',
+              },
             ].map((m) => (
               <div key={m.label} className="space-y-1">
                 <p className="text-xs text-muted-foreground">{m.label}</p>
@@ -222,24 +265,38 @@ export function OverviewReport() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {warehouseHealth.map((wh: { warehouseId: string; warehouseName: string; okPercent: number; riskBadge: string }) => (
-                <div key={wh.warehouseId} className="flex items-center justify-between py-2 border-b last:border-0">
-                  <div className="flex items-center gap-2">
-                    <Warehouse className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">{wh.warehouseName}</span>
+              {warehouseHealth.map(
+                (wh: {
+                  warehouseId: string;
+                  warehouseName: string;
+                  okPercent: number;
+                  riskBadge: string;
+                }) => (
+                  <div
+                    key={wh.warehouseId}
+                    className="flex items-center justify-between py-2 border-b last:border-0"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Warehouse className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">{wh.warehouseName}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">{wh.okPercent}%</span>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          wh.riskBadge === 'LOW'
+                            ? 'bg-[var(--chart-2)]/15 text-[var(--chart-2)]'
+                            : wh.riskBadge === 'MEDIUM'
+                              ? 'bg-[var(--chart-4)]/15 text-[var(--chart-4)]'
+                              : 'bg-destructive/15 text-destructive'
+                        }`}
+                      >
+                        {wh.riskBadge}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-muted-foreground">{wh.okPercent}%</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      wh.riskBadge === 'LOW' ? 'bg-[var(--chart-2)]/15 text-[var(--chart-2)]' :
-                      wh.riskBadge === 'MEDIUM' ? 'bg-[var(--chart-4)]/15 text-[var(--chart-4)]' :
-                      'bg-destructive/15 text-destructive'
-                    }`}>
-                      {wh.riskBadge}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                ),
+              )}
             </div>
           </CardContent>
         </Card>

@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useMutation, useQuery } from '@apollo/client';
+import {
+  useWarehousesByCompany,
+  useWarehouseStock,
+  useCreateWarehouseTransfer,
+  usePostWarehouseTransfer,
+} from '@/hooks/apollo';
 import { useWarehouse } from '@/context/warehouse-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,13 +47,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { AlertTriangle, Plus, X, Loader2 } from 'lucide-react';
-import {
-  CREATE_WAREHOUSE_TRANSFER,
-  POST_WAREHOUSE_TRANSFER,
-  GET_WAREHOUSE_TRANSFERS,
-} from '@/lib/graphql/transfers';
-import { GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
-import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
 import { toast } from 'sonner';
 import { SafeBarcodeScanInput } from '@/components/barcode/SafeBarcodeScanInput';
 
@@ -93,23 +91,13 @@ export function CreateTransferModal({
     el?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }, [highlightIndex]);
 
-  const { data: warehousesData, loading: loadingWarehouses } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
-    variables: { slug: companySlug },
-    skip: !companySlug,
-  });
+  const { data: warehousesData, loading: loadingWarehouses } = useWarehousesByCompany(companySlug);
 
-  const { data: stockData, loading: loadingStock } = useQuery(GET_WAREHOUSE_STOCK, {
-    variables: { warehouseId: activeWarehouse?.id || '' },
-    skip: !activeWarehouse?.id,
-  });
+  const { data: stockData, loading: loadingStock } = useWarehouseStock(activeWarehouse?.id || '');
 
-  const [createTransfer, { loading: creating }] = useMutation(CREATE_WAREHOUSE_TRANSFER, {
-    refetchQueries: [{ query: GET_WAREHOUSE_TRANSFERS, variables: { filters: { limit: 100 } } }],
-  });
+  const [createTransfer, { loading: creating }] = useCreateWarehouseTransfer();
 
-  const [postTransfer, { loading: posting }] = useMutation(POST_WAREHOUSE_TRANSFER, {
-    refetchQueries: [{ query: GET_WAREHOUSE_TRANSFERS, variables: { filters: { limit: 100 } } }],
-  });
+  const [postTransfer, { loading: posting }] = usePostWarehouseTransfer();
 
   const warehouses = (warehousesData?.companyBySlug?.warehouses || []).filter(
     (w: any) => w.id !== activeWarehouse?.id,

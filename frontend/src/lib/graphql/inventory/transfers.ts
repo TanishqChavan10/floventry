@@ -1,78 +1,23 @@
 import { gql } from '@apollo/client';
+import { TRANSFER_LIST_FRAGMENT } from '../fragments/purchaseOrder.fragment';
+import { WAREHOUSE_REF_FRAGMENT } from '../fragments/warehouse.fragment';
 
 export const GET_WAREHOUSE_TRANSFERS = gql`
   query GetWarehouseTransfers($filters: TransferFilterInput!) {
     warehouseTransfers(filters: $filters) {
-      id
-      transfer_number
-      status
-      source_warehouse {
-        id
-        name
-        slug
-      }
-      destination_warehouse {
-        id
-        name
-        slug
-      }
-      items {
-        id
-        product {
-          id
-          name
-          sku
-        }
-        quantity
-      }
-      notes
-      user {
-        id
-        fullName
-      }
-      user_role
-      created_at
-      updated_at
+      ...TransferList
     }
   }
+  ${TRANSFER_LIST_FRAGMENT}
 `;
 
 export const GET_WAREHOUSE_TRANSFER = gql`
   query GetWarehouseTransfer($id: String!) {
     warehouseTransfer(id: $id) {
-      id
-      transfer_number
-      status
-      source_warehouse {
-        id
-        name
-        slug
-      }
-      destination_warehouse {
-        id
-        name
-        slug
-      }
-      items {
-        id
-        product {
-          id
-          name
-          sku
-          unit
-        }
-        quantity
-      }
-      notes
-      user {
-        id
-        fullName
-      }
-      user_role
-      created_at
-      updated_at
+      ...TransferList
     }
   }
+  ${TRANSFER_LIST_FRAGMENT}
 `;
 
 export const CREATE_WAREHOUSE_TRANSFER = gql`
@@ -82,16 +27,15 @@ export const CREATE_WAREHOUSE_TRANSFER = gql`
       transfer_number
       status
       source_warehouse {
-        id
-        name
+        ...WarehouseRef
       }
       destination_warehouse {
-        id
-        name
+        ...WarehouseRef
       }
       created_at
     }
   }
+  ${WAREHOUSE_REF_FRAGMENT}
 `;
 
 export const UPDATE_WAREHOUSE_TRANSFER = gql`

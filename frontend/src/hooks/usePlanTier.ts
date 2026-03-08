@@ -1,8 +1,7 @@
 'use client';
 
-import { useQuery } from '@apollo/client';
 import { useParams } from 'next/navigation';
-import { GET_COMPANY_BY_SLUG } from '@/lib/graphql/company';
+import { useCompanyBySlug } from '@/hooks/apollo';
 
 export type PlanTier = 'Standard' | 'Pro';
 
@@ -24,11 +23,7 @@ export function usePlanTier(): UsePlanTierReturn {
   const params = useParams();
   const slug = params?.slug as string | undefined;
 
-  const { data, loading } = useQuery(GET_COMPANY_BY_SLUG, {
-    variables: { slug: slug as string },
-    skip: !slug,
-    fetchPolicy: 'cache-first',
-  });
+  const { data, loading } = useCompanyBySlug(slug ?? '');
 
   // Keep the query for cache warming / other consumers, but do not gate features.
   void data;

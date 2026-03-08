@@ -5,8 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { useMutation } from '@apollo/client';
-import { UPDATE_COMPANY } from '@/lib/graphql/company';
+import { useUpdateCompany } from '@/hooks/apollo';
 import {
   Form,
   FormControl,
@@ -17,7 +16,13 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const formSchema = z.object({
@@ -39,7 +44,7 @@ interface CompanyProfileFormProps {
 
 export const CompanyProfileForm = forwardRef<FormHandle, CompanyProfileFormProps>(
   function CompanyProfileForm({ company }, ref) {
-    const [updateCompany, { loading }] = useMutation(UPDATE_COMPANY);
+    const [updateCompany, { loading }] = useUpdateCompany();
 
     const form = useForm<z.infer<typeof formSchema>>({
       resolver: zodResolver(formSchema),
@@ -63,8 +68,12 @@ export const CompanyProfileForm = forwardRef<FormHandle, CompanyProfileFormProps
 
     useImperativeHandle(ref, () => ({
       submit: () => form.handleSubmit(onSubmit)(),
-      get isDirty() { return form.formState.isDirty; },
-      get loading() { return loading; },
+      get isDirty() {
+        return form.formState.isDirty;
+      },
+      get loading() {
+        return loading;
+      },
     }));
 
     return (
@@ -151,5 +160,5 @@ export const CompanyProfileForm = forwardRef<FormHandle, CompanyProfileFormProps
         </CardContent>
       </Card>
     );
-  }
+  },
 );

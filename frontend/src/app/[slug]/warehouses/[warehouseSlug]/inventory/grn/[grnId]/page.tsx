@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
+import { useGRN, usePostGRN, useCancelGRN } from '@/hooks/apollo';
 import { useParams, useRouter } from 'next/navigation';
 import RoleGuard from '@/components/guards/role-guard';
 import { useAuth } from '@/context/auth-context';
@@ -40,7 +40,6 @@ import {
   Info,
 } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { GET_GRN, POST_GRN, CANCEL_GRN, GET_GRNS } from '@/lib/graphql/grn';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -71,24 +70,11 @@ function GRNDetailContent() {
   const [showPostDialog, setShowPostDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
 
-  const { data, loading, error } = useQuery(GET_GRN, {
-    variables: { id: grnId },
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data, loading, error } = useGRN(grnId);
 
-  const [postGRN, { loading: posting }] = useMutation(POST_GRN, {
-    refetchQueries: [
-      { query: GET_GRN, variables: { id: grnId } },
-      { query: GET_GRNS, variables: { filters: { limit: 100 } } },
-    ],
-  });
+  const [postGRN, { loading: posting }] = usePostGRN();
 
-  const [cancelGRN, { loading: cancelling }] = useMutation(CANCEL_GRN, {
-    refetchQueries: [
-      { query: GET_GRN, variables: { id: grnId } },
-      { query: GET_GRNS, variables: { filters: { limit: 100 } } },
-    ],
-  });
+  const [cancelGRN, { loading: cancelling }] = useCancelGRN();
 
   const grn = data?.grn;
   const rbac = useRbac();
@@ -229,7 +215,8 @@ function GRNDetailContent() {
             <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             <AlertTitle className="text-blue-800 dark:text-blue-300">View Only Access</AlertTitle>
             <AlertDescription className="text-blue-700 dark:text-blue-400">
-              As a Warehouse Staff member, you can view this Goods Receipt Note. Posting or cancelling requires Manager approval.
+              As a Warehouse Staff member, you can view this Goods Receipt Note. Posting or
+              cancelling requires Manager approval.
             </AlertDescription>
           </Alert>
         )}

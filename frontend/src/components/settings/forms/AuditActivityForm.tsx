@@ -6,8 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMutation } from '@apollo/client';
-import { UPDATE_COMPANY_SETTINGS } from '@/lib/graphql/company';
+import { useUpdateCompanySettings } from '@/hooks/apollo';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -34,7 +33,7 @@ interface AuditActivityFormProps {
 }
 
 export function AuditActivityForm({ companyId, settings }: AuditActivityFormProps) {
-  const [updateSettings, { loading }] = useMutation(UPDATE_COMPANY_SETTINGS);
+  const [updateSettings, { loading }] = useUpdateCompanySettings();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema) as any,
@@ -63,9 +62,7 @@ export function AuditActivityForm({ companyId, settings }: AuditActivityFormProp
     <Card>
       <CardHeader>
         <CardTitle>Audit & Activity Rules</CardTitle>
-        <CardDescription>
-           Configure data retention and activity tracking.
-        </CardDescription>
+        <CardDescription>Configure data retention and activity tracking.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -78,14 +75,11 @@ export function AuditActivityForm({ companyId, settings }: AuditActivityFormProp
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">Enable Audit Logs</FormLabel>
                     <FormDescription>
-                       Track all critical actions performed by users.
+                      Track all critical actions performed by users.
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}
@@ -102,7 +96,7 @@ export function AuditActivityForm({ companyId, settings }: AuditActivityFormProp
                       <Input type="number" {...field} />
                     </FormControl>
                     <FormDescription>
-                       How long to keep audit logs before auto-deletion.
+                      How long to keep audit logs before auto-deletion.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -118,14 +112,11 @@ export function AuditActivityForm({ companyId, settings }: AuditActivityFormProp
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">Track Stock Adjustments</FormLabel>
                     <FormDescription>
-                       Log every manual stock change with reason codes.
+                      Log every manual stock change with reason codes.
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}

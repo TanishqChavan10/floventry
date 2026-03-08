@@ -8,8 +8,7 @@ import RoleGuard from '@/components/guards/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowDown, ArrowUp, AlertCircle, Activity } from 'lucide-react';
 import { useWarehouse, type Warehouse } from '@/context/warehouse-context';
-import { useQuery } from '@apollo/client';
-import { GET_WAREHOUSE_DASHBOARD } from '@/lib/graphql/warehouse-dashboard';
+import { useWarehouseDashboard } from '@/hooks/apollo';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -38,11 +37,7 @@ function WarehouseDashboardData({
   warehouseSlug: string;
   activeWarehouse: Warehouse;
 }) {
-  const { data, loading, error } = useQuery(GET_WAREHOUSE_DASHBOARD, {
-    variables: { warehouseId: activeWarehouse.id },
-    pollInterval: 30000, // Real-time-ish update
-    errorPolicy: 'all', // Continue even if there are errors
-  });
+  const { data, loading, error } = useWarehouseDashboard(activeWarehouse.id);
 
   const kpis = data?.warehouseKPIs || {
     totalProducts: 0,

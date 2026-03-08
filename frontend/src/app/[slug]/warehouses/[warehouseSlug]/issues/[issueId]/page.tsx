@@ -3,10 +3,9 @@
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useQuery, useMutation } from '@apollo/client';
-import RoleGuard from '@/components/guards/role-guard';
+import { useIssueNote, usePostIssueNote, useCancelIssueNote } from '@/hooks/apollo';
 import { useRbac } from '@/hooks/use-rbac';
-import { GET_ISSUE_NOTE, POST_ISSUE_NOTE, CANCEL_ISSUE_NOTE } from '@/lib/graphql/issues';
+import RoleGuard from '@/components/guards/RoleGuard';
 import { Loader2, ArrowLeft, Send, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,11 +49,9 @@ function IssueNoteDetailContent() {
   const [postDialogOpen, setPostDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
-  const { data, loading, error, refetch } = useQuery(GET_ISSUE_NOTE, {
-    variables: { id: issueId },
-  });
+  const { data, loading, error, refetch } = useIssueNote(issueId);
 
-  const [postIssue] = useMutation(POST_ISSUE_NOTE, {
+  const [postIssue] = usePostIssueNote({
     onCompleted: () => {
       toast({
         title: 'Issue Posted Successfully',
@@ -72,7 +69,7 @@ function IssueNoteDetailContent() {
     },
   });
 
-  const [cancelIssue] = useMutation(CANCEL_ISSUE_NOTE, {
+  const [cancelIssue] = useCancelIssueNote({
     onCompleted: () => {
       toast({
         title: 'Issue Cancelled',
@@ -165,7 +162,8 @@ function IssueNoteDetailContent() {
             <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             <AlertTitle className="text-blue-800 dark:text-blue-300">View Only Access</AlertTitle>
             <AlertDescription className="text-blue-700 dark:text-blue-400">
-              As a Warehouse Staff member, you can view this Issue Note. Posting or cancelling requires Manager approval.
+              As a Warehouse Staff member, you can view this Issue Note. Posting or cancelling
+              requires Manager approval.
             </AlertDescription>
           </Alert>
         )}

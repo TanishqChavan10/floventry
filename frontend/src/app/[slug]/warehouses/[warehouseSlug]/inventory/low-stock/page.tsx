@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
+import { useLowStockItems, useUpdateStockThresholds } from '@/hooks/apollo';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
@@ -44,7 +44,6 @@ import {
   ShoppingCart,
   MoreVertical,
 } from 'lucide-react';
-import { GET_LOW_STOCK_ITEMS, UPDATE_STOCK_THRESHOLDS } from '@/lib/graphql/low-stock';
 import { toast } from 'sonner';
 import { CopyButton } from '@/components/common/CopyButton';
 
@@ -114,21 +113,9 @@ function LowStockContent() {
   const canEdit = userRole ? ['OWNER', 'ADMIN', 'MANAGER'].includes(userRole) : false;
   const canTakeAction = canEdit; // Transfer Stock and Create PO require same permissions as editing
 
-  const { data, loading, error, refetch } = useQuery(GET_LOW_STOCK_ITEMS, {
-    variables: { warehouseId: activeWarehouse?.id || '' },
-    skip: !activeWarehouse?.id,
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data, loading, error, refetch } = useLowStockItems(activeWarehouse?.id || '');
 
-  const [updateThresholds, { loading: updating }] = useMutation(UPDATE_STOCK_THRESHOLDS, {
-    onCompleted: () => {
-      toast.success('Thresholds updated successfully');
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to update thresholds');
-    },
-  });
+  const [updateThresholds, { loading: updating }] = useUpdateStockThresholds();
 
   const lowStockItems = useMemo(() => {
     return (data?.lowStockItems ?? []) as LowStockItem[];
@@ -195,9 +182,11 @@ function LowStockContent() {
           input: thresholds,
         },
       });
+      toast.success('Thresholds updated successfully');
+      refetch();
       setEditingThresholds({});
-    } catch {
-      // Error handled by onError callback
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to update thresholds');
     }
   };
 

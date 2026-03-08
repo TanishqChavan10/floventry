@@ -3,11 +3,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useMutation, useQuery } from '@apollo/client';
-import { CREATE_ISSUE_NOTE_WITH_FEFO } from '@/lib/graphql/issues';
-import { GET_SALES_ORDERS } from '@/lib/graphql/sales';
-import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
-import { GET_WAREHOUSE_STOCK_HEALTH } from '@/lib/graphql/stock-health';
+import {
+  useCreateIssueNoteWithFEFO,
+  useSalesOrders,
+  useWarehouseStock,
+  useWarehouseStockHealth,
+} from '@/hooks/apollo';
 import { differenceInCalendarDays, format } from 'date-fns';
 import { Loader2, Plus, Trash2, ArrowLeft, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -85,18 +86,10 @@ export default function NewIssueNotePage() {
     }, 50);
   }, [highlightIndex]);
 
-  const { data: salesOrdersData } = useQuery(GET_SALES_ORDERS);
-  const { data: warehouseStockData } = useQuery(GET_WAREHOUSE_STOCK, {
-    variables: { warehouseId: activeWarehouse?.id },
-    skip: !activeWarehouse?.id,
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data: salesOrdersData } = useSalesOrders();
+  const { data: warehouseStockData } = useWarehouseStock(activeWarehouse?.id || '');
 
-  const { data: stockHealthData } = useQuery(GET_WAREHOUSE_STOCK_HEALTH, {
-    variables: { warehouseId: activeWarehouse?.id },
-    skip: !activeWarehouse?.id,
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data: stockHealthData } = useWarehouseStockHealth(activeWarehouse?.id || '');
 
   const salesOrders = useMemo<SalesOrder[]>(
     () => (salesOrdersData?.salesOrders ?? []) as SalesOrder[],
@@ -168,7 +161,7 @@ export default function NewIssueNotePage() {
     }
   }, [salesOrderId, prefilledFromSalesOrderId, salesOrders.length, prefillItemsFromSalesOrder]);
 
-  const [createIssue, { loading }] = useMutation(CREATE_ISSUE_NOTE_WITH_FEFO, {
+  const [createIssue, { loading }] = useCreateIssueNoteWithFEFO({
     onCompleted: (data) => {
       toast({
         title: 'Success',

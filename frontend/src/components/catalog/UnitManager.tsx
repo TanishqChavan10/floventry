@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
-import { GET_UNITS, CREATE_UNIT, DELETE_UNIT } from '@/lib/graphql/catalog';
+import { useUnits, useCreateUnit, useDeleteUnit } from '@/hooks/apollo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -36,9 +35,9 @@ import { Trash2, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function UnitManager() {
-  const { data, loading, error, refetch } = useQuery(GET_UNITS);
-  const [createUnit, { loading: creating }] = useMutation(CREATE_UNIT);
-  const [removeUnit] = useMutation(DELETE_UNIT);
+  const { data, loading, error, refetch } = useUnits();
+  const [createUnit, { loading: creating }] = useCreateUnit();
+  const [removeUnit] = useDeleteUnit();
 
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState('');

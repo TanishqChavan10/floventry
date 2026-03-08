@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { useQuery } from '@apollo/client';
 import {
   Bar,
   BarChart,
@@ -22,7 +21,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CompanyDashboardData } from '@/lib/graphql/company-dashboard';
-import { GET_MOVEMENT_TRENDS, GET_MOVEMENT_TYPE_BREAKDOWN } from '@/lib/graphql/inventory';
+import { useMovementTypeBreakdown, useMovementTrends } from '@/hooks/apollo';
 
 interface AnalyticsChartsProps {
   role: string;
@@ -30,12 +29,8 @@ interface AnalyticsChartsProps {
 }
 
 export default function AnalyticsCharts({ role, dashboard }: AnalyticsChartsProps) {
-  const { data: movementBreakdownData, loading: movementBreakdownLoading } = useQuery(
-    GET_MOVEMENT_TYPE_BREAKDOWN,
-    {
-      variables: { days: 30 },
-    },
-  );
+  const { data: movementBreakdownData, loading: movementBreakdownLoading } =
+    useMovementTypeBreakdown({ days: 30 });
 
   const movementMixChartConfig = {
     qty: {
@@ -75,12 +70,9 @@ export default function AnalyticsCharts({ role, dashboard }: AnalyticsChartsProp
     qty: Number(d.totalQuantity ?? 0),
   }));
 
-  const { data: movementTrendsData, loading: movementTrendsLoading } = useQuery(
-    GET_MOVEMENT_TRENDS,
-    {
-      variables: { days: 30 },
-    },
-  );
+  const { data: movementTrendsData, loading: movementTrendsLoading } = useMovementTrends({
+    days: 30,
+  });
 
   const flowChartConfig = {
     in: {

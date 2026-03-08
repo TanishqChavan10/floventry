@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@apollo/client';
+import { useGRNs } from '@/hooks/apollo';
 import { useParams, useRouter } from 'next/navigation';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { useAuth } from '@/context/auth-context';
@@ -28,7 +28,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Search, Eye, FileText, CheckCircle, XCircle, PackageCheck } from 'lucide-react';
-import { GET_GRNS } from '@/lib/graphql/grn';
 import Link from 'next/link';
 
 // Status badge helper
@@ -58,24 +57,20 @@ function GRNListContent() {
   const rbac = useRbac();
 
   // STAFF and above can create GRNs (drafts)
-  const canCreateGRN = true; 
+  const canCreateGRN = true;
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Fetch GRNs
-  const { data, loading, error, refetch } = useQuery(GET_GRNS, {
-    variables: {
-      filters: {
-        warehouse_id: activeWarehouse?.id,
-        ...(statusFilter !== 'all' && { status: statusFilter }),
-        limit: 100,
-        offset: 0,
-      },
+  const { data, loading, error, refetch } = useGRNs({
+    filters: {
+      warehouse_id: activeWarehouse?.id,
+      ...(statusFilter !== 'all' && { status: statusFilter }),
+      limit: 100,
+      offset: 0,
     },
-    skip: !activeWarehouse?.id,
-    fetchPolicy: 'cache-and-network',
   });
 
   const grns = data?.grns || [];
@@ -193,7 +188,6 @@ function GRNListContent() {
 
         {/* GRNs Table with Filters */}
         <Card>
-          
           <CardContent className="space-y-4">
             {/* Search and Filters */}
             <div className="flex gap-4">

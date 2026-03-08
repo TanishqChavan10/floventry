@@ -2,9 +2,9 @@
 
 import { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { useQuery } from '@apollo/client';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
+import { useCompanyDashboard, useCompanyStockHealthOverview } from '@/hooks/apollo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, TrendingUp, Building2, Package } from 'lucide-react';
@@ -16,16 +16,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { GET_COMPANY_DASHBOARD } from '@/lib/graphql/company-dashboard';
-import { GET_COMPANY_STOCK_HEALTH_OVERVIEW } from '@/lib/graphql/inventory';
 import Link from 'next/link';
 
 function CompanyExpiryReportsContent() {
   const params = useParams();
   const companySlug = params.slug as string;
 
-  const { data: dashboardData, loading } = useQuery(GET_COMPANY_DASHBOARD);
-  const { data: healthData, loading: healthLoading } = useQuery(GET_COMPANY_STOCK_HEALTH_OVERVIEW);
+  const { data: dashboardData, loading } = useCompanyDashboard();
+  const { data: healthData, loading: healthLoading } = useCompanyStockHealthOverview();
 
   const expiryRisk = dashboardData?.companyDashboard?.expiry_risk_distribution || {
     ok: 0,
@@ -37,9 +35,10 @@ function CompanyExpiryReportsContent() {
 
   // Calculate totals
   const totalLots = expiryRisk.ok + expiryRisk.expiring_soon + expiryRisk.expired;
-  const riskPercentage = totalLots > 0
-    ? Math.round(((expiryRisk.expired + expiryRisk.expiring_soon) / totalLots) * 100)
-    : 0;
+  const riskPercentage =
+    totalLots > 0
+      ? Math.round(((expiryRisk.expired + expiryRisk.expiring_soon) / totalLots) * 100)
+      : 0;
 
   const totalBlockedProducts = healthData?.companyStockHealthOverview?.totalBlockedProducts || 0;
   const warehouseRiskMetrics = healthData?.companyStockHealthOverview?.warehouseRiskMetrics || [];
@@ -48,7 +47,10 @@ function CompanyExpiryReportsContent() {
   const sortedWarehouses = useMemo(() => {
     return [...warehouseHealth].sort((a, b) => {
       const riskOrder = { CRITICAL: 0, WARNING: 1, OK: 2 };
-      return riskOrder[a.risk_badge as keyof typeof riskOrder] - riskOrder[b.risk_badge as keyof typeof riskOrder];
+      return (
+        riskOrder[a.risk_badge as keyof typeof riskOrder] -
+        riskOrder[b.risk_badge as keyof typeof riskOrder]
+      );
     });
   }, [warehouseHealth]);
 
@@ -88,9 +90,7 @@ function CompanyExpiryReportsContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalLots}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Across all warehouses
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Across all warehouses</p>
             </CardContent>
           </Card>
 
@@ -101,9 +101,7 @@ function CompanyExpiryReportsContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">{expiryRisk.expired}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Require immediate action
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Require immediate action</p>
             </CardContent>
           </Card>
 
@@ -114,9 +112,7 @@ function CompanyExpiryReportsContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">{expiryRisk.expiring_soon}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Within 30 days
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Within 30 days</p>
             </CardContent>
           </Card>
 
@@ -127,42 +123,44 @@ function CompanyExpiryReportsContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-gray-600">{totalBlockedProducts}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Fully expired stock
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Fully expired stock</p>
             </CardContent>
           </Card>
 
-          <Card className={
-            riskPercentage > 30
-              ? 'border-red-200 dark:border-red-900'
-              : riskPercentage > 15
-              ? 'border-orange-200 dark:border-orange-900'
-              : 'border-green-200 dark:border-green-900'
-          }>
+          <Card
+            className={
+              riskPercentage > 30
+                ? 'border-red-200 dark:border-red-900'
+                : riskPercentage > 15
+                  ? 'border-orange-200 dark:border-orange-900'
+                  : 'border-green-200 dark:border-green-900'
+            }
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Risk Score</CardTitle>
-              <AlertTriangle className={`h-4 w-4 ${
-                riskPercentage > 30
-                  ? 'text-red-500'
-                  : riskPercentage > 15
-                  ? 'text-orange-500'
-                  : 'text-green-500'
-              }`} />
+              <AlertTriangle
+                className={`h-4 w-4 ${
+                  riskPercentage > 30
+                    ? 'text-red-500'
+                    : riskPercentage > 15
+                      ? 'text-orange-500'
+                      : 'text-green-500'
+                }`}
+              />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${
-                riskPercentage > 30
-                  ? 'text-red-600'
-                  : riskPercentage > 15
-                  ? 'text-orange-600'
-                  : 'text-green-600'
-              }`}>
+              <div
+                className={`text-2xl font-bold ${
+                  riskPercentage > 30
+                    ? 'text-red-600'
+                    : riskPercentage > 15
+                      ? 'text-orange-600'
+                      : 'text-green-600'
+                }`}
+              >
                 {riskPercentage}%
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Of total lots at risk
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Of total lots at risk</p>
             </CardContent>
           </Card>
         </div>
@@ -178,13 +176,16 @@ function CompanyExpiryReportsContent() {
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="font-medium">Expired</span>
                   <span className="text-red-600 font-semibold">
-                    {expiryRisk.expired} ({totalLots > 0 ? Math.round((expiryRisk.expired / totalLots) * 100) : 0}%)
+                    {expiryRisk.expired} (
+                    {totalLots > 0 ? Math.round((expiryRisk.expired / totalLots) * 100) : 0}%)
                   </span>
                 </div>
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-red-600 transition-all"
-                    style={{ width: `${totalLots > 0 ? (expiryRisk.expired / totalLots) * 100 : 0}%` }}
+                    style={{
+                      width: `${totalLots > 0 ? (expiryRisk.expired / totalLots) * 100 : 0}%`,
+                    }}
                   />
                 </div>
               </div>
@@ -193,13 +194,16 @@ function CompanyExpiryReportsContent() {
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="font-medium">Expiring Soon (≤30 days)</span>
                   <span className="text-orange-600 font-semibold">
-                    {expiryRisk.expiring_soon} ({totalLots > 0 ? Math.round((expiryRisk.expiring_soon / totalLots) * 100) : 0}%)
+                    {expiryRisk.expiring_soon} (
+                    {totalLots > 0 ? Math.round((expiryRisk.expiring_soon / totalLots) * 100) : 0}%)
                   </span>
                 </div>
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-orange-500 transition-all"
-                    style={{ width: `${totalLots > 0 ? (expiryRisk.expiring_soon / totalLots) * 100 : 0}%` }}
+                    style={{
+                      width: `${totalLots > 0 ? (expiryRisk.expiring_soon / totalLots) * 100 : 0}%`,
+                    }}
                   />
                 </div>
               </div>
@@ -208,7 +212,8 @@ function CompanyExpiryReportsContent() {
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="font-medium">Healthy (﹥30 days)</span>
                   <span className="text-green-600 font-semibold">
-                    {expiryRisk.ok} ({totalLots > 0 ? Math.round((expiryRisk.ok / totalLots) * 100) : 0}%)
+                    {expiryRisk.ok} (
+                    {totalLots > 0 ? Math.round((expiryRisk.ok / totalLots) * 100) : 0}%)
                   </span>
                 </div>
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -261,15 +266,15 @@ function CompanyExpiryReportsContent() {
                             warehouse.risk_badge === 'CRITICAL'
                               ? 'destructive'
                               : warehouse.risk_badge === 'WARNING'
-                              ? 'secondary'
-                              : 'default'
+                                ? 'secondary'
+                                : 'default'
                           }
                           className={
                             warehouse.risk_badge === 'CRITICAL'
                               ? 'bg-red-600 hover:bg-red-700'
                               : warehouse.risk_badge === 'WARNING'
-                              ? 'bg-orange-500 hover:bg-orange-600'
-                              : 'bg-green-600 hover:bg-green-700'
+                                ? 'bg-orange-500 hover:bg-orange-600'
+                                : 'bg-green-600 hover:bg-green-700'
                           }
                         >
                           {warehouse.risk_badge}

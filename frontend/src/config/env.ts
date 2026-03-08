@@ -113,6 +113,15 @@ export const GRAPHQL_URL = (() => {
   );
 })();
 
+// WebSocket URL for GraphQL subscriptions (derived from GRAPHQL_URL)
+export const WS_URL = (() => {
+  const explicit = process.env.NEXT_PUBLIC_WS_URL?.trim();
+  if (explicit) return explicit;
+
+  // Derive from GRAPHQL_URL: http(s) → ws(s)
+  return GRAPHQL_URL.replace(/^http/, 'ws');
+})();
+
 // REST base URL (usually '/api')
 export const API_URL = (() => {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();

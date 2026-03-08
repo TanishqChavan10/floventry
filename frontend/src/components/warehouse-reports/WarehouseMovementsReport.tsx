@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@apollo/client';
 import { Bar, BarChart, Line, LineChart, CartesianGrid, XAxis, YAxis, Cell } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -20,7 +19,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CopyButton } from '@/components/common/CopyButton';
-import { GET_STOCK_MOVEMENTS } from '@/lib/graphql/inventory';
+import { useStockMovementsByWarehouse } from '@/hooks/apollo';
 import { format, subDays } from 'date-fns';
 
 const PERIODS = [
@@ -77,16 +76,20 @@ export function WarehouseMovementsReport({ warehouseId }: Props) {
   const fromDate = useMemo(() => subDays(new Date(), days), [days]);
   const toDate = useMemo(() => new Date(), []);
 
-  const { data, loading } = useQuery(GET_STOCK_MOVEMENTS, {
-    variables: {
-      warehouseId,
-      filters: { fromDate, toDate, limit: 500, offset: 0 },
-    },
-    skip: !warehouseId,
-    fetchPolicy: 'cache-and-network',
+  const { data, loading } = useStockMovementsByWarehouse({
+    warehouseId,
+    filters: { fromDate, toDate, limit: 500, offset: 0 },
   });
 
-  const items: any[] = data?.stockMovements?.items ?? [];
+  const items = useMemo(() => {
+    const raw: any[] = data?.stockMovements?.items ?? [];
+    const seen = new Set<string>();
+    return raw.filter((item) => {
+      if (!item.id || seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+  }, [data]);
   const total = data?.stockMovements?.total ?? 0;
 
   // Derive daily trend from raw items (group by date)

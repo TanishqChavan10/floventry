@@ -5,8 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { useMutation } from '@apollo/client';
-import { UPDATE_COMPANY, UPDATE_COMPANY_SETTINGS } from '@/lib/graphql/company';
+import { useUpdateCompany, useUpdateCompanySettings } from '@/hooks/apollo';
 import {
   Form,
   FormControl,
@@ -17,7 +16,13 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { FormHandle } from './CompanyProfileForm';
 
 const formSchema = z.object({
@@ -37,8 +42,8 @@ interface BusinessInfoFormProps {
 
 export const BusinessInfoForm = forwardRef<FormHandle, BusinessInfoFormProps>(
   function BusinessInfoForm({ company, settings }, ref) {
-    const [updateCompany, { loading: loadingCompany }] = useMutation(UPDATE_COMPANY);
-    const [updateSettings, { loading: loadingSettings }] = useMutation(UPDATE_COMPANY_SETTINGS);
+    const [updateCompany, { loading: loadingCompany }] = useUpdateCompany();
+    const [updateSettings, { loading: loadingSettings }] = useUpdateCompanySettings();
 
     const form = useForm<z.infer<typeof formSchema>>({
       resolver: zodResolver(formSchema),
@@ -81,8 +86,12 @@ export const BusinessInfoForm = forwardRef<FormHandle, BusinessInfoFormProps>(
 
     useImperativeHandle(ref, () => ({
       submit: () => form.handleSubmit(onSubmit)(),
-      get isDirty() { return form.formState.isDirty; },
-      get loading() { return isLoading; },
+      get isDirty() {
+        return form.formState.isDirty;
+      },
+      get loading() {
+        return isLoading;
+      },
     }));
 
     return (
@@ -123,7 +132,9 @@ export const BusinessInfoForm = forwardRef<FormHandle, BusinessInfoFormProps>(
                         <SelectContent>
                           <SelectItem value="Asia/Kolkata">India (IST) - Asia/Kolkata</SelectItem>
                           <SelectItem value="UTC">UTC</SelectItem>
-                          <SelectItem value="America/New_York">Eastern Time - America/New_York</SelectItem>
+                          <SelectItem value="America/New_York">
+                            Eastern Time - America/New_York
+                          </SelectItem>
                           <SelectItem value="Europe/London">London - Europe/London</SelectItem>
                         </SelectContent>
                       </Select>
@@ -169,7 +180,9 @@ export const BusinessInfoForm = forwardRef<FormHandle, BusinessInfoFormProps>(
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>City</FormLabel>
-                          <FormControl><Input {...field} /></FormControl>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -180,7 +193,9 @@ export const BusinessInfoForm = forwardRef<FormHandle, BusinessInfoFormProps>(
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>State</FormLabel>
-                          <FormControl><Input {...field} /></FormControl>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -191,7 +206,9 @@ export const BusinessInfoForm = forwardRef<FormHandle, BusinessInfoFormProps>(
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Country</FormLabel>
-                          <FormControl><Input {...field} /></FormControl>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -204,5 +221,5 @@ export const BusinessInfoForm = forwardRef<FormHandle, BusinessInfoFormProps>(
         </CardContent>
       </Card>
     );
-  }
+  },
 );

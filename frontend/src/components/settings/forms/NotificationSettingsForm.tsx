@@ -6,8 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMutation } from '@apollo/client';
-import { UPDATE_COMPANY_SETTINGS } from '@/lib/graphql/company';
+import { useUpdateCompanySettings } from '@/hooks/apollo';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -33,7 +32,7 @@ interface NotificationSettingsFormProps {
 }
 
 export function NotificationSettingsForm({ companyId, settings }: NotificationSettingsFormProps) {
-  const [updateSettings, { loading }] = useMutation(UPDATE_COMPANY_SETTINGS);
+  const [updateSettings, { loading }] = useUpdateCompanySettings();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema) as any,
@@ -82,10 +81,7 @@ export function NotificationSettingsForm({ companyId, settings }: NotificationSe
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}
@@ -97,15 +93,10 @@ export function NotificationSettingsForm({ companyId, settings }: NotificationSe
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">Expiry Alerts</FormLabel>
-                    <FormDescription>
-                      Get notified before items expire.
-                    </FormDescription>
+                    <FormDescription>Get notified before items expire.</FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}
@@ -122,10 +113,7 @@ export function NotificationSettingsForm({ companyId, settings }: NotificationSe
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}
@@ -142,10 +130,7 @@ export function NotificationSettingsForm({ companyId, settings }: NotificationSe
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                 </FormItem>
               )}

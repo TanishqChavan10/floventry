@@ -1,7 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
+import {
+  useWarehouseTransfer,
+  usePostWarehouseTransfer,
+  useCancelWarehouseTransfer,
+} from '@/hooks/apollo';
 import { useParams, useRouter } from 'next/navigation';
 import RoleGuard from '@/components/guards/role-guard';
 import { useAuth } from '@/context/auth-context';
@@ -41,12 +45,6 @@ import {
   Info,
 } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import {
-  GET_WAREHOUSE_TRANSFER,
-  POST_WAREHOUSE_TRANSFER,
-  CANCEL_WAREHOUSE_TRANSFER,
-  GET_WAREHOUSE_TRANSFERS,
-} from '@/lib/graphql/transfers';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -78,24 +76,11 @@ function TransferDetailContent() {
   const [showPostDialog, setShowPostDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
 
-  const { data, loading, error } = useQuery(GET_WAREHOUSE_TRANSFER, {
-    variables: { id: transferId },
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data, loading, error } = useWarehouseTransfer(transferId);
 
-  const [postTransfer, { loading: posting }] = useMutation(POST_WAREHOUSE_TRANSFER, {
-    refetchQueries: [
-      { query: GET_WAREHOUSE_TRANSFER, variables: { id: transferId } },
-      { query: GET_WAREHOUSE_TRANSFERS, variables: { filters: { limit: 100 } } },
-    ],
-  });
+  const [postTransfer, { loading: posting }] = usePostWarehouseTransfer();
 
-  const [cancelTransfer, { loading: cancelling }] = useMutation(CANCEL_WAREHOUSE_TRANSFER, {
-    refetchQueries: [
-      { query: GET_WAREHOUSE_TRANSFER, variables: { id: transferId } },
-      { query: GET_WAREHOUSE_TRANSFERS, variables: { filters: { limit: 100 } } },
-    ],
-  });
+  const [cancelTransfer, { loading: cancelling }] = useCancelWarehouseTransfer();
 
   const transfer = data?.warehouseTransfer;
   const rbac = useRbac();
@@ -244,7 +229,8 @@ function TransferDetailContent() {
             <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             <AlertTitle className="text-blue-800 dark:text-blue-300">View Only Access</AlertTitle>
             <AlertDescription className="text-blue-700 dark:text-blue-400">
-              As a Warehouse Staff member, you can view this Transfer Note. Posting or cancelling requires Manager approval.
+              As a Warehouse Staff member, you can view this Transfer Note. Posting or cancelling
+              requires Manager approval.
             </AlertDescription>
           </Alert>
         )}

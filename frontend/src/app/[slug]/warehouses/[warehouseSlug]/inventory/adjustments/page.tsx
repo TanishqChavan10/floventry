@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@apollo/client';
+import { useStockMovementsByWarehouse } from '@/hooks/apollo';
 import { useSearchParams } from 'next/navigation';
 import { useWarehouse } from '@/context/warehouse-context';
 import { useAuth } from '@/context/auth-context';
@@ -21,7 +21,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Plus, TrendingUp, TrendingDown, Clock } from 'lucide-react';
-import { GET_STOCK_MOVEMENTS_BY_WAREHOUSE } from '@/lib/graphql/adjustments';
 import { formatDistanceToNow } from 'date-fns';
 import NewAdjustmentModal from '@/components/inventory/NewAdjustmentModal';
 
@@ -79,18 +78,14 @@ function AdjustmentsPageContent() {
   }, []);
 
   // Fetch adjustments (ADJUSTMENT_IN and ADJUSTMENT_OUT only)
-  const { data, loading, error, refetch } = useQuery(GET_STOCK_MOVEMENTS_BY_WAREHOUSE, {
-    variables: {
-      warehouseId: activeWarehouse?.id || '',
-      filters: {
-        fromDate: dateRange.fromDate,
-        toDate: dateRange.toDate,
-        types: ['ADJUSTMENT_IN', 'ADJUSTMENT_OUT'],
-        limit: 100,
-      },
+  const { data, loading, error, refetch } = useStockMovementsByWarehouse({
+    warehouseId: activeWarehouse?.id || '',
+    filters: {
+      fromDate: dateRange.fromDate,
+      toDate: dateRange.toDate,
+      types: ['ADJUSTMENT_IN', 'ADJUSTMENT_OUT'],
+      limit: 100,
     },
-    skip: !activeWarehouse?.id,
-    fetchPolicy: 'cache-and-network',
   });
 
   const adjustments: AdjustmentMovement[] = data?.stockMovements?.items ?? [];
@@ -180,7 +175,7 @@ function AdjustmentsPageContent() {
               <TrendingDown className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">-{totalOut}</div>
+              <div className="text-2xl font-bold text-red-600">-{Math.abs(totalOut)}</div>
               <p className="text-xs text-muted-foreground mt-1">Units removed via adjustments</p>
             </CardContent>
           </Card>
@@ -282,7 +277,7 @@ function AdjustmentsPageContent() {
                             }
                           >
                             {adjustment.type === 'ADJUSTMENT_IN' ? '+' : '-'}
-                            {adjustment.quantity}
+                            {Math.abs(adjustment.quantity)}
                           </span>
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">

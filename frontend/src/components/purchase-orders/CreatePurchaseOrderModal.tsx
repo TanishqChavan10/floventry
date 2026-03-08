@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { useMutation, useQuery } from '@apollo/client';
+import {
+  useCreatePurchaseOrder,
+  useWarehousesByCompany,
+  useSuppliers,
+  useWarehouseStock,
+} from '@/hooks/apollo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,10 +28,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Plus, X, Loader2 } from 'lucide-react';
-import { CREATE_PURCHASE_ORDER, GET_PURCHASE_ORDERS } from '@/lib/graphql/purchase-orders';
-import { GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
-import { GET_SUPPLIERS } from '@/lib/graphql/catalog';
-import { GET_STOCK_BY_WAREHOUSE } from '@/lib/graphql/stock';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/auth-context';
 import { CopyButton } from '@/components/common/CopyButton';
@@ -67,24 +68,13 @@ export function CreatePurchaseOrderModal({
   const [items, setItems] = useState<POItem[]>([{ product_id: '', ordered_quantity: 1 }]);
   const [hasPrefilledData, setHasPrefilledData] = useState(false);
 
-  const { data: warehousesData } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
-    variables: { slug: companySlug },
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data: warehousesData } = useWarehousesByCompany(companySlug);
 
-  const { data: suppliersData } = useQuery(GET_SUPPLIERS, {
-    variables: { includeArchived: false },
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data: suppliersData } = useSuppliers({ includeArchived: false });
 
-  const { data: productsData } = useQuery(GET_STOCK_BY_WAREHOUSE, {
-    variables: { warehouseId: selectedWarehouse },
-    skip: !selectedWarehouse,
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data: productsData } = useWarehouseStock(selectedWarehouse);
 
-  const [createPO, { loading }] = useMutation(CREATE_PURCHASE_ORDER, {
-    refetchQueries: [{ query: GET_PURCHASE_ORDERS, variables: { filters: { limit: 100 } } }],
+  const [createPO, { loading }] = useCreatePurchaseOrder({
     onCompleted: (data) => {
       toast.success('Purchase order created successfully!');
       handleClose();

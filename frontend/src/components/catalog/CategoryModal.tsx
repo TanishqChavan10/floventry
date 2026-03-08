@@ -3,8 +3,7 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@apollo/client';
-import { CREATE_CATEGORY, UPDATE_CATEGORY, GET_CATEGORIES } from '@/lib/graphql/catalog';
+import { useCreateCategory, useUpdateCategory } from '@/hooks/apollo';
 import { categorySchema, type CategoryFormData } from '@/lib/validators/catalog';
 import {
   Dialog,
@@ -50,31 +49,9 @@ export function CategoryModal({ open, onOpenChange, category, onSuccess }: Categ
     },
   });
 
-  const [createCategory, { loading: creating }] = useMutation(CREATE_CATEGORY, {
-    refetchQueries: [{ query: GET_CATEGORIES }],
-    onCompleted: () => {
-      toast.success('Category created successfully');
-      onOpenChange(false);
-      reset();
-      onSuccess?.();
-    },
-    onError: (error) => {
-      toast.error(`Failed to create category: ${error.message}`);
-    },
-  });
+  const [createCategory, { loading: creating }] = useCreateCategory();
 
-  const [updateCategory, { loading: updating }] = useMutation(UPDATE_CATEGORY, {
-    refetchQueries: [{ query: GET_CATEGORIES }],
-    onCompleted: () => {
-      toast.success('Category updated successfully');
-      onOpenChange(false);
-      reset();
-      onSuccess?.();
-    },
-    onError: (error) => {
-      toast.error(`Failed to update category: ${error.message}`);
-    },
-  });
+  const [updateCategory, { loading: updating }] = useUpdateCategory();
 
   // Update form when category changes
   useEffect(() => {
@@ -93,26 +70,35 @@ export function CategoryModal({ open, onOpenChange, category, onSuccess }: Categ
     }
   }, [category, reset]);
 
-  const onSubmit = (data: CategoryFormData) => {
-    if (isEditing) {
-      updateCategory({
-        variables: {
-          input: {
-            id: category.id,
-            name: data.name,
-            description: data.description || null,
+  const onSubmit = async (data: CategoryFormData) => {
+    try {
+      if (isEditing) {
+        await updateCategory({
+          variables: {
+            input: {
+              id: category.id,
+              name: data.name,
+              description: data.description || null,
+            },
           },
-        },
-      });
-    } else {
-      createCategory({
-        variables: {
-          input: {
-            name: data.name,
-            description: data.description || null,
+        });
+        toast.success('Category updated successfully');
+      } else {
+        await createCategory({
+          variables: {
+            input: {
+              name: data.name,
+              description: data.description || null,
+            },
           },
-        },
-      });
+        });
+        toast.success('Category created successfully');
+      }
+      onOpenChange(false);
+      reset();
+      onSuccess?.();
+    } catch (error: any) {
+      toast.error(`Failed to ${isEditing ? 'update' : 'create'} category: ${error.message}`);
     }
   };
 

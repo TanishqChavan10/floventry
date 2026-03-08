@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useMutation } from '@apollo/client';
-import { gql } from '@apollo/client';
+import { useRemoveMember } from '@/hooks/apollo';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,12 +13,6 @@ import {
 } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-const REMOVE_MEMBER = gql`
-  mutation RemoveMember($membershipId: String!) {
-    removeMemberValidated(membershipId: $membershipId)
-  }
-`;
 
 interface Member {
   membership_id: string;
@@ -48,7 +41,7 @@ export function RemoveMemberDialog({
   member,
   onSuccess,
 }: RemoveMemberDialogProps) {
-  const [removeMember, { loading }] = useMutation(REMOVE_MEMBER);
+  const [removeMember, { loading }] = useRemoveMember();
 
   const handleRemove = async () => {
     if (!member) return;

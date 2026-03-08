@@ -1,4 +1,6 @@
 import { gql } from "@apollo/client";
+import { PRODUCT_LIST_FRAGMENT, PRODUCT_DETAIL_FRAGMENT, PRODUCT_CORE_FRAGMENT } from '../fragments/product.fragment';
+import { SUPPLIER_CORE_FRAGMENT, SUPPLIER_LIST_FRAGMENT, CATEGORY_LIST_FRAGMENT, UNIT_LIST_FRAGMENT } from '../fragments/catalog.fragment';
 
 // ============================================
 // PRODUCTS
@@ -7,54 +9,17 @@ import { gql } from "@apollo/client";
 export const GET_PRODUCTS = gql`
   query GetProducts {
     products {
-      id
-      name
-      sku
-      barcode
-      alternate_barcodes
-      unit
-      cost_price
-      selling_price
-      image_url
-      is_active
-      category {
-        id
-        name
-      }
-      supplier {
-        id
-        name
-      }
-      created_at
-      updated_at
+      ...ProductList
     }
   }
+  ${PRODUCT_LIST_FRAGMENT}
 `;
 
 export const GET_PRODUCTS_PAGINATED = gql`
   query GetProductsPaginated($pagination: PaginationInput) {
     productsPaginated(pagination: $pagination) {
       items {
-        id
-        name
-        sku
-        barcode
-        alternate_barcodes
-        unit
-        cost_price
-        selling_price
-        image_url
-        is_active
-        category {
-          id
-          name
-        }
-        supplier {
-          id
-          name
-        }
-        created_at
-        updated_at
+        ...ProductList
       }
       pageInfo {
         total
@@ -65,49 +30,22 @@ export const GET_PRODUCTS_PAGINATED = gql`
       }
     }
   }
+  ${PRODUCT_LIST_FRAGMENT}
 `;
 
 export const GET_PRODUCT = gql`
   query GetProduct($id: String!) {
     product(id: $id) {
-      id
-      name
-      sku
-      barcode
-      alternate_barcodes
-      unit
-      cost_price
-      selling_price
-      image_url
-      description
-      is_active
-      category {
-        id
-        name
-        description
-      }
-      supplier {
-        id
-        name
-        email
-        phone
-        address
-      }
-      created_at
-      updated_at
+      ...ProductDetail
     }
   }
+  ${PRODUCT_DETAIL_FRAGMENT}
 `;
 
 export const CREATE_PRODUCT = gql`
   mutation CreateProduct($input: CreateProductInput!) {
     createProduct(input: $input) {
-      id
-      name
-      sku
-      barcode
-      alternate_barcodes
-      unit
+      ...ProductCore
       category {
         id
         name
@@ -118,6 +56,7 @@ export const CREATE_PRODUCT = gql`
       }
     }
   }
+  ${PRODUCT_CORE_FRAGMENT}
 `;
 
 export const GENERATE_COMPANY_BARCODE = gql`
@@ -129,18 +68,10 @@ export const GENERATE_COMPANY_BARCODE = gql`
 export const UPDATE_PRODUCT = gql`
   mutation UpdateProduct($input: UpdateProductInput!) {
     updateProduct(input: $input) {
-      id
-      name
-      sku
-      barcode
-      alternate_barcodes
-      unit
-      cost_price
-      selling_price
-      image_url
-      is_active
+      ...ProductCore
     }
   }
+  ${PRODUCT_CORE_FRAGMENT}
 `;
 
 export const DELETE_PRODUCT = gql`
@@ -156,35 +87,27 @@ export const DELETE_PRODUCT = gql`
 export const GET_CATEGORIES = gql`
   query GetCategories {
     categories {
-      id
-      name
-      description
-      isActive
+      ...CategoryList
       products {
         id
       }
-      created_at
-      updated_at
     }
   }
+  ${CATEGORY_LIST_FRAGMENT}
 `;
 
 export const GET_CATEGORY = gql`
   query GetCategory($id: String!) {
     category(id: $id) {
-      id
-      name
-      description
-      isActive
+      ...CategoryList
       products {
         id
         name
         sku
       }
-      created_at
-      updated_at
     }
   }
+  ${CATEGORY_LIST_FRAGMENT}
 `;
 
 export const CREATE_CATEGORY = gql`
@@ -222,65 +145,43 @@ export const DELETE_CATEGORY = gql`
 export const GET_SUPPLIERS = gql`
   query GetSuppliers($includeArchived: Boolean) {
     suppliers(includeArchived: $includeArchived) {
-      id
-      name
-      email
-      phone
-      address
-      isActive
-      productsCount
-      created_at
-      updated_at
+      ...SupplierList
     }
   }
+  ${SUPPLIER_LIST_FRAGMENT}
 `;
 
 export const GET_SUPPLIER = gql`
   query GetSupplier($id: String!) {
     supplier(id: $id) {
-      id
-      name
-      email
-      phone
-      address
-      isActive
-      productsCount
+      ...SupplierList
       products {
         id
         name
         sku
         unit
       }
-      created_at
-      updated_at
     }
   }
+  ${SUPPLIER_LIST_FRAGMENT}
 `;
 
 export const CREATE_SUPPLIER = gql`
   mutation CreateSupplier($input: CreateSupplierInput!) {
     createSupplier(input: $input) {
-      id
-      name
-      email
-      phone
-      address
-      isActive
+      ...SupplierCore
     }
   }
+  ${SUPPLIER_CORE_FRAGMENT}
 `;
 
 export const UPDATE_SUPPLIER = gql`
   mutation UpdateSupplier($input: UpdateSupplierInput!) {
     updateSupplier(input: $input) {
-      id
-      name
-      email
-      phone
-      address
-      isActive
+      ...SupplierCore
     }
   }
+  ${SUPPLIER_CORE_FRAGMENT}
 `;
 
 export const ARCHIVE_SUPPLIER = gql`
@@ -314,15 +215,10 @@ export const DELETE_SUPPLIER = gql`
 export const GET_UNITS = gql`
   query GetUnits($includeArchived: Boolean = false) {
     units(includeArchived: $includeArchived) {
-      id
-      name
-      shortCode
-      isDefault
-      isActive
-      created_at
-      updated_at
+      ...UnitList
     }
   }
+  ${UNIT_LIST_FRAGMENT}
 `;
 
 export const GET_UNIT = gql`

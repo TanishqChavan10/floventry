@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@apollo/client';
+import { useWarehouseStock, useCategories } from '@/hooks/apollo';
 import { useParams } from 'next/navigation';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
@@ -25,8 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { GET_CATEGORIES } from '@/lib/graphql/catalog';
-import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
 import { useAuth } from '@/context/auth-context';
 
 function WarehouseProductsContent() {
@@ -42,13 +40,10 @@ function WarehouseProductsContent() {
   const warehouseId = activeWarehouse?.warehouseId;
 
   // Fetch warehouse stock (includes product details via joins)
-  const { data: stockData, loading: stockLoading } = useQuery(GET_WAREHOUSE_STOCK, {
-    variables: { warehouseId: warehouseId || '' },
-    skip: !warehouseId,
-  });
+  const { data: stockData, loading: stockLoading } = useWarehouseStock(warehouseId || '');
 
   // Fetch categories for filter
-  const { data: categoriesData } = useQuery(GET_CATEGORIES);
+  const { data: categoriesData } = useCategories();
 
   const warehouseStock = stockData?.stockByWarehouse || [];
   const categories = categoriesData?.categories || [];

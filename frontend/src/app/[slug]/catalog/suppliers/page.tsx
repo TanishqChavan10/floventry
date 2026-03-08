@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
+import { useSuppliers, useArchiveSupplier, useUnarchiveSupplier } from '@/hooks/apollo';
 import { useParams } from 'next/navigation';
 import { useToast } from '@/components/ui/use-toast';
 import CompanyGuard from '@/components/CompanyGuard';
@@ -36,7 +36,6 @@ import {
 } from '@/components/ui/select';
 import { Plus, Search, Edit, Archive, Store, UserPlus } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
-import { GET_SUPPLIERS, ARCHIVE_SUPPLIER, UNARCHIVE_SUPPLIER } from '@/lib/graphql/catalog';
 import { SupplierModal } from '@/components/catalog/SupplierModal';
 import SupplierDetailDrawer from '@/components/catalog/SupplierDetailDrawer';
 
@@ -52,48 +51,11 @@ function CatalogSuppliersContent() {
   const { toast } = useToast();
 
   const includeArchived = statusFilter !== 'active';
-  const {
-    data: suppliersData,
-    loading,
-    error,
-    refetch,
-  } = useQuery(GET_SUPPLIERS, {
-    variables: { includeArchived },
-  });
+  const { data: suppliersData, loading, error, refetch } = useSuppliers({ includeArchived });
 
-  const [archiveSupplier] = useMutation(ARCHIVE_SUPPLIER, {
-    onCompleted: () => {
-      toast({
-        title: 'Supplier archived',
-        description: 'Supplier has been archived successfully',
-      });
-      refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+  const [archiveSupplier] = useArchiveSupplier();
 
-  const [unarchiveSupplier] = useMutation(UNARCHIVE_SUPPLIER, {
-    onCompleted: () => {
-      toast({
-        title: 'Supplier restored',
-        description: 'Supplier has been restored successfully',
-      });
-      refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+  const [unarchiveSupplier] = useUnarchiveSupplier();
 
   // Get role from active company (role is company-specific)
   const activeCompany = user?.companies?.find((c) => c.id === user.activeCompanyId);
@@ -150,13 +112,39 @@ function CatalogSuppliersContent() {
 
   const confirmArchive = async () => {
     if (supplierToArchive) {
-      await archiveSupplier({ variables: { id: supplierToArchive.id } });
+      try {
+        await archiveSupplier({ variables: { id: supplierToArchive.id } });
+        toast({
+          title: 'Supplier archived',
+          description: 'Supplier has been archived successfully',
+        });
+        refetch();
+      } catch (error: any) {
+        toast({
+          title: 'Error',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
       setSupplierToArchive(null);
     }
   };
 
   const handleUnarchiveSupplier = async (supplier: any) => {
-    await unarchiveSupplier({ variables: { id: supplier.id } });
+    try {
+      await unarchiveSupplier({ variables: { id: supplier.id } });
+      toast({
+        title: 'Supplier restored',
+        description: 'Supplier has been restored successfully',
+      });
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   if (loading) {

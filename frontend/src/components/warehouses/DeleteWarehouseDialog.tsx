@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useMutation } from '@apollo/client';
-import { DELETE_WAREHOUSE, GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
+import { useDeleteWarehouse } from '@/hooks/apollo';
 import { toast } from 'sonner';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import {
@@ -34,9 +33,7 @@ export function DeleteWarehouseDialog({
   companySlug,
   onSuccess,
 }: DeleteWarehouseDialogProps) {
-  const [deleteWarehouse, { loading }] = useMutation(DELETE_WAREHOUSE, {
-    refetchQueries: [{ query: GET_WAREHOUSES_BY_COMPANY, variables: { slug: companySlug } }],
-  });
+  const [deleteWarehouse, { loading }] = useDeleteWarehouse();
 
   async function handleDelete() {
     try {
@@ -52,7 +49,7 @@ export function DeleteWarehouseDialog({
     } catch (error: any) {
       // Parse error message for better UX
       const errorMessage = error.message || 'Failed to delete warehouse';
-      
+
       // Show detailed error message
       if (errorMessage.includes('active stock')) {
         toast.error('Cannot Delete Warehouse', {

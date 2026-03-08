@@ -2,10 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { useMutation, useQuery } from '@apollo/client';
-import { CREATE_ISSUE_NOTE_WITH_FEFO, GET_ISSUE_NOTES_BY_WAREHOUSE } from '@/lib/graphql/issues';
-import { GET_SALES_ORDERS } from '@/lib/graphql/sales';
-import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
+import { useCreateIssueNoteWithFEFO, useSalesOrders, useWarehouseStock } from '@/hooks/apollo';
 import { Loader2, Plus, Trash2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,12 +70,8 @@ export function CreateIssueModal({ open, onOpenChange, onSuccess }: CreateIssueM
   const [items, setItems] = useState<IssueItem[]>([]);
   const [prefilledFromSalesOrderId, setPrefilledFromSalesOrderId] = useState<string>('');
 
-  const { data: salesOrdersData } = useQuery(GET_SALES_ORDERS);
-  const { data: warehouseStockData } = useQuery(GET_WAREHOUSE_STOCK, {
-    variables: { warehouseId: activeWarehouse?.id },
-    skip: !activeWarehouse?.id,
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data: salesOrdersData } = useSalesOrders();
+  const { data: warehouseStockData } = useWarehouseStock(activeWarehouse?.id || '');
 
   const salesOrders = useMemo<SalesOrder[]>(
     () => (salesOrdersData?.salesOrders ?? []) as SalesOrder[],
@@ -136,10 +129,7 @@ export function CreateIssueModal({ open, onOpenChange, onSuccess }: CreateIssueM
     }
   }, [salesOrderId, prefilledFromSalesOrderId, salesOrders.length, prefillItemsFromSalesOrder]);
 
-  const [createIssue, { loading }] = useMutation(CREATE_ISSUE_NOTE_WITH_FEFO, {
-    refetchQueries: [
-      { query: GET_ISSUE_NOTES_BY_WAREHOUSE, variables: { warehouseId: activeWarehouse?.id } },
-    ],
+  const [createIssue, { loading }] = useCreateIssueNoteWithFEFO({
     onCompleted: (data) => {
       toast.success('Issue note created successfully with FEFO lot selection');
       handleClose();

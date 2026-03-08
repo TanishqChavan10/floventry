@@ -1,83 +1,28 @@
 import { gql } from '@apollo/client';
+import {
+  PURCHASE_ORDER_LIST_FRAGMENT,
+  PURCHASE_ORDER_DETAIL_FRAGMENT,
+} from '../fragments/purchaseOrder.fragment';
+import { WAREHOUSE_REF_FRAGMENT } from '../fragments/warehouse.fragment';
 
 // Query to get all purchase orders with filters
 export const GET_PURCHASE_ORDERS = gql`
   query GetPurchaseOrders($filters: PurchaseOrderFilterInput!) {
     purchaseOrders(filters: $filters) {
-      id
-      po_number
-      status
-      notes
-      warehouse {
-        id
-        name
-        slug
-      }
-      supplier {
-        id
-        name
-      }
-      user {
-        id
-        fullName
-      }
-      items {
-        id
-        ordered_quantity
-        received_quantity
-        product {
-          id
-          name
-          sku
-        }
-      }
-      created_at
-      updated_at
+      ...PurchaseOrderList
     }
   }
+  ${PURCHASE_ORDER_LIST_FRAGMENT}
 `;
 
 // Query to get single purchase order by ID
 export const GET_PURCHASE_ORDER = gql`
   query GetPurchaseOrder($id: String!) {
     purchaseOrder(id: $id) {
-      id
-      po_number
-      status
-      notes
-      warehouse {
-        id
-        name
-        slug
-        type
-      }
-      supplier {
-        id
-        name
-        email
-        phone
-      }
-      user {
-        id
-        fullName
-      }
-      user_role
-      items {
-        id
-        ordered_quantity
-        received_quantity
-        product {
-          id
-          name
-          sku
-          unit
-        }
-        created_at
-      }
-      created_at
-      updated_at
+      ...PurchaseOrderDetail
     }
   }
+  ${PURCHASE_ORDER_DETAIL_FRAGMENT}
 `;
 
 // Mutation to create purchase order
@@ -88,8 +33,7 @@ export const CREATE_PURCHASE_ORDER = gql`
       po_number
       status
       warehouse {
-        id
-        name
+        ...WarehouseRef
       }
       supplier {
         id
@@ -106,6 +50,7 @@ export const CREATE_PURCHASE_ORDER = gql`
       created_at
     }
   }
+  ${WAREHOUSE_REF_FRAGMENT}
 `;
 
 // Mutation to update purchase order (DRAFT only)

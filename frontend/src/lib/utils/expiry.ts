@@ -7,6 +7,7 @@ export interface LotWithExpiry {
     quantity: number;
     expiry_date: string | null;
     received_at: string;
+    source_type?: string | null;
 }
 
 function normalizeExpiryForComparison(expiryDate: string): Date {

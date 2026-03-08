@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useLazyQuery } from '@apollo/client';
 import { Barcode, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PRODUCT_BY_BARCODE, PRODUCT_BY_BARCODE_DETAILS } from '@/lib/graphql/barcode';
+import { useProductByBarcode, useProductByBarcodeDetails } from '@/hooks/apollo';
 import { parseScanPayload, type ParsedScanPayload } from '@/lib/barcode/scan-payload';
 
 type ProductByBarcodeResult = {
@@ -64,46 +63,48 @@ export function BarcodeScanInput(props: {
     };
   };
 
-  const [lookupBasic, { loading: loadingBasic }] = useLazyQuery<ProductByBarcodeResult>(
-    PRODUCT_BY_BARCODE,
-    {
-      fetchPolicy: 'no-cache',
-      onCompleted: (data) => {
+  const [lookupBasicFn, { loading: loadingBasic }] = useProductByBarcode();
+  const [lookupDetailsFn, { loading: loadingDetails }] = useProductByBarcodeDetails();
+
+  const lookupBasic = (options: { variables: { barcode: string } }) =>
+    lookupBasicFn({ ...options, fetchPolicy: 'no-cache' })
+      .then(({ data, error }) => {
+        if (error) {
+          pendingScanRef.current = null;
+          props.onError?.(error.message || 'Barcode lookup failed');
+          return;
+        }
         const pending = pendingScanRef.current;
         const scanned = (pending?.barcode ?? barcode ?? '').trim();
-
         if (!data?.productByBarcode) {
           props.onError?.('No product found for barcode');
           return;
         }
-
         props.onProductResolved(data.productByBarcode, scanned, buildBaseScanMeta(pending));
         setLastScanned(scanned);
         setBarcode('');
         pendingScanRef.current = null;
-        // Keep focus for rapid sequential scans.
         queueMicrotask(() => inputRef.current?.focus());
-      },
-      onError: (err) => {
+      })
+      .catch((err: any) => {
         pendingScanRef.current = null;
         props.onError?.(err.message || 'Barcode lookup failed');
-      },
-    },
-  );
+      });
 
-  const [lookupDetails, { loading: loadingDetails }] = useLazyQuery<ProductByBarcodeDetailsResult>(
-    PRODUCT_BY_BARCODE_DETAILS,
-    {
-      fetchPolicy: 'no-cache',
-      onCompleted: (data) => {
+  const lookupDetails = (options: { variables: { barcode: string } }) =>
+    lookupDetailsFn({ ...options, fetchPolicy: 'no-cache' })
+      .then(({ data, error }) => {
+        if (error) {
+          pendingScanRef.current = null;
+          props.onError?.(error.message || 'Barcode lookup failed');
+          return;
+        }
         const pending = pendingScanRef.current;
         const scanned = (pending?.barcode ?? barcode ?? '').trim();
-
         if (!data?.productByBarcodeDetails?.product) {
           props.onError?.('No product found for barcode');
           return;
         }
-
         const details = data.productByBarcodeDetails;
         props.onProductResolved(details.product, scanned, {
           ...buildBaseScanMeta(pending),
@@ -111,18 +112,15 @@ export function BarcodeScanInput(props: {
           quantity_multiplier: details.quantity_multiplier,
           barcode_value: details.barcode_value,
         });
-
         setLastScanned(scanned);
         setBarcode('');
         pendingScanRef.current = null;
         queueMicrotask(() => inputRef.current?.focus());
-      },
-      onError: (err) => {
+      })
+      .catch((err: any) => {
         pendingScanRef.current = null;
         props.onError?.(err.message || 'Barcode lookup failed');
-      },
-    },
-  );
+      });
 
   const loading = mode === 'details' ? loadingDetails : loadingBasic;
 

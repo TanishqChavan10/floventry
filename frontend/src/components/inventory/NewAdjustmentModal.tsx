@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useMutation, useQuery } from '@apollo/client';
+import { useWarehouseStock, useCreateInventoryAdjustment } from '@/hooks/apollo';
 import { useAuth } from '@/context/auth-context';
 import {
   Dialog,
@@ -34,8 +34,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
-import { CREATE_INVENTORY_ADJUSTMENT } from '@/lib/graphql/adjustments';
-import { GET_WAREHOUSE_STOCK } from '@/lib/graphql/inventory';
 import { toast } from 'sonner';
 import { CopyButton } from '@/components/common/CopyButton';
 import { SafeBarcodeScanInput } from '@/components/barcode/SafeBarcodeScanInput';
@@ -109,20 +107,9 @@ export default function NewAdjustmentModal({
   ]);
 
   // Fetch warehouse stock for product selection
-  const { data: stockData, loading: loadingStock } = useQuery(GET_WAREHOUSE_STOCK, {
-    variables: { warehouseId },
-    skip: !warehouseId,
-  });
+  const { data: stockData, loading: loadingStock } = useWarehouseStock(warehouseId);
 
-  const [createAdjustment, { loading: creating }] = useMutation(CREATE_INVENTORY_ADJUSTMENT, {
-    onCompleted: () => {
-      toast.success('Adjustment created successfully');
-      onClose();
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to create adjustment');
-    },
-  });
+  const [createAdjustment, { loading: creating }] = useCreateInventoryAdjustment();
 
   const stock = stockData?.stockByWarehouse || [];
   const selectedStock = stock.find((s: any) => s.product.id === selectedProductId);
@@ -175,8 +162,11 @@ export default function NewAdjustmentModal({
           },
         },
       });
+      toast.success('Adjustment created successfully');
       setShowConfirmDialog(false);
-    } catch (error) {
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create adjustment');
       setShowConfirmDialog(false);
     }
   };

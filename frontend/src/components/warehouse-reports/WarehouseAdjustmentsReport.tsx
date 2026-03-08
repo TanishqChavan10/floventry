@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@apollo/client';
 import {
   Bar,
   BarChart,
@@ -31,7 +30,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CopyButton } from '@/components/common/CopyButton';
-import { GET_ADJUSTMENT_REPORT } from '@/lib/graphql/warehouse-reports';
+import { useAdjustmentReport } from '@/hooks/apollo';
 import { format, subDays } from 'date-fns';
 
 const PERIODS = [
@@ -59,13 +58,9 @@ export function WarehouseAdjustmentsReport({ warehouseId }: Props) {
   const fromDate = useMemo(() => subDays(new Date(), days), [days]);
   const toDate = useMemo(() => new Date(), []);
 
-  const { data, loading } = useQuery(GET_ADJUSTMENT_REPORT, {
-    variables: {
-      warehouseId,
-      filters: { fromDate, toDate, limit: 500, offset: 0 },
-    },
-    skip: !warehouseId,
-    fetchPolicy: 'cache-and-network',
+  const { data, loading } = useAdjustmentReport({
+    warehouseId,
+    filters: { fromDate, toDate, limit: 500, offset: 0 },
   });
 
   const items: any[] = data?.adjustmentReport?.items ?? [];

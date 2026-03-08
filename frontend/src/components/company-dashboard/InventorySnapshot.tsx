@@ -8,6 +8,13 @@ import { Button } from '@/components/ui/button';
 import type { CompanyDashboardData } from '@/lib/graphql/company-dashboard';
 import { StockHealthWidget } from '@/components/company/stock-health-widget';
 import { QuickActions } from '@/components/company-dashboard/QuickActions';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from 'recharts';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
 
 interface InventorySnapshotProps {
   companySlug: string;
@@ -38,33 +45,6 @@ function buildNotificationsHref(
   return qs ? `/${companySlug}/notifications?${qs}` : `/${companySlug}/notifications`;
 }
 
-function StackedBar({
-  segments,
-  total,
-}: {
-  total: number;
-  segments: Array<{ label: string; value: number; className: string }>;
-}) {
-  if (total <= 0) {
-    return <div className="h-2 w-full rounded bg-muted" />;
-  }
-
-  return (
-    <div className="h-2 w-full overflow-hidden rounded bg-muted flex">
-      {segments
-        .filter((s) => s.value > 0)
-        .map((s) => (
-          <div
-            key={s.label}
-            className={s.className}
-            style={{ width: `${(s.value / total) * 100}%` }}
-            title={`${s.label}: ${s.value.toLocaleString()} (${percent(s.value, total)}%)`}
-          />
-        ))}
-    </div>
-  );
-}
-
 export function InventorySnapshot({ companySlug, data }: InventorySnapshotProps) {
   const kpis = data?.kpis ?? {
     totalSkus: 0,
@@ -89,14 +69,66 @@ export function InventorySnapshot({ companySlug, data }: InventorySnapshotProps)
   const stockTotal = stockStatus.ok + stockStatus.low + stockStatus.critical;
   const expiryTotal = expiryRisk.ok + expiryRisk.expiringSoon + expiryRisk.expired;
 
+  // --- Chart configs ---
+  const stockStatusChartConfig = {
+    healthy: { label: 'Healthy', color: 'var(--chart-2)' },
+    low: { label: 'Low Stock', color: 'var(--chart-4)' },
+    critical: { label: 'Critical', color: 'var(--chart-1)' },
+  } satisfies ChartConfig;
+
+  const stockStatusPieData = [
+    { name: 'healthy', value: stockStatus.ok, fill: 'var(--color-healthy)' },
+    { name: 'low', value: stockStatus.low, fill: 'var(--color-low)' },
+    { name: 'critical', value: stockStatus.critical, fill: 'var(--color-critical)' },
+  ];
+
+  const expiryRiskChartConfig = {
+    healthy: { label: 'Healthy', color: 'var(--chart-2)' },
+    expiring: { label: 'Expiring Soon', color: 'var(--chart-4)' },
+    expired: { label: 'Expired', color: 'var(--chart-1)' },
+  } satisfies ChartConfig;
+
+  const expiryRiskPieData = [
+    { name: 'healthy', value: expiryRisk.ok, fill: 'var(--color-healthy)' },
+    { name: 'expiring', value: expiryRisk.expiringSoon, fill: 'var(--color-expiring)' },
+    { name: 'expired', value: expiryRisk.expired, fill: 'var(--color-expired)' },
+  ];
+
+  const movementChartConfig = {
+    in: { label: 'Stock In', color: 'var(--chart-2)' },
+    out: { label: 'Stock Out', color: 'var(--chart-3)' },
+  } satisfies ChartConfig;
+
+  const movementBarData = [
+    { period: '7 days', in: kpis.movements7d.inUnits, out: kpis.movements7d.outUnits },
+    { period: '30 days', in: kpis.movements30d.inUnits, out: kpis.movements30d.outUnits },
+  ];
+
+  const alertsChartConfig = {
+    count: { label: 'Count' },
+    critical: { label: 'Critical', color: 'var(--chart-1)' },
+    warning: { label: 'At-risk', color: 'var(--chart-4)' },
+    lowStock: { label: 'Low Stock', color: 'var(--chart-3)' },
+    expiry: { label: 'Expiry', color: 'var(--chart-4)' },
+    imports: { label: 'Imports', color: 'var(--chart-2)' },
+  } satisfies ChartConfig;
+
+  const alertsBarData = [
+    { name: 'Critical', count: alerts.critical, fill: 'var(--chart-1)' },
+    { name: 'At-risk', count: alerts.warning, fill: 'var(--chart-4)' },
+    { name: 'Low Stock', count: alerts.lowStock, fill: 'var(--chart-3)' },
+    { name: 'Expiry', count: alerts.expiry, fill: 'var(--chart-4)' },
+    { name: 'Imports', count: alerts.importIssues, fill: 'var(--chart-2)' },
+  ];
+
   const hasAnyData = Boolean(
     data &&
-      (kpis.totalSkus > 0 ||
-        kpis.warehouses > 0 ||
-        kpis.totalStockUnits > 0 ||
-        stockTotal > 0 ||
-        expiryTotal > 0 ||
-        (data.recentActivity?.length ?? 0) > 0),
+    (kpis.totalSkus > 0 ||
+      kpis.warehouses > 0 ||
+      kpis.totalStockUnits > 0 ||
+      stockTotal > 0 ||
+      expiryTotal > 0 ||
+      (data.recentActivity?.length ?? 0) > 0),
   );
 
   const todayFocusItems: Array<{
@@ -291,17 +323,148 @@ export function InventorySnapshot({ companySlug, data }: InventorySnapshotProps)
         </div>
       </div>
 
+      {/* Charts Row: Stock Status + Expiry Risk + Movements */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Stock Status Donut */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Stock Status</CardTitle>
+            <CardDescription>SKU distribution by stock level</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {stockTotal === 0 ? (
+              <div className="flex items-center justify-center h-[180px] text-sm text-muted-foreground">
+                No data yet
+              </div>
+            ) : (
+              <>
+                <ChartContainer
+                  config={stockStatusChartConfig}
+                  className="mx-auto aspect-square max-h-[180px]"
+                >
+                  <PieChart>
+                    <ChartTooltip content={<ChartTooltipContent nameKey="name" />} />
+                    <Pie
+                      data={stockStatusPieData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={45}
+                      outerRadius={70}
+                      paddingAngle={2}
+                    />
+                  </PieChart>
+                </ChartContainer>
+                <div className="mt-3 space-y-1.5 text-sm">
+                  {stockStatusPieData.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{ background: item.fill }}
+                        />
+                        <span className="text-muted-foreground capitalize">{item.name}</span>
+                      </div>
+                      <span className="font-medium">
+                        {item.value.toLocaleString()} ({percent(item.value, stockTotal)}%)
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Expiry Risk Donut */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Expiry Risk</CardTitle>
+            <CardDescription>SKU distribution by expiry state</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {expiryTotal === 0 ? (
+              <div className="flex items-center justify-center h-[180px] text-sm text-muted-foreground">
+                No data yet
+              </div>
+            ) : (
+              <>
+                <ChartContainer
+                  config={expiryRiskChartConfig}
+                  className="mx-auto aspect-square max-h-[180px]"
+                >
+                  <PieChart>
+                    <ChartTooltip content={<ChartTooltipContent nameKey="name" />} />
+                    <Pie
+                      data={expiryRiskPieData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={45}
+                      outerRadius={70}
+                      paddingAngle={2}
+                    />
+                  </PieChart>
+                </ChartContainer>
+                <div className="mt-3 space-y-1.5 text-sm">
+                  {expiryRiskPieData.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{ background: item.fill }}
+                        />
+                        <span className="text-muted-foreground capitalize">{item.name}</span>
+                      </div>
+                      <span className="font-medium">
+                        {item.value.toLocaleString()} ({percent(item.value, expiryTotal)}%)
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Movement Comparison Chart */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Stock Movements</CardTitle>
+            <CardDescription>Inflow vs outflow (7d &amp; 30d)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {movementBarData.every((d) => d.in === 0 && d.out === 0) ? (
+              <div className="flex items-center justify-center h-[180px] text-sm text-muted-foreground">
+                No movement data yet
+              </div>
+            ) : (
+              <ChartContainer config={movementChartConfig} className="h-[220px] w-full">
+                <BarChart data={movementBarData} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+                  <CartesianGrid vertical={false} />
+                  <XAxis dataKey="period" tickLine={false} axisLine={false} className="text-xs" />
+                  <YAxis tickLine={false} axisLine={false} className="text-xs" />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="in" fill="var(--color-in)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="out" fill="var(--color-out)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ChartContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Stock Health + Quick Actions Row */}
       <div className="grid gap-4 lg:grid-cols-2">
         <StockHealthWidget companySlug={companySlug} />
         <QuickActions companySlug={companySlug} />
       </div>
 
+      {/* Alerts Overview Chart */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between gap-4">
             <div>
-              <CardTitle>Health Distributions</CardTitle>
-              <CardDescription>Stock levels and expiry risk</CardDescription>
+              <CardTitle>Alerts Overview</CardTitle>
+              <CardDescription>Active alerts by category</CardDescription>
             </div>
             <Link
               href={
@@ -323,7 +486,7 @@ export function InventorySnapshot({ companySlug, data }: InventorySnapshotProps)
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
             <div>
               <div
                 className={
@@ -368,198 +531,36 @@ export function InventorySnapshot({ companySlug, data }: InventorySnapshotProps)
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="space-y-3">
-              <div className="text-sm font-semibold">Stock Status</div>
-              <StackedBar
-                total={stockTotal}
-                segments={[
-                  {
-                    label: 'Healthy (OK)',
-                    value: stockStatus.ok,
-                    className: 'bg-[var(--chart-2)]/60',
-                  },
-                  {
-                    label: 'At-risk (Low)',
-                    value: stockStatus.low,
-                    className: 'bg-[var(--chart-4)]/55',
-                  },
-                  {
-                    label: 'Critical',
-                    value: stockStatus.critical,
-                    className: 'bg-destructive/55',
-                  },
-                ]}
-              />
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Healthy</span>
-                  <span className="font-medium">
-                    {stockStatus.ok.toLocaleString()} ({percent(stockStatus.ok, stockTotal)}%)
-                  </span>
-                </div>
-                <Link
-                  href={buildNotificationsHref(companySlug, { type: 'STOCK_LOW' })}
-                  className="flex items-center justify-between rounded px-2 py-1 -mx-2 hover:bg-muted"
-                >
-                  <span className="text-muted-foreground">At-risk</span>
-                  <span className="font-medium">
-                    {stockStatus.low.toLocaleString()} ({percent(stockStatus.low, stockTotal)}%)
-                  </span>
-                </Link>
-                <Link
-                  href={buildNotificationsHref(companySlug, {
-                    filter: 'critical',
-                    type: 'STOCK_CRITICAL',
-                  })}
-                  className="flex items-center justify-between rounded px-2 py-1 -mx-2 hover:bg-muted"
-                >
-                  <span className="text-muted-foreground">Critical</span>
-                  <span className="font-medium">
-                    {stockStatus.critical.toLocaleString()} (
-                    {percent(stockStatus.critical, stockTotal)}%)
-                  </span>
-                </Link>
-              </div>
+          {alertsBarData.every((d) => d.count === 0) ? (
+            <div className="flex items-center justify-center h-[160px] text-sm text-muted-foreground">
+              No active alerts
             </div>
-
-            <div className="space-y-3">
-              <div className="text-sm font-semibold">Expiry Risk</div>
-              <StackedBar
-                total={expiryTotal}
-                segments={[
-                  {
-                    label: 'Healthy (OK)',
-                    value: expiryRisk.ok,
-                    className: 'bg-[var(--chart-2)]/60',
-                  },
-                  {
-                    label: 'At-risk (Expiring soon)',
-                    value: expiryRisk.expiringSoon,
-                    className: 'bg-[var(--chart-4)]/55',
-                  },
-                  {
-                    label: 'Critical (Expired)',
-                    value: expiryRisk.expired,
-                    className: 'bg-destructive/55',
-                  },
-                ]}
-              />
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Healthy</span>
-                  <span className="font-medium">
-                    {expiryRisk.ok.toLocaleString()} ({percent(expiryRisk.ok, expiryTotal)}%)
-                  </span>
-                </div>
-                <Link
-                  href={buildNotificationsHref(companySlug, { type: 'STOCK_EXPIRING_SOON' })}
-                  className="flex items-center justify-between rounded px-2 py-1 -mx-2 hover:bg-muted"
-                >
-                  <span className="text-muted-foreground">At-risk</span>
-                  <span className="font-medium">
-                    {expiryRisk.expiringSoon.toLocaleString()} (
-                    {percent(expiryRisk.expiringSoon, expiryTotal)}%)
-                  </span>
-                </Link>
-                <Link
-                  href={buildNotificationsHref(companySlug, {
-                    type: 'STOCK_EXPIRED',
-                  })}
-                  className="flex items-center justify-between rounded px-2 py-1 -mx-2 hover:bg-muted"
-                >
-                  <span className="text-muted-foreground">Critical</span>
-                  <span className="font-medium">
-                    {expiryRisk.expired.toLocaleString()} (
-                    {percent(expiryRisk.expired, expiryTotal)}%)
-                  </span>
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 pt-6 border-t">
-            <div className="text-sm font-semibold mb-1">Actionable Alerts</div>
-            <div className="text-xs text-muted-foreground mb-3">
-              Click an item to review and resolve.
-            </div>
-            <div className="grid gap-3 md:grid-cols-5">
-              <Link
-                href={buildNotificationsHref(companySlug, {
-                  filter: 'critical',
-                  severity: 'CRITICAL',
-                })}
-                className="rounded-lg border p-3 hover:bg-muted/50 transition-colors"
+          ) : (
+            <ChartContainer config={alertsChartConfig} className="h-[200px] w-full">
+              <BarChart
+                data={alertsBarData}
+                layout="vertical"
+                margin={{ top: 0, right: 16, left: 0, bottom: 0 }}
               >
-                <div className="text-xs text-muted-foreground">Critical</div>
-                <div className="mt-1 flex items-baseline justify-between gap-2">
-                  <div className="text-xl font-semibold text-destructive">
-                    {alerts.critical.toLocaleString()}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Review</div>
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">Needs attention today</div>
-              </Link>
-              <Link
-                href={buildNotificationsHref(companySlug, { severity: 'WARNING' })}
-                className="rounded-lg border p-3 hover:bg-muted/50 transition-colors"
-              >
-                <div className="text-xs text-muted-foreground">At-risk</div>
-                <div className="mt-1 flex items-baseline justify-between gap-2">
-                  <div className="text-xl font-semibold text-[var(--chart-4)]">
-                    {alerts.warning.toLocaleString()}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Review</div>
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">Keep an eye on these</div>
-              </Link>
-              <Link
-                href={buildNotificationsHref(companySlug, {
-                  type: ['STOCK_LOW', 'STOCK_CRITICAL'],
-                })}
-                className="rounded-lg border p-3 hover:bg-muted/50 transition-colors"
-              >
-                <div className="text-xs text-muted-foreground">Low stock</div>
-                <div className="mt-1 flex items-baseline justify-between gap-2">
-                  <div className="text-xl font-semibold">{alerts.lowStock.toLocaleString()}</div>
-                  <div className="text-xs text-muted-foreground">Review</div>
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  Check replenishment options
-                </div>
-              </Link>
-              <Link
-                href={buildNotificationsHref(companySlug, {
-                  type: ['STOCK_EXPIRED', 'STOCK_EXPIRING_SOON'],
-                })}
-                className="rounded-lg border p-3 hover:bg-muted/50 transition-colors"
-              >
-                <div className="text-xs text-muted-foreground">Expiry</div>
-                <div className="mt-1 flex items-baseline justify-between gap-2">
-                  <div className="text-xl font-semibold">{alerts.expiry.toLocaleString()}</div>
-                  <div className="text-xs text-muted-foreground">Review</div>
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  Reduce risk before it expires
-                </div>
-              </Link>
-              <Link
-                href={buildNotificationsHref(companySlug, {
-                  type: 'IMPORT_PARTIAL_FAILURE',
-                })}
-                className="rounded-lg border p-3 hover:bg-muted/50 transition-colors"
-              >
-                <div className="text-xs text-muted-foreground">Imports</div>
-                <div className="mt-1 flex items-baseline justify-between gap-2">
-                  <div className="text-xl font-semibold">
-                    {alerts.importIssues.toLocaleString()}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Review</div>
-                </div>
-                <div className="mt-1 text-xs text-muted-foreground">Fix partial failures</div>
-              </Link>
-            </div>
-          </div>
+                <CartesianGrid horizontal={false} vertical={false} />
+                <XAxis type="number" tickLine={false} axisLine={false} className="text-xs" />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  width={90}
+                  tickLine={false}
+                  axisLine={false}
+                  className="text-xs"
+                />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                  {alertsBarData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          )}
         </CardContent>
       </Card>
     </div>

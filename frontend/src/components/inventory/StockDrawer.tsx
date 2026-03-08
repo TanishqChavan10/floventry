@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useMutation, useQuery } from '@apollo/client';
+import { useAdjustStock, useUpdateStockLevels, useStockMovements } from '@/hooks/apollo';
 import {
   Sheet,
   SheetContent,
@@ -37,12 +37,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
 } from 'lucide-react';
-import {
-  ADJUST_STOCK,
-  UPDATE_STOCK_LEVELS,
-  GET_STOCK_MOVEMENTS,
-  GET_WAREHOUSE_STOCK,
-} from '@/lib/graphql/inventory';
 import { CopyButton } from '@/components/common/CopyButton';
 
 type StockDrawerStock = {
@@ -139,43 +133,28 @@ export default function StockDrawer({
     }
   }, [stock]);
 
-  const [updateLevels, { loading: updatingLevels }] = useMutation(UPDATE_STOCK_LEVELS, {
-    refetchQueries: [GET_WAREHOUSE_STOCK],
-    onCompleted: () => {
+  const [updateLevels, { loading: updatingLevels }] = useUpdateStockLevels();
+
+  // Add onCompleted/onError handling inline
+  const handleUpdateLevelsWrapper = async (variables: any) => {
+    try {
+      await updateLevels({ variables });
       toast({
         title: 'Stock levels updated',
         description: 'Stock thresholds have been updated successfully',
       });
       setIsEditingLevels(false);
       onClose();
-    },
-    onError: (error) => {
+    } catch (error: any) {
       toast({
         title: 'Error',
         description: error.message,
         variant: 'destructive',
       });
-    },
-  });
+    }
+  };
 
-  const [adjustStock, { loading: adjustingStock }] = useMutation(ADJUST_STOCK, {
-    refetchQueries: [GET_WAREHOUSE_STOCK],
-    onCompleted: () => {
-      toast({
-        title: 'Stock adjusted',
-        description: 'Stock quantity has been adjusted successfully',
-      });
-      setIsAdjusting(false);
-      setAdjustForm({ quantity: '', type: 'ADJUSTMENT', reason: '', notes: '' });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+  const [adjustStock, { loading: adjustingStock }] = useAdjustStock();
 
   // Fetch recent stock movements for this product in this warehouse
   // Memoize the filters to prevent query re-execution on every render
@@ -190,14 +169,9 @@ export default function StockDrawer({
     [stock?.product?.id],
   );
 
-  const { data: movementsData } = useQuery(GET_STOCK_MOVEMENTS, {
-    variables: {
-      warehouseId: stock?.warehouse?.id,
-      filters: movementFilters,
-    },
-    skip: !stock?.product?.id || !stock?.warehouse?.id || !open,
-    fetchPolicy: 'cache-and-network',
-    notifyOnNetworkStatusChange: false,
+  const { data: movementsData } = useStockMovements({
+    warehouseId: stock?.warehouse?.id ?? '',
+    filters: movementFilters,
   });
 
   const recentMovements: StockMovementItem[] = movementsData?.stockMovements?.items ?? [];
@@ -219,14 +193,12 @@ export default function StockDrawer({
   if (!stock) return null;
 
   const handleUpdateLevels = async () => {
-    await updateLevels({
-      variables: {
-        input: {
-          id: stock.id,
-          min_stock_level: levelForm.min_stock_level ? parseInt(levelForm.min_stock_level) : null,
-          max_stock_level: levelForm.max_stock_level ? parseInt(levelForm.max_stock_level) : null,
-          reorder_point: levelForm.reorder_point ? parseInt(levelForm.reorder_point) : null,
-        },
+    await handleUpdateLevelsWrapper({
+      input: {
+        id: stock.id,
+        min_stock_level: levelForm.min_stock_level ? parseInt(levelForm.min_stock_level) : null,
+        max_stock_level: levelForm.max_stock_level ? parseInt(levelForm.max_stock_level) : null,
+        reorder_point: levelForm.reorder_point ? parseInt(levelForm.reorder_point) : null,
       },
     });
   };
@@ -241,18 +213,32 @@ export default function StockDrawer({
       return;
     }
 
-    await adjustStock({
-      variables: {
-        input: {
-          product_id: stock.product.id,
-          warehouse_id: stock.warehouse.id,
-          quantity: parseInt(adjustForm.quantity),
-          type: adjustForm.type,
-          reason: adjustForm.reason || null,
-          notes: adjustForm.notes || null,
+    try {
+      await adjustStock({
+        variables: {
+          input: {
+            product_id: stock.product.id,
+            warehouse_id: stock.warehouse.id,
+            quantity: parseInt(adjustForm.quantity),
+            type: adjustForm.type,
+            reason: adjustForm.reason || null,
+            notes: adjustForm.notes || null,
+          },
         },
-      },
-    });
+      });
+      toast({
+        title: 'Stock adjusted',
+        description: 'Stock has been adjusted successfully',
+      });
+      setIsAdjusting(false);
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to adjust stock',
+        variant: 'destructive',
+      });
+    }
   };
 
   const currentQuantity = Number.parseFloat(String(stock.quantity ?? 0));

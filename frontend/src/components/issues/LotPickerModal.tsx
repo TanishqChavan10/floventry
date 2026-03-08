@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery } from '@apollo/client';
-import { gql } from '@apollo/client';
+import { useStockLots } from '@/hooks/apollo';
 import {
   Dialog,
   DialogContent,
@@ -26,17 +25,6 @@ import {
 import { ExpiryBadge } from './ExpiryBadge';
 import { Loader2 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
-
-const GET_STOCK_LOTS = gql`
-  query GetStockLots($productId: ID!, $warehouseId: ID!) {
-    stockLots(productId: $productId, warehouseId: $warehouseId) {
-      id
-      quantity
-      expiry_date
-      received_at
-    }
-  }
-`;
 
 interface SelectedLot {
   lot_id: string;
@@ -64,10 +52,7 @@ export function LotPickerModal({
 }: LotPickerModalProps) {
   const [selectedLots, setSelectedLots] = useState<Map<string, number>>(new Map());
 
-  const { data, loading } = useQuery(GET_STOCK_LOTS, {
-    variables: { productId, warehouseId },
-    skip: !open || !productId || !warehouseId,
-  });
+  const { data, loading } = useStockLots(productId, warehouseId);
 
   const lots = data?.stockLots || [];
 
@@ -174,16 +159,10 @@ export function LotPickerModal({
                           disabled={expired}
                         />
                       </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {lot.id.slice(0, 8)}...
-                      </TableCell>
+                      <TableCell className="font-mono text-sm">{lot.id.slice(0, 8)}...</TableCell>
+                      <TableCell>{format(new Date(lot.received_at), 'dd MMM yyyy')}</TableCell>
                       <TableCell>
-                        {format(new Date(lot.received_at), 'dd MMM yyyy')}
-                      </TableCell>
-                      <TableCell>
-                        {lot.expiry_date
-                          ? format(new Date(lot.expiry_date), 'dd MMM yyyy')
-                          : '-'}
+                        {lot.expiry_date ? format(new Date(lot.expiry_date), 'dd MMM yyyy') : '-'}
                       </TableCell>
                       <TableCell>{lot.quantity}</TableCell>
                       <TableCell>
@@ -220,9 +199,7 @@ export function LotPickerModal({
               <span className="font-medium">Total Selected:</span>{' '}
               <span className="text-lg font-bold">{totalSelected.toFixed(2)}</span>
               {requiredQuantity && (
-                <span className="text-slate-500 ml-2">
-                  / {requiredQuantity} required
-                </span>
+                <span className="text-slate-500 ml-2">/ {requiredQuantity} required</span>
               )}
             </div>
             <div className="flex gap-2">

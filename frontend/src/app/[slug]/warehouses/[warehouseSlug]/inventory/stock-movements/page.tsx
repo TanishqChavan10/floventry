@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { useQuery } from '@apollo/client';
+import { useWarehousesByCompany, useStockByWarehouse, useStockMovements } from '@/hooks/apollo';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,11 +28,8 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { GET_STOCK_BY_WAREHOUSE } from '@/lib/graphql/stock';
-import { GET_STOCK_MOVEMENTS } from '@/lib/graphql/inventory';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/context/auth-context';
-import { GET_WAREHOUSES_BY_COMPANY } from '@/lib/graphql/company';
 
 // TypeScript types
 enum MovementType {
@@ -215,10 +212,8 @@ function StockMovementsContent() {
   const userRole = activeCompany?.role;
 
   // For OWNER/ADMIN, fetch all company warehouses as fallback
-  const { data: companyData } = useQuery(GET_WAREHOUSES_BY_COMPANY, {
-    variables: { slug: companySlug },
-    skip: !companySlug || !!activeWarehouse || !['OWNER', 'ADMIN'].includes(userRole || ''),
-  });
+  const needsCompanyFallback = !activeWarehouse && ['OWNER', 'ADMIN'].includes(userRole || '');
+  const { data: companyData } = useWarehousesByCompany(needsCompanyFallback ? companySlug : '');
 
   // Try to get warehouse from company data if not in user.warehouses
   const companyWarehouses: CompanyWarehouse[] = companyData?.companyBySlug?.warehouses ?? [];
@@ -228,10 +223,7 @@ function StockMovementsContent() {
   const warehouseName = activeWarehouse?.warehouseName || warehouseFromCompany?.name;
 
   // Fetch stock for product filter
-  const { data: stockData } = useQuery(GET_STOCK_BY_WAREHOUSE, {
-    variables: { warehouseId: warehouseId || '' },
-    skip: !warehouseId,
-  });
+  const { data: stockData } = useStockByWarehouse(warehouseId || '');
 
   // Calculate default dates once (30 days ago and today)
   const defaultFromDate = useMemo(() => {
@@ -263,12 +255,9 @@ function StockMovementsContent() {
   }, [fromDate, toDate, selectedProduct, selectedType, defaultFromDate, defaultToDate]);
 
   // Fetch stock movements
-  const { data, loading, error, refetch } = useQuery(GET_STOCK_MOVEMENTS, {
-    variables: {
-      warehouseId: warehouseId || '',
-      filters,
-    },
-    skip: !warehouseId,
+  const { data, loading, error, refetch } = useStockMovements({
+    warehouseId: warehouseId || '',
+    filters,
   });
 
   const movements: StockMovement[] = data?.stockMovements?.items || [];

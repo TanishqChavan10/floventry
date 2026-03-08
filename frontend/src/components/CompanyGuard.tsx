@@ -4,9 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
-import { useMutation } from '@apollo/client';
-import { GET_CURRENT_USER } from '@/lib/graphql/auth';
-import { SWITCH_COMPANY } from '@/lib/graphql/company';
+import { useSwitchCompany } from '@/hooks/apollo';
 
 interface CompanyGuardProps {
   children: React.ReactNode;
@@ -20,9 +18,7 @@ export default function CompanyGuard({ children }: CompanyGuardProps) {
 
   const lastSwitchAttemptedForSlugRef = useRef<string | null>(null);
   const [isSwitchingCompany, setIsSwitchingCompany] = useState(false);
-  const [switchCompany] = useMutation(SWITCH_COMPANY, {
-    refetchQueries: [{ query: GET_CURRENT_USER }],
-  });
+  const [switchCompany] = useSwitchCompany();
 
   useEffect(() => {
     // Only check company membership if user is authenticated and loading is complete

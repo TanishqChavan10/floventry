@@ -1,16 +1,14 @@
 'use client';
 
 import React from 'react';
-import { useQuery, useMutation } from '@apollo/client';
-import { GET_CATEGORIES } from '@/lib/graphql/catalog';
-import { TOGGLE_CATEGORY_ACTIVE } from '@/lib/graphql/settings';
+import { useCategories, useToggleCategoryActive } from '@/hooks/apollo';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 export default function CategorySettings() {
-  const { data, loading, error } = useQuery(GET_CATEGORIES);
-  const [toggleActive] = useMutation(TOGGLE_CATEGORY_ACTIVE);
+  const { data, loading, error } = useCategories();
+  const [toggleActive] = useToggleCategoryActive();
 
   const handleToggle = async (id: string, currentStatus: boolean, name: string) => {
     try {

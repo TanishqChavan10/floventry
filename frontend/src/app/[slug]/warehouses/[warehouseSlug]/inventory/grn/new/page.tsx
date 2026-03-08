@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useMutation, useQuery } from '@apollo/client';
+import { usePurchaseOrders, useCreateGRN, usePostGRN } from '@/hooks/apollo';
 import RoleGuard from '@/components/guards/RoleGuard';
 import { useWarehouse } from '@/context/warehouse-context';
 import { Button } from '@/components/ui/button';
@@ -36,8 +36,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ArrowLeft, Save, Send, AlertTriangle } from 'lucide-react';
-import { CREATE_GRN, POST_GRN, GET_GRNS } from '@/lib/graphql/grn';
-import { GET_PURCHASE_ORDERS } from '@/lib/graphql/purchase-orders';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { SafeBarcodeScanInput } from '@/components/barcode/SafeBarcodeScanInput';
@@ -74,24 +72,16 @@ function CreateGRNContent() {
   } | null>(null);
 
   // Fetch ORDERED POs for this warehouse
-  const { data: posData, loading: loadingPOs } = useQuery(GET_PURCHASE_ORDERS, {
-    variables: {
-      filters: {
-        status: 'ORDERED',
-        limit: 100,
-      },
+  const { data: posData, loading: loadingPOs } = usePurchaseOrders({
+    filters: {
+      status: 'ORDERED',
+      limit: 100,
     },
-    skip: !activeWarehouse?.id,
-    fetchPolicy: 'cache-and-network',
   });
 
-  const [createGRN, { loading: creating }] = useMutation(CREATE_GRN, {
-    refetchQueries: [{ query: GET_GRNS, variables: { filters: { limit: 100 } } }],
-  });
+  const [createGRN, { loading: creating }] = useCreateGRN();
 
-  const [postGRN, { loading: posting }] = useMutation(POST_GRN, {
-    refetchQueries: [{ query: GET_GRNS, variables: { filters: { limit: 100 } } }],
-  });
+  const [postGRN, { loading: posting }] = usePostGRN();
 
   const purchaseOrders = (posData?.purchaseOrders || []).filter(
     (po: any) => po.warehouse?.id === activeWarehouse?.id,

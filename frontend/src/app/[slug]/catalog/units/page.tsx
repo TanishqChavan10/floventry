@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
+import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit } from '@/hooks/apollo';
 import CompanyGuard from '@/components/CompanyGuard';
 import RoleGuard from '@/components/guards/role-guard';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,6 @@ import {
   CheckCircle2,
   MoreHorizontal,
 } from 'lucide-react';
-import { GET_UNITS, CREATE_UNIT, UPDATE_UNIT, DELETE_UNIT } from '@/lib/graphql/catalog';
 import { useToast } from '@/components/ui/use-toast';
 import {
   Dialog,
@@ -80,47 +79,15 @@ function UnitsContent() {
   const [bulkRestoreUnitIds, setBulkRestoreUnitIds] = useState<string[] | null>(null);
 
   const includeArchived = statusFilter !== 'active';
-  const { data, loading, error, refetch } = useQuery(GET_UNITS, {
-    variables: { includeArchived },
-  });
+  const { data, loading, error, refetch } = useUnits({ includeArchived });
 
-  const [createUnit, { loading: creating }] = useMutation(CREATE_UNIT, {
-    onCompleted: () => {
-      toast({ title: 'Unit created', description: 'Unit has been created successfully' });
-      handleCloseModal();
-      refetch();
-    },
-    onError: (error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    },
-  });
+  const [createUnit, { loading: creating }] = useCreateUnit();
 
-  const [updateUnit, { loading: updating }] = useMutation(UPDATE_UNIT, {
-    onCompleted: () => {
-      toast({ title: 'Unit updated', description: 'Unit has been updated successfully' });
-      handleCloseModal();
-      refetch();
-    },
-    onError: (error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    },
-  });
+  const [updateUnit, { loading: updating }] = useUpdateUnit();
 
-  const [archiveUnit] = useMutation(DELETE_UNIT, {
-    onCompleted: () => {
-      toast({ title: 'Unit archived', description: 'Unit has been archived successfully' });
-      refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: 'Cannot archive unit',
-        description: 'This unit is in use by products',
-        variant: 'destructive',
-      });
-    },
-  });
+  const [archiveUnit] = useDeleteUnit();
 
-  const [archiveUnitQuiet] = useMutation(DELETE_UNIT);
+  const [archiveUnitQuiet] = useDeleteUnit();
 
   const units = data?.units || [];
 
@@ -204,6 +171,7 @@ function UnitsContent() {
           },
         },
       });
+      handleCloseModal();
     } else {
       await createUnit({
         variables: {
@@ -214,6 +182,7 @@ function UnitsContent() {
           },
         },
       });
+      handleCloseModal();
     }
   };
 

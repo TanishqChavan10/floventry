@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import CompanyGuard from '@/components/CompanyGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,11 +18,11 @@ function parseUtc(dateStr: string): Date {
   return new Date(dateStr);
 }
 import {
-  GET_NOTIFICATIONS,
-  GET_UNREAD_COUNT,
-  MARK_AS_READ,
-  MARK_ALL_AS_READ,
-} from '@/lib/graphql/notifications';
+  useNotifications,
+  useUnreadNotificationCount,
+  useMarkNotificationAsRead,
+  useMarkAllNotificationsAsRead,
+} from '@/hooks/apollo';
 
 interface Notification {
   id: string;
@@ -112,20 +111,14 @@ function NotificationsPageContent() {
   }, [queryFilters, searchParams]);
 
   // Fetch notifications (NO polling - load on demand only)
-  const { data, loading, refetch } = useQuery(GET_NOTIFICATIONS, {
-    variables: { limit: pageSize, offset: page * pageSize },
-  });
+  const { data, loading, refetch } = useNotifications({ limit: pageSize, offset: page * pageSize });
 
   // Get unread count
-  const { data: countData } = useQuery(GET_UNREAD_COUNT);
+  const { data: countData } = useUnreadNotificationCount();
 
-  const [markAsRead] = useMutation(MARK_AS_READ, {
-    onCompleted: () => refetch(),
-  });
+  const [markAsRead] = useMarkNotificationAsRead();
 
-  const [markAllAsRead] = useMutation(MARK_ALL_AS_READ, {
-    onCompleted: () => refetch(),
-  });
+  const [markAllAsRead] = useMarkAllNotificationsAsRead();
 
   const notifications: Notification[] = data?.notifications || [];
   const unreadCount = countData?.unreadNotificationCount || 0;

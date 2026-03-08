@@ -1,6 +1,5 @@
 'use client';
 
-import { useQuery } from '@apollo/client';
 import {
   Package,
   TrendingUp,
@@ -50,25 +49,25 @@ import {
 import { type PieSectorDataItem } from 'recharts/types/polar/Pie';
 import RoleGuard from '@/components/guards/RoleGuard';
 import {
-  GET_INVENTORY_HEALTH_STATS,
-  GET_TOP_STOCK_PRODUCTS,
-  GET_CRITICAL_STOCK_PRODUCTS,
-  GET_WAREHOUSE_HEALTH_SCORECARD,
-  GET_MOVEMENT_TRENDS,
-  GET_MOVEMENT_TYPE_BREAKDOWN,
-  GET_ADJUSTMENT_TRENDS,
-  GET_ADJUSTMENTS_BY_WAREHOUSE,
-  GET_ADJUSTMENTS_BY_USER,
-  GET_COMPANY_INVENTORY_SUMMARY,
-} from '@/lib/graphql/inventory';
+  useInventoryHealthStats,
+  useTopStockProducts,
+  useCriticalStockProducts,
+  useWarehouseHealthScorecard,
+  useMovementTrends,
+  useMovementTypeBreakdown,
+  useAdjustmentTrends,
+  useAdjustmentsByWarehouse,
+  useAdjustmentsByUser,
+  useCompanyInventorySummary,
+} from '@/hooks/apollo';
 import { StockHealthBadge } from '@/components/inventory/stock-health-badge';
 
 const COLORS = {
-  ok: '#3b82f6', // Standard blue
-  warning: '#60a5fa', // Lighter blue
-  critical: '#1e40af', // Darker blue
-  in: '#3b82f6',
-  out: '#ef4444',
+  ok: '#EF5350', // Medium red
+  warning: '#E57373', // Light red
+  critical: '#B71C1C', // Dark red
+  in: '#E53935', // Brand red
+  out: '#FFCDD2', // Faint red
 };
 
 export default function CompanyInventoryReportsPage() {
@@ -138,15 +137,11 @@ export default function CompanyInventoryReportsPage() {
 // TAB 1: INVENTORY HEALTH
 // ===========================
 function InventoryHealthTab() {
-  const { data: healthData, loading: healthLoading } = useQuery(GET_INVENTORY_HEALTH_STATS);
-  const { data: topProductsData, loading: topLoading } = useQuery(GET_TOP_STOCK_PRODUCTS, {
-    variables: { limit: 10 },
-  });
-  const { data: criticalData, loading: criticalLoading } = useQuery(GET_CRITICAL_STOCK_PRODUCTS, {
-    variables: { limit: 10 },
-  });
-  const { data: summaryData, loading: summaryLoading } = useQuery(GET_COMPANY_INVENTORY_SUMMARY, {
-    variables: { filters: { limit: 50 } },
+  const { data: healthData, loading: healthLoading } = useInventoryHealthStats();
+  const { data: topProductsData, loading: topLoading } = useTopStockProducts({ limit: 10 });
+  const { data: criticalData, loading: criticalLoading } = useCriticalStockProducts({ limit: 10 });
+  const { data: summaryData, loading: summaryLoading } = useCompanyInventorySummary({
+    filters: { limit: 50 },
   });
 
   const healthChartData = healthData?.inventoryHealthStats
@@ -368,7 +363,7 @@ function InventoryHealthTab() {
 // TAB 2: WAREHOUSE COMPARISON
 // ===========================
 function WarehouseComparisonTab() {
-  const { data: scorecardData, loading } = useQuery(GET_WAREHOUSE_HEALTH_SCORECARD);
+  const { data: scorecardData, loading } = useWarehouseHealthScorecard();
 
   const chartConfig = {
     ok: { label: 'OK', color: COLORS.ok },
@@ -418,12 +413,8 @@ function WarehouseComparisonTab() {
 // TAB 3: STOCK FLOW
 // ===========================
 function StockFlowTab() {
-  const { data: trendsData, loading: trendsLoading } = useQuery(GET_MOVEMENT_TRENDS, {
-    variables: { days: 30 },
-  });
-  const { data: breakdownData, loading: breakdownLoading } = useQuery(GET_MOVEMENT_TYPE_BREAKDOWN, {
-    variables: { days: 30 },
-  });
+  const { data: trendsData, loading: trendsLoading } = useMovementTrends({ days: 30 });
+  const { data: breakdownData, loading: breakdownLoading } = useMovementTypeBreakdown({ days: 30 });
 
   const chartConfig = {
     in: { label: 'IN', color: COLORS.in },
@@ -486,11 +477,11 @@ function StockFlowTab() {
                       key={`cell-${index}`}
                       fill={
                         [
-                          '#3b82f6', // Standard
-                          '#60a5fa', // Light
-                          '#2563eb', // Dark
-                          '#93c5fd', // Lighter
-                          '#1d4ed8', // Darker
+                          '#B71C1C', // Darkest red
+                          '#E53935', // Brand red
+                          '#EF5350', // Medium red
+                          '#E57373', // Light red
+                          '#FFCDD2', // Faintest red
                         ][index % 5]
                       }
                     />
@@ -509,18 +500,11 @@ function StockFlowTab() {
 // TAB 4: ADJUSTMENTS AUDIT
 // ===========================
 function AdjustmentsAuditTab() {
-  const { data: trendsData, loading: trendsLoading } = useQuery(GET_ADJUSTMENT_TRENDS, {
-    variables: { days: 30 },
+  const { data: trendsData, loading: trendsLoading } = useAdjustmentTrends({ days: 30 });
+  const { data: warehouseData, loading: warehouseLoading } = useAdjustmentsByWarehouse({
+    days: 30,
   });
-  const { data: warehouseData, loading: warehouseLoading } = useQuery(
-    GET_ADJUSTMENTS_BY_WAREHOUSE,
-    {
-      variables: { days: 30 },
-    },
-  );
-  const { data: userData, loading: userLoading } = useQuery(GET_ADJUSTMENTS_BY_USER, {
-    variables: { days: 30, limit: 10 },
-  });
+  const { data: userData, loading: userLoading } = useAdjustmentsByUser({ days: 30, limit: 10 });
 
   const chartConfig = {
     in: { label: 'Adjustment IN', color: COLORS.in },

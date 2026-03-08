@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@apollo/client';
+import { useWarehouseTransfers } from '@/hooks/apollo';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { useWarehouse } from '@/context/warehouse-context';
@@ -28,7 +28,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Search, Eye, ArrowRightLeft, FileText, CheckCircle, XCircle } from 'lucide-react';
-import { GET_WAREHOUSE_TRANSFERS } from '@/lib/graphql/transfers';
 import Link from 'next/link';
 
 // Status badge helper
@@ -57,7 +56,7 @@ function TransferListContent() {
 
   const rbac = useRbac();
   // STAFF and above can create Transfers (drafts)
-  const canCreateTransfer = true; 
+  const canCreateTransfer = true;
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,17 +64,13 @@ function TransferListContent() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Fetch transfers
-  const { data, loading, error } = useQuery(GET_WAREHOUSE_TRANSFERS, {
-    variables: {
-      filters: {
-        // Don't filter by source - we want to see ALL transfers involving this warehouse
-        ...(statusFilter !== 'all' && { status: statusFilter }),
-        limit: 100,
-        offset: 0,
-      },
+  const { data, loading, error } = useWarehouseTransfers({
+    filters: {
+      // Don't filter by source - we want to see ALL transfers involving this warehouse
+      ...(statusFilter !== 'all' && { status: statusFilter }),
+      limit: 100,
+      offset: 0,
     },
-    skip: !activeWarehouse?.id,
-    fetchPolicy: 'cache-and-network',
   });
 
   const allTransfers = data?.warehouseTransfers || [];

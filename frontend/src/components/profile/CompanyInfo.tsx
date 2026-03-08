@@ -1,14 +1,11 @@
 'use client';
-import { useQuery } from '@apollo/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, ShieldCheck, Warehouse, Activity, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { GET_MY_COMPANIES } from '@/lib/graphql/company';
+import { useMyCompanies } from '@/hooks/apollo';
 
 export function CompanyInfo() {
-  const { data, loading, error } = useQuery(GET_MY_COMPANIES, {
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data, loading, error } = useMyCompanies();
 
   const companies = data?.myCompanies || [];
 

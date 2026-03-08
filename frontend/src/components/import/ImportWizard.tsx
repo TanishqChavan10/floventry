@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { useMutation } from '@apollo/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -28,23 +27,23 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  DOWNLOAD_PRODUCT_TEMPLATE,
-  DOWNLOAD_CATEGORY_TEMPLATE,
-  DOWNLOAD_SUPPLIER_TEMPLATE,
-  DOWNLOAD_OPENING_STOCK_TEMPLATE,
-  DOWNLOAD_UNIT_TEMPLATE,
-  VALIDATE_PRODUCT_IMPORT,
-  VALIDATE_CATEGORY_IMPORT,
-  VALIDATE_SUPPLIER_IMPORT,
-  VALIDATE_OPENING_STOCK_IMPORT,
-  VALIDATE_UNIT_IMPORT,
-  EXECUTE_PRODUCT_IMPORT,
-  EXECUTE_CATEGORY_IMPORT,
-  EXECUTE_SUPPLIER_IMPORT,
-  EXECUTE_OPENING_STOCK_IMPORT,
-  EXECUTE_UNIT_IMPORT,
-} from '@/lib/graphql/import';
-import { GET_CATEGORIES, GET_PRODUCTS, GET_SUPPLIERS, GET_UNITS } from '@/lib/graphql/catalog';
+  useDownloadProductTemplate,
+  useDownloadCategoryTemplate,
+  useDownloadSupplierTemplate,
+  useDownloadOpeningStockTemplate,
+  useDownloadUnitTemplate,
+  useValidateProductImport,
+  useValidateCategoryImport,
+  useValidateSupplierImport,
+  useValidateOpeningStockImport,
+  useValidateUnitImport,
+  useExecuteProductImport,
+  useExecuteCategoryImport,
+  useExecuteSupplierImport,
+  useExecuteOpeningStockImport,
+  useExecuteUnitImport,
+} from '@/hooks/apollo';
+
 import {
   parsePlainTextCategories,
   parsePlainTextProducts,
@@ -186,40 +185,73 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
     return Math.max(0, validationResult.errorRows.length - autoCreatableRows.length);
   }, [validationResult, type, autoCreateMissingMasters, autoCreatableRows.length]);
 
-  // Template download mutations
-  const templateMutations = {
-    products: DOWNLOAD_PRODUCT_TEMPLATE,
-    categories: DOWNLOAD_CATEGORY_TEMPLATE,
-    suppliers: DOWNLOAD_SUPPLIER_TEMPLATE,
-    opening_stock: DOWNLOAD_OPENING_STOCK_TEMPLATE,
-    units: DOWNLOAD_UNIT_TEMPLATE,
+  // Template download hooks
+  const [dlProductTemplate] = useDownloadProductTemplate();
+  const [dlCategoryTemplate] = useDownloadCategoryTemplate();
+  const [dlSupplierTemplate] = useDownloadSupplierTemplate();
+  const [dlOpeningStockTemplate] = useDownloadOpeningStockTemplate();
+  const [dlUnitTemplate] = useDownloadUnitTemplate();
+  const templateFns = {
+    products: dlProductTemplate,
+    categories: dlCategoryTemplate,
+    suppliers: dlSupplierTemplate,
+    opening_stock: dlOpeningStockTemplate,
+    units: dlUnitTemplate,
   };
 
-  // Validation mutations
-  const validationMutations = {
-    products: VALIDATE_PRODUCT_IMPORT,
-    categories: VALIDATE_CATEGORY_IMPORT,
-    suppliers: VALIDATE_SUPPLIER_IMPORT,
-    opening_stock: VALIDATE_OPENING_STOCK_IMPORT,
-    units: VALIDATE_UNIT_IMPORT,
+  // Validation hooks
+  const [valProductImport, { loading: valProductLoading }] = useValidateProductImport();
+  const [valCategoryImport, { loading: valCategoryLoading }] = useValidateCategoryImport();
+  const [valSupplierImport, { loading: valSupplierLoading }] = useValidateSupplierImport();
+  const [valOpeningStockImport, { loading: valOpeningStockLoading }] =
+    useValidateOpeningStockImport();
+  const [valUnitImport, { loading: valUnitLoading }] = useValidateUnitImport();
+  const validateFns = {
+    products: valProductImport,
+    categories: valCategoryImport,
+    suppliers: valSupplierImport,
+    opening_stock: valOpeningStockImport,
+    units: valUnitImport,
   };
+  const validating =
+    type === 'products'
+      ? valProductLoading
+      : type === 'categories'
+        ? valCategoryLoading
+        : type === 'suppliers'
+          ? valSupplierLoading
+          : type === 'opening_stock'
+            ? valOpeningStockLoading
+            : valUnitLoading;
 
-  // Execution mutations
-  const executionMutations = {
-    products: EXECUTE_PRODUCT_IMPORT,
-    categories: EXECUTE_CATEGORY_IMPORT,
-    suppliers: EXECUTE_SUPPLIER_IMPORT,
-    opening_stock: EXECUTE_OPENING_STOCK_IMPORT,
-    units: EXECUTE_UNIT_IMPORT,
+  // Execution hooks
+  const [execProductImport, { loading: execProductLoading }] = useExecuteProductImport();
+  const [execCategoryImport, { loading: execCategoryLoading }] = useExecuteCategoryImport();
+  const [execSupplierImport, { loading: execSupplierLoading }] = useExecuteSupplierImport();
+  const [execOpeningStockImport, { loading: execOpeningStockLoading }] =
+    useExecuteOpeningStockImport();
+  const [execUnitImport, { loading: execUnitLoading }] = useExecuteUnitImport();
+  const executeFns = {
+    products: execProductImport,
+    categories: execCategoryImport,
+    suppliers: execSupplierImport,
+    opening_stock: execOpeningStockImport,
+    units: execUnitImport,
   };
-
-  const [downloadTemplate] = useMutation(templateMutations[type]);
-  const [validateImport, { loading: validating }] = useMutation(validationMutations[type]);
-  const [executeImport, { loading: executing }] = useMutation(executionMutations[type]);
+  const executing =
+    type === 'products'
+      ? execProductLoading
+      : type === 'categories'
+        ? execCategoryLoading
+        : type === 'suppliers'
+          ? execSupplierLoading
+          : type === 'opening_stock'
+            ? execOpeningStockLoading
+            : execUnitLoading;
 
   const handleDownloadTemplate = async () => {
     try {
-      const { data } = await downloadTemplate();
+      const { data } = await templateFns[type]();
       const csvData = Object.values(data)[0] as string;
 
       const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
@@ -327,7 +359,7 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
         variables.warehouseId = warehouseId;
       }
 
-      const { data } = await validateImport({ variables });
+      const { data } = await validateFns[type]({ variables });
       const result = JSON.parse(Object.values(data)[0] as string) as ValidationResult;
 
       setValidationResult(result);
@@ -371,16 +403,11 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
         variables.warehouseId = warehouseId;
       }
 
-      const { data } = await executeImport({
+      const { data } = await executeFns[type]({
         variables,
         ...(type === 'products'
           ? {
-              refetchQueries: [
-                { query: GET_PRODUCTS },
-                { query: GET_CATEGORIES },
-                { query: GET_UNITS, variables: { includeArchived: false } },
-                { query: GET_SUPPLIERS, variables: { includeArchived: false } },
-              ],
+              refetchQueries: ['GetProducts', 'GetCategories', 'GetUnits', 'GetSuppliers'],
               awaitRefetchQueries: true,
             }
           : {}),
