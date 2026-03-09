@@ -3,10 +3,11 @@ import { Check } from 'lucide-react';
 
 export default function HeroSection() {
   return (
-    <section className="py-16">
+    <section className="overflow-hidden py-16">
       <div className="mx-auto max-w-[1200px] px-6">
-        <div className="grid grid-cols-1 gap-16 lg:grid-cols-2 lg:items-start">
-          <div className="flex flex-col">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-12">
+          {/* Left — text */}
+          <div className="flex flex-col lg:w-[46%] lg:flex-shrink-0">
             <p className="text-sm font-semibold uppercase tracking-wide text-neutral-600">
               Inventory, purchasing, receiving — in one place
             </p>
@@ -15,7 +16,7 @@ export default function HeroSection() {
               <span className="text-[#E53935]"> chaos</span>.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-neutral-700">
-              Flowventory helps teams track stock across warehouses, receive goods cleanly, and keep
+              Floventry helps teams track stock across warehouses, receive goods cleanly, and keep
               every action accountable — so you stop counting boxes and start scaling.
             </p>
 
@@ -50,45 +51,13 @@ export default function HeroSection() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-6">
-            <div className="rounded-2xl border border-neutral-200 bg-white">
-              <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-4">
-                <div className="h-3 w-40 rounded-full bg-neutral-100" />
-                <div className="h-9 w-24 rounded-full bg-neutral-100" />
-              </div>
-              <div className="p-5">
-                <div className="grid grid-cols-3 gap-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="rounded-2xl border border-neutral-200 bg-white p-4">
-                      <div className="h-8 w-8 rounded-xl bg-neutral-100" />
-                      <div className="mt-4 h-3 w-20 rounded-full bg-neutral-100" />
-                      <div className="mt-3 h-7 w-14 rounded-full bg-neutral-100" />
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="h-4 w-40 rounded-full bg-neutral-100" />
-                    <div className="h-10 w-28 rounded-full bg-neutral-100" />
-                  </div>
-                  <div className="mt-5 space-y-3">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div
-                        key={i}
-                        className="h-12 w-full rounded-2xl border border-neutral-200 bg-neutral-50"
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5">
-                  <p className="text-sm font-semibold text-neutral-900">Audit-ready by default</p>
-                  <p className="mt-2 text-sm text-neutral-700">
-                    Every change is recorded with the who/what/when.
-                  </p>
-                </div>
-              </div>
-            </div>
+          {/* Right — image bleeds off the right edge like Sortly */}
+          <div className="lg:flex-1 lg:min-w-0 lg:translate-x-12">
+            <img
+              src="/landingDemo.png"
+              alt="Floventry Dashboard Preview"
+              className="w-full lg:w-[160%] max-w-none rounded-2xl shadow-2xl border border-neutral-200/60 lg:scale-y-110 origin-top"
+            />
           </div>
         </div>
       </div>
