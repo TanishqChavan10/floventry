@@ -71,7 +71,9 @@ function CompanyPurchaseOrdersContent() {
     },
   });
 
-  const purchaseOrders = data?.purchaseOrders || [];
+  const purchaseOrders = Array.from(
+    new Map((data?.purchaseOrders ?? []).map((po: any) => [po.id, po])).values(),
+  );
 
   // Filter POs by search query (client-side)
   const filteredPOs = purchaseOrders.filter((po: any) => {

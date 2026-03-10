@@ -42,7 +42,9 @@ function SalesOrdersContent() {
 
   const { data, loading, error, refetch } = useSalesOrders();
 
-  const salesOrders = data?.salesOrders || [];
+  const salesOrders = Array.from(
+    new Map((data?.salesOrders ?? []).map((o: any) => [o.id, o])).values(),
+  );
 
   // Filter orders
   const filteredOrders = salesOrders.filter((order: any) => {

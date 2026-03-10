@@ -14,6 +14,16 @@ import { Warehouse } from '../../warehouse/warehouse.entity';
 import { Company } from '../../company/company.entity';
 import { StockLot } from '../stock-lot/entities/stock-lot.entity';
 
+/**
+ * Stock Health Flag Enum
+ * Used for computing stock health status
+ */
+export enum StockHealthFlag {
+  OK = 'OK',
+  LOW = 'LOW',
+  CRITICAL = 'CRITICAL',
+}
+
 @ObjectType()
 @Entity('stock')
 @Index(['product_id', 'warehouse_id'], { unique: true }) // One stock record per product per warehouse

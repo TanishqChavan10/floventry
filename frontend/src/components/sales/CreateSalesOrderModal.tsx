@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useCreateSalesOrder, useProducts } from '@/hooks/apollo';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,7 @@ export function CreateSalesOrderModal({
   onSuccess,
 }: CreateSalesOrderModalProps) {
   const params = useParams();
+  const router = useRouter();
   const companySlug = params.slug as string;
 
   const [customerName, setCustomerName] = useState('');
@@ -50,13 +51,19 @@ export function CreateSalesOrderModal({
   const [items, setItems] = useState<SalesOrderItem[]>([{ product_id: '', ordered_quantity: 0 }]);
 
   const { data: productsData } = useProducts();
-  const products = productsData?.products || [];
+  const products = Array.from(
+    new Map((productsData?.products ?? []).map((p: any) => [p.id, p])).values(),
+  );
 
   const [createOrder, { loading }] = useCreateSalesOrder({
-    onCompleted: () => {
+    onCompleted: (data: any) => {
       toast.success('Sales order created successfully');
       handleClose();
       onSuccess?.();
+      const orderId = data?.createSalesOrder?.id;
+      if (orderId) {
+        router.push(`/${companySlug}/sales/orders/${orderId}`);
+      }
     },
     onError: (error) => {
       toast.error(error.message);

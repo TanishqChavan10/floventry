@@ -278,7 +278,7 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
       }
 
       if (item.kind === 'salesOrder') {
-        router.push(`/${companySlug}/sales/orders`);
+        router.push(`/${companySlug}/sales/orders/${encodeURIComponent(item.id)}`);
         return;
       }
 

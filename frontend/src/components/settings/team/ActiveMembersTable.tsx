@@ -182,7 +182,7 @@ export function ActiveMembersTable({
             </TableRow>
           ) : (
             filteredMembers.map((member) => (
-              <TableRow key={member.membership_id} className="group">
+              <TableRow key={member.membership_id ?? member.user_id} className="group">
                 {/* Member */}
                 <TableCell className="py-3">
                   <div className="flex flex-col gap-0.5">
@@ -218,7 +218,9 @@ export function ActiveMembersTable({
                 {/* Joined Date */}
                 <TableCell className="py-3">
                   <span className="text-xs text-muted-foreground">
-                    {format(new Date(member.joined_at), 'MMM d, yyyy')}
+                    {member.joined_at && !isNaN(new Date(member.joined_at).getTime())
+                      ? format(new Date(member.joined_at), 'MMM d, yyyy')
+                      : '—'}
                   </span>
                 </TableCell>
 

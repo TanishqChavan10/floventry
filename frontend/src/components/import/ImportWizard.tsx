@@ -53,6 +53,8 @@ import {
 } from '@/lib/utils/plainTextParser';
 import { parseCsvForPreview } from '@/lib/utils/csvParser';
 import { ImportPreview } from '@/components/import/PlainTextPreview';
+import { usePlanTier } from '@/hooks/usePlanTier';
+import { PlanGateBlock } from '@/components/upgrade/PlanGateBlock';
 
 type ImportType = 'products' | 'categories' | 'suppliers' | 'opening_stock' | 'units';
 
@@ -136,31 +138,13 @@ const IMPORT_LABELS = {
 };
 
 export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProps) {
-  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
+  const { plan, loading: planLoading } = usePlanTier();
   const importAllowed = plan === 'Standard' || plan === 'Pro';
 
   const { toast } = useToast();
   const [step, setStep] = useState<'upload' | 'validate' | 'confirm' | 'complete'>('upload');
-
-  if (!importAllowed || planLoading) {
-    const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
-    return (
-      <Card>
-        <CardContent className="py-0">
-          <PlanGateBlock
-            requiredPlan="Standard"
-            featureName="CSV Import"
-            description="Unlock bulk data import for products, categories, suppliers, and opening stock."
-          />
-        </CardContent>
-      </Card>
-    );
-  }
   const [csvContent, setCsvContent] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
-  const supportsPaste: boolean = type !== 'opening_stock';
-  const supportsPlainText: boolean =
-    type === 'categories' || type === 'products' || type === 'suppliers' || type === 'units';
   const [inputMethod, setInputMethod] = useState<InputMethod>('upload');
   const [pastedText, setPastedText] = useState<string>('');
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
@@ -171,6 +155,10 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
 
   // Product import permission (wizard-scoped)
   const [autoCreateMissingMasters, setAutoCreateMissingMasters] = useState(false);
+
+  const supportsPaste: boolean = type !== 'opening_stock';
+  const supportsPlainText: boolean =
+    type === 'categories' || type === 'products' || type === 'suppliers' || type === 'units';
 
   const autoCreatableRows = useMemo(() => {
     if (!validationResult) return [] as ValidatedRow[];
@@ -203,19 +191,51 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
     return Math.max(0, validationResult.errorRows.length - autoCreatableRows.length);
   }, [validationResult, type, autoCreateMissingMasters, autoCreatableRows.length]);
 
+  // Auto-parse and preview based on input method
+  useEffect(() => {
+    // Plain text parsing
+    if (inputMethod === 'plaintext' && pastedText.trim()) {
+      const format = detectInputFormat(pastedText);
+      setDetectedFormat(format);
+
+      const parsed =
+        type === 'categories'
+          ? parsePlainTextCategories(pastedText)
+          : type === 'products'
+            ? parsePlainTextProducts(pastedText)
+            : type === 'suppliers'
+              ? parsePlainTextSuppliers(pastedText)
+              : type === 'units'
+                ? parsePlainTextUnits(pastedText)
+                : { categories: [], csvContent: '', hasErrors: true };
+      setPlainTextPreview(parsed);
+      setCsvPreview(null);
+    }
+    // CSV/TSV preview for paste
+    else if (inputMethod === 'paste' && pastedText.trim()) {
+      const content = pastedText.includes('\t') ? tsvToCsv(pastedText) : pastedText;
+      const parsed = parseCsvForPreview(content);
+      setCsvPreview(parsed);
+      setPlainTextPreview(null);
+    }
+    // CSV preview for upload
+    else if (inputMethod === 'upload' && csvContent.trim()) {
+      const parsed = parseCsvForPreview(csvContent);
+      setCsvPreview(parsed);
+      setPlainTextPreview(null);
+    } else {
+      setDetectedFormat(null);
+      setPlainTextPreview(null);
+      setCsvPreview(null);
+    }
+  }, [pastedText, inputMethod, type, csvContent]);
+
   // Template download hooks
   const [dlProductTemplate] = useDownloadProductTemplate();
   const [dlCategoryTemplate] = useDownloadCategoryTemplate();
   const [dlSupplierTemplate] = useDownloadSupplierTemplate();
   const [dlOpeningStockTemplate] = useDownloadOpeningStockTemplate();
   const [dlUnitTemplate] = useDownloadUnitTemplate();
-  const templateFns = {
-    products: dlProductTemplate,
-    categories: dlCategoryTemplate,
-    suppliers: dlSupplierTemplate,
-    opening_stock: dlOpeningStockTemplate,
-    units: dlUnitTemplate,
-  };
 
   // Validation hooks
   const [valProductImport, { loading: valProductLoading }] = useValidateProductImport();
@@ -224,6 +244,37 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
   const [valOpeningStockImport, { loading: valOpeningStockLoading }] =
     useValidateOpeningStockImport();
   const [valUnitImport, { loading: valUnitLoading }] = useValidateUnitImport();
+
+  // Execution hooks
+  const [execProductImport, { loading: execProductLoading }] = useExecuteProductImport();
+  const [execCategoryImport, { loading: execCategoryLoading }] = useExecuteCategoryImport();
+  const [execSupplierImport, { loading: execSupplierLoading }] = useExecuteSupplierImport();
+  const [execOpeningStockImport, { loading: execOpeningStockLoading }] =
+    useExecuteOpeningStockImport();
+  const [execUnitImport, { loading: execUnitLoading }] = useExecuteUnitImport();
+
+  if (!importAllowed || planLoading) {
+    return (
+      <Card>
+        <CardContent className="py-0">
+          <PlanGateBlock
+            requiredPlan="Standard"
+            featureName="CSV Import"
+            description="Unlock bulk data import for products, categories, suppliers, and opening stock."
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const templateFns = {
+    products: dlProductTemplate,
+    categories: dlCategoryTemplate,
+    suppliers: dlSupplierTemplate,
+    opening_stock: dlOpeningStockTemplate,
+    units: dlUnitTemplate,
+  };
+
   const validateFns = {
     products: valProductImport,
     categories: valCategoryImport,
@@ -242,13 +293,6 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
             ? valOpeningStockLoading
             : valUnitLoading;
 
-  // Execution hooks
-  const [execProductImport, { loading: execProductLoading }] = useExecuteProductImport();
-  const [execCategoryImport, { loading: execCategoryLoading }] = useExecuteCategoryImport();
-  const [execSupplierImport, { loading: execSupplierLoading }] = useExecuteSupplierImport();
-  const [execOpeningStockImport, { loading: execOpeningStockLoading }] =
-    useExecuteOpeningStockImport();
-  const [execUnitImport, { loading: execUnitLoading }] = useExecuteUnitImport();
   const executeFns = {
     products: execProductImport,
     categories: execCategoryImport,
@@ -466,45 +510,6 @@ export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProp
 
     setAutoCreateMissingMasters(false);
   };
-
-  // Auto-parse and preview based on input method
-  useEffect(() => {
-    // Plain text parsing
-    if (inputMethod === 'plaintext' && pastedText.trim()) {
-      const format = detectInputFormat(pastedText);
-      setDetectedFormat(format);
-
-      const parsed =
-        type === 'categories'
-          ? parsePlainTextCategories(pastedText)
-          : type === 'products'
-            ? parsePlainTextProducts(pastedText)
-            : type === 'suppliers'
-              ? parsePlainTextSuppliers(pastedText)
-              : type === 'units'
-                ? parsePlainTextUnits(pastedText)
-                : { categories: [], csvContent: '', hasErrors: true };
-      setPlainTextPreview(parsed);
-      setCsvPreview(null);
-    }
-    // CSV/TSV preview for paste
-    else if (inputMethod === 'paste' && pastedText.trim()) {
-      const content = pastedText.includes('\t') ? tsvToCsv(pastedText) : pastedText;
-      const parsed = parseCsvForPreview(content);
-      setCsvPreview(parsed);
-      setPlainTextPreview(null);
-    }
-    // CSV preview for upload
-    else if (inputMethod === 'upload' && csvContent.trim()) {
-      const parsed = parseCsvForPreview(csvContent);
-      setCsvPreview(parsed);
-      setPlainTextPreview(null);
-    } else {
-      setDetectedFormat(null);
-      setPlainTextPreview(null);
-      setCsvPreview(null);
-    }
-  }, [pastedText, inputMethod, type, csvContent]);
 
   return (
     <div className="space-y-6">
