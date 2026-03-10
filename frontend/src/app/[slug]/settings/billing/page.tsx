@@ -6,45 +6,64 @@ import { useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Check, Crown, Shield } from 'lucide-react';
+import { ArrowLeft, Check, Crown, Shield, Zap } from 'lucide-react';
 import { usePlanTier } from '@/hooks/usePlanTier';
 
 export default function BillingSettingsPage() {
   const params = useParams();
   const slug = params?.slug as string;
-  const { plan, isPro, loading } = usePlanTier();
+  const { plan, isPro, isFree, loading } = usePlanTier();
 
   const plans = [
     {
-      name: 'Standard',
-      tier: 'Standard' as const,
+      name: 'Free',
+      tier: 'Free' as const,
       price: '₹0',
       period: 'forever',
-      description: 'Basic automated protection to keep your inventory safe.',
+      description: 'Everything you need for basic inventory management.',
       features: [
-        'Daily expiry scan (midnight UTC)',
-        'Expired & expiring-soon detection',
-        'In-app notifications',
-        'Dashboard expiry risk indicators',
-        'Manual "Trigger Scan" (Owner / Admin)',
-        'Fixed 30-day warning window',
+        'Full inventory CRUD & FEFO/FIFO',
+        'Stock lots, expiry blocking & GRN',
+        'Issue notes & warehouse transfers',
+        'Purchase & sales order lifecycle',
+        'Dashboard, alerts & low stock view',
+        '1 warehouse, 2 members, 100 SKUs',
       ],
       icon: Shield,
     },
     {
+      name: 'Standard',
+      tier: 'Standard' as const,
+      price: '₹1,499',
+      period: 'per month',
+      description: 'Automation, exports, and moderate intelligence for growing teams.',
+      features: [
+        'Everything in Free',
+        'CSV imports & exports (all types)',
+        'Barcode label PDF generation',
+        'Point of Sale scanner',
+        'Company overview & movements reports',
+        'Manual expiry scan trigger',
+        'Up to 3 warehouses, 5 members, 500 SKUs',
+      ],
+      icon: Zap,
+      popular: false,
+    },
+    {
       name: 'Pro',
       tier: 'Pro' as const,
-      price: '₹1,999',
+      price: '₹3,499',
       period: 'per month',
-      description: 'Proactive monitoring and advanced expiry control for growing operations.',
+      description: 'Advanced analytics, full audit trail, and unlimited scale.',
       features: [
         'Everything in Standard',
-        'Custom expiry warning windows (15 / 30 / 60 days)',
-        'Email notifications & summaries',
-        'Warehouse-specific alert configuration',
-        'Expiry risk export (CSV/Excel)',
-        'Historical expiry trend reports',
-        'Enhanced scan scheduling',
+        'Unlimited warehouses, members & SKUs',
+        'Advanced stock health & adjustment reports',
+        'Purchase & sales order analytics',
+        'Full audit log & compliance trail',
+        'Company-level CSV exports',
+        'Custom expiry warning windows',
+        'Advanced company settings',
       ],
       icon: Crown,
       popular: true,
@@ -55,7 +74,7 @@ export default function BillingSettingsPage() {
 
   return (
     <div className="min-h-screen bg-background p-6 md:p-8">
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <div>
           <Button variant="ghost" size="sm" asChild className="-ml-2 mb-4">
@@ -80,13 +99,19 @@ export default function BillingSettingsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-foreground">{currentTier}</p>
-                <p className="text-sm text-muted-foreground">
-                  {isPro ? 'Renews monthly' : 'No payment required'}
-                </p>
+              <div className="flex items-center gap-3">
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{currentTier}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {isPro ? 'Renews monthly' : isFree ? 'No payment required' : 'Renews monthly'}
+                  </p>
+                </div>
               </div>
-              {!isPro && <Button>Upgrade to Pro</Button>}
+              {!isPro && (
+                <Badge variant="outline" className="text-xs">
+                  {isFree ? 'Upgrade for more features' : 'Upgrade to Pro for full access'}
+                </Badge>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -94,7 +119,7 @@ export default function BillingSettingsPage() {
         {/* Plans Grid */}
         <div>
           <h2 className="text-2xl font-bold text-foreground mb-4">Available Plans</h2>
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-3">
             {plans.map((p) => {
               const isCurrent = p.tier === currentTier;
               return (
@@ -104,7 +129,7 @@ export default function BillingSettingsPage() {
                 >
                   {p.popular && (
                     <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                      <Badge>Recommended</Badge>
+                      <Badge>Best Value</Badge>
                     </div>
                   )}
                   <CardHeader>
@@ -133,7 +158,7 @@ export default function BillingSettingsPage() {
                       variant={isCurrent ? 'outline' : 'default'}
                       disabled={isCurrent}
                     >
-                      {isCurrent ? 'Current Plan' : 'Upgrade'}
+                      {isCurrent ? 'Current Plan' : `Upgrade to ${p.name}`}
                     </Button>
                   </CardContent>
                 </Card>

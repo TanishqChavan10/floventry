@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Edit, Package, Tag, Building2, Ruler, IndianRupee } from 'lucide-react';
+import { Crown, Edit, Package, Tag, Building2, Ruler, IndianRupee } from 'lucide-react';
 import { CopyButton } from '@/components/common/CopyButton';
 import type { BarcodeLabelLayout } from '@/lib/graphql/barcode';
 import { toast } from 'sonner';
@@ -98,6 +98,10 @@ export default function ProductDetailDrawer({
   const [removeUnit, { loading: removingUnit }] = useRemoveProductBarcodeUnit();
 
   const [updateProduct, { loading: savingAlternates }] = useUpdateProduct();
+
+  // Plan tier gating for barcode export
+  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
+  const barcodeExportAllowed = plan === 'Standard' || plan === 'Pro';
 
   if (!product) return null;
 
@@ -622,7 +626,16 @@ export default function ProductDetailDrawer({
                     variant="outline"
                     size="default"
                     layout={labelLayout}
-                  />
+                    disabled={!barcodeExportAllowed || planLoading}
+                    title={
+                      !barcodeExportAllowed
+                        ? 'Barcode label export is only available for Standard and Pro plans.'
+                        : undefined
+                    }
+                  >
+                    {!barcodeExportAllowed && <Crown className="h-4 w-4 mr-1.5 text-amber-500" />}
+                    Generate Barcode Label
+                  </GenerateBarcodeLabelsButton>
                 </div>
               </>
             )}

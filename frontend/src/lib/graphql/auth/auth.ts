@@ -61,3 +61,4 @@ export const SWITCH_WAREHOUSE = gql`
     switchWarehouse(warehouseId: $warehouseId)
   }
 `;
+

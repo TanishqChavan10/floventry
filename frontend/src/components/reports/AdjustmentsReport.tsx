@@ -40,6 +40,9 @@ const warehouseConfig = {
 } satisfies ChartConfig;
 
 export function AdjustmentsReport() {
+  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
+  const allowed = plan === 'Pro';
+
   const [days, setDays] = useState(30);
 
   const { data: trendsData, loading: trendsLoading } = useAdjustmentTrends({ days });
@@ -47,6 +50,17 @@ export function AdjustmentsReport() {
     days,
   });
   const { data: byUserData, loading: byUserLoading } = useAdjustmentsByUser({ days, limit: 10 });
+
+  if (!allowed || planLoading) {
+    const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
+    return (
+      <PlanGateBlock
+        requiredPlan="Pro"
+        featureName="Adjustments Report"
+        description="Unlock adjustment trends, warehouse breakdowns, and per-user audit analytics."
+      />
+    );
+  }
 
   const trendData = (trendsData?.adjustmentTrends ?? []).map((d: any) => ({
     date: (() => {

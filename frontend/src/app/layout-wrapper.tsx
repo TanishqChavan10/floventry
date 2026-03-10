@@ -29,6 +29,7 @@ import {
   extractWarehouseRouteSuffix,
   setPendingWarehouseRoute,
 } from '@/lib/utils/warehouse-pending-route';
+import { usePlanTier } from '@/hooks/usePlanTier';
 
 function BottomSection() {
   const { user, isSignedIn } = useAuth();
@@ -84,8 +85,31 @@ function BottomSection() {
   );
 }
 
+function PlanBadge() {
+  const { plan, loading } = usePlanTier();
+  if (loading) return null;
+
+  const styles: Record<string, string> = {
+    Free: 'bg-muted text-muted-foreground',
+    Standard: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+    Pro: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  };
+
+  return (
+    <span
+      className={cn(
+        'text-[0.6rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+        styles[plan] ?? styles.Free,
+      )}
+    >
+      {plan}
+    </span>
+  );
+}
+
 function AppSidebarContent() {
   const { user, isSignedIn } = useAuth();
+  const { open } = useSidebar();
   const permissions = usePermissions();
   const params = useParams();
   const pathname = usePathname();
@@ -189,11 +213,14 @@ function AppSidebarContent() {
       >
         {/* Logo/Brand (optional) */}
         <div className="mb-6 px-3">
-          <Link href={logoHref}>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">
-              Flowventory<span className="text-primary">.</span>
-            </h1>
-          </Link>
+          <div className="flex items-center justify-between">
+            <Link href={logoHref}>
+              <h1 className="text-xl font-semibold tracking-tight text-foreground">
+                Flowventory<span className="text-primary">.</span>
+              </h1>
+            </Link>
+            {open && <PlanBadge />}
+          </div>
         </div>
 
         {/* Main Navigation Sections */}

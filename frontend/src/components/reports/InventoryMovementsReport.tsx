@@ -80,6 +80,20 @@ export function InventoryMovementsReport() {
   const { data: topData, loading: topLoading } = useTopStockProducts({ limit: 10 });
   const { data: criticalData, loading: criticalLoading } = useCriticalStockProducts({ limit: 15 });
 
+  // Plan tier gating
+  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
+  const movementsAllowed = plan === 'Standard' || plan === 'Pro';
+
+  if (!movementsAllowed || planLoading) {
+    const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
+    return (
+      <PlanGateBlock
+        requiredPlan="Standard"
+        featureName="Inventory Movements Report"
+        description="Unlock stock flow trends, movement breakdowns, and top product analytics."
+      />
+    );
+  }
   const flowData = (trendsData?.movementTrends ?? []).map((d: any) => ({
     date: (() => {
       const dt = new Date(d.date);

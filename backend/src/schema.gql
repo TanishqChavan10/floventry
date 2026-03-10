@@ -115,6 +115,16 @@ enum AuditEntityType {
   WAREHOUSE
 }
 
+type AuditLogConnection {
+  edges: [AuditLogEdge!]!
+  pageInfo: CursorPageInfo!
+}
+
+type AuditLogEdge {
+  cursor: String!
+  node: CompanyAuditLog!
+}
+
 input AuditLogFilterInput {
   action: AuditAction
   actorUserId: String
@@ -296,8 +306,8 @@ type CompanySettings {
   enable_expiry_tracking: Boolean
   expiry_warning_days: Int
   id: ID!
-  is_premium: Boolean
   low_stock_threshold: Int
+  plan: String!
   restrict_manager_catalog: Boolean
   stock_valuation_method: String
   timezone: String
@@ -449,6 +459,18 @@ type CriticalStockProduct {
   productName: String!
   sku: String!
   warehouseName: String!
+}
+
+type CursorPageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+  totalCount: Int!
+}
+
+input CursorPaginationInput {
+  after: String
+  first: Int = 20
+  search: String
 }
 
 type DashboardMovementItem {
@@ -664,6 +686,7 @@ scalar JSON
 
 """Source of the stock lot"""
 enum LotSourceType {
+  ADJUSTMENT
   GRN
   OPENING
   TRANSFER
@@ -811,6 +834,16 @@ type Notification {
   warehouse_id: ID
 }
 
+type NotificationConnection {
+  edges: [NotificationEdge!]!
+  pageInfo: CursorPageInfo!
+}
+
+type NotificationEdge {
+  cursor: String!
+  node: Notification!
+}
+
 enum NotificationSeverity {
   CRITICAL
   INFO
@@ -893,6 +926,16 @@ enum ProductBarcodeUnitType {
   PIECE
 }
 
+type ProductConnection {
+  edges: [ProductEdge!]!
+  pageInfo: CursorPageInfo!
+}
+
+type ProductEdge {
+  cursor: String!
+  node: Product!
+}
+
 type ProductPreview {
   name: String!
   sku: String!
@@ -910,6 +953,16 @@ type PurchaseOrder {
   user: User
   user_role: String
   warehouse: Warehouse!
+}
+
+type PurchaseOrderConnection {
+  edges: [PurchaseOrderEdge!]!
+  pageInfo: CursorPageInfo!
+}
+
+type PurchaseOrderEdge {
+  cursor: String!
+  node: PurchaseOrder!
 }
 
 input PurchaseOrderFilterInput {
@@ -951,6 +1004,7 @@ type Query {
   adjustmentsByUser(days: Float = 30, limit: Float = 10): [AdjustmentByUser!]!
   adjustmentsByWarehouse(days: Float = 30): [AdjustmentByWarehouse!]!
   allStock(limit: Int, offset: Int): [Stock!]!
+  auditLogsConnection(filters: AuditLogFilterInput, input: CursorPaginationInput): AuditLogConnection!
   barcodeHistory(productId: String!): [BarcodeHistory!]!
   categories: [Category!]!
   companies: [Company!]!
@@ -982,14 +1036,17 @@ type Query {
   myCompanies: [UserCompany!]!
   myPendingInvites: [Invite!]!
   notifications(limit: Int = 50, offset: Int = 0): [Notification!]!
+  notificationsConnection(pagination: CursorPaginationInput): NotificationConnection!
   product(id: String!): Product!
   productBarcodeUnits(productId: String!): [ProductBarcodeUnit!]!
   productByBarcode(barcode: String!): Product!
   productByBarcodeDetails(barcode: String!): BarcodeLookupResult!
   products: [Product!]!
+  productsConnection(pagination: CursorPaginationInput): ProductConnection!
   productsPaginated(pagination: PaginationInput): PaginatedProductsResult!
   purchaseOrder(id: String!): PurchaseOrder
   purchaseOrders(filters: PurchaseOrderFilterInput!): [PurchaseOrder!]!
+  purchaseOrdersConnection(input: CursorPaginationInput): PurchaseOrderConnection!
   recentMovements(limit: Int = 10, warehouseId: ID!): [DashboardMovementItem!]!
   roles: [RolePermission!]!
   salesOrder(id: ID!): SalesOrder!
@@ -998,6 +1055,7 @@ type Query {
   stockByProduct(productId: String!): [Stock!]!
   stockByWarehouse(limit: Int, offset: Int, warehouseId: String!): [Stock!]!
   stockMovements(filters: StockMovementFilters!, warehouseId: ID!): StockMovementResult!
+  stockMovementsConnection(input: CursorPaginationInput): StockMovementConnection!
   stockSnapshot(filters: StockSnapshotFilters, warehouseId: ID!): StockSnapshotResult!
   supplier(id: String!): Supplier!
   suppliers(includeArchived: Boolean = false): [Supplier!]!
@@ -1181,6 +1239,16 @@ type StockMovement {
   warehouse_id: String!
 }
 
+type StockMovementConnection {
+  edges: [StockMovementEdge!]!
+  pageInfo: CursorPageInfo!
+}
+
+type StockMovementEdge {
+  cursor: String!
+  node: StockMovement!
+}
+
 input StockMovementFilterInput {
   from_date: DateTime
   limit: Float = 50
@@ -1253,6 +1321,11 @@ type StockStatusDistribution {
   critical: Int!
   low: Int!
   ok: Int!
+}
+
+type Subscription {
+  """Listen for new notifications for the current user"""
+  notificationCreated: Notification!
 }
 
 type Supplier {

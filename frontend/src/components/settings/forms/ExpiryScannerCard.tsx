@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Loader2, Play, Clock, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
+import { Crown, Loader2, Play, Clock, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useExpiryScanStatus, useTriggerExpiryScan } from '@/hooks/apollo';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,10 @@ export function ExpiryScannerCard() {
   const { data, loading, error, refetch } = useExpiryScanStatus();
 
   const [triggerScan, { loading: scanning }] = useTriggerExpiryScan();
+
+  // Plan tier gating
+  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
+  const expiryScanAllowed = plan === 'Standard' || plan === 'Pro';
 
   if (loading) {
     return (
@@ -145,8 +149,15 @@ export function ExpiryScannerCard() {
           <Button
             size="sm"
             variant="outline"
-            disabled={scanning || !status.enabled}
+            disabled={scanning || !status.enabled || !expiryScanAllowed || planLoading}
+            title={
+              !expiryScanAllowed
+                ? 'Manual expiry scan is only available for Standard and Pro plans.'
+                : undefined
+            }
             onClick={() =>
+              expiryScanAllowed &&
+              !planLoading &&
               triggerScan()
                 .then((result) => {
                   const scan = result.data?.triggerExpiryScan;
@@ -164,6 +175,8 @@ export function ExpiryScannerCard() {
           >
             {scanning ? (
               <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+            ) : !expiryScanAllowed ? (
+              <Crown className="mr-2 h-3.5 w-3.5 text-amber-500" />
             ) : (
               <Play className="mr-2 h-3.5 w-3.5" />
             )}

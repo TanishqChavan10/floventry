@@ -50,6 +50,9 @@ type CartLine = {
 };
 
 function PosNewContent() {
+  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
+  const posAllowed = plan === 'Standard' || plan === 'Pro';
+
   const params = useParams();
   const companySlug = params.slug as string;
   const { toast } = useToast();
@@ -58,6 +61,17 @@ function PosNewContent() {
   const [rawScan, setRawScan] = useState('');
   const [lastScan, setLastScan] = useState<string | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
+
+  if (!posAllowed || planLoading) {
+    const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
+    return (
+      <PlanGateBlock
+        requiredPlan="Standard"
+        featureName="Point of Sale"
+        description="Unlock the barcode scan cart for quick stock issue operations."
+      />
+    );
+  }
 
   const pendingRef = useRef<{ barcode: string; qty?: number } | null>(null);
 

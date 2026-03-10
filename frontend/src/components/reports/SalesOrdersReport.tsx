@@ -61,7 +61,21 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export function SalesOrdersReport() {
+  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
+  const allowed = plan === 'Pro';
+
   const { data, loading } = useSalesOrders();
+
+  if (!allowed || planLoading) {
+    const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
+    return (
+      <PlanGateBlock
+        requiredPlan="Pro"
+        featureName="Sales Orders Report"
+        description="Unlock sales analytics, fulfillment tracking, and order status insights."
+      />
+    );
+  }
 
   const orders: Array<{
     id: string;

@@ -55,9 +55,23 @@ function scoreColor(score: number) {
 }
 
 export function StockHealthReport() {
+  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
+  const allowed = plan === 'Pro';
+
   const { data: healthData, loading: healthLoading } = useInventoryHealthStats();
   const { data: scorecardData, loading: scorecardLoading } = useWarehouseHealthScorecard();
   const { data: overviewData, loading: overviewLoading } = useCompanyStockHealthOverview();
+
+  if (!allowed || planLoading) {
+    const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
+    return (
+      <PlanGateBlock
+        requiredPlan="Pro"
+        featureName="Stock Health Report"
+        description="Unlock warehouse health scorecards, risk metrics, and inventory health distribution."
+      />
+    );
+  }
 
   const stats = healthData?.inventoryHealthStats;
   const scorecards: Array<{

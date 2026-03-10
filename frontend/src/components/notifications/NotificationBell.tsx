@@ -1,15 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Bell, Check, AlertCircle, Info } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useMemo } from 'react';
+import { Bell, Check, CircleAlert, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   useNotifications,
@@ -20,7 +17,6 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter, useParams } from 'next/navigation';
 
-/** Ensure a timestamp string is parsed as UTC (appends 'Z' if missing). */
 function parseUtc(dateStr: string): Date {
   if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
     return new Date(dateStr + 'Z');
@@ -38,62 +34,42 @@ interface Notification {
   createdAt: string;
 }
 
+const SEVERITY_DOT: Record<string, string> = {
+  CRITICAL: 'bg-red-500',
+  WARNING: 'bg-amber-500',
+  INFO: 'bg-blue-500',
+};
+
 export default function NotificationBell() {
   const router = useRouter();
   const params = useParams();
   const companySlug = params?.slug as string;
   const [isOpen, setIsOpen] = useState(false);
 
-  // Poll unread count every 30 seconds (PRECISE - count only)
   const { data: countData } = useUnreadNotificationCount();
-
-  // Load recent notifications ONLY when dropdown opens (NO polling)
-  const { data: notificationsData, refetch: refetchNotifications } = useNotifications({
-    limit: 5,
-    offset: 0,
-  });
-
+  const { data: notificationsData } = useNotifications({ limit: 5, offset: 0 });
   const [markAsRead] = useMarkNotificationAsRead();
   const [markAllAsRead] = useMarkAllNotificationsAsRead();
 
   const unreadCount = countData?.unreadNotificationCount || 0;
-  const notifications: Notification[] = notificationsData?.notifications || [];
+  const notifications: Notification[] = useMemo(() => {
+    const raw: Notification[] = notificationsData?.notifications || [];
+    const seen = new Set<string>();
+    return raw.filter((n) => {
+      if (seen.has(n.id)) return false;
+      seen.add(n.id);
+      return true;
+    });
+  }, [notificationsData]);
 
   const handleNotificationClick = async (notification: Notification) => {
-    // Mark as read
     if (!notification.readAt) {
       await markAsRead({ variables: { id: notification.id } });
     }
-
-    // Navigate to notifications page
     if (companySlug) {
       router.push(`/${companySlug}/notifications`);
     }
     setIsOpen(false);
-  };
-
-  const getSeverityIcon = (severity: string) => {
-    switch (severity) {
-      case 'CRITICAL':
-        return <AlertCircle className="h-4 w-4 text-red-600" />;
-      case 'WARNING':
-        return <AlertCircle className="h-4 w-4 text-yellow-600" />;
-      case 'INFO':
-      default:
-        return <Info className="h-4 w-4 text-blue-600" />;
-    }
-  };
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'CRITICAL':
-        return 'border-l-4 border-l-red-600 bg-red-50 dark:bg-red-950/10';
-      case 'WARNING':
-        return 'border-l-4 border-l-yellow-600 bg-yellow-50 dark:bg-yellow-950/10';
-      case 'INFO':
-      default:
-        return 'border-l-4 border-l-blue-600 bg-blue-50 dark:bg-blue-950/10';
-    }
   };
 
   return (
@@ -102,22 +78,21 @@ export default function NotificationBell() {
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
-            >
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-medium text-background">
               {unreadCount > 9 ? '9+' : unreadCount}
-            </Badge>
+            </span>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
-        <div className="flex items-center justify-between px-4 py-2">
-          <h3 className="font-semibold text-sm">Notifications</h3>
+
+      <DropdownMenuContent align="end" className="w-90 p-0 rounded-xl shadow-lg border">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
           {unreadCount > 0 && (
             <button
               type="button"
-              className="text-xs text-primary hover:underline"
+              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
               onClick={(e) => {
                 e.stopPropagation();
                 markAllAsRead();
@@ -127,68 +102,84 @@ export default function NotificationBell() {
             </button>
           )}
         </div>
-        <DropdownMenuSeparator />
 
+        {/* List */}
         {notifications.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            No notifications yet
+          <div className="px-4 py-10 text-center">
+            <Bell className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">No notifications yet</p>
           </div>
         ) : (
-          <div className="max-h-[400px] overflow-y-auto">
-            {notifications.map((notification) => (
-              <DropdownMenuItem
-                key={notification.id}
-                onClick={() => handleNotificationClick(notification)}
-                className={`px-4 py-3 cursor-pointer ${getSeverityColor(notification.severity)} ${
-                  !notification.readAt ? 'font-semibold' : ''
-                }`}
-              >
-                <div className="flex gap-3 items-start w-full">
-                  <div className="flex-shrink-0 mt-0.5">
-                    {getSeverityIcon(notification.severity)}
-                  </div>
+          <div className="max-h-85 overflow-y-auto divide-y">
+            {notifications.map((notification) => {
+              const isUnread = !notification.readAt;
+              return (
+                <div
+                  key={notification.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleNotificationClick(notification)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleNotificationClick(notification)}
+                  className={`flex gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-muted/50 ${
+                    isUnread ? 'bg-muted/30' : ''
+                  }`}
+                >
+                  {/* Severity dot */}
+                  <span className="relative mt-1.5 shrink-0">
+                    <span
+                      className={`block h-2 w-2 rounded-full ${SEVERITY_DOT[notification.severity] || SEVERITY_DOT.INFO}`}
+                    />
+                  </span>
+
+                  {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{notification.title}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                    <p
+                      className={`text-sm leading-snug truncate ${isUnread ? 'font-semibold text-foreground' : 'font-medium text-foreground/80'}`}
+                    >
+                      {notification.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
                       {notification.message}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-[11px] text-muted-foreground/60 mt-1">
                       {formatDistanceToNow(parseUtc(notification.createdAt), { addSuffix: true })}
                     </p>
                   </div>
-                  {!notification.readAt && (
+
+                  {/* Mark as read */}
+                  {isUnread && (
                     <button
                       type="button"
-                      className="shrink-0 mt-0.5 p-0.5 rounded-full hover:bg-muted transition-colors"
+                      className="self-center shrink-0 rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                       title="Mark as read"
                       onClick={(e) => {
                         e.stopPropagation();
                         markAsRead({ variables: { id: notification.id } });
                       }}
                     >
-                      <Check className="h-3.5 w-3.5 text-blue-600" />
+                      <Check className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>
-              </DropdownMenuItem>
-            ))}
+              );
+            })}
           </div>
         )}
 
-        <DropdownMenuSeparator />
-        <Button
-          variant="ghost"
-          className="w-full justify-center text-sm"
-          onClick={() => {
-            if (companySlug) {
-              router.push(`/${companySlug}/notifications`);
-            }
-            setIsOpen(false);
-          }}
-        >
-          View all notifications
-        </Button>
+        {/* Footer */}
+        <div className="border-t px-4 py-2.5">
+          <button
+            type="button"
+            className="flex w-full items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => {
+              if (companySlug) router.push(`/${companySlug}/notifications`);
+              setIsOpen(false);
+            }}
+          >
+            View all notifications
+            <ArrowRight className="h-3 w-3" />
+          </button>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

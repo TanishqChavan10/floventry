@@ -50,8 +50,13 @@ export class CompanySettings {
 
   // Subscription / Plan flags
   // V1 usage: Global search barcode matching is enabled only when is_premium is true.
-  @Column({ default: false })
-  is_premium: boolean;
+    // Subscription / Plan
+    @Column({
+      type: 'enum',
+      enum: ['FREE', 'STANDARD', 'PRO'],
+      default: 'FREE',
+    })
+    plan: 'FREE' | 'STANDARD' | 'PRO';
 
   @CreateDateColumn()
   created_at: Date;

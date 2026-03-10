@@ -10,72 +10,73 @@ const plans = [
   {
     id: 'free',
     name: 'Free',
-    tagline: 'Best for getting started.',
+    tagline: 'Full inventory workflow — no strings attached.',
     monthlyPrice: 0,
     yearlyPrice: 0,
     cta: 'Sign up free',
     ctaHref: '/auth/sign-up',
     ctaStyle: 'outline',
     popular: false,
-    features: ['100 SKUs', '1 User license', 'Basic stock tracking', 'CSV import'],
-  },
-  {
-    id: 'starter',
-    name: 'Starter',
-    tagline: 'Best for small teams getting organised.',
-    monthlyPrice: 1499,
-    yearlyPrice: 999,
-    cta: 'Start free trial',
-    ctaHref: '/auth/sign-up',
-    ctaStyle: 'outline',
-    popular: false,
-    badge: null,
     features: [
-      '500 SKUs',
-      '2 User licenses',
-      'Barcode & QR scanning',
-      'Low-stock alerts',
+      '100 SKUs',
       '1 warehouse',
+      '2 team members',
+      '10 suppliers',
+      'Full stock workflow',
+      'Expiry scanner (30-day window)',
+      'In-app notifications',
+      'Dashboard & warehouse reports',
+      'Barcode lookup',
+      'RBAC (all roles)',
+      'CSV import (products)',
     ],
   },
   {
-    id: 'growth',
-    name: 'Growth',
-    tagline: 'Best for growing inventory operations.',
-    monthlyPrice: 3499,
-    yearlyPrice: 2499,
+    id: 'standard',
+    name: 'Standard',
+    tagline: 'Automation, exports, and multi-warehouse.',
+    monthlyPrice: 1499,
+    yearlyPrice: 999,
     cta: 'Start free trial',
     ctaHref: '/auth/sign-up',
     ctaStyle: 'filled',
     popular: true,
     features: [
-      '5,000 SKUs',
-      '5 User licenses',
-      'Multi-warehouse support',
-      'Purchase orders & GRNs',
-      'Audit logs',
-      'CSV / PDF export',
-      'Role-based permissions',
-      'Email alerts',
+      '500 SKUs',
+      '3 warehouses',
+      '5 team members',
+      '50 suppliers',
+      'Everything in Free, plus:',
+      'All CSV imports & exports',
+      'PDF barcode labels',
+      'Company overview report',
+      'Inventory health tab',
+      'Manual expiry scan trigger',
+      'Notification preferences',
+      'Point of sale',
     ],
   },
   {
-    id: 'enterprise',
-    name: 'Enterprise',
-    tagline: 'Best for high-volume distributors.',
-    monthlyPrice: null,
-    yearlyPrice: null,
-    cta: 'Talk to sales',
-    ctaHref: 'mailto:hello@floventry.online',
+    id: 'pro',
+    name: 'Pro',
+    tagline: 'Advanced analytics, automation & control.',
+    monthlyPrice: 3499,
+    yearlyPrice: 2499,
+    cta: 'Start free trial',
+    ctaHref: '/auth/sign-up',
     ctaStyle: 'outline',
     popular: false,
     features: [
-      'Unlimited SKUs',
-      '12+ User licenses',
-      'API & webhooks',
-      'Dedicated account manager',
-      'Custom integrations',
-      'SSO / SAML',
+      'Unlimited SKUs, warehouses, users, suppliers',
+      'Everything in Standard, plus:',
+      'Custom expiry warning window',
+      'Company-level exports & reports',
+      'Audit log',
+      'Company analytics & trends',
+      'ZPL thermal labels',
+      'Advanced company settings',
+      'Barcode settings (prefix, padding)',
+      'Expiry risk report',
     ],
   },
 ];
@@ -87,80 +88,108 @@ const compareRows: {
   category?: string;
   label: string;
   free: CellValue;
-  starter: CellValue;
-  growth: CellValue;
-  enterprise: CellValue;
+  standard: CellValue;
+  pro: CellValue;
 }[] = [
   {
-    category: 'ORGANIZE',
+    category: 'LIMITS',
     label: 'Unique SKUs',
     free: '100',
-    starter: '500',
-    growth: '5,000',
-    enterprise: 'Unlimited',
+    standard: '500',
+    pro: 'Unlimited',
   },
-  { label: 'User licenses', free: '1', starter: '2', growth: '5', enterprise: '12+' },
-  { label: 'CSV import', free: true, starter: true, growth: true, enterprise: true },
-  { label: 'Item photos', free: true, starter: true, growth: true, enterprise: true },
-  { label: 'Custom fields', free: '1', starter: '5', growth: '20', enterprise: 'Unlimited' },
-  { label: 'Custom tags', free: false, starter: true, growth: true, enterprise: true },
-  { label: 'Multiple warehouses', free: false, starter: false, growth: true, enterprise: true },
+  { label: 'Warehouses', free: '1', standard: '3', pro: 'Unlimited' },
+  { label: 'Team members', free: '2', standard: '5', pro: 'Unlimited' },
+  { label: 'Suppliers', free: '10', standard: '50', pro: 'Unlimited' },
 
   {
-    category: 'MANAGE',
-    label: 'Barcode & QR scanning',
-    free: false,
-    starter: true,
-    growth: true,
-    enterprise: true,
+    category: 'INVENTORY WORKFLOW',
+    label: 'Product / Category / Unit management',
+    free: true,
+    standard: true,
+    pro: true,
   },
-  { label: 'Barcode label creation', free: false, starter: true, growth: true, enterprise: true },
-  { label: 'Purchase orders & GRNs', free: false, starter: false, growth: true, enterprise: true },
-  { label: 'Stock transfers', free: false, starter: true, growth: true, enterprise: true },
-  { label: 'Item check-in / check-out', free: true, starter: true, growth: true, enterprise: true },
+  { label: 'Stock operations (create, adjust, opening)', free: true, standard: true, pro: true },
+  { label: 'Stock lot tracking (FIFO / FEFO)', free: true, standard: true, pro: true },
+  { label: 'GRN lifecycle', free: true, standard: true, pro: true },
+  { label: 'Issue notes with FEFO auto-selection', free: true, standard: true, pro: true },
+  { label: 'Warehouse transfers', free: true, standard: true, pro: true },
+  { label: 'Purchase order lifecycle', free: true, standard: true, pro: true },
+  { label: 'Sales order lifecycle', free: true, standard: true, pro: true },
+  { label: 'Point of sale', free: false, standard: true, pro: true },
 
   {
-    category: 'TRACK & ALERT',
-    label: 'Low-stock alerts',
-    free: false,
-    starter: true,
-    growth: true,
-    enterprise: true,
+    category: 'TRACKING & ALERTS',
+    label: 'Low stock monitoring',
+    free: true,
+    standard: true,
+    pro: true,
   },
-  { label: 'Expiry date alerts', free: false, starter: true, growth: true, enterprise: true },
-  { label: 'Email notifications', free: false, starter: false, growth: true, enterprise: true },
-  { label: 'Real-time sync', free: true, starter: true, growth: true, enterprise: true },
+  { label: 'Expiry scanner (daily, 30-day window)', free: true, standard: true, pro: true },
+  { label: 'Custom expiry warning window', free: false, standard: false, pro: true },
+  { label: 'Manual expiry scan trigger', free: false, standard: true, pro: true },
+  { label: 'In-app notifications', free: true, standard: true, pro: true },
+  { label: 'Notification preferences', free: false, standard: true, pro: true },
+  { label: 'Global search', free: true, standard: true, pro: true },
 
   {
-    category: 'REPORT',
-    label: 'Activity history',
-    free: '1 month',
-    starter: '1 year',
-    growth: '3 years',
-    enterprise: 'Unlimited',
+    category: 'BARCODE',
+    label: 'Barcode lookup (manual entry)',
+    free: true,
+    standard: true,
+    pro: true,
   },
-  { label: 'CSV / PDF export', free: false, starter: true, growth: true, enterprise: true },
-  { label: 'Audit logs', free: false, starter: false, growth: true, enterprise: true },
-  { label: 'Stock health dashboard', free: false, starter: false, growth: true, enterprise: true },
+  { label: 'PDF barcode labels', free: false, standard: true, pro: true },
+  { label: 'Sequential barcode generation', free: false, standard: true, pro: true },
+  { label: 'Alternate barcodes (barcode units)', free: false, standard: true, pro: true },
+  { label: 'Barcode history', free: false, standard: true, pro: true },
+  { label: 'ZPL thermal labels (Zebra / TSC)', free: false, standard: false, pro: true },
+  { label: 'Company barcode settings', free: false, standard: false, pro: true },
 
   {
-    category: 'ACCESS & INTEGRATIONS',
-    label: 'Role-based permissions',
-    free: false,
-    starter: false,
-    growth: true,
-    enterprise: true,
+    category: 'IMPORT & EXPORT',
+    label: 'CSV import (products)',
+    free: true,
+    standard: true,
+    pro: true,
   },
-  { label: 'API access', free: false, starter: false, growth: false, enterprise: true },
-  { label: 'Webhooks', free: false, starter: false, growth: false, enterprise: true },
-  { label: 'SSO / SAML', free: false, starter: false, growth: false, enterprise: true },
   {
-    label: 'Dedicated account manager',
+    label: 'All CSV imports (categories, suppliers, stock)',
     free: false,
-    starter: false,
-    growth: false,
-    enterprise: true,
+    standard: true,
+    pro: true,
   },
+  { label: 'Warehouse-level CSV exports', free: false, standard: true, pro: true },
+  { label: 'Company-level CSV exports', free: false, standard: false, pro: true },
+
+  {
+    category: 'DASHBOARD & REPORTS',
+    label: 'Dashboard (KPIs, alerts, health, movements)',
+    free: true,
+    standard: true,
+    pro: true,
+  },
+  { label: 'Warehouse reports', free: true, standard: true, pro: true },
+  { label: 'Company overview report', free: false, standard: true, pro: true },
+  { label: 'Inventory health tab', free: false, standard: true, pro: true },
+  {
+    label: 'Advanced company reports (PO, SO, adjustments)',
+    free: false,
+    standard: false,
+    pro: true,
+  },
+  { label: 'Advanced analytics (trends, health, stats)', free: false, standard: false, pro: true },
+  { label: 'Expiry risk report', free: false, standard: false, pro: true },
+
+  {
+    category: 'ACCESS & AUDIT',
+    label: 'RBAC (all 4 roles)',
+    free: true,
+    standard: true,
+    pro: true,
+  },
+  { label: 'Audit log', free: false, standard: false, pro: true },
+  { label: 'Advanced company settings', free: false, standard: false, pro: true },
 ];
 
 /* ─── Small helpers ──────────────────────────────────────────────────────── */
@@ -224,7 +253,7 @@ export default function PricingPage() {
 
       {/* ── Plan cards ── */}
       <section className="pb-24 px-6">
-        <div className="mx-auto max-w-[1200px] grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mx-auto max-w-[1200px] grid grid-cols-1 gap-6 md:grid-cols-3">
           {plans.map((plan) => {
             const price = yearly ? plan.yearlyPrice : plan.monthlyPrice;
             const isPopular = plan.popular;
@@ -292,24 +321,39 @@ export default function PricingPage() {
                 </Link>
 
                 <ul className="mt-7 space-y-3 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-sm">
-                      <span
-                        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                          isPopular
-                            ? 'border-neutral-600 bg-neutral-800'
-                            : 'border-neutral-300 bg-white'
-                        }`}
-                      >
-                        <Check
-                          className={`h-3 w-3 ${isPopular ? 'text-white' : 'text-neutral-900'}`}
-                        />
-                      </span>
-                      <span className={isPopular ? 'text-neutral-300' : 'text-neutral-700'}>
-                        {f}
-                      </span>
-                    </li>
-                  ))}
+                  {plan.features.map((f) => {
+                    const isSeparator = f.startsWith('Everything in');
+                    if (isSeparator) {
+                      return (
+                        <li
+                          key={f}
+                          className={`pt-2 pb-1 text-xs font-semibold uppercase tracking-wide ${
+                            isPopular ? 'text-neutral-500' : 'text-neutral-400'
+                          }`}
+                        >
+                          {f}
+                        </li>
+                      );
+                    }
+                    return (
+                      <li key={f} className="flex items-start gap-2.5 text-sm">
+                        <span
+                          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                            isPopular
+                              ? 'border-neutral-600 bg-neutral-800'
+                              : 'border-neutral-300 bg-white'
+                          }`}
+                        >
+                          <Check
+                            className={`h-3 w-3 ${isPopular ? 'text-white' : 'text-neutral-900'}`}
+                          />
+                        </span>
+                        <span className={isPopular ? 'text-neutral-300' : 'text-neutral-700'}>
+                          {f}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             );
@@ -331,7 +375,7 @@ export default function PricingPage() {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  <th className="pb-6 text-left font-semibold text-neutral-900 w-[40%]" />
+                  <th className="pb-6 text-left font-semibold text-neutral-900 w-[46%]" />
                   {plans.map((plan) => (
                     <th key={plan.id} className="pb-6 text-center font-bold text-neutral-900">
                       {plan.name}
@@ -345,7 +389,7 @@ export default function PricingPage() {
                     {row.category && (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={4}
                           className="pt-8 pb-3 text-xs font-bold uppercase tracking-widest text-neutral-500"
                         >
                           {row.category}
@@ -357,14 +401,11 @@ export default function PricingPage() {
                       <td className="py-3.5 text-center">
                         <Cell value={row.free} />
                       </td>
-                      <td className="py-3.5 text-center">
-                        <Cell value={row.starter} />
-                      </td>
                       <td className="py-3.5 text-center bg-neutral-50 font-medium">
-                        <Cell value={row.growth} />
+                        <Cell value={row.standard} />
                       </td>
                       <td className="py-3.5 text-center">
-                        <Cell value={row.enterprise} />
+                        <Cell value={row.pro} />
                       </td>
                     </tr>
                   </React.Fragment>

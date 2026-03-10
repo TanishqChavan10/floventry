@@ -633,6 +633,9 @@ function AuditLogRow({
 // --- Main Page ----------------------------------------------------------------
 
 function AuditLogContent() {
+  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
+  const auditAllowed = plan === 'Pro';
+
   const params = useParams();
   const slug = params?.slug as string;
 
@@ -644,6 +647,17 @@ function AuditLogContent() {
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(true);
+
+  if (!auditAllowed || planLoading) {
+    const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
+    return (
+      <PlanGateBlock
+        requiredPlan="Pro"
+        featureName="Audit Log"
+        description="Unlock the full audit trail with filters, user tracking, and compliance reporting."
+      />
+    );
+  }
 
   const { data: companyData } = useCompanyBySlug(slug);
   const companyId = companyData?.companyBySlug?.id;

@@ -29,6 +29,7 @@ export interface NavigationItem {
     href: string;
     icon: React.ComponentType<any>;
     roles?: UserRole[]; // If undefined, visible to all roles
+    planRequired?: 'Standard' | 'Pro'; // Show plan badge when user's plan is below this
     children?: NavigationItem[];
 }
 
@@ -122,6 +123,7 @@ export function getCompanyNavigation(companySlug: string): NavigationSection[] {
                     href: `${basePath}/audit-log`,
                     icon: IconHistory,
                     roles: ['OWNER', 'ADMIN'],
+                    planRequired: 'Pro',
                 },
             ]
         },
@@ -201,6 +203,7 @@ export function getWarehouseNavigation(
                     href: `${basePath}/inventory/reports`,
                     icon: IconFileText,
                     roles: ['OWNER', 'ADMIN', 'MANAGER'],
+                    planRequired: 'Pro',
                 },
                 {
                     label: 'Stock Movements',

@@ -6,17 +6,24 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { motion } from 'motion/react';
 import { useSidebar } from '@/components/ui/sidebar';
+import { Crown } from 'lucide-react';
+import { usePlanTier } from '@/hooks/usePlanTier';
 
 interface SidebarItemProps {
   label: string;
   href: string;
   icon: React.ComponentType<any>;
+  planRequired?: 'Standard' | 'Pro';
   onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
-export function SidebarItem({ label, href, icon: Icon, onClick }: SidebarItemProps) {
+export function SidebarItem({ label, href, icon: Icon, planRequired, onClick }: SidebarItemProps) {
   const pathname = usePathname();
   const { open, animate } = useSidebar();
+  const { plan } = usePlanTier();
+
+  const PLAN_RANK = { Free: 0, Standard: 1, Pro: 2 } as const;
+  const showPlanBadge = planRequired && PLAN_RANK[plan] < PLAN_RANK[planRequired];
 
   // Check if current route matches this item
   // Special handling: Don't mark company root as active when in warehouse routes
@@ -87,6 +94,9 @@ export function SidebarItem({ label, href, icon: Icon, onClick }: SidebarItemPro
       >
         {label}
       </motion.span>
+
+      {/* Plan badge for gated features */}
+      {showPlanBadge && open && <Crown className="ml-auto h-3.5 w-3.5 shrink-0 text-amber-500" />}
     </Link>
   );
 }

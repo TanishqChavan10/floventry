@@ -136,8 +136,26 @@ const IMPORT_LABELS = {
 };
 
 export function ImportWizard({ type, warehouseId, onComplete }: ImportWizardProps) {
+  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
+  const importAllowed = plan === 'Standard' || plan === 'Pro';
+
   const { toast } = useToast();
   const [step, setStep] = useState<'upload' | 'validate' | 'confirm' | 'complete'>('upload');
+
+  if (!importAllowed || planLoading) {
+    const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
+    return (
+      <Card>
+        <CardContent className="py-0">
+          <PlanGateBlock
+            requiredPlan="Standard"
+            featureName="CSV Import"
+            description="Unlock bulk data import for products, categories, suppliers, and opening stock."
+          />
+        </CardContent>
+      </Card>
+    );
+  }
   const [csvContent, setCsvContent] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
   const supportsPaste: boolean = type !== 'opening_stock';

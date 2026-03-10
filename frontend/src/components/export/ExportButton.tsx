@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Loader2 } from 'lucide-react';
+import { Crown, Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useLoadingContext } from '@/context/loading-context';
 import {
@@ -66,6 +66,7 @@ export function ExportButton({
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
   const { _increment, _decrement } = useLoadingContext();
+  const { plan, loading } = require('@/hooks/usePlanTier').usePlanTier();
 
   const [exportStockSnapshot] = useExportStockSnapshot();
   const [exportStockMovements] = useExportStockMovements();
@@ -134,13 +135,25 @@ export function ExportButton({
       });
   };
 
+  // Pro-only export types (company-level)
+  const proOnlyTypes: ExportType[] = ['inventory_summary', 'company_movements', 'expiry_risk'];
+  const requiresPro = proOnlyTypes.includes(type);
+
+  // Standard+ exports allowed for Standard and Pro, Pro-only need Pro
+  const exportAllowed = requiresPro ? plan === 'Pro' : plan === 'Standard' || plan === 'Pro';
+
+  const gateMessage = requiresPro
+    ? 'This export requires a Pro plan.'
+    : 'Export is only available for Standard and Pro plans.';
+
   return (
     <Button
-      onClick={handleExport}
-      disabled={disabled || isExporting}
+      onClick={exportAllowed ? handleExport : undefined}
+      disabled={disabled || isExporting || !exportAllowed || loading}
       variant={variant}
       size={size}
       className="gap-2"
+      title={!exportAllowed ? gateMessage : undefined}
     >
       {isExporting ? (
         <>
@@ -149,7 +162,11 @@ export function ExportButton({
         </>
       ) : (
         <>
-          <Download className="h-4 w-4" />
+          {!exportAllowed ? (
+            <Crown className="h-4 w-4 text-amber-500" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
           {label || `Export ${getExportLabel(type)}`}
         </>
       )}

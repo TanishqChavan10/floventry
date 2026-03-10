@@ -17,6 +17,7 @@ export enum LotSourceType {
   OPENING = 'OPENING',
   GRN = 'GRN',
   TRANSFER = 'TRANSFER',
+  ADJUSTMENT = 'ADJUSTMENT',
 }
 
 // Register the enum for GraphQL
@@ -68,9 +69,9 @@ export class StockLot {
   })
   source_type: LotSourceType;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   @Column('uuid', { nullable: true })
-  source_id: string;
+  source_id: string | null;
 
   @Field()
   @CreateDateColumn()

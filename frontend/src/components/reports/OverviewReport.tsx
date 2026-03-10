@@ -26,6 +26,10 @@ const expiryChartConfig = {
 } satisfies ChartConfig;
 
 export function OverviewReport() {
+  // Plan tier gating
+  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
+  const overviewAllowed = plan === 'Standard' || plan === 'Pro';
+
   const { data, loading } = useCompanyDashboard();
 
   const dashboard = data?.companyDashboard;
@@ -34,6 +38,17 @@ export function OverviewReport() {
   const expiryRisk = dashboard?.expiryRiskDistribution;
   const alerts = dashboard?.activeAlertsSummary;
   const warehouseHealth = dashboard?.warehouseHealthSnapshot ?? [];
+
+  if (!overviewAllowed || planLoading) {
+    const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
+    return (
+      <PlanGateBlock
+        requiredPlan="Standard"
+        featureName="Company Overview Report"
+        description="Unlock KPI dashboards, stock distribution charts, and warehouse health snapshots."
+      />
+    );
+  }
 
   if (loading && !dashboard) {
     return (

@@ -49,7 +49,7 @@ export class CursorPageInfo {
     @Field()
     hasNextPage: boolean;
 
-    @Field({ nullable: true })
+    @Field(() => String, { nullable: true })
     endCursor: string | null;
 
     @Field(() => Int)

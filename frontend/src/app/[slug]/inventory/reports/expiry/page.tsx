@@ -19,8 +19,22 @@ import {
 import Link from 'next/link';
 
 function CompanyExpiryReportsContent() {
+  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
+  const expiryAllowed = plan === 'Pro';
+
   const params = useParams();
   const companySlug = params.slug as string;
+
+  if (!expiryAllowed || planLoading) {
+    const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
+    return (
+      <PlanGateBlock
+        requiredPlan="Pro"
+        featureName="Expiry Risk Report"
+        description="Unlock company-wide expiry risk analysis, warehouse risk scores, and trend reporting."
+      />
+    );
+  }
 
   const { data: dashboardData, loading } = useCompanyDashboard();
   const { data: healthData, loading: healthLoading } = useCompanyStockHealthOverview();

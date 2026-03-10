@@ -695,18 +695,21 @@ export class InventoryService {
       const savedStock = await queryRunner.manager.save(Stock, stock);
 
       // Create opening stock lot (expiry lives here)
-      const lot = queryRunner.manager.create(StockLot, {
+      const lotData: any = {
         company_id: companyId,
         warehouse_id: input.warehouse_id,
         product_id: input.product_id,
         quantity: input.quantity,
-        expiry_date: input.expiry_date
-          ? normalizeExpiryToEndOfDayUTC(input.expiry_date)
-          : null,
         received_at: new Date(),
         source_type: LotSourceType.OPENING,
         source_id: null,
-      } as any);
+      };
+
+      if (input.expiry_date) {
+        lotData.expiry_date = normalizeExpiryToEndOfDayUTC(input.expiry_date);
+      }
+
+      const lot = queryRunner.manager.create(StockLot, lotData);
 
       await queryRunner.manager.save(StockLot, lot);
 
@@ -951,9 +954,22 @@ export class InventoryService {
     stock.quantity = newQuantity;
     const updatedStock = await this.stockRepository.save(stock);
 
+    // Create adjustment lot
+    const adjustmentLot = this.stockLotRepository.create({
+      company_id: companyId,
+      warehouse_id: input.warehouse_id,
+      product_id: input.product_id,
+      quantity: input.quantity,
+      received_at: new Date(),
+      source_type: LotSourceType.ADJUSTMENT,
+      source_id: null, // No specific source for adjustments
+    });
+    await this.stockLotRepository.save(adjustmentLot);
+
     // Create movement record
     await this.stockMovementRepository.save({
       stock_id: stock.id,
+      lot_id: adjustmentLot.id, // Link to the adjustment lot
       product_id: input.product_id,
       warehouse_id: input.warehouse_id,
       company_id: companyId,
@@ -1076,7 +1092,20 @@ export class InventoryService {
           ? previousQty + adjustmentQty
           : previousQty - adjustmentQty;
 
-      // Step 6: Create stock movement (immutable audit record)
+      // Step 6: Create adjustment lot
+      const adjustmentLot = queryRunner.manager.create(StockLot, {
+        company_id: companyId,
+        warehouse_id: input.warehouse_id,
+        product_id: input.product_id,
+        quantity: input.adjustment_type === AdjustmentType.IN ? adjustmentQty : -adjustmentQty,
+        received_at: new Date(),
+        source_type: LotSourceType.ADJUSTMENT,
+        source_id: null, // No specific source for adjustments
+      });
+
+      await queryRunner.manager.save(StockLot, adjustmentLot);
+
+      // Step 7: Create stock movement (immutable audit record)
       const movementType =
         input.adjustment_type === AdjustmentType.IN
           ? MovementType.ADJUSTMENT_IN
@@ -1084,6 +1113,7 @@ export class InventoryService {
 
       const movement = queryRunner.manager.create(StockMovement, {
         stock_id: stock!.id, // We know stock exists at this point
+        lot_id: adjustmentLot.id, // Link to the adjustment lot
         product_id: input.product_id,
         warehouse_id: input.warehouse_id,
         company_id: companyId,
@@ -1100,7 +1130,7 @@ export class InventoryService {
 
       await queryRunner.manager.save(StockMovement, movement);
 
-      // Step 7: Update stock with ATOMIC operation (no .save())
+      // Step 8: Update stock with ATOMIC operation (no .save())
       if (input.adjustment_type === AdjustmentType.IN) {
         await queryRunner.manager
           .createQueryBuilder()

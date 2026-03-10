@@ -71,6 +71,20 @@ const COLORS = {
 };
 
 export default function CompanyInventoryReportsPage() {
+  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
+  const reportsAllowed = plan === 'Pro';
+
+  if (!reportsAllowed || planLoading) {
+    const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
+    return (
+      <PlanGateBlock
+        requiredPlan="Pro"
+        featureName="Advanced Inventory Analytics"
+        description="Unlock warehouse comparison, stock flow analysis, and adjustment audit reports."
+      />
+    );
+  }
+
   return (
     <RoleGuard allowedRoles={['OWNER', 'ADMIN']}>
       <div className="p-6 space-y-6">
