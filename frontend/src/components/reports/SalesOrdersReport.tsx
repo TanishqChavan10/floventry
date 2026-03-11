@@ -19,6 +19,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useSalesOrders } from '@/hooks/apollo';
+import { usePlanTier } from '@/hooks/usePlanTier';
+import { PlanGateBlock } from '@/components/upgrade/PlanGateBlock';
 import { format } from 'date-fns';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -61,21 +63,9 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export function SalesOrdersReport() {
-  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
-  const allowed = plan === 'Pro';
+  const { plan, loading: planLoading } = usePlanTier();
 
   const { data, loading } = useSalesOrders();
-
-  if (!allowed || planLoading) {
-    const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
-    return (
-      <PlanGateBlock
-        requiredPlan="Pro"
-        featureName="Sales Orders Report"
-        description="Unlock sales analytics, fulfillment tracking, and order status insights."
-      />
-    );
-  }
 
   const orders: Array<{
     id: string;
@@ -90,7 +80,15 @@ export function SalesOrdersReport() {
       pending_quantity: number;
       product: { name: string; sku: string };
     }>;
-  }> = data?.salesOrders ?? [];
+  }> = useMemo(() => {
+    const raw = (data?.salesOrders ?? []) as any[];
+    const seen = new Set<string>();
+    return raw.filter((o) => {
+      if (seen.has(o.id)) return false;
+      seen.add(o.id);
+      return true;
+    });
+  }, [data]);
 
   const statusCounts = useMemo(() => {
     const c: Record<string, number> = { DRAFT: 0, CONFIRMED: 0, CLOSED: 0, CANCELLED: 0 };
@@ -158,6 +156,17 @@ export function SalesOrdersReport() {
   const recentOrders = [...orders]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 15);
+
+  // Gate check — after all hooks
+  if (planLoading || plan !== 'Pro') {
+    return (
+      <PlanGateBlock
+        requiredPlan="Pro"
+        featureName="Sales Orders Report"
+        description="Unlock sales analytics, fulfillment tracking, and order status insights."
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">

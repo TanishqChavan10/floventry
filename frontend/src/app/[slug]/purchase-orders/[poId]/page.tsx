@@ -7,7 +7,6 @@ import {
   useUpdatePurchaseOrder,
   useMarkPurchaseOrderOrdered,
   useCancelPurchaseOrder,
-  useGRNs,
   useSuppliers,
   useWarehouseStock,
 } from '@/hooks/apollo';
@@ -47,11 +46,9 @@ import {
   Building2,
   Truck,
   Save,
-  PackageCheck,
   Plus,
   X,
   AlertCircle,
-  Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -79,117 +76,6 @@ interface POItem {
   };
   ordered_quantity: number;
   received_quantity?: number;
-}
-
-// GRN Section Component
-function GRNSection({
-  poId,
-  companySlug,
-  warehouseSlug,
-}: {
-  poId: string;
-  companySlug: string;
-  warehouseSlug: string;
-}) {
-  const router = useRouter();
-
-  // Fetch GRNs for this PO
-  const { data: grnsData, loading: grnsLoading } = useGRNs({
-    filters: {
-      purchase_order_id: poId,
-      limit: 50,
-    },
-  });
-
-  const grns = grnsData?.grns || [];
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
-
-  // Helper to get status badge
-  const getGRNStatusBadge = (status: string) => {
-    const config: Record<string, { variant: any; label: string }> = {
-      DRAFT: { variant: 'secondary', label: 'Draft' },
-      POSTED: { variant: 'default', label: 'Posted' },
-      CANCELLED: { variant: 'destructive', label: 'Cancelled' },
-    };
-    const item = config[status] || config.DRAFT;
-    return <Badge variant={item.variant}>{item.label}</Badge>;
-  };
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
-          <PackageCheck className="h-5 w-5" />
-          Goods Receipt Notes ({grns.length})
-        </CardTitle>
-        <Link href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn/new`}>
-          <Button size="sm" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create GRN
-          </Button>
-        </Link>
-      </CardHeader>
-      <CardContent>
-        {grnsLoading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">Loading GRNs...</p>
-          </div>
-        ) : grns.length === 0 ? (
-          <div className="text-center py-12">
-            <PackageCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Goods Receipts Yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Start receiving goods from this purchase order
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>GRN Number</TableHead>
-                  <TableHead>Received Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Items Count</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {grns.map((grn: any) => (
-                  <TableRow key={grn.id}>
-                    <TableCell className="font-mono text-sm font-medium">
-                      {grn.grn_number}
-                    </TableCell>
-                    <TableCell>{formatDate(grn.received_at)}</TableCell>
-                    <TableCell>{getGRNStatusBadge(grn.status)}</TableCell>
-                    <TableCell className="text-right">{grn.items?.length || 0}</TableCell>
-                    <TableCell className="text-right">
-                      <Link
-                        href={`/${companySlug}/warehouses/${warehouseSlug}/inventory/grn/${grn.id}`}
-                      >
-                        <Button variant="ghost" size="icon">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
 }
 
 // Status badge helper for PO status
@@ -777,11 +663,6 @@ function PurchaseOrderDetailContent() {
               )}
             </CardContent>
           </Card>
-
-          {/* Goods Receipt Notes */}
-          {!isEditing && po.status === 'ORDERED' && (
-            <GRNSection poId={poId} companySlug={companySlug} warehouseSlug={po.warehouse.id} />
-          )}
 
           {/* Metadata */}
           {!isEditing && (

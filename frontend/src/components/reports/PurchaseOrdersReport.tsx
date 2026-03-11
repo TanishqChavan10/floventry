@@ -19,6 +19,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { usePurchaseOrders } from '@/hooks/apollo';
+import { usePlanTier } from '@/hooks/usePlanTier';
+import { PlanGateBlock } from '@/components/upgrade/PlanGateBlock';
 import { subDays, format } from 'date-fns';
 
 const PERIODS = [
@@ -69,21 +71,9 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export function PurchaseOrdersReport() {
-  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
-  const allowed = plan === 'Pro';
+  const { plan, loading: planLoading } = usePlanTier();
 
   const [days, setDays] = useState(90);
-
-  if (!allowed || planLoading) {
-    const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
-    return (
-      <PlanGateBlock
-        requiredPlan="Pro"
-        featureName="Purchase Orders Report"
-        description="Unlock purchase order analytics, status breakdowns, and supplier spending trends."
-      />
-    );
-  }
 
   const filters = useMemo(() => {
     if (days === 0) return { limit: 500, offset: 0 };
@@ -165,6 +155,17 @@ export function PurchaseOrdersReport() {
   const recentOrders = [...orders]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 15);
+
+  // Gate check — after all hooks
+  if (planLoading || plan !== 'Pro') {
+    return (
+      <PlanGateBlock
+        requiredPlan="Pro"
+        featureName="Purchase Orders Report"
+        description="Unlock purchase order analytics, status breakdowns, and supplier spending trends."
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">

@@ -33,6 +33,7 @@ export function useCreateIssueNote() {
           issueNotesByWarehouse(existing = []) {
             const ref = cache.identify(data.createIssueNote);
             if (!ref) return existing;
+            if (existing.some((e: any) => e.__ref === ref)) return existing;
             return [{ __ref: ref }, ...existing];
           },
         },
@@ -52,6 +53,7 @@ export function useCreateIssueNoteWithFEFO(options?: MutationHookOptions) {
           issueNotesByWarehouse(existing = []) {
             const ref = cache.identify(result.data!.createIssueNoteWithFEFO);
             if (!ref) return existing;
+            if (existing.some((e: any) => e.__ref === ref)) return existing;
             return [{ __ref: ref }, ...existing];
           },
         },

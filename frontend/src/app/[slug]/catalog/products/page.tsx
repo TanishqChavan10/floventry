@@ -23,6 +23,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -75,6 +78,7 @@ import {
   copyThermalLabelsZplToClipboard,
   downloadThermalLabelsZpl,
 } from '@/lib/api/thermal-labels';
+import type { BarcodeLabelLayout } from '@/lib/graphql/barcode';
 
 function CatalogProductsContent() {
   const { slug } = useParams();
@@ -288,7 +292,7 @@ function CatalogProductsContent() {
     }
   };
 
-  const handleDownloadLabelPdfForSelected = async () => {
+  const handleDownloadLabelPdfForSelected = async (layout: BarcodeLabelLayout) => {
     if (!selectedIdsAll.length) return;
     if (!selectedIdsWithBarcode.length) {
       toast({
@@ -305,6 +309,7 @@ function CatalogProductsContent() {
         variables: {
           input: {
             productIds: selectedIdsWithBarcode,
+            layout,
           },
         },
       });
@@ -662,64 +667,101 @@ function CatalogProductsContent() {
                   </Select>
 
                   {selectedCount > 1 && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="gap-2 w-full md:w-auto">
-                          Actions
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            void handleExportSelectedCsv();
-                          }}
-                        >
-                          <FileDown className="h-4 w-4" />
-                          Export Barcode CSV
-                        </DropdownMenuItem>
+                    <>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" className="gap-2 w-full md:w-auto">
+                            Actions
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              void handleExportSelectedCsv();
+                            }}
+                          >
+                            <FileDown className="h-4 w-4" />
+                            Export Barcode CSV
+                          </DropdownMenuItem>
 
-                        <DropdownMenuItem
-                          disabled={
-                            selectedIdsWithBarcode.length === 0 ||
-                            downloadingLabelForId === '__selected__'
-                          }
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            void handleDownloadLabelPdfForSelected();
-                          }}
-                        >
-                          <FileDown className="h-4 w-4" />
-                          {downloadingLabelForId === '__selected__'
-                            ? 'Downloading label…'
-                            : 'Download Label PDF'}
-                        </DropdownMenuItem>
+                          <DropdownMenuSeparator />
 
-                        <DropdownMenuSeparator />
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger
+                              disabled={
+                                selectedIdsWithBarcode.length === 0 ||
+                                downloadingLabelForId === '__selected__'
+                              }
+                              className="gap-2"
+                            >
+                              <FileDown className="h-4 w-4" />
+                              {downloadingLabelForId === '__selected__'
+                                ? 'Downloading label…'
+                                : 'Generate Barcode Label'}
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent>
+                              <DropdownMenuItem
+                                onSelect={(e) => {
+                                  e.preventDefault();
+                                  void handleDownloadLabelPdfForSelected('A4_SINGLE');
+                                }}
+                              >
+                                A4 (1 per page)
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={(e) => {
+                                  e.preventDefault();
+                                  void handleDownloadLabelPdfForSelected('A4_2X4');
+                                }}
+                              >
+                                A4 2×4 (8 per page)
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={(e) => {
+                                  e.preventDefault();
+                                  void handleDownloadLabelPdfForSelected('A4_3X8');
+                                }}
+                              >
+                                A4 3×8 (24 per page)
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={(e) => {
+                                  e.preventDefault();
+                                  void handleDownloadLabelPdfForSelected('THERMAL_50X25');
+                                }}
+                              >
+                                Thermal 50×25mm
+                              </DropdownMenuItem>
+                            </DropdownMenuSubContent>
+                          </DropdownMenuSub>
 
-                        <DropdownMenuItem
-                          disabled={selectedIdsWithBarcode.length === 0}
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            void handleCopyThermalSelected();
-                          }}
-                        >
-                          <Copy className="h-4 w-4" />
-                          Copy Thermal Code
-                        </DropdownMenuItem>
+                          <DropdownMenuSeparator />
 
-                        <DropdownMenuItem
-                          disabled={selectedIdsWithBarcode.length === 0}
-                          onSelect={(e) => {
-                            e.preventDefault();
-                            void handleDownloadThermalSelected();
-                          }}
-                        >
-                          <Printer className="h-4 w-4" />
-                          Download Thermal Code
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          <DropdownMenuItem
+                            disabled={selectedIdsWithBarcode.length === 0}
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              void handleCopyThermalSelected();
+                            }}
+                          >
+                            <Copy className="h-4 w-4" />
+                            Copy Thermal Code
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            disabled={selectedIdsWithBarcode.length === 0}
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              void handleDownloadThermalSelected();
+                            }}
+                          >
+                            <Printer className="h-4 w-4" />
+                            Download Thermal Code
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </>
                   )}
                 </div>
 

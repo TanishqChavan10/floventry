@@ -30,6 +30,8 @@ export function useCreateSalesOrder(options?: MutationHookOptions) {
           salesOrders(existing = []) {
             const ref = cache.identify(result.data!.createSalesOrder);
             if (!ref) return existing;
+            // Avoid duplicating if the ref is already in the list
+            if (existing.some((e: any) => e.__ref === ref)) return existing;
             return [{ __ref: ref }, ...existing];
           },
         },

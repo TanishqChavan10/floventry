@@ -101,9 +101,15 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
 
   const [postGRN, { loading: posting }] = usePostGRN();
 
-  const purchaseOrders = (posData?.purchaseOrders || []).filter(
-    (po: any) => po.warehouse?.id === activeWarehouse?.id,
-  );
+  const purchaseOrders = useMemo(() => {
+    const seen = new Set<string>();
+    return (posData?.purchaseOrders || []).filter((po: any) => {
+      if (!po?.warehouse?.id || po.warehouse.id !== activeWarehouse?.id) return false;
+      if (seen.has(po.id)) return false;
+      seen.add(po.id);
+      return true;
+    });
+  }, [posData, activeWarehouse?.id]);
 
   const { data: stockHealthData } = useWarehouseStockHealth(activeWarehouse?.id ?? '');
 
@@ -121,17 +127,24 @@ export function CreateGRNModal({ open, onOpenChange, onSuccess }: CreateGRNModal
     if (selectedPO && posData?.purchaseOrders) {
       const po = posData.purchaseOrders.find((p: any) => p.id === selectedPO);
       if (po && po.items) {
-        const poItems = po.items.map((item: any) => ({
-          purchase_order_item_id: item.id,
-          product_id: item.product.id,
-          received_quantity: 0,
-          expiry_date: '',
-          product_name: item.product.name,
-          sku: item.product.sku,
-          ordered_quantity: item.ordered_quantity,
-          already_received: item.received_quantity || 0,
-          remaining_quantity: item.ordered_quantity - (item.received_quantity || 0),
-        }));
+        const seen = new Set<string>();
+        const poItems = (po.items as any[])
+          .filter((item: any) => {
+            if (seen.has(item.id)) return false;
+            seen.add(item.id);
+            return true;
+          })
+          .map((item: any) => ({
+            purchase_order_item_id: item.id,
+            product_id: item.product.id,
+            received_quantity: 0,
+            expiry_date: '',
+            product_name: item.product.name,
+            sku: item.product.sku,
+            ordered_quantity: item.ordered_quantity,
+            already_received: item.received_quantity || 0,
+            remaining_quantity: item.ordered_quantity - (item.received_quantity || 0),
+          }));
         setItems(poItems);
       }
     } else if (!selectedPO) {

@@ -51,6 +51,10 @@ export function BarcodeScanInput(props: {
   const [lastScanned, setLastScanned] = useState<string | null>(null);
 
   const pendingScanRef = useRef<ParsedScanPayload | null>(null);
+  // Tracks the last barcode value that was submitted for lookup.
+  // Prevents the idle-timer effect from re-firing for the same value
+  // when a re-render (e.g. loading state change) recreates the lookup functions.
+  const lastTriggeredBarcodeRef = useRef<string | null>(null);
 
   const mode = props.mode ?? 'basic';
 
@@ -67,41 +71,52 @@ export function BarcodeScanInput(props: {
   const [lookupDetailsFn, { loading: loadingDetails }] = useProductByBarcodeDetails();
 
   const lookupBasic = (options: { variables: { barcode: string } }) =>
-    lookupBasicFn({ ...options, fetchPolicy: 'no-cache' })
+    lookupBasicFn({ ...options, fetchPolicy: 'no-cache', errorPolicy: 'all' })
       .then(({ data, error }) => {
         if (error) {
           pendingScanRef.current = null;
+          setBarcode('');
+          lastTriggeredBarcodeRef.current = null;
           props.onError?.(error.message || 'Barcode lookup failed');
           return;
         }
         const pending = pendingScanRef.current;
         const scanned = (pending?.barcode ?? barcode ?? '').trim();
         if (!data?.productByBarcode) {
+          setBarcode('');
+          lastTriggeredBarcodeRef.current = null;
           props.onError?.('No product found for barcode');
           return;
         }
         props.onProductResolved(data.productByBarcode, scanned, buildBaseScanMeta(pending));
         setLastScanned(scanned);
         setBarcode('');
+        lastTriggeredBarcodeRef.current = null;
         pendingScanRef.current = null;
         queueMicrotask(() => inputRef.current?.focus());
       })
       .catch((err: any) => {
         pendingScanRef.current = null;
+        setBarcode('');
+        lastTriggeredBarcodeRef.current = null;
         props.onError?.(err.message || 'Barcode lookup failed');
       });
 
   const lookupDetails = (options: { variables: { barcode: string } }) =>
-    lookupDetailsFn({ ...options, fetchPolicy: 'no-cache' })
+    lookupDetailsFn({ ...options, fetchPolicy: 'no-cache', errorPolicy: 'all' })
       .then(({ data, error }) => {
         if (error) {
           pendingScanRef.current = null;
+          setBarcode('');
+          lastTriggeredBarcodeRef.current = null;
           props.onError?.(error.message || 'Barcode lookup failed');
           return;
         }
         const pending = pendingScanRef.current;
         const scanned = (pending?.barcode ?? barcode ?? '').trim();
         if (!data?.productByBarcodeDetails?.product) {
+          setBarcode('');
+          lastTriggeredBarcodeRef.current = null;
           props.onError?.('No product found for barcode');
           return;
         }
@@ -114,11 +129,14 @@ export function BarcodeScanInput(props: {
         });
         setLastScanned(scanned);
         setBarcode('');
+        lastTriggeredBarcodeRef.current = null;
         pendingScanRef.current = null;
         queueMicrotask(() => inputRef.current?.focus());
       })
       .catch((err: any) => {
         pendingScanRef.current = null;
+        setBarcode('');
+        lastTriggeredBarcodeRef.current = null;
         props.onError?.(err.message || 'Barcode lookup failed');
       });
 
@@ -129,11 +147,17 @@ export function BarcodeScanInput(props: {
   // Idle-trigger for scanners that don't send Enter.
   useEffect(() => {
     const trimmed = barcode.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      lastTriggeredBarcodeRef.current = null;
+      return;
+    }
 
     const handle = window.setTimeout(() => {
       // Only auto-fire if it looks like a scan (avoid firing for a single stray key).
       if (trimmed.length >= 4) {
+        // Guard: don't re-fire for the same barcode value (prevents spam on re-renders).
+        if (lastTriggeredBarcodeRef.current === trimmed) return;
+        lastTriggeredBarcodeRef.current = trimmed;
         const parsed = parseScanPayload(trimmed);
         pendingScanRef.current = parsed;
         if (mode === 'details') {

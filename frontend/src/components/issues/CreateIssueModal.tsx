@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useCreateIssueNoteWithFEFO, useSalesOrders, useWarehouseStock } from '@/hooks/apollo';
 import { Loader2, Plus, Trash2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,7 @@ interface SalesOrderItem {
     id: string;
   };
   pending_quantity: number;
+  ordered_quantity: number;
 }
 
 interface SalesOrder {
@@ -61,6 +62,7 @@ interface CreateIssueModalProps {
 
 export function CreateIssueModal({ open, onOpenChange, onSuccess }: CreateIssueModalProps) {
   const params = useParams();
+  const router = useRouter();
   const { activeWarehouse } = useWarehouse();
 
   const companySlug = params.slug as string;
@@ -73,24 +75,53 @@ export function CreateIssueModal({ open, onOpenChange, onSuccess }: CreateIssueM
   const { data: salesOrdersData } = useSalesOrders();
   const { data: warehouseStockData } = useWarehouseStock(activeWarehouse?.id || '');
 
-  const salesOrders = useMemo<SalesOrder[]>(
-    () => (salesOrdersData?.salesOrders ?? []) as SalesOrder[],
-    [salesOrdersData],
-  );
+  const salesOrders = useMemo<SalesOrder[]>(() => {
+    const raw = (salesOrdersData?.salesOrders ?? []) as SalesOrder[];
+    const seen = new Set<string>();
+    return raw.filter((so) => {
+      if (seen.has(so.id)) return false;
+      seen.add(so.id);
+      if (so.status !== 'CONFIRMED') return false;
+      // Exclude orders where all items are fully issued (pending_quantity <= 0)
+      const items = (so.items ?? []) as any[];
+      if (items.length > 0 && items.every((item) => Number(item.pending_quantity ?? 0) <= 0))
+        return false;
+      return true;
+    });
+  }, [salesOrdersData]);
 
   const products = useMemo<Product[]>(() => {
     const stocks = (warehouseStockData?.stockByWarehouse ?? []) as any[];
-    return stocks
-      .filter((s) => Number(s?.quantity ?? 0) > 0)
-      .map((s) => ({
-        id: s.product.id,
-        name: s.product.name,
-        sku: s.product.sku,
-        availableQty: Number(s.quantity ?? 0),
-      }));
+    const map = new Map<string, Product>();
+    for (const s of stocks) {
+      const qty = Number(s?.quantity ?? 0);
+      if (qty <= 0) continue;
+      const id = s.product.id as string;
+      if (map.has(id)) {
+        map.get(id)!.availableQty = (map.get(id)!.availableQty ?? 0) + qty;
+      } else {
+        map.set(id, { id, name: s.product.name, sku: s.product.sku, availableQty: qty });
+      }
+    }
+    return Array.from(map.values());
   }, [warehouseStockData]);
 
   const availableProductIds = useMemo(() => new Set(products.map((p) => p.id)), [products]);
+
+  // Total pending demand per product across all CONFIRMED sales orders
+  const pendingQtyByProductId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const so of salesOrders) {
+      if (so.status !== 'CONFIRMED') continue;
+      for (const item of so.items ?? []) {
+        if (!item.product?.id) continue;
+        const pending = Number(item.pending_quantity ?? 0);
+        if (pending <= 0) continue;
+        map.set(item.product.id, (map.get(item.product.id) ?? 0) + pending);
+      }
+    }
+    return map;
+  }, [salesOrders]);
 
   const prefillItemsFromSalesOrder = useCallback(
     (selectedSalesOrderId: string) => {
@@ -134,6 +165,10 @@ export function CreateIssueModal({ open, onOpenChange, onSuccess }: CreateIssueM
       toast.success('Issue note created successfully with FEFO lot selection');
       handleClose();
       onSuccess?.();
+      const issueId = (data as any)?.createIssueNoteWithFEFO?.id;
+      if (issueId) {
+        router.push(`/${companySlug}/warehouses/${warehouseSlug}/issues/${issueId}`);
+      }
     },
     onError: (error) => {
       toast.error(error.message);
@@ -313,6 +348,11 @@ export function CreateIssueModal({ open, onOpenChange, onSuccess }: CreateIssueM
                           {product && (
                             <p className="text-xs text-muted-foreground mt-1">
                               Available: {product.availableQty}
+                              {pendingQtyByProductId.has(item.product_id) && (
+                                <span className="ml-2 text-amber-600 font-medium">
+                                  · Needed: {pendingQtyByProductId.get(item.product_id)}
+                                </span>
+                              )}
                             </p>
                           )}
                         </div>

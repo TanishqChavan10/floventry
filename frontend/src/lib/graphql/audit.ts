@@ -30,11 +30,20 @@ export const GET_COMPANY_AUDIT_LOGS = gql`
 export const GET_COMPANY_MEMBERS = gql`
   query GetCompanyMembers($companyId: String!) {
     companyMembers(companyId: $companyId) {
+      membership_id
       user_id
       role
+      joined_at
+      status
+      invited_by
       user {
         email
         fullName
+      }
+      warehouses {
+        warehouseId
+        warehouseName
+        isManager
       }
     }
   }

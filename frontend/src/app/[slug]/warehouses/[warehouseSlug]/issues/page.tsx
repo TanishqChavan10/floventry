@@ -47,7 +47,15 @@ function IssueNotesContent() {
 
   const { data, loading, error, refetch } = useIssueNotesByWarehouse(activeWarehouse?.id || '');
 
-  const issueNotes = data?.issueNotesByWarehouse || [];
+  const issueNotes = (() => {
+    const raw: any[] = data?.issueNotesByWarehouse || [];
+    const seen = new Set<string>();
+    return raw.filter((n) => {
+      if (seen.has(n.id)) return false;
+      seen.add(n.id);
+      return true;
+    });
+  })();
 
   const filteredNotes = issueNotes.filter((note: any) => {
     const matchesStatus = statusFilter === 'ALL' || note.status === statusFilter;

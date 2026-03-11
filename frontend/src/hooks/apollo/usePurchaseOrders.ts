@@ -54,6 +54,7 @@ export function useCreatePurchaseOrder(options?: MutationHookOptions) {
           purchaseOrders(existing = []) {
             const ref = cache.identify(result.data!.createPurchaseOrder);
             if (!ref) return existing;
+            if (existing.some((e: any) => e.__ref === ref)) return existing;
             return [{ __ref: ref }, ...existing];
           },
         },
@@ -123,6 +124,7 @@ export function useCreateGRN() {
           grns(existing = []) {
             const ref = cache.identify(data.createGRN);
             if (!ref) return existing;
+            if (existing.some((e: any) => e.__ref === ref)) return existing;
             return [{ __ref: ref }, ...existing];
           },
         },

@@ -3,6 +3,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useCompanyAuditLogs, useCompanyMembers, useCompanyBySlug } from '@/hooks/apollo';
+import { usePlanTier } from '@/hooks/usePlanTier';
+import { PlanGateBlock } from '@/components/upgrade/PlanGateBlock';
 import { DateRange } from 'react-day-picker';
 
 import { format } from 'date-fns';
@@ -633,8 +635,7 @@ function AuditLogRow({
 // --- Main Page ----------------------------------------------------------------
 
 function AuditLogContent() {
-  const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
-  const auditAllowed = plan === 'Pro';
+  const { plan, loading: planLoading } = usePlanTier();
 
   const params = useParams();
   const slug = params?.slug as string;
@@ -647,17 +648,6 @@ function AuditLogContent() {
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(true);
-
-  if (!auditAllowed || planLoading) {
-    const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
-    return (
-      <PlanGateBlock
-        requiredPlan="Pro"
-        featureName="Audit Log"
-        description="Unlock the full audit trail with filters, user tracking, and compliance reporting."
-      />
-    );
-  }
 
   const { data: companyData } = useCompanyBySlug(slug);
   const companyId = companyData?.companyBySlug?.id;
@@ -720,6 +710,17 @@ function AuditLogContent() {
   }, [filteredEntries]);
 
   const totalPages = pageInfo ? Math.max(1, Math.ceil(pageInfo.total / pageInfo.limit)) : 1;
+
+  // Gate check — after all hooks
+  if (planLoading || plan !== 'Pro') {
+    return (
+      <PlanGateBlock
+        requiredPlan="Pro"
+        featureName="Audit Log"
+        description="Unlock the full audit trail with filters, user tracking, and compliance reporting."
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-6 md:p-8">
