@@ -357,14 +357,16 @@ function TransferDetailContent() {
               <AlertTriangle className="h-5 w-5 text-muted-foreground" />
               Post Warehouse Transfer?
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Posting this transfer will immediately:
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Decrease stock in {transfer.source_warehouse.name}</li>
-                <li>Increase stock in {transfer.destination_warehouse.name}</li>
-                <li>Create TRANSFER_OUT and TRANSFER_IN stock movements</li>
-              </ul>
-              <strong className="block mt-3">This action cannot be undone.</strong>
+            <AlertDialogDescription asChild>
+              <div>
+                <p>Posting this transfer will immediately:</p>
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>Decrease stock in {transfer.source_warehouse.name}</li>
+                  <li>Increase stock in {transfer.destination_warehouse.name}</li>
+                  <li>Create TRANSFER_OUT and TRANSFER_IN stock movements</li>
+                </ul>
+                <strong className="block mt-3">This action cannot be undone.</strong>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

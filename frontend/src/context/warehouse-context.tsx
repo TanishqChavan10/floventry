@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 
 export type WarehouseType = 'MAIN' | 'RETAIL' | 'SERVICE_CENTER' | 'KIOSK' | 'COLD_STORAGE';
 
@@ -19,9 +19,9 @@ interface WarehouseContextType {
   activeWarehouse: Warehouse | null; // Null if 'ALL' is selected
   setActiveWarehouseId: (id: string | 'ALL') => void;
   addWarehouse: (warehouse: Omit<Warehouse, 'id' | 'slug'>) => Promise<Warehouse>;
-  deleteWarehouse: (id: string) => Promise<void>;
+  archiveWarehouse: (id: string) => Promise<void>;
   isLoading: boolean;
-  refreshWarehouses: () => Promise<void>;
+  refreshWarehouses: (forCompanyId?: string) => Promise<void>;
 }
 
 const WarehouseContext = createContext<WarehouseContextType | undefined>(undefined);
@@ -63,13 +63,33 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading, isSignedIn: isSignedIn, getToken } = useAuth();
   const params = useParams();
 
-  const fetchWarehouses = async () => {
+  // Track the previous company slug so we can detect a company switch
+  const prevSlugRef = useRef<string | undefined>(undefined);
+  const prevActiveCompanyIdRef = useRef<string | undefined>(undefined);
+  const fetchRequestIdRef = useRef(0);
+
+  const currentSlug = params?.slug as string | undefined;
+  const companyFromSlug = currentSlug
+    ? user?.companies?.find((company) => company.slug === currentSlug)
+    : undefined;
+
+  const fetchWarehouses = async (forCompanyId?: string) => {
     if (!isSignedIn || !user) {
+      setIsLoading(false);
       return;
     }
+
+    const requestId = ++fetchRequestIdRef.current;
+    setIsLoading(true);
+
     try {
       const token = await getToken();
-      const res = await fetch(`${API_URL}/warehouses`, {
+      // When forCompanyId is provided, pass it to the backend so we always get
+      // the correct company's warehouses regardless of activeCompanyId timing.
+      const url = forCompanyId
+        ? `${API_URL}/warehouses?companyId=${encodeURIComponent(forCompanyId)}`
+        : `${API_URL}/warehouses`;
+      const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -78,31 +98,60 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
 
-        setWarehouses(data);
-        if (data.length > 0 && activeWarehouseId === 'ALL') {
-          // Optionally set default if 'ALL' is not desired as initial state, but 'ALL' is fine.
-          // If we want to mimic the logic of "select first if exists", we can do it here.
-          // For now, let's keep 'ALL' or user preference.
+        if (requestId !== fetchRequestIdRef.current) {
+          return;
         }
-      } else {
+
+        setWarehouses(data);
       }
     } catch (error) {
+      if (requestId !== fetchRequestIdRef.current) {
+        return;
+      }
+
       console.error('[WarehouseContext] Failed to fetch warehouses', error);
       toast.error('Failed to load warehouses');
     } finally {
-      setIsLoading(false);
+      if (requestId === fetchRequestIdRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    if (isSignedIn && user && !authLoading) {
-      fetchWarehouses();
-    } else {
-      if (!authLoading) {
-        setIsLoading(false);
-      }
+    const currentActiveCompanyId = user?.activeCompanyId;
+
+    // When the user navigates to a different company, reset stale warehouse state
+    // immediately so the old company's list never appears in the new company's switcher.
+    if (prevSlugRef.current !== undefined && prevSlugRef.current !== currentSlug) {
+      fetchRequestIdRef.current += 1;
+      setWarehouses([]);
+      setActiveWarehouseId('ALL');
     }
-  }, [isSignedIn, user, authLoading, params?.slug]); // Added user and authLoading dependencies
+
+    // Also react to backend active-company changes even if the URL was already updated.
+    if (
+      prevActiveCompanyIdRef.current !== undefined &&
+      prevActiveCompanyIdRef.current !== currentActiveCompanyId
+    ) {
+      fetchRequestIdRef.current += 1;
+      setWarehouses([]);
+      setActiveWarehouseId('ALL');
+    }
+
+    prevSlugRef.current = currentSlug;
+    prevActiveCompanyIdRef.current = currentActiveCompanyId;
+
+    if (isSignedIn && user && !authLoading) {
+      // Resolve the company ID from the URL slug and pass it explicitly
+      // so the backend returns the correct company's warehouses even if
+      // activeCompanyId hasn't propagated yet.
+      const slugCompanyId = companyFromSlug?.id;
+      fetchWarehouses(slugCompanyId);
+    } else if (!authLoading) {
+      setIsLoading(false);
+    }
+  }, [isSignedIn, user, user?.activeCompanyId, authLoading, currentSlug]);
 
   // Detect active warehouse from URL
   useEffect(() => {
@@ -112,8 +161,10 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
       if (currentWarehouse && currentWarehouse.id !== activeWarehouseId) {
         setActiveWarehouseId(currentWarehouse.id);
       }
+    } else if (!warehouseSlug && activeWarehouseId !== 'ALL') {
+      setActiveWarehouseId('ALL');
     }
-  }, [params?.warehouseSlug, warehouses]);
+  }, [params?.warehouseSlug, warehouses, activeWarehouseId]);
 
   const addWarehouse = async (newWarehouseData: Omit<Warehouse, 'id' | 'slug'>) => {
     try {
@@ -148,7 +199,7 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const deleteWarehouse = async (id: string) => {
+  const archiveWarehouse = async (id: string) => {
     try {
       const token = await getToken();
       const res = await fetch(`${API_URL}/warehouses/${id}`, {
@@ -159,17 +210,17 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!res.ok) {
-        throw new Error('Failed to delete warehouse');
+        throw new Error('Failed to archive warehouse');
       }
 
       setWarehouses((prev) => prev.filter((w) => w.id !== id));
       if (activeWarehouseId === id) {
         setActiveWarehouseId('ALL');
       }
-      toast.success('Warehouse deleted successfully');
+      toast.success('Warehouse archived successfully');
     } catch (error) {
-      console.error('Failed to delete warehouse', error);
-      toast.error('Failed to delete warehouse');
+      console.error('Failed to archive warehouse', error);
+      toast.error('Failed to archive warehouse');
       throw error;
     }
   };
@@ -183,7 +234,7 @@ export function WarehouseProvider({ children }: { children: React.ReactNode }) {
     activeWarehouse,
     setActiveWarehouseId,
     addWarehouse,
-    deleteWarehouse,
+    archiveWarehouse,
     isLoading,
     refreshWarehouses: fetchWarehouses,
   };

@@ -15,6 +15,7 @@ type Props = {
   children?: ReactNode;
   size?: 'default' | 'sm' | 'lg' | 'icon';
   variant?: 'default' | 'secondary' | 'destructive' | 'outline' | 'ghost' | 'link';
+  title?: string;
 };
 
 export function GenerateBarcodeLabelsButton({
@@ -25,6 +26,7 @@ export function GenerateBarcodeLabelsButton({
   children,
   size,
   variant,
+  title,
 }: Props) {
   const [generateLabels, { loading: isLoading }] = useGenerateBarcodeLabels();
 
@@ -70,6 +72,7 @@ export function GenerateBarcodeLabelsButton({
       disabled={disabled || isLoading}
       size={size}
       variant={variant}
+      title={title}
     >
       {children ?? (isLoading ? 'Generating…' : 'Generate Barcode Label')}
     </Button>

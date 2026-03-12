@@ -17,14 +17,14 @@ export function ProfileForm({ formData, onFormDataChange }: ProfileFormProps) {
   const { user } = useAuth();
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className="hover:shadow-lg transition-shadow h-full flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           <User className="h-4 w-4 text-muted-foreground" />
           Personal Information
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 flex-1">
         {/* Avatar Section */}
         <div className="flex flex-col sm:flex-row items-center gap-6 rounded-xl border bg-muted/20 p-4">
           <Avatar className="h-24 w-24 border-2 border-border shadow-sm">

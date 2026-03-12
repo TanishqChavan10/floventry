@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { WarehouseAccessList } from '@/components/warehouses/WarehouseAccessList';
-import { DeleteWarehouseDialog } from '@/components/warehouses/DeleteWarehouseDialog';
+import { ArchiveWarehouseDialog } from '@/components/warehouses/DeleteWarehouseDialog';
 import {
   Select,
   SelectContent,
@@ -39,7 +39,6 @@ import {
   Save,
   ShieldAlert,
   Settings2,
-  Clock,
   Phone,
   Star,
   Loader2,
@@ -73,7 +72,6 @@ function WarehouseSettingsContent() {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [type, setType] = useState('MAIN');
-  const [timezone, setTimezone] = useState('Asia/Kolkata');
   const [description, setDescription] = useState('');
   const [contactPerson, setContactPerson] = useState('');
   const [contactPhone, setContactPhone] = useState('');
@@ -85,7 +83,7 @@ function WarehouseSettingsContent() {
   const [isDefault, setIsDefault] = useState(false);
 
   // Dialog state
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
 
   // Initialize form when data loads
   useEffect(() => {
@@ -93,7 +91,6 @@ function WarehouseSettingsContent() {
       setName(warehouse.name || '');
       setCode(warehouse.code || '');
       setType(warehouse.type || 'MAIN');
-      setTimezone(warehouse.timezone || 'Asia/Kolkata');
       setDescription(warehouse.description || '');
       setContactPerson(warehouse.contact_person || '');
       setContactPhone(warehouse.contact_phone || '');
@@ -125,7 +122,6 @@ function WarehouseSettingsContent() {
             description,
             type,
             code,
-            timezone,
             address,
             city,
             state,
@@ -275,39 +271,20 @@ function WarehouseSettingsContent() {
                   </div>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Warehouse Type</Label>
-                    <Select value={type} onValueChange={setType} disabled={isReadOnly}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="MAIN">Main Warehouse</SelectItem>
-                        <SelectItem value="RETAIL">Retail Store</SelectItem>
-                        <SelectItem value="SERVICE_CENTER">Service Center</SelectItem>
-                        <SelectItem value="KIOSK">Kiosk</SelectItem>
-                        <SelectItem value="COLD_STORAGE">Cold Storage</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="timezone" className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      Timezone
-                    </Label>
-                    <Select value={timezone} onValueChange={setTimezone} disabled={isReadOnly}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Asia/Kolkata">Asia/Kolkata (IST)</SelectItem>
-                        <SelectItem value="America/New_York">America/New York (EST)</SelectItem>
-                        <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
-                        <SelectItem value="Asia/Dubai">Asia/Dubai (GST)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="type">Warehouse Type</Label>
+                  <Select value={type} onValueChange={setType} disabled={isReadOnly}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MAIN">Main Warehouse</SelectItem>
+                      <SelectItem value="RETAIL">Retail Store</SelectItem>
+                      <SelectItem value="SERVICE_CENTER">Service Center</SelectItem>
+                      <SelectItem value="KIOSK">Kiosk</SelectItem>
+                      <SelectItem value="COLD_STORAGE">Cold Storage</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -521,20 +498,9 @@ function WarehouseSettingsContent() {
                         Hide from lists but keep data intact.
                       </p>
                     </div>
-                    <Button variant="outline">Archive</Button>
-                  </div>
-                  <Separator className="bg-border" />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="font-medium text-destructive">Delete Warehouse</p>
-                      <p className="text-sm text-destructive/80">
-                        Permanently remove this warehouse and all associated stock data. This cannot
-                        be undone.
-                      </p>
-                    </div>
-                    <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)}>
+                    <Button variant="destructive" onClick={() => setIsArchiveDialogOpen(true)}>
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Warehouse
+                      Archive Warehouse
                     </Button>
                   </div>
                 </CardContent>
@@ -544,11 +510,11 @@ function WarehouseSettingsContent() {
         </Tabs>
       </main>
 
-      {/* Delete Warehouse Dialog */}
+      {/* Archive Warehouse Dialog */}
       {warehouse && (
-        <DeleteWarehouseDialog
-          open={isDeleteDialogOpen}
-          onOpenChange={setIsDeleteDialogOpen}
+        <ArchiveWarehouseDialog
+          open={isArchiveDialogOpen}
+          onOpenChange={setIsArchiveDialogOpen}
           warehouseId={warehouse.id}
           warehouseName={warehouse.name}
           companySlug={companySlug}

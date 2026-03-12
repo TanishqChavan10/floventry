@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/auth-context';
+import { useWarehouse } from '@/context/warehouse-context';
 import { useApolloClient } from '@apollo/client';
 import { useSwitchCompany } from '@/hooks/apollo';
 import { toast } from 'sonner';
@@ -23,6 +24,7 @@ export default function CompanySwitcher() {
   const router = useRouter();
   const apolloClient = useApolloClient();
   const [switchCompany] = useSwitchCompany();
+  const { refreshWarehouses, setActiveWarehouseId } = useWarehouse();
 
   const activeCompany = user?.companies?.find((c) => c.isActive) || user?.companies?.[0];
 
@@ -39,6 +41,11 @@ export default function CompanySwitcher() {
         const { clearPersistedCache: clearPersisted } = await import('@/lib/apollo/client');
         clearPersisted();
         await apolloClient.resetStore();
+
+        // Reset warehouse selection and fetch warehouses for the new company
+        setActiveWarehouseId('ALL');
+        await refreshWarehouses(companyId);
+
         toast.success(`Switched to ${targetCompany?.name || 'company'}`);
         // Hard-navigate to the new company's dashboard so [slug] param changes
         router.push(`/${targetCompany?.slug}`);

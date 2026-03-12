@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useDeleteWarehouse } from '@/hooks/apollo';
+import { useArchiveWarehouse } from '@/hooks/apollo';
 import { toast } from 'sonner';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import {
@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-interface DeleteWarehouseDialogProps {
+interface ArchiveWarehouseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   warehouseId: string;
@@ -25,19 +25,19 @@ interface DeleteWarehouseDialogProps {
   onSuccess?: () => void;
 }
 
-export function DeleteWarehouseDialog({
+export function ArchiveWarehouseDialog({
   open,
   onOpenChange,
   warehouseId,
   warehouseName,
   companySlug,
   onSuccess,
-}: DeleteWarehouseDialogProps) {
-  const [deleteWarehouse, { loading }] = useDeleteWarehouse();
+}: ArchiveWarehouseDialogProps) {
+  const [archiveWarehouse, { loading }] = useArchiveWarehouse();
 
   async function handleDelete() {
     try {
-      await deleteWarehouse({
+      await archiveWarehouse({
         variables: {
           id: warehouseId,
         },
@@ -48,26 +48,26 @@ export function DeleteWarehouseDialog({
       onSuccess?.();
     } catch (error: any) {
       // Parse error message for better UX
-      const errorMessage = error.message || 'Failed to delete warehouse';
+      const errorMessage = error.message || 'Failed to archive warehouse';
 
       // Show detailed error message
       if (errorMessage.includes('active stock')) {
-        toast.error('Cannot Delete Warehouse', {
+        toast.error('Cannot Archive Warehouse', {
           description: errorMessage,
           duration: 6000,
         });
       } else if (errorMessage.includes('draft GRN')) {
-        toast.error('Pending GRNs Block Deletion', {
+        toast.error('Pending GRNs Block Archiving', {
           description: errorMessage,
           duration: 6000,
         });
       } else if (errorMessage.includes('draft issue')) {
-        toast.error('Pending Issues Block Deletion', {
+        toast.error('Pending Issues Block Archiving', {
           description: errorMessage,
           duration: 6000,
         });
       } else if (errorMessage.includes('draft transfer')) {
-        toast.error('Pending Transfers Block Deletion', {
+        toast.error('Pending Transfers Block Archiving', {
           description: errorMessage,
           duration: 6000,
         });
@@ -77,7 +77,7 @@ export function DeleteWarehouseDialog({
           duration: 6000,
         });
       } else {
-        toast.error('Deletion Failed', {
+        toast.error('Archive Failed', {
           description: errorMessage,
           duration: 6000,
         });

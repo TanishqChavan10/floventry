@@ -280,36 +280,28 @@ export class TransferService {
       for (const item of transfer.items) {
         const transferQty = Math.floor(Number(item.quantity));
 
-        // 1. Get earliest received lot from source warehouse (NOT FEFO - earliest received)
-        const sourceLot = await queryRunner.manager.findOne(StockLot, {
+        // 1. Fetch all lots in source warehouse for this product (FIFO: earliest received first)
+        const sourceLots = await queryRunner.manager.find(StockLot, {
           where: {
             warehouse_id: transfer.source_warehouse_id,
             product_id: item.product_id,
             quantity: MoreThan(0),
           },
-          order: {
-            received_at: 'ASC', // Earliest received first
-          },
+          order: { received_at: 'ASC' },
         });
 
-        if (!sourceLot) {
+        const totalAvailable = sourceLots.reduce(
+          (sum, l) => sum + Math.floor(Number(l.quantity)),
+          0,
+        );
+
+        if (totalAvailable < transferQty) {
           throw new BadRequestException(
-            `No available lot found in source warehouse for product ${item.product_id}`,
+            `Insufficient stock in source warehouse for product ${item.product_id}. Available: ${totalAvailable}, Required: ${transferQty}`,
           );
         }
 
-        if (sourceLot.quantity < transferQty) {
-          throw new BadRequestException(
-            `Insufficient quantity in lot. Available: ${sourceLot.quantity}, Required: ${transferQty}`,
-          );
-        }
-
-        // 2. Reduce source lot quantity
-        const sourcePreviousLotQty = sourceLot.quantity;
-        sourceLot.quantity -= transferQty;
-        await queryRunner.manager.save(StockLot, sourceLot);
-
-        // 3. Update source stock (aggregate)
+        // 2. Fetch source aggregate stock record
         const sourceStock = await queryRunner.manager.findOne(Stock, {
           where: {
             warehouse_id: transfer.source_warehouse_id,
@@ -326,6 +318,100 @@ export class TransferService {
         const sourcePreviousQty = Math.floor(Number(sourceStock.quantity));
         const sourceNewQty = sourcePreviousQty - transferQty;
 
+        // 3. Consume lots FIFO and create a mirrored destination lot per source lot
+        let remaining = transferQty;
+
+        // Fetch/create destination stock record once before the lot loop
+        let destStock = await queryRunner.manager.findOne(Stock, {
+          where: {
+            warehouse_id: transfer.destination_warehouse_id,
+            product_id: item.product_id,
+          },
+        });
+
+        let destRunningQty = destStock ? Math.floor(Number(destStock.quantity)) : 0;
+        const destPreviousQty = destRunningQty;
+
+        if (!destStock) {
+          destStock = queryRunner.manager.create(Stock, {
+            company_id: transfer.company_id,
+            warehouse_id: transfer.destination_warehouse_id,
+            product_id: item.product_id,
+            quantity: 0,
+            min_stock_level: 0,
+            max_stock_level: 1000,
+            reorder_point: 10,
+          });
+          await queryRunner.manager.save(Stock, destStock);
+        }
+
+        for (const sourceLot of sourceLots) {
+          if (remaining <= 0) break;
+
+          const lotAvailable = Math.floor(Number(sourceLot.quantity));
+          const consumed = Math.min(lotAvailable, remaining);
+          remaining -= consumed;
+
+          // Reduce source lot
+          sourceLot.quantity = lotAvailable - consumed;
+          await queryRunner.manager.save(StockLot, sourceLot);
+
+          // Stock movement: source OUT (per lot)
+          const sourceMovement = queryRunner.manager.create(StockMovement, {
+            stock_id: sourceStock.id,
+            lot_id: sourceLot.id,
+            company_id: transfer.company_id,
+            warehouse_id: transfer.source_warehouse_id,
+            product_id: item.product_id,
+            type: MovementType.OUT,
+            quantity: consumed,
+            previous_quantity: sourcePreviousQty,
+            new_quantity: sourceNewQty,
+            reference_type: ReferenceType.TRANSFER,
+            reference_id: transfer.id,
+            performed_by: userId,
+            user_role: userRole,
+            notes: `Transferred out via ${transfer.transfer_number}${sourceLot.expiry_date ? ` (Lot expiry: ${sourceLot.expiry_date.toISOString().split('T')[0]})` : ''}`,
+          });
+          await queryRunner.manager.save(StockMovement, sourceMovement);
+
+          // Create mirrored destination lot (preserving expiry)
+          const destLot = queryRunner.manager.create(StockLot, {
+            company_id: transfer.company_id,
+            warehouse_id: transfer.destination_warehouse_id,
+            product_id: item.product_id,
+            quantity: consumed,
+            expiry_date: sourceLot.expiry_date,
+            received_at: new Date(),
+            source_type: LotSourceType.TRANSFER,
+            source_id: transfer.id,
+          });
+          await queryRunner.manager.save(StockLot, destLot);
+
+          const destLotPrevQty = destRunningQty;
+          destRunningQty += consumed;
+
+          // Stock movement: destination IN (per lot)
+          const destMovement = queryRunner.manager.create(StockMovement, {
+            stock_id: destStock.id,
+            lot_id: destLot.id,
+            company_id: transfer.company_id,
+            warehouse_id: transfer.destination_warehouse_id,
+            product_id: item.product_id,
+            type: MovementType.IN,
+            quantity: consumed,
+            previous_quantity: destLotPrevQty,
+            new_quantity: destRunningQty,
+            reference_type: ReferenceType.TRANSFER,
+            reference_id: transfer.id,
+            performed_by: userId,
+            user_role: userRole,
+            notes: `Transferred in via ${transfer.transfer_number}${destLot.expiry_date ? ` (Lot expiry: ${destLot.expiry_date.toISOString().split('T')[0]})` : ''}`,
+          });
+          await queryRunner.manager.save(StockMovement, destMovement);
+        }
+
+        // 4. Update source aggregate stock
         await queryRunner.manager
           .createQueryBuilder()
           .update(Stock)
@@ -334,94 +420,14 @@ export class TransferService {
           .andWhere('quantity >= :quantity', { quantity: transferQty })
           .execute();
 
-        // 4. Create stock movement for source (OUT) linked to lot
-        const sourceMovement = queryRunner.manager.create(StockMovement, {
-          stock_id: sourceStock.id,
-          lot_id: sourceLot.id, // Link to source lot
-          company_id: transfer.company_id,
-          warehouse_id: transfer.source_warehouse_id,
-          product_id: item.product_id,
-          type: MovementType.OUT,
-          quantity: transferQty,
-          previous_quantity: sourcePreviousQty,
-          new_quantity: sourceNewQty,
-          reference_type: ReferenceType.TRANSFER,
-          reference_id: transfer.id,
-          performed_by: userId,
-          user_role: userRole,
-          notes: `Transferred out via ${transfer.transfer_number}${sourceLot.expiry_date ? ` (Lot expiry: ${sourceLot.expiry_date.toISOString().split('T')[0]})` : ''}`,
-        });
-
-        await queryRunner.manager.save(StockMovement, sourceMovement);
-
-        // 5. Create destination lot preserving expiry date
-        const destLot = queryRunner.manager.create(StockLot, {
-          company_id: transfer.company_id,
-          warehouse_id: transfer.destination_warehouse_id,
-          product_id: item.product_id,
-          quantity: transferQty,
-          expiry_date: sourceLot.expiry_date, // PRESERVE expiry from source
-          received_at: new Date(),
-          source_type: LotSourceType.TRANSFER,
-          source_id: transfer.id,
-        });
-
-        await queryRunner.manager.save(StockLot, destLot);
-
-        // 6. Update destination stock (aggregate)
-        let destStock = await queryRunner.manager.findOne(Stock, {
-          where: {
-            warehouse_id: transfer.destination_warehouse_id,
-            product_id: item.product_id,
-          },
-        });
-
-        const destPreviousQty = destStock
-          ? Math.floor(Number(destStock.quantity))
-          : 0;
+        // 5. Update destination aggregate stock
         const destNewQty = destPreviousQty + transferQty;
-
-        if (!destStock) {
-          destStock = queryRunner.manager.create(Stock, {
-            company_id: transfer.company_id,
-            warehouse_id: transfer.destination_warehouse_id,
-            product_id: item.product_id,
-            quantity: transferQty,
-            min_stock_level: 0,
-            max_stock_level: 1000,
-            reorder_point: 10,
-          });
-          await queryRunner.manager.save(Stock, destStock);
-        } else {
-          await queryRunner.manager
-            .createQueryBuilder()
-            .update(Stock)
-            .set({ quantity: destNewQty })
-            .where('id = :id', { id: destStock.id })
-            .execute();
-
-          destStock.quantity = destNewQty;
-        }
-
-        // 7. Create stock movement for destination (IN) linked to new lot
-        const destMovement = queryRunner.manager.create(StockMovement, {
-          stock_id: destStock.id,
-          lot_id: destLot.id, // Link to destination lot
-          company_id: transfer.company_id,
-          warehouse_id: transfer.destination_warehouse_id,
-          product_id: item.product_id,
-          type: MovementType.IN,
-          quantity: transferQty,
-          previous_quantity: destPreviousQty,
-          new_quantity: destNewQty,
-          reference_type: ReferenceType.TRANSFER,
-          reference_id: transfer.id,
-          performed_by: userId,
-          user_role: userRole,
-          notes: `Transferred in via ${transfer.transfer_number}${destLot.expiry_date ? ` (Lot expiry: ${destLot.expiry_date.toISOString().split('T')[0]})` : ''}`,
-        });
-
-        await queryRunner.manager.save(StockMovement, destMovement);
+        await queryRunner.manager
+          .createQueryBuilder()
+          .update(Stock)
+          .set({ quantity: destNewQty })
+          .where('id = :id', { id: destStock.id })
+          .execute();
       }
 
       // Update transfer status

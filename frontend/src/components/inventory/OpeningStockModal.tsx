@@ -129,7 +129,15 @@ export default function OpeningStockModal({ warehouseId, open, onClose }: Openin
     }
   };
 
-  const products = productsData?.products?.filter((p: any) => p.is_active) || [];
+  const products = useMemo(() => {
+    const active = (productsData?.products ?? []).filter((p: any) => p.is_active);
+    const seen = new Set<string>();
+    return active.filter((p: any) => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+  }, [productsData]);
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>

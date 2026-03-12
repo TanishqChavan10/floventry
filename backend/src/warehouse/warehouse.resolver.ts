@@ -78,12 +78,12 @@ export class WarehouseResolver {
   @Mutation(() => Boolean)
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
-  async deleteWarehouse(
+  async archiveWarehouse(
     @Args('id', { type: () => ID }) id: string,
     @CurrentUser() user: any,
   ): Promise<boolean> {
     const warehouse = await this.warehouseService.findOne(id);
-    await this.warehouseService.remove(id);
+    await this.warehouseService.archive(id);
 
     await this.auditLogService.record({
       companyId: user.activeCompanyId,

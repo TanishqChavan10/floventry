@@ -284,8 +284,8 @@ export class WarehouseService {
     return this.warehouseRepository.save(warehouse);
   }
 
-  async remove(id: string): Promise<void> {
-    // Pre-delete validation: Check warehouse exists
+  async archive(id: string): Promise<void> {
+    // Pre-archive validation: Check warehouse exists
     const warehouse = await this.warehouseRepository.findOne({
       where: { id },
     });

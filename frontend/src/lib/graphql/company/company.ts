@@ -203,9 +203,9 @@ export const GET_COMPANY_STATS = gql`
   }
 `;
 
-export const DELETE_WAREHOUSE = gql`
-  mutation DeleteWarehouse($id: ID!) {
-    deleteWarehouse(id: $id)
+export const ARCHIVE_WAREHOUSE = gql`
+  mutation ArchiveWarehouse($id: ID!) {
+    archiveWarehouse(id: $id)
   }
 `;
 

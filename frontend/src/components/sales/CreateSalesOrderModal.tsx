@@ -53,7 +53,7 @@ export function CreateSalesOrderModal({
   const { data: productsData } = useProducts();
   const products = Array.from(
     new Map((productsData?.products ?? []).map((p: any) => [p.id, p])).values(),
-  );
+  ) as any[];
 
   const [createOrder, { loading }] = useCreateSalesOrder({
     onCompleted: (data: any) => {

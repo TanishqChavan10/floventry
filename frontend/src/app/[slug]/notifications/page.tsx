@@ -118,7 +118,7 @@ function NotificationsPageContent() {
 
   const notifications: Notification[] = useMemo(() => {
     const seen = new Set<string>();
-    return (data?.notifications || []).filter((n) => {
+    return (data?.notifications || []).filter((n: Notification) => {
       if (seen.has(n.id)) return false;
       seen.add(n.id);
       return true;

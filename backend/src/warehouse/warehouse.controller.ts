@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Req,
+  Query,
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -53,11 +54,12 @@ export class WarehouseController {
   }
 
   @Get()
-  async findAll(@Req() req: any) {
+  async findAll(@Req() req: any, @Query('companyId') queryCompanyId?: string) {
     const user = await this.authService.syncUser(req.user.authId);
 
-    // Get company ID from user's activeCompanyId or first company
-    let companyId = user.activeCompanyId;
+    // If an explicit companyId is provided, use it (for immediate company-switch fetches).
+    // Otherwise fall back to the user's activeCompanyId.
+    let companyId = queryCompanyId || user.activeCompanyId;
 
     if (!companyId) {
       // If no activeCompanyId, try to get first company from user's companies
@@ -110,8 +112,8 @@ export class WarehouseController {
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
-  async remove(@Param('id') id: string) {
-    return this.warehouseService.remove(id);
+  async archive(@Param('id') id: string) {
+    return this.warehouseService.archive(id);
   }
 
   @Post(':id/users')

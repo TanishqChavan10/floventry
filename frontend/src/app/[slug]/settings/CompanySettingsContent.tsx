@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, MapPin, Package, AlertTriangle, Lock, Save, Loader2 } from 'lucide-react';
+import { Building2, MapPin, Package, Lock, Save, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   CompanyProfileForm,
@@ -10,7 +10,6 @@ import {
   InventorySettingsForm,
   ExpiryScannerCard,
   AccessSecurityForm,
-  DangerZone,
 } from '@/components/settings/forms';
 import type { FormHandle } from '@/components/settings/forms/CompanyProfileForm';
 import type { InventoryFormHandle } from '@/components/settings/forms/InventorySettingsForm';
@@ -22,15 +21,13 @@ interface CompanySettingsProps {
   company: any;
 }
 
-// Tabs that have a managed forwardRef form
 type ManagedTab = 'profile' | 'business' | 'inventory' | 'access';
 
 export default function CompanySettingsContent({ company }: CompanySettingsProps) {
   const settings = company?.settings || {};
-  const [activeTab, setActiveTab] = useState<string>('profile');
-  const [tick, setTick] = useState(0); // forces re-render to re-evaluate isDirty
+  const [, setTick] = useState(0); // forces re-render to re-evaluate dirty state
 
-  // Refs to each form
+  // Refs to each form — all forms stay mounted (forceMount), so refs are always valid
   const profileRef = useRef<FormHandle>(null);
   const businessRef = useRef<FormHandle>(null);
   const inventoryRef = useRef<InventoryFormHandle>(null);
@@ -46,75 +43,91 @@ export default function CompanySettingsContent({ company }: CompanySettingsProps
     access: accessRef,
   };
 
-  const isManagedTab = (tab: string): tab is ManagedTab => tab in managedRefs;
-
-  const activeRef = isManagedTab(activeTab) ? managedRefs[activeTab].current : null;
-  const isDirty = activeRef?.isDirty ?? false;
-  const isSaving = activeRef?.loading ?? false;
-
-  // Re-check dirty state periodically so button enables on first keystroke
+  // Poll every 300ms so the Save button / dirty dots react on first keystroke
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 300);
     return () => clearInterval(id);
   }, []);
 
+  const allRefs = Object.values(managedRefs);
+  const anyDirty = allRefs.some((r) => r.current?.isDirty);
+  const anySaving = allRefs.some((r) => r.current?.loading);
+
+  // Save every tab that has unsaved changes in one click
   const handleSave = () => {
-    if (activeRef) activeRef.submit();
+    for (const ref of allRefs) {
+      if (ref.current?.isDirty) ref.current.submit();
+    }
   };
+
+  const tabDirty = (tab: ManagedTab) => managedRefs[tab].current?.isDirty ?? false;
 
   return (
     <div className="space-y-6">
       {/* Page header with Save button */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-foreground">Company Settings</h1>
-        {isManagedTab(activeTab) && (
-          <Button onClick={handleSave} disabled={!isDirty || isSaving}>
-            {isSaving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving…
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Save Changes
-              </>
-            )}
-          </Button>
-        )}
+        <Button onClick={handleSave} disabled={!anyDirty || anySaving}>
+          {anySaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving…
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Save Changes
+            </>
+          )}
+        </Button>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6" onValueChange={(v) => setActiveTab(v)}>
+      <Tabs defaultValue="profile" className="space-y-6">
         <TabsList className="flex flex-wrap h-auto p-1 bg-muted rounded-lg">
           <TabsTrigger value="profile" className="flex-1 min-w-30">
             <Building2 className="w-4 h-4 mr-2" /> Profile
+            {tabDirty('profile') && (
+              <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+            )}
           </TabsTrigger>
           <TabsTrigger value="business" className="flex-1 min-w-30">
             <MapPin className="w-4 h-4 mr-2" /> Business Info
+            {tabDirty('business') && (
+              <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+            )}
           </TabsTrigger>
           <TabsTrigger value="inventory" className="flex-1 min-w-30">
             <Package className="w-4 h-4 mr-2" /> Inventory
+            {tabDirty('inventory') && (
+              <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+            )}
           </TabsTrigger>
           <TabsTrigger value="access" className="flex-1 min-w-30">
             <Lock className="w-4 h-4 mr-2" /> Access
-          </TabsTrigger>
-          <TabsTrigger
-            value="danger"
-            className="flex-1 min-w-30 text-destructive data-[state=active]:text-destructive data-[state=active]:bg-destructive/10"
-          >
-            <AlertTriangle className="w-4 h-4 mr-2" /> Danger
+            {tabDirty('access') && (
+              <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+            )}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile" className="space-y-4">
+        {/*
+          forceMount keeps every form mounted in the DOM even when its tab is
+          inactive, so react-hook-form state is never lost on tab switch.
+          data-[state=inactive]:hidden hides the panel visually without unmounting.
+        */}
+        <TabsContent forceMount value="profile" className="space-y-4 data-[state=inactive]:hidden">
           <CompanyProfileForm ref={profileRef} company={company} />
         </TabsContent>
 
-        <TabsContent value="business" className="space-y-4">
+        <TabsContent forceMount value="business" className="space-y-4 data-[state=inactive]:hidden">
           <BusinessInfoForm ref={businessRef} company={company} settings={settings} />
         </TabsContent>
 
-        <TabsContent value="inventory" className="space-y-4">
+        <TabsContent
+          forceMount
+          value="inventory"
+          className="space-y-4 data-[state=inactive]:hidden"
+        >
           <InventorySettingsForm
             ref={inventoryRef}
             companyId={company.id}
@@ -129,12 +142,8 @@ export default function CompanySettingsContent({ company }: CompanySettingsProps
           <ExpiryScannerCard />
         </TabsContent>
 
-        <TabsContent value="access" className="space-y-4">
+        <TabsContent forceMount value="access" className="space-y-4 data-[state=inactive]:hidden">
           <AccessSecurityForm ref={accessRef} companyId={company.id} settings={settings} />
-        </TabsContent>
-
-        <TabsContent value="danger" className="space-y-4">
-          <DangerZone companyId={company.id} />
         </TabsContent>
       </Tabs>
 

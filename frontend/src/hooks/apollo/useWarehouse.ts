@@ -6,7 +6,7 @@ import {
   CREATE_WAREHOUSE,
   UPDATE_WAREHOUSE,
   UPDATE_WAREHOUSE_SETTINGS,
-  DELETE_WAREHOUSE,
+  ARCHIVE_WAREHOUSE,
   REACTIVATE_WAREHOUSE,
   ASSIGN_USER_TO_WAREHOUSE,
   REMOVE_USER_FROM_WAREHOUSE,
@@ -74,10 +74,10 @@ export function useUpdateWarehouseSettings() {
   return useMutation(UPDATE_WAREHOUSE_SETTINGS);
 }
 
-export function useDeleteWarehouse() {
-  return useMutation(DELETE_WAREHOUSE, {
+export function useArchiveWarehouse() {
+  return useMutation(ARCHIVE_WAREHOUSE, {
     update(cache, { data }, { variables }) {
-      if (!data?.deleteWarehouse) return;
+      if (!data?.archiveWarehouse) return;
       cache.modify({
         fields: {
           warehousesByCompany(existing = [], { readField }) {

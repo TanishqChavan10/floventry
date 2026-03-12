@@ -352,9 +352,9 @@ function GRNDetailContent() {
               <AlertTriangle className="h-5 w-5 text-amber-500" />
               Post Goods Receipt Note?
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription asChild>
               <div>
-                Posting this GRN will immediately:
+                <p>Posting this GRN will immediately:</p>
                 <ul className="list-disc list-inside mt-2 space-y-1">
                   <li>Update stock quantities in the warehouse</li>
                   <li>Create stock movement records</li>

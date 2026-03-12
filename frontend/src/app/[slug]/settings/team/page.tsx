@@ -52,35 +52,34 @@ function TeamManagementContent() {
 
   return (
     <>
-      <div className="p-6 md:p-10">
-        <div className="max-w-5xl mx-auto space-y-10">
-          {/* Header */}
+      <div className="min-h-full bg-background p-6 md:p-8">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Back link */}
           <div>
-            <Link
-              href={`/${slug}/settings`}
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors mb-6"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Settings
-            </Link>
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-semibold tracking-tight">Team</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Manage members and pending invitations.
-                </p>
-              </div>
-              <InviteUserDialog
-                companyId={company.id}
-                warehouses={company.warehouses || []}
-                managedWarehouses={managedWarehouseIds}
-                onSuccess={handleRefresh}
-              />
+            <Button variant="ghost" size="sm" asChild className="-ml-2">
+              <Link href={`/${slug}/settings`} className="inline-flex items-center">
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Settings
+              </Link>
+            </Button>
+          </div>
+
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Team</h1>
+              <p className="text-muted-foreground mt-1">Manage members and pending invitations.</p>
             </div>
+            <InviteUserDialog
+              companyId={company.id}
+              warehouses={company.warehouses || []}
+              managedWarehouses={managedWarehouseIds}
+              onSuccess={handleRefresh}
+            />
           </div>
 
           {/* Active Members */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <ActiveMembersTable
               companyId={company.id}
               onEditMember={setEditingMember}
@@ -89,10 +88,10 @@ function TeamManagementContent() {
           </div>
 
           {/* Pending Invites */}
-          <div className="space-y-3">
-            <div className="border-b pb-3">
-              <h2 className="text-sm font-medium">Pending Invitations</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
+          <div className="space-y-4">
+            <div className="border-b pb-4">
+              <h2 className="text-xl font-semibold text-foreground">Pending Invitations</h2>
+              <p className="text-sm text-muted-foreground mt-1">
                 Invitations that have not yet been accepted.
               </p>
             </div>

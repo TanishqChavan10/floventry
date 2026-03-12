@@ -730,6 +730,7 @@ type Mutation {
   acceptInvite(input: AcceptInviteInput!): UserCompany!
   adjustStock(input: AdjustStockInput!): Stock!
   archiveSupplier(id: String!): Supplier!
+  archiveWarehouse(id: ID!): Boolean!
   assignUserToWarehouse(input: AssignUserToWarehouseInput!, warehouseId: ID!): UserWarehouse!
   cancelGRN(id: String!): GoodsReceiptNote!
   cancelInvite(inviteId: String!): Boolean!
@@ -753,7 +754,6 @@ type Mutation {
   createUnit(input: CreateUnitInput!): Unit!
   createWarehouse(input: CreateWarehouseInput!): Warehouse!
   createWarehouseTransfer(input: CreateTransferInput!): WarehouseTransfer!
-  deleteWarehouse(id: ID!): Boolean!
   downloadCategoryTemplate: String!
   downloadOpeningStockTemplate: String!
   downloadProductTemplate: String!
