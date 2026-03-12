@@ -398,10 +398,12 @@ function StockMovementsContent() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Products</SelectItem>
-                    {stock.map((item) => (
-                      <SelectItem key={item.product.id} value={item.product.id}>
+                    {Array.from(
+                      new Map(stock.map((item) => [item.product.id, item.product])).values(),
+                    ).map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
                         <span className="truncate">
-                          {item.product.name} ({item.product.sku})
+                          {product.name} ({product.sku})
                         </span>
                       </SelectItem>
                     ))}

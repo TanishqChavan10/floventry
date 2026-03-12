@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useRbac, Role } from '@/hooks/use-rbac';
-import { AlertTriangle } from 'lucide-react';
+import { useWarehouse } from '@/context/warehouse-context';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 interface RoleGuardProps {
   children: React.ReactNode;
@@ -18,18 +19,20 @@ interface RoleGuardProps {
   customCheck?: (rbac: ReturnType<typeof useRbac>) => boolean;
 }
 
-export default function RoleGuard({ 
-  children, 
-  minRole, 
-  allowedRoles, 
+export default function RoleGuard({
+  children,
+  minRole,
+  allowedRoles,
   companyLevelOnly,
-  customCheck 
+  customCheck,
 }: RoleGuardProps) {
   const router = useRouter();
   const params = useParams();
   const rbac = useRbac();
+  const { warehouses } = useWarehouse();
   const [isChecking, setIsChecking] = useState(true);
   const [isAllowed, setIsAllowed] = useState(false);
+  const hasShownToast = useRef(false);
 
   useEffect(() => {
     // Give context a moment to populate
@@ -53,16 +56,37 @@ export default function RoleGuard({
     setIsAllowed(hasAccess);
     setIsChecking(false);
 
-    if (!hasAccess) {
-      // Redirect to no-access page
-      const slug = params?.slug as string;
-      if (slug) {
-        router.replace(`/${slug}/no-access`);
+    if (!hasAccess && !hasShownToast.current) {
+      hasShownToast.current = true;
+      toast.error('Access Denied', {
+        description: `This action requires a higher role. Your current role is ${rbac.role}.`,
+      });
+
+      // Redirect MANAGER and STAFF to their warehouse dashboard
+      const companySlug = params?.slug as string;
+      if (
+        (rbac.role === 'MANAGER' || rbac.role === 'STAFF') &&
+        warehouses.length > 0 &&
+        companySlug
+      ) {
+        const firstWarehouse = warehouses[0];
+        const warehouseSlug = firstWarehouse.slug || 'main-warehouse';
+        router.replace(`/${companySlug}/warehouses/${warehouseSlug}`);
       } else {
-        router.replace('/');
+        router.back();
       }
     }
-  }, [rbac.role, params?.slug, companyLevelOnly, allowedRoles, minRole, customCheck, router]);
+  }, [
+    rbac.role,
+    rbac.canViewCompanyLevel,
+    companyLevelOnly,
+    allowedRoles,
+    minRole,
+    customCheck,
+    router,
+    params,
+    warehouses,
+  ]);
 
   if (isChecking) {
     return (
@@ -74,7 +98,7 @@ export default function RoleGuard({
   }
 
   if (!isAllowed) {
-    return null; // The redirect will handle navigation
+    return null; // router.back() will handle navigation
   }
 
   return <>{children}</>;

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { getRoleHomePath } from '@/lib/role-home-path';
 
 /**
  * Post-authentication redirect page
@@ -44,18 +45,15 @@ export default function AuthRedirect() {
       return;
     }
 
-    // Find active company or first company
-    const activeCompany = user.companies?.find((c) => c.isActive);
-    const targetCompany = activeCompany || user.companies?.[0];
+    const targetPath = getRoleHomePath(user);
 
-    if (targetCompany?.slug) {
-      // Redirect to company dashboard
-      router.replace(`/${targetCompany.slug}/dashboard`);
+    if (targetPath) {
+      router.replace(targetPath);
     } else {
       // No companies, redirect to onboarding
       router.replace('/onboarding/create-company');
     }
-  }, [isAuthenticated, user, loading, isLoaded, isSignedIn, router]);
+  }, [isAuthenticated, user, loading, isLoaded, isSignedIn, error, router]);
 
   if (backendDown) {
     return (

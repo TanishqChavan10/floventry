@@ -1,76 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Check, Crown, Shield, Zap } from 'lucide-react';
+import { ArrowLeft, Check } from 'lucide-react';
 import { usePlanTier } from '@/hooks/usePlanTier';
+import { formatPlanPrice, pricingPlans } from '@/lib/billing/plans';
 
 export default function BillingSettingsPage() {
   const params = useParams();
   const slug = params?.slug as string;
   const { plan, isPro, isFree, loading } = usePlanTier();
-
-  const plans = [
-    {
-      name: 'Free',
-      tier: 'Free' as const,
-      price: '₹0',
-      period: 'forever',
-      description: 'Everything you need for basic inventory management.',
-      features: [
-        'Full inventory CRUD & FEFO/FIFO',
-        'Stock lots, expiry blocking & GRN',
-        'Issue notes & warehouse transfers',
-        'Purchase & sales order lifecycle',
-        'Dashboard, alerts & low stock view',
-        '1 warehouse, 2 members, 100 SKUs',
-      ],
-      icon: Shield,
-    },
-    {
-      name: 'Standard',
-      tier: 'Standard' as const,
-      price: '₹1,499',
-      period: 'per month',
-      description: 'Automation, exports, and moderate intelligence for growing teams.',
-      features: [
-        'Everything in Free',
-        'CSV imports & exports (all types)',
-        'Barcode label PDF generation',
-        'Point of Sale scanner',
-        'Company overview & movements reports',
-        'Manual expiry scan trigger',
-        'Up to 3 warehouses, 5 members, 500 SKUs',
-      ],
-      icon: Zap,
-      popular: false,
-    },
-    {
-      name: 'Pro',
-      tier: 'Pro' as const,
-      price: '₹3,499',
-      period: 'per month',
-      description: 'Advanced analytics, full audit trail, and unlimited scale.',
-      features: [
-        'Everything in Standard',
-        'Unlimited warehouses, members & SKUs',
-        'Advanced stock health & adjustment reports',
-        'Purchase & sales order analytics',
-        'Full audit log & compliance trail',
-        'Company-level CSV exports',
-        'Custom expiry warning windows',
-        'Advanced company settings',
-      ],
-      icon: Crown,
-      popular: true,
-    },
-  ];
-
   const currentTier = plan;
+  const [yearly, setYearly] = useState(true);
 
   return (
     <div className="min-h-screen bg-background p-6 md:p-8">
@@ -87,6 +32,31 @@ export default function BillingSettingsPage() {
           <p className="text-muted-foreground mt-2">
             Manage your subscription plan and billing information
           </p>
+          <div className="mt-6 inline-flex items-center gap-3 rounded-full border border-border bg-muted/30 p-1">
+            <button
+              onClick={() => setYearly(false)}
+              className={`rounded-full px-5 py-2 text-sm font-semibold transition-colors ${
+                !yearly
+                  ? 'bg-background text-foreground shadow-sm border border-border'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setYearly(true)}
+              className={`rounded-full px-5 py-2 text-sm font-semibold transition-colors ${
+                yearly
+                  ? 'bg-background text-foreground shadow-sm border border-border'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              Yearly
+              <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-700">
+                Save 33%
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Current Plan Overview */}
@@ -120,51 +90,76 @@ export default function BillingSettingsPage() {
         <div>
           <h2 className="text-2xl font-bold text-foreground mb-4">Available Plans</h2>
           <div className="grid gap-6 md:grid-cols-3">
-            {plans.map((p) => {
-              const isCurrent = p.tier === currentTier;
+            {pricingPlans.map((p) => {
+              const isCurrent = p.name === currentTier;
+              const price = yearly ? p.yearlyPrice : p.monthlyPrice;
               return (
                 <Card
-                  key={p.name}
-                  className={`relative ${p.popular ? 'border-primary/60 shadow-lg' : ''}`}
+                  key={p.id}
+                  className={`relative flex h-full flex-col ${p.popular ? 'border-primary/60 shadow-lg' : ''}`}
                 >
                   {p.popular && (
                     <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                      <Badge>Best Value</Badge>
+                      <Badge>Most Popular</Badge>
                     </div>
                   )}
                   <CardHeader>
                     <div className="flex items-center justify-between mb-2">
-                      <p.icon className="w-8 h-8 text-primary" />
+                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {p.name}
+                      </span>
                       {isCurrent && <Badge variant="secondary">Current Plan</Badge>}
                     </div>
                     <CardTitle className="text-2xl">{p.name}</CardTitle>
+                    <CardDescription>{p.tagline}</CardDescription>
                     <div className="mt-3">
-                      <span className="text-3xl font-bold text-foreground">{p.price}</span>
-                      <span className="text-muted-foreground ml-2">/ {p.period}</span>
+                      <span className="text-3xl font-bold text-foreground">
+                        {formatPlanPrice(price)}
+                      </span>
+                      <span className="text-muted-foreground ml-2">/mo</span>
                     </div>
-                    <CardDescription className="mt-2">{p.description}</CardDescription>
+                    {price > 0 && yearly && (
+                      <p className="mt-1 text-xs text-muted-foreground">Billed yearly</p>
+                    )}
                   </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-3 mb-6">
-                      {p.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                          <span className="text-sm text-muted-foreground">{feature}</span>
-                        </li>
-                      ))}
+                  <CardContent className="flex flex-1 flex-col">
+                    <ul className="mb-6 space-y-3 flex-1">
+                      {p.features.map((feature) => {
+                        const isSeparator = feature.startsWith('Everything in');
+                        if (isSeparator) {
+                          return (
+                            <li
+                              key={feature}
+                              className="pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                            >
+                              {feature}
+                            </li>
+                          );
+                        }
+
+                        return (
+                          <li key={feature} className="flex items-start gap-2">
+                            <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                            <span className="text-sm text-muted-foreground">{feature}</span>
+                          </li>
+                        );
+                      })}
                     </ul>
                     <Button
                       className="w-full"
                       variant={isCurrent ? 'outline' : 'default'}
                       disabled={isCurrent}
                     >
-                      {isCurrent ? 'Current Plan' : `Upgrade to ${p.name}`}
+                      {isCurrent ? 'Current Plan' : p.cta}
                     </Button>
                   </CardContent>
                 </Card>
               );
             })}
           </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            All prices shown in INR. No credit card required for free trial.
+          </p>
         </div>
 
         {/* Payment Method */}

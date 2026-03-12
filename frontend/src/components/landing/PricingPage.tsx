@@ -4,82 +4,7 @@ import Link from 'next/link';
 import { Check, Minus } from 'lucide-react';
 import Navbar from './Navbar';
 import Footer from './Footer';
-
-/* ─── Plan data ─────────────────────────────────────────────────────────── */
-const plans = [
-  {
-    id: 'free',
-    name: 'Free',
-    tagline: 'Full inventory workflow — no strings attached.',
-    monthlyPrice: 0,
-    yearlyPrice: 0,
-    cta: 'Sign up free',
-    ctaHref: '/auth/sign-up',
-    ctaStyle: 'outline',
-    popular: false,
-    features: [
-      '100 SKUs',
-      '1 warehouse',
-      '2 team members',
-      '10 suppliers',
-      'Full stock workflow',
-      'Expiry scanner (30-day window)',
-      'In-app notifications',
-      'Dashboard & warehouse reports',
-      'Barcode lookup',
-      'RBAC (all roles)',
-      'CSV import (products)',
-    ],
-  },
-  {
-    id: 'standard',
-    name: 'Standard',
-    tagline: 'Automation, exports, and multi-warehouse.',
-    monthlyPrice: 1499,
-    yearlyPrice: 999,
-    cta: 'Start free trial',
-    ctaHref: '/auth/sign-up',
-    ctaStyle: 'filled',
-    popular: true,
-    features: [
-      '500 SKUs',
-      '3 warehouses',
-      '5 team members',
-      '50 suppliers',
-      'Everything in Free, plus:',
-      'All CSV imports & exports',
-      'PDF barcode labels',
-      'Company overview report',
-      'Inventory health tab',
-      'Manual expiry scan trigger',
-      'Notification preferences',
-      'Point of sale',
-    ],
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    tagline: 'Advanced analytics, automation & control.',
-    monthlyPrice: 3499,
-    yearlyPrice: 2499,
-    cta: 'Start free trial',
-    ctaHref: '/auth/sign-up',
-    ctaStyle: 'outline',
-    popular: false,
-    features: [
-      'Unlimited SKUs, warehouses, users, suppliers',
-      'Everything in Standard, plus:',
-      'Custom expiry warning window',
-      'Company-level exports & reports',
-      'Audit log',
-      'Company analytics & trends',
-      'ZPL thermal labels',
-      'Advanced company settings',
-      'Barcode settings (prefix, padding)',
-      'Expiry risk report',
-    ],
-  },
-];
+import { formatPlanPrice, pricingPlans } from '@/lib/billing/plans';
 
 /* ─── Compare table data ─────────────────────────────────────────────────── */
 type CellValue = string | boolean;
@@ -199,12 +124,6 @@ function Cell({ value }: { value: CellValue }) {
   return <span className="text-sm text-neutral-700">{value}</span>;
 }
 
-function fmt(n: number | null) {
-  if (n === null) return 'Custom';
-  if (n === 0) return '₹0';
-  return `₹${n.toLocaleString('en-IN')}`;
-}
-
 /* ─── Main component ────────────────────────────────────────────────────── */
 export default function PricingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -254,7 +173,7 @@ export default function PricingPage() {
       {/* ── Plan cards ── */}
       <section className="pb-24 px-6">
         <div className="mx-auto max-w-[1200px] grid grid-cols-1 gap-6 md:grid-cols-3">
-          {plans.map((plan) => {
+          {pricingPlans.map((plan) => {
             const price = yearly ? plan.yearlyPrice : plan.monthlyPrice;
             const isPopular = plan.popular;
             return (
@@ -290,7 +209,7 @@ export default function PricingPage() {
                     <span className="text-3xl font-bold">Custom</span>
                   ) : (
                     <>
-                      <span className="text-4xl font-bold">{fmt(price)}</span>
+                      <span className="text-4xl font-bold">{formatPlanPrice(price)}</span>
                       <span
                         className={`ml-1 text-sm ${isPopular ? 'text-neutral-400' : 'text-neutral-500'}`}
                       >
@@ -376,7 +295,7 @@ export default function PricingPage() {
               <thead>
                 <tr>
                   <th className="pb-6 text-left font-semibold text-neutral-900 w-[46%]" />
-                  {plans.map((plan) => (
+                  {pricingPlans.map((plan) => (
                     <th key={plan.id} className="pb-6 text-center font-bold text-neutral-900">
                       {plan.name}
                     </th>

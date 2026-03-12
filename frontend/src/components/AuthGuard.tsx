@@ -6,6 +6,7 @@ import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSwitchCompany } from '@/hooks/apollo';
+import { getRoleHomePath } from '@/lib/role-home-path';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -121,85 +122,23 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           return;
         }
 
-        // Has companies - check user role and redirect accordingly
-        const activeCompany =
+        const targetPath = getRoleHomePath(user);
+        if (targetPath) {
+          router.push(targetPath);
+          return;
+        }
+
+        const activeSlug =
           (user.activeCompanyId
             ? user?.companies?.find((c) => c.id === user.activeCompanyId)
-            : undefined) ||
-          user?.companies?.find((c) => c.isActive) ||
-          user?.companies?.[0];
-        const activeSlug = activeCompany?.slug;
-        const userRole = activeCompany?.role;
+            : undefined
+          )?.slug ||
+          user?.companies?.find((c) => c.isActive)?.slug ||
+          user?.companies?.[0]?.slug;
 
-        console.log('[AuthGuard] User role:', userRole);
-        console.log('[AuthGuard] Active slug:', activeSlug);
-
-        if (!activeSlug) return;
-
-        /**
-         * Ã°Å¸Å½Â¯ ROLE-BASED REDIRECT LOGIC
-         *
-         * OWNER & ADMIN Ã¢â€ â€™ Company Dashboard
-         * MANAGER Ã¢â€ â€™ Company Dashboard (data filtered to their warehouses)
-         * STAFF Ã¢â€ â€™ Primary Warehouse Dashboard
-         */
-
-        if (userRole === 'OWNER' || userRole === 'ADMIN') {
-          // Ã¢Å“â€¦ OWNER/ADMIN: Redirect to company dashboard
-          console.log('[AuthGuard] OWNER/ADMIN detected, redirecting to company dashboard');
-          router.push(`/${activeSlug}/dashboard`);
-          return;
+        if (activeSlug) {
+          router.push(`/${activeSlug}`);
         }
-
-        if (userRole === 'MANAGER') {
-          // Ã¢Å“â€¦ MANAGER: Redirect to company dashboard
-          router.push(`/${activeSlug}/dashboard`);
-          return;
-        }
-
-        if (userRole === 'STAFF') {
-          // Ã¢Å“â€¦ STAFF: Redirect to default warehouse
-          const defaultWarehouseId = user?.defaultWarehouseId;
-
-          if (defaultWarehouseId) {
-            // Find warehouse slug from warehouses array
-            const warehouse = user?.warehouses?.find((w) => w.warehouseId === defaultWarehouseId);
-
-            if (warehouse && warehouse.warehouseSlug) {
-              console.log(
-                `[AuthGuard] ${userRole} detected, redirecting to default warehouse:`,
-                warehouse.warehouseSlug,
-              );
-              router.push(`/${activeSlug}/warehouses/${warehouse.warehouseSlug}`);
-              return;
-            }
-          }
-
-          // Fallback: try to find any warehouse
-          if (user?.warehouses && user.warehouses.length > 0) {
-            const firstWarehouse =
-              user.warehouses.find((w) => !!w?.warehouseSlug) || user.warehouses[0];
-            console.log(
-              `[AuthGuard] ${userRole} has no default warehouse, using first assigned:`,
-              firstWarehouse.warehouseSlug,
-            );
-            if (firstWarehouse?.warehouseSlug) {
-              router.push(`/${activeSlug}/warehouses/${firstWarehouse.warehouseSlug}`);
-            } else {
-              router.push(`/${activeSlug}/warehouses`);
-            }
-            return;
-          }
-
-          // Last fallback: warehouses list
-          console.log(`[AuthGuard] ${userRole} has no warehouses, redirecting to warehouses list`);
-          router.push(`/${activeSlug}/warehouses`);
-          return;
-        }
-
-        // Fallback for unknown roles
-        console.log('[AuthGuard] Unknown role, redirecting to company page');
-        router.push(`/${activeSlug}`);
         return;
       }
     }

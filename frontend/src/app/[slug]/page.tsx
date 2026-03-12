@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { useWarehouse } from '@/context/warehouse-context';
 import { Loader2 } from 'lucide-react';
+import { getRoleHomePath } from '@/lib/role-home-path';
 
 export default function CompanyRootPage() {
   const router = useRouter();
@@ -16,7 +17,8 @@ export default function CompanyRootPage() {
   useEffect(() => {
     if (!userLoading && user && !warehousesLoading) {
       // Get user role from their active company
-      const activeCompany = user.companies?.find((c) => c.slug === companySlug) || user.companies?.[0];
+      const activeCompany =
+        user.companies?.find((c) => c.slug === companySlug) || user.companies?.[0];
       const userRole = activeCompany?.role;
 
       if (!userRole) {
@@ -25,21 +27,9 @@ export default function CompanyRootPage() {
         return;
       }
 
-      /**
-       * 🎯 ROLE-BASED REDIRECT LOGIC
-       * OWNER/ADMIN/MANAGER → /dashboard
-       * STAFF → /warehouses
-       */
-
-      // OWNER, ADMIN, and MANAGER go to company dashboard
-      if (userRole === 'OWNER' || userRole === 'ADMIN' || userRole === 'MANAGER') {
-        router.replace(`/${companySlug}/dashboard`);
-        return;
-      }
-
-      // STAFF goes to warehouses page
-      if (userRole === 'STAFF') {
-        router.replace(`/${companySlug}/warehouses`);
+      const targetPath = getRoleHomePath(user, companySlug);
+      if (targetPath) {
+        router.replace(targetPath);
         return;
       }
 
