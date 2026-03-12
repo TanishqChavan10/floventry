@@ -4,6 +4,7 @@ import { Poppins } from 'next/font/google';
 import './globals.css';
 
 import Providers from './providers';
+import { Analytics } from '@vercel/analytics/next';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -108,6 +109,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className={`${poppins.variable} font-sans min-h-screen flex flex-col`}>
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
