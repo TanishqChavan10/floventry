@@ -35,7 +35,7 @@ export class EmailService {
       (process.env.SMTP_REQUIRE_TLS || '').toLowerCase() === 'true';
 
     const connectionTimeout = parseInt(
-      process.env.SMTP_CONNECTION_TIMEOUT_MS || '20000',
+      process.env.SMTP_CONNECTION_TIMEOUT_MS || '15000',
       10,
     );
     const greetingTimeout = parseInt(
@@ -55,7 +55,7 @@ export class EmailService {
     }
 
     this.logger.log(
-      `Configuring SMTP transport host=${host} port=${port} secure=${port === 465} forceIpv4=${forceIpv4} requireTls=${requireTls}`,
+      `Configuring SMTP transport host=${host} port=${port} secure=${port === 465} forceIpv4=${forceIpv4} requireTls=${requireTls} tlsRejectUnauthorized=false`,
     );
 
     type SmtpOptionsWithFamily = SMTPTransport.Options & { family?: 4 | 6 };
@@ -72,6 +72,9 @@ export class EmailService {
       tls: {
         // Helps some providers during TLS negotiation.
         servername: host,
+        // Workaround for some cloud providers / SMTP relays where TLS handshake fails.
+        // NOTE: This disables certificate validation.
+        rejectUnauthorized: false,
       },
       auth: {
         user,
