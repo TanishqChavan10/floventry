@@ -11,16 +11,18 @@ export const metadata: Metadata = {
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ redirect_url?: string }>;
+  searchParams: Promise<{ redirect_url?: string; redirect?: string }>;
 }) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { redirect_url } = await searchParams;
+  const { redirect_url, redirect: redirectParam } = await searchParams;
+
+  const redirectCandidate = redirect_url ?? redirectParam;
 
   // Validate it's a safe relative path
-  const safeRedirect = redirect_url?.startsWith('/') ? redirect_url : undefined;
+  const safeRedirect = redirectCandidate?.startsWith('/') ? redirectCandidate : undefined;
 
   // If user is already authenticated, redirect them immediately
   if (user) {

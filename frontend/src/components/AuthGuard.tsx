@@ -17,6 +17,13 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
 
+  const lastNavigationRef = useRef<string | null>(null);
+  const safePush = (href: string) => {
+    if (lastNavigationRef.current === href) return;
+    lastNavigationRef.current = href;
+    router.push(href);
+  };
+
   const autoSwitchCompanyAttemptedRef = useRef(false);
   const [switchCompany] = useSwitchCompany();
 
@@ -36,7 +43,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
       // Only redirect if Supabase confirms no session.
       // If signed in via Supabase but backend is unreachable, avoid redirect loop.
       if (!isSignedIn) {
-        router.push('/auth/sign-in');
+        safePush('/auth/sign-in');
       }
       return;
     }
@@ -83,7 +90,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
       if (!hasCompanies && !isOnboardingRoute && !isPublicRoute) {
         // User has no companies and is not on onboarding pages
-        router.push('/onboarding');
+        safePush('/onboarding');
         return;
       }
 
@@ -98,7 +105,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           user?.companies?.find((c) => c.isActive)?.slug ||
           user?.companies?.[0]?.slug;
         if (activeSlug) {
-          router.push(`/${activeSlug}`);
+          safePush(`/${activeSlug}`);
         }
         return;
       }
@@ -118,13 +125,13 @@ export default function AuthGuard({ children }: AuthGuardProps) {
         if (!hasCompanies) {
           // No companies - redirect to onboarding
           console.log('[AuthGuard] No companies, redirecting to onboarding');
-          router.push('/onboarding');
+          safePush('/onboarding');
           return;
         }
 
         const targetPath = getRoleHomePath(user);
         if (targetPath) {
-          router.push(targetPath);
+          safePush(targetPath);
           return;
         }
 
@@ -137,7 +144,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           user?.companies?.[0]?.slug;
 
         if (activeSlug) {
-          router.push(`/${activeSlug}`);
+          safePush(`/${activeSlug}`);
         }
         return;
       }

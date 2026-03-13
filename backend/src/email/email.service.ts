@@ -28,6 +28,24 @@ export class EmailService {
     const user = process.env.SMTP_USER || process.env.EMAIL_USER;
     const password = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD;
 
+    const forceIpv4 =
+      (process.env.SMTP_FORCE_IPV4 || '').toLowerCase() === 'true';
+    const requireTls =
+      (process.env.SMTP_REQUIRE_TLS || '').toLowerCase() === 'true';
+
+    const connectionTimeout = parseInt(
+      process.env.SMTP_CONNECTION_TIMEOUT_MS || '20000',
+      10,
+    );
+    const greetingTimeout = parseInt(
+      process.env.SMTP_GREETING_TIMEOUT_MS || '20000',
+      10,
+    );
+    const socketTimeout = parseInt(
+      process.env.SMTP_SOCKET_TIMEOUT_MS || '30000',
+      10,
+    );
+
     if (!host || !user || !password) {
       this.logger.warn(
         'Email configuration is incomplete. Email sending will be disabled.',
@@ -35,10 +53,23 @@ export class EmailService {
       return;
     }
 
+    this.logger.log(
+      `Configuring SMTP transport host=${host} port=${port} secure=${port === 465} forceIpv4=${forceIpv4} requireTls=${requireTls}`,
+    );
+
     this.transporter = nodemailer.createTransport({
       host,
       port,
       secure: port === 465, // true for 465, false for other ports
+      family: forceIpv4 ? 4 : undefined,
+      requireTLS: requireTls,
+      connectionTimeout,
+      greetingTimeout,
+      socketTimeout,
+      tls: {
+        // Helps some providers during TLS negotiation.
+        servername: host,
+      },
       auth: {
         user,
         pass: password,
@@ -48,7 +79,10 @@ export class EmailService {
     // Verify connection configuration
     this.transporter.verify((error) => {
       if (error) {
-        this.logger.error('Email transporter verification failed:', error);
+        this.logger.error(
+          `Email transporter verification failed (host=${host} port=${port}):`,
+          error,
+        );
       } else {
         this.logger.log('Email service is ready to send messages');
       }

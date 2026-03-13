@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
@@ -14,6 +14,13 @@ export default function AuthRedirect() {
   const router = useRouter();
   const { user, isAuthenticated, loading, isLoaded, isSignedIn, error } = useAuth();
   const [backendDown, setBackendDown] = useState(false);
+  const lastNavigationRef = useRef<string | null>(null);
+
+  const safeReplace = (href: string) => {
+    if (lastNavigationRef.current === href) return;
+    lastNavigationRef.current = href;
+    router.replace(href);
+  };
 
   useEffect(() => {
     // Wait for Supabase to hydrate first.
@@ -30,7 +37,7 @@ export default function AuthRedirect() {
         return;
       }
       // Not authenticated, send to sign-in
-      router.replace('/auth/sign-in');
+      safeReplace('/auth/sign-in');
       return;
     }
 
@@ -41,17 +48,17 @@ export default function AuthRedirect() {
     // always lands here regardless of where the user originally came from.
     const pendingInviteToken = localStorage.getItem('inviteToken');
     if (pendingInviteToken) {
-      router.replace(`/invite/accept?token=${pendingInviteToken}`);
+      safeReplace(`/invite/accept?token=${pendingInviteToken}`);
       return;
     }
 
     const targetPath = getRoleHomePath(user);
 
     if (targetPath) {
-      router.replace(targetPath);
+      safeReplace(targetPath);
     } else {
       // No companies, redirect to onboarding
-      router.replace('/onboarding/create-company');
+      safeReplace('/onboarding/create-company');
     }
   }, [isAuthenticated, user, loading, isLoaded, isSignedIn, error, router]);
 

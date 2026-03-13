@@ -19,6 +19,7 @@ export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) 
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const { run, isLoading } = useAsyncAction();
+  const submitInFlightRef = React.useRef(false);
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState('');
   const [pendingVerification, setPendingVerification] = React.useState(false);
@@ -55,25 +56,39 @@ export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    void run(async () => {
+    // Password managers/autofill can trigger multiple submits quickly.
+    if (submitInFlightRef.current || isLoading) return;
+    submitInFlightRef.current = true;
+
+    // Read from the actual form fields so autofill works even if React state didn't update.
+    const form = e.currentTarget as HTMLFormElement;
+    const formData = new FormData(form);
+    const submittedEmail = String(formData.get('email') ?? '').trim();
+    const submittedPassword = String(formData.get('password') ?? '');
+
+    // Keep state in sync for the verification flow and error UI.
+    setEmail(submittedEmail);
+    setPassword(submittedPassword);
+
+    run(async () => {
       setError('');
 
       // 1. Try signing in with existing credentials
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: submittedEmail,
+        password: submittedPassword,
       });
 
       if (!signInError) {
         // Sign-in successful — redirect
-        setTimeout(() => router.push(postAuthUrl), 300);
+        router.replace(postAuthUrl);
         return;
       }
 
       // Email explicitly not confirmed (when enumeration protection is off)
       if (signInError.message.toLowerCase().includes('email not confirmed')) {
         setPendingVerification(true);
-        await supabase.auth.resend({ type: 'signup', email });
+        await supabase.auth.resend({ type: 'signup', email: submittedEmail });
         return;
       }
 
@@ -86,10 +101,14 @@ export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) 
       }
 
       throw new Error(signInError.message);
-    }).catch((err: any) => {
-      const errorMessage = err?.message || 'Invalid email or password';
-      setError(errorMessage);
-    });
+    })
+      .catch((err: any) => {
+        const errorMessage = err?.message || 'Invalid email or password';
+        setError(errorMessage);
+      })
+      .finally(() => {
+        submitInFlightRef.current = false;
+      });
   };
 
   const handleVerification = (e: React.FormEvent) => {
@@ -250,9 +269,10 @@ export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) 
               </Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
+                autoComplete="email"
                 placeholder="name@example.com"
-                value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="h-11 border-neutral-300"
@@ -274,8 +294,9 @@ export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) 
               <div className="relative">
                 <Input
                   id="password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
-                  value={password}
+                  autoComplete="current-password"
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   className="h-11 border-neutral-300 pr-10"

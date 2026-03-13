@@ -30,6 +30,12 @@ export async function middleware(request: NextRequest) {
   const { supabase, response } = createSupabaseMiddlewareClient(request);
 
   // Refresh the session (important — keeps cookies alive)
+  // NOTE: `getUser()` may fail transiently (network/Supabase hiccups). If we
+  // have a session, treat the request as authenticated to avoid redirect loops.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -41,10 +47,11 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // If no session, redirect to sign-in
-  if (!user) {
+  // If no session, redirect to sign-in.
+  // If `getUser()` errored but we still have a session, allow through (prevents loops).
+  if (!user && !session) {
     const signInUrl = new URL('/auth/sign-in', request.url);
-    signInUrl.searchParams.set('redirect', pathname);
+    signInUrl.searchParams.set('redirect_url', `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(signInUrl);
   }
 
