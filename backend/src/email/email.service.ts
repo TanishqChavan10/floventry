@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { generateInviteEmailTemplate } from './templates/invite-email.template';
 
 export interface SendInviteEmailParams {
@@ -57,7 +58,9 @@ export class EmailService {
       `Configuring SMTP transport host=${host} port=${port} secure=${port === 465} forceIpv4=${forceIpv4} requireTls=${requireTls}`,
     );
 
-    this.transporter = nodemailer.createTransport({
+    type SmtpOptionsWithFamily = SMTPTransport.Options & { family?: 4 | 6 };
+
+    const transportOptions: SmtpOptionsWithFamily = {
       host,
       port,
       secure: port === 465, // true for 465, false for other ports
@@ -74,7 +77,9 @@ export class EmailService {
         user,
         pass: password,
       },
-    });
+    };
+
+    this.transporter = nodemailer.createTransport(transportOptions);
 
     // Verify connection configuration
     this.transporter.verify((error) => {
