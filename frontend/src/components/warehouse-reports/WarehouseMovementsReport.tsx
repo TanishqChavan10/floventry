@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CopyButton } from '@/components/common/CopyButton';
 import { useStockMovementsByWarehouse } from '@/hooks/apollo';
 import { format, subDays } from 'date-fns';
+import { ExportButton } from '@/components/export/ExportButton';
 
 const PERIODS = [
   { label: '7d', value: 7 },
@@ -170,21 +171,30 @@ export function WarehouseMovementsReport({ warehouseId }: Props) {
   return (
     <div className="space-y-4">
       {/* Period Selector + Summary */}
-      <div className="flex items-center gap-2">
-        {PERIODS.map((p) => (
-          <button
-            key={p.value}
-            onClick={() => setDays(p.value)}
-            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-              days === p.value
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
-        <span className="text-xs text-muted-foreground ml-2">{total} movements found</span>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          {PERIODS.map((p) => (
+            <button
+              key={p.value}
+              onClick={() => setDays(p.value)}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                days === p.value
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+          <span className="text-xs text-muted-foreground ml-2">{total} movements found</span>
+        </div>
+
+        <ExportButton
+          type="stock_movements"
+          warehouseId={warehouseId}
+          filters={{ dateFrom: fromDate.toISOString(), dateTo: toDate.toISOString() }}
+          label="Export CSV"
+        />
       </div>
 
       {/* Summary Cards */}

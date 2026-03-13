@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Download } from 'lucide-react';
 import { Line, LineChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Legend } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -23,6 +24,8 @@ import {
   useAdjustmentsByWarehouse,
   useAdjustmentsByUser,
 } from '@/hooks/apollo';
+import { Button } from '@/components/ui/button';
+import { useExportData } from '@/hooks/useExportData';
 
 const PERIODS = [
   { label: '7d', value: 7 },
@@ -50,6 +53,8 @@ export function AdjustmentsReport() {
     days,
   });
   const { data: byUserData, loading: byUserLoading } = useAdjustmentsByUser({ days, limit: 10 });
+
+  const { exportToCSV, exportProgress } = useExportData();
 
   if (!allowed || planLoading) {
     const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
@@ -94,6 +99,28 @@ export function AdjustmentsReport() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          disabled={exportProgress.isExporting}
+          onClick={() =>
+            exportToCSV(
+              (userRows ?? []).map((row) => ({
+                staff: row.userName,
+                count: row.adjustmentCount,
+                quantity: row.totalQuantity,
+              })),
+              { filename: 'adjustments_top_staff' },
+            )
+          }
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
+      </div>
+
       {/* Period selector */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">Adjustment activity for selected period</p>

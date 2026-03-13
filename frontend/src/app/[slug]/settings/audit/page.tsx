@@ -290,6 +290,67 @@ function matchesSearch(entry: AuditLogEntry, search: string): boolean {
   );
 }
 
+function excelText(value: string): string {
+  // Force Excel to treat the value as text (prevents ##### display for date/time columns).
+  return value ? `'${value}` : '';
+}
+
+function formatMetadataForCsv(metadata: unknown): string {
+  if (metadata == null) return '';
+
+  let value: unknown = metadata;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    try {
+      value = JSON.parse(trimmed);
+    } catch {
+      return trimmed;
+    }
+  }
+
+  const pairs: Array<[string, string]> = [];
+
+  const addPair = (key: string, v: unknown) => {
+    if (v == null) return;
+    if (typeof v === 'string' && !v.trim()) return;
+
+    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+      pairs.push([key, String(v)]);
+      return;
+    }
+
+    if (Array.isArray(v)) {
+      pairs.push([
+        key,
+        v
+          .map((x) => (x == null ? '' : String(x)))
+          .filter(Boolean)
+          .join('|'),
+      ]);
+      return;
+    }
+
+    if (typeof v === 'object') {
+      try {
+        pairs.push([key, JSON.stringify(v)]);
+      } catch {
+        pairs.push([key, String(v)]);
+      }
+    }
+  };
+
+  if (typeof value === 'object' && value && !Array.isArray(value)) {
+    for (const k of Object.keys(value as Record<string, unknown>).sort()) {
+      addPair(k, (value as Record<string, unknown>)[k]);
+    }
+  } else {
+    addPair('details', value);
+  }
+
+  return pairs.map(([k, v]) => `${k}=${v}`).join('; ');
+}
+
 function exportToCSV(entries: AuditLogEntry[]) {
   const headers = [
     'Date & Time',
@@ -306,7 +367,7 @@ function exportToCSV(entries: AuditLogEntry[]) {
   ];
 
   const rows = entries.map((e) => [
-    format(new Date(e.created_at), 'yyyy-MM-dd HH:mm:ss'),
+    excelText(format(new Date(e.created_at), 'yyyy-MM-dd HH:mm:ss')),
     e.actor_email,
     e.actor_role,
     ACTION_LABELS[e.action] || e.action,
@@ -316,7 +377,7 @@ function exportToCSV(entries: AuditLogEntry[]) {
     getRecordIdentifier(e) || '',
     e.ip_address || '',
     parseUserAgent(e.user_agent),
-    JSON.stringify(e.metadata || {}),
+    formatMetadataForCsv(e.metadata),
   ]);
 
   const csvContent = [

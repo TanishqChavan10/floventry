@@ -13,6 +13,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWarehouseDashboard, useLowStockItems, useStockSnapshot } from '@/hooks/apollo';
 import { format } from 'date-fns';
+import { ExportButton } from '@/components/export/ExportButton';
 
 const statusChartConfig = {
   ok: { label: 'OK', color: 'var(--chart-2)' },
@@ -93,6 +94,10 @@ export function WarehouseOverviewReport({ warehouseId }: Props) {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-end">
+        <ExportButton type="stock_snapshot" warehouseId={warehouseId} label="Export CSV" />
+      </div>
+
       {/* KPI Cards */}
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         <Card>

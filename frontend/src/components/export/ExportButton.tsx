@@ -136,7 +136,7 @@ export function ExportButton({
   };
 
   // Pro-only export types (company-level)
-  const proOnlyTypes: ExportType[] = ['inventory_summary', 'company_movements', 'expiry_risk'];
+  const proOnlyTypes: ExportType[] = ['inventory_summary', 'expiry_risk'];
   const requiresPro = proOnlyTypes.includes(type);
 
   // Standard+ exports allowed for Standard and Pro, Pro-only need Pro

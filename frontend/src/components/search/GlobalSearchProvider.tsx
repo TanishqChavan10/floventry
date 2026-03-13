@@ -21,6 +21,7 @@ import {
 import { GlobalSearchModal } from './GlobalSearchModal';
 import { CreateWarehouseDialog } from '@/components/warehouses/CreateWarehouseDialog';
 import { useLoadingContext } from '@/context/loading-context';
+import { usePlanTier } from '@/hooks/usePlanTier';
 
 const EMPTY_RESULTS: GlobalSearchResultsData = {
   products: [],
@@ -45,6 +46,8 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
   const params = useParams();
   const companySlug = params?.slug as string | undefined;
 
+  const { plan: planTier, loading: planLoading } = usePlanTier();
+
   // Lazy query hooks for search & redirects
   const [searchQuery] = useGlobalSearchQuery();
   const [lookupBarcode] = useProductByBarcode();
@@ -52,7 +55,7 @@ export function GlobalSearchProvider({ children }: { children: React.ReactNode }
   const [fetchIssue] = useIssueForRedirect();
   const [fetchTransfer] = useTransferForRedirect();
 
-  const companyPlan: 'Standard' | 'Pro' | null = companySlug ? 'Pro' : null;
+  const companyPlan = companySlug && !planLoading ? planTier : null;
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');

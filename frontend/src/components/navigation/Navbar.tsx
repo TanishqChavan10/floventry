@@ -30,6 +30,7 @@ import NotificationBell from '@/components/notifications/NotificationBell';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { CreateWarehouseDialog } from '@/components/warehouses/CreateWarehouseDialog';
 import { toast } from 'sonner';
+import { usePlanTier } from '@/hooks/usePlanTier';
 
 export function Navbar() {
   const { user } = useAuth();
@@ -47,7 +48,8 @@ export function Navbar() {
   const pathname = usePathname();
   const isProfilePage = pathname === '/profile';
 
-  const companyPlan: 'Standard' | 'Pro' | null = companySlug ? 'Pro' : null;
+  const { plan: planTier, loading: planLoading } = usePlanTier();
+  const companyPlan = !isProfilePage && companySlug && !planLoading ? planTier : null;
 
   // Get current active company from user's companies
   // If no company slug in URL (e.g., /profile), use the first company as fallback

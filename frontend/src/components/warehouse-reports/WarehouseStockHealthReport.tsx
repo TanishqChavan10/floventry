@@ -21,6 +21,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWarehouseStockHealth } from '@/hooks/apollo';
 import { format } from 'date-fns';
+import { ExportButton } from '@/components/export/ExportButton';
 
 const healthChartConfig = {
   healthy: { label: 'Healthy', color: 'var(--chart-2)' },
@@ -149,6 +150,10 @@ export function WarehouseStockHealthReport({ warehouseId }: Props) {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-end">
+        <ExportButton type="expiry_lots" warehouseId={warehouseId} label="Export CSV" />
+      </div>
+
       {/* Summary Cards */}
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         <Card>

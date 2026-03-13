@@ -25,6 +25,8 @@ import {
   useTopStockProducts,
   useCriticalStockProducts,
 } from '@/hooks/apollo';
+import { ExportButton } from '@/components/export/ExportButton';
+import { subDays } from 'date-fns';
 
 const PERIODS = [
   { label: '7d', value: 7 },
@@ -139,18 +141,29 @@ export function InventoryMovementsReport() {
   return (
     <div className="space-y-4">
       {/* Period selector */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">Inventory movements for selected period</p>
-        <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
-          {PERIODS.map((p) => (
-            <button
-              key={p.value}
-              onClick={() => setDays(p.value)}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${days === p.value ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+            {PERIODS.map((p) => (
+              <button
+                key={p.value}
+                onClick={() => setDays(p.value)}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${days === p.value ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          <ExportButton
+            type="company_movements"
+            filters={{
+              dateFrom: subDays(new Date(), days).toISOString(),
+              dateTo: new Date().toISOString(),
+            }}
+            label="Export CSV"
+          />
         </div>
       </div>
 

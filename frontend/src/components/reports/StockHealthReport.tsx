@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Legend } from 'recharts';
+import { Download } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartContainer,
@@ -10,6 +11,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -23,6 +25,7 @@ import {
   useWarehouseHealthScorecard,
   useCompanyStockHealthOverview,
 } from '@/hooks/apollo';
+import { useExportData } from '@/hooks/useExportData';
 
 const healthPieConfig = {
   healthy: { label: 'Healthy', color: 'var(--chart-2)' },
@@ -61,6 +64,8 @@ export function StockHealthReport() {
   const { data: healthData, loading: healthLoading } = useInventoryHealthStats();
   const { data: scorecardData, loading: scorecardLoading } = useWarehouseHealthScorecard();
   const { data: overviewData, loading: overviewLoading } = useCompanyStockHealthOverview();
+
+  const { exportToCSV, exportProgress } = useExportData();
 
   if (!allowed || planLoading) {
     const { PlanGateBlock } = require('@/components/upgrade/PlanGateBlock');
@@ -109,6 +114,30 @@ export function StockHealthReport() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          disabled={exportProgress.isExporting}
+          onClick={() =>
+            exportToCSV(
+              (riskMetrics ?? []).map((m) => ({
+                warehouseName: m.warehouseName,
+                healthScore: m.healthScore,
+                expiredPercentage: m.expiredPercentage,
+                expiringSoonPercentage: m.expiringSoonPercentage,
+                blockedProductCount: m.blockedProductCount,
+              })),
+              { filename: 'stock_health_risk_metrics' },
+            )
+          }
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
+      </div>
+
       {/* Health overview */}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>

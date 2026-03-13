@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Package, Warehouse, AlertTriangle, Activity } from 'lucide-react';
+import { Package, Warehouse, AlertTriangle, Activity, Download } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, XAxis, Pie, PieChart } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/chart';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCompanyDashboard } from '@/hooks/apollo';
+import { Button } from '@/components/ui/button';
+import { useExportData } from '@/hooks/useExportData';
 
 const stockChartConfig = {
   healthy: { label: 'Healthy', color: 'var(--chart-2)' },
@@ -29,6 +31,8 @@ export function OverviewReport() {
   // Plan tier gating
   const { plan, loading: planLoading } = require('@/hooks/usePlanTier').usePlanTier();
   const overviewAllowed = plan === 'Standard' || plan === 'Pro';
+
+  const { exportToCSV, exportProgress } = useExportData();
 
   const { data, loading } = useCompanyDashboard();
 
@@ -94,6 +98,36 @@ export function OverviewReport() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          disabled={exportProgress.isExporting}
+          onClick={() =>
+            exportToCSV(
+              [
+                { type: 'KPI', metric: 'Total SKUs', value: kpis?.totalSkus ?? 0 },
+                { type: 'KPI', metric: 'Stock Units', value: kpis?.totalStockUnits ?? 0 },
+                { type: 'KPI', metric: 'Warehouses', value: kpis?.warehouses ?? 0 },
+                { type: 'KPI', metric: 'At-risk Units', value: kpis?.stockAtRisk ?? 0 },
+                { type: 'KPI', metric: 'Expired Units', value: kpis?.expiredStockUnits ?? 0 },
+                ...(warehouseHealth ?? []).map((wh: any) => ({
+                  type: 'Warehouse Health',
+                  warehouseName: wh.warehouseName,
+                  okPercent: wh.okPercent,
+                  riskBadge: wh.riskBadge,
+                })),
+              ],
+              { filename: 'company_overview' },
+            )
+          }
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         <Card>

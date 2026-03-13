@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
+import type { PlanTier } from '@/hooks/usePlanTier';
 
 export type GlobalSearchDocumentType = 'GRN' | 'ISSUE' | 'TRANSFER';
 
@@ -63,7 +64,7 @@ export type GlobalSearchResultsData = {
 };
 
 export type GlobalSearchContextValue = {
-  companyPlan: 'Standard' | 'Pro' | null;
+  companyPlan: PlanTier | null;
 
   open: boolean;
   setOpen: (open: boolean) => void;

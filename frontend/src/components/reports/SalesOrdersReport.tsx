@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Legend } from 'recharts';
+import { Download } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartContainer,
@@ -22,6 +23,8 @@ import { useSalesOrders } from '@/hooks/apollo';
 import { usePlanTier } from '@/hooks/usePlanTier';
 import { PlanGateBlock } from '@/components/upgrade/PlanGateBlock';
 import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { useExportData } from '@/hooks/useExportData';
 
 const STATUS_LABELS: Record<string, string> = {
   DRAFT: 'Draft',
@@ -64,6 +67,8 @@ function StatusBadge({ status }: { status: string }) {
 
 export function SalesOrdersReport() {
   const { plan, loading: planLoading } = usePlanTier();
+
+  const { exportToCSV, exportProgress } = useExportData();
 
   const { data, loading } = useSalesOrders();
 
@@ -170,6 +175,49 @@ export function SalesOrdersReport() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          disabled={exportProgress.isExporting}
+          onClick={() =>
+            exportToCSV(
+              (orders ?? []).map((o) => {
+                const orderedQty = (o.items ?? []).reduce(
+                  (s: number, it: any) => s + Number(it.ordered_quantity ?? 0),
+                  0,
+                );
+                const issuedQty = (o.items ?? []).reduce(
+                  (s: number, it: any) => s + Number(it.issued_quantity ?? 0),
+                  0,
+                );
+                const pendingQty = (o.items ?? []).reduce(
+                  (s: number, it: any) => s + Number(it.pending_quantity ?? 0),
+                  0,
+                );
+                return {
+                  orderNumber: o.order_number,
+                  status: STATUS_LABELS[o.status] ?? o.status,
+                  customer: o.customer_name,
+                  items: (o.items ?? []).length,
+                  orderedQuantity: orderedQty,
+                  issuedQuantity: issuedQty,
+                  pendingQuantity: pendingQty,
+                  createdAt: o.created_at
+                    ? format(new Date(o.created_at), 'yyyy-MM-dd HH:mm:ss')
+                    : '',
+                };
+              }),
+              { filename: 'sales_orders' },
+            )
+          }
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
+      </div>
+
       {/* Summary */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[

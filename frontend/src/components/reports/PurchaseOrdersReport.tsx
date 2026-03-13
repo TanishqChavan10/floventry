@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Legend } from 'recharts';
+import { Download } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ChartContainer,
@@ -22,6 +23,8 @@ import { usePurchaseOrders } from '@/hooks/apollo';
 import { usePlanTier } from '@/hooks/usePlanTier';
 import { PlanGateBlock } from '@/components/upgrade/PlanGateBlock';
 import { subDays, format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { useExportData } from '@/hooks/useExportData';
 
 const PERIODS = [
   { label: '30d', value: 30 },
@@ -72,6 +75,8 @@ function StatusBadge({ status }: { status: string }) {
 
 export function PurchaseOrdersReport() {
   const { plan, loading: planLoading } = usePlanTier();
+
+  const { exportToCSV, exportProgress } = useExportData();
 
   const [days, setDays] = useState(90);
 
@@ -170,18 +175,57 @@ export function PurchaseOrdersReport() {
   return (
     <div className="space-y-4">
       {/* Period */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">Purchase order analytics</p>
-        <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
-          {PERIODS.map((p) => (
-            <button
-              key={p.value}
-              onClick={() => setDays(p.value)}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${days === p.value ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+            {PERIODS.map((p) => (
+              <button
+                key={p.value}
+                onClick={() => setDays(p.value)}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${days === p.value ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            disabled={exportProgress.isExporting}
+            onClick={() =>
+              exportToCSV(
+                (orders ?? []).map((o) => {
+                  const orderedQty = (o.items ?? []).reduce(
+                    (s: number, it: any) => s + Number(it.ordered_quantity ?? 0),
+                    0,
+                  );
+                  const receivedQty = (o.items ?? []).reduce(
+                    (s: number, it: any) => s + Number(it.received_quantity ?? 0),
+                    0,
+                  );
+                  return {
+                    poNumber: o.po_number,
+                    status: STATUS_LABELS[o.status] ?? o.status,
+                    supplier: o.supplier?.name,
+                    warehouse: o.warehouse?.name,
+                    items: (o.items ?? []).length,
+                    orderedQuantity: orderedQty,
+                    receivedQuantity: receivedQty,
+                    createdAt: o.created_at
+                      ? format(new Date(o.created_at), 'yyyy-MM-dd HH:mm:ss')
+                      : '',
+                  };
+                }),
+                { filename: 'purchase_orders' },
+              )
+            }
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
         </div>
       </div>
 
