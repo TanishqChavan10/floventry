@@ -74,6 +74,8 @@ export function useMarkNotificationAsRead() {
 export function useMarkAllNotificationsAsRead() {
   return useMutation(MARK_ALL_AS_READ, {
     optimisticResponse: { markAllNotificationsAsRead: 0 },
+    refetchQueries: [GET_UNREAD_COUNT, GET_NOTIFICATIONS],
+    awaitRefetchQueries: true,
     update(cache) {
       cache.modify({
         fields: {

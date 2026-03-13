@@ -5,7 +5,7 @@ import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Loader2, Eye, EyeOff, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -142,6 +142,20 @@ export default function CustomSignUp({ redirectUrl }: { redirectUrl?: string }) 
       <div className="grid min-h-screen w-full lg:grid-cols-2">
         <div className="flex flex-col justify-center px-8 py-12 lg:px-16">
           <div className="mx-auto w-full max-w-[440px]">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mb-6 -ml-2 w-fit text-neutral-700 hover:text-neutral-900"
+              onClick={() => {
+                setError('');
+                setCode('');
+                setPendingVerification(false);
+              }}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
             <Link href="/" className="mb-12 inline-block">
               <img src="/2.svg" alt="Floventry" className="h-10 w-auto" />
             </Link>

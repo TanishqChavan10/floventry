@@ -16,6 +16,7 @@ import {
 } from '@/hooks/apollo';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter, useParams } from 'next/navigation';
+import { toast } from 'sonner';
 
 function parseUtc(dateStr: string): Date {
   if (!dateStr.endsWith('Z') && !dateStr.includes('+')) {
@@ -46,8 +47,11 @@ export default function NotificationBell() {
   const companySlug = params?.slug as string;
   const [isOpen, setIsOpen] = useState(false);
 
-  const { data: countData } = useUnreadNotificationCount();
-  const { data: notificationsData } = useNotifications({ limit: 5, offset: 0 });
+  const { data: countData, refetch: refetchUnreadCount } = useUnreadNotificationCount();
+  const { data: notificationsData, refetch: refetchNotifications } = useNotifications({
+    limit: 5,
+    offset: 0,
+  });
   const [markAsRead] = useMarkNotificationAsRead();
   const [markAllAsRead] = useMarkAllNotificationsAsRead();
 
@@ -64,12 +68,32 @@ export default function NotificationBell() {
 
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.readAt) {
-      await markAsRead({ variables: { id: notification.id } });
+      try {
+        await markAsRead({ variables: { id: notification.id } });
+      } catch {
+        toast.error('Failed to mark notification as read. Please try again.');
+        // Ensure UI reflects server truth
+        void refetchUnreadCount();
+        void refetchNotifications();
+      }
     }
     if (companySlug) {
       router.push(`/${companySlug}/notifications`);
     }
     setIsOpen(false);
+  };
+
+  const handleMarkAllRead = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    try {
+      await markAllAsRead();
+      // Double-check server truth (important when auth/session is flaky)
+      await Promise.all([refetchUnreadCount(), refetchNotifications()]);
+    } catch {
+      toast.error('Could not mark all as read. Please re-login and try again.');
+      void refetchUnreadCount();
+      void refetchNotifications();
+    }
   };
 
   return (
@@ -93,10 +117,7 @@ export default function NotificationBell() {
             <button
               type="button"
               className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                markAllAsRead();
-              }}
+              onClick={handleMarkAllRead}
             >
               Mark all read
             </button>
@@ -154,7 +175,15 @@ export default function NotificationBell() {
                       title="Mark as read"
                       onClick={(e) => {
                         e.stopPropagation();
-                        markAsRead({ variables: { id: notification.id } });
+                        void (async () => {
+                          try {
+                            await markAsRead({ variables: { id: notification.id } });
+                          } catch {
+                            toast.error('Failed to mark as read. Please try again.');
+                            void refetchUnreadCount();
+                            void refetchNotifications();
+                          }
+                        })();
                       }}
                     >
                       <Check className="h-3.5 w-3.5" />

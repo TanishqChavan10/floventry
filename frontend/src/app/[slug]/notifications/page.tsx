@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bell, Check, RefreshCw, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 import {
   useNotifications,
   useUnreadNotificationCount,
@@ -112,7 +113,7 @@ function NotificationsPageContent() {
   }, [queryFilters, searchParams]);
 
   const { data, loading, refetch } = useNotifications({ limit: pageSize, offset: page * pageSize });
-  const { data: countData } = useUnreadNotificationCount();
+  const { data: countData, refetch: refetchUnreadCount } = useUnreadNotificationCount();
   const [markAsRead] = useMarkNotificationAsRead();
   const [markAllAsRead] = useMarkAllNotificationsAsRead();
 
@@ -155,9 +156,16 @@ function NotificationsPageContent() {
 
   const groupedNotifications = groupByDate(filteredNotifications);
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = async (notification: Notification) => {
     if (!notification.readAt) {
-      markAsRead({ variables: { id: notification.id } });
+      try {
+        await markAsRead({ variables: { id: notification.id } });
+        void refetchUnreadCount();
+      } catch {
+        toast.error('Failed to mark notification as read. Please try again.');
+        void refetchUnreadCount();
+        void refetch();
+      }
     }
 
     const { entityType, entityId, metadata } = notification;
@@ -197,6 +205,17 @@ function NotificationsPageContent() {
         break;
       default:
         break;
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllAsRead();
+      await Promise.all([refetchUnreadCount(), refetch()]);
+    } catch {
+      toast.error('Could not mark all as read. Please re-login and try again.');
+      void refetchUnreadCount();
+      void refetch();
     }
   };
 
@@ -254,7 +273,16 @@ function NotificationsPageContent() {
                     title="Mark as read"
                     onClick={(e) => {
                       e.stopPropagation();
-                      markAsRead({ variables: { id: n.id } });
+                      void (async () => {
+                        try {
+                          await markAsRead({ variables: { id: n.id } });
+                          void refetchUnreadCount();
+                        } catch {
+                          toast.error('Failed to mark as read. Please try again.');
+                          void refetchUnreadCount();
+                          void refetch();
+                        }
+                      })();
                     }}
                   >
                     <Check className="h-4 w-4" />
@@ -306,7 +334,7 @@ function NotificationsPageContent() {
               {refreshing ? 'Refreshing…' : 'Refresh'}
             </Button>
             {unreadCount > 0 && (
-              <Button onClick={() => markAllAsRead()} variant="outline" size="sm">
+              <Button onClick={handleMarkAllRead} variant="outline" size="sm">
                 <Check className="h-4 w-4 mr-1.5" />
                 Mark all read
               </Button>

@@ -14,7 +14,16 @@ export function ApolloAppProvider({ children }: { children: React.ReactNode }) {
   const client = React.useMemo(() => {
     return createApolloClient(async () => {
       const { data } = await supabase.auth.getSession();
-      return data.session?.access_token ?? null;
+      const token = data.session?.access_token;
+      if (token) return token;
+
+      // If the tab just hydrated or the token expired, try one refresh.
+      try {
+        const refreshed = await supabase.auth.refreshSession();
+        return refreshed.data.session?.access_token ?? null;
+      } catch {
+        return null;
+      }
     });
   }, []);
 
