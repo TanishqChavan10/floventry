@@ -13,7 +13,8 @@ export default async function SignUpPage({
   searchParams: Promise<{ redirect_url?: string }>;
 }) {
   const { redirect_url } = await searchParams;
-  const safeRedirect = redirect_url?.startsWith('/') ? redirect_url : undefined;
+  const safeRedirectRaw = redirect_url?.startsWith('/') ? redirect_url : undefined;
+  const safeRedirect = safeRedirectRaw === '/' ? undefined : safeRedirectRaw;
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center">

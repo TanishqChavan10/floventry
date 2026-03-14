@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import { useApolloClient } from '@apollo/client';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { clearPersistedCache } from '@/lib/apollo/client';
@@ -67,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isSignedIn = !!session;
   const apolloClient = useApolloClient();
+  const prevAccessTokenRef = useRef<string | null>(null);
 
   // Initialize: get current session + listen for changes
   useEffect(() => {
@@ -97,6 +98,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (window as any).__supabase_access_token = null;
     }
   }, [session]);
+
+  // When a new session appears (fresh sign-in), force Apollo to refetch `me`
+  // under the new token to avoid redirect loops caused by stale cached `me=null`.
+  useEffect(() => {
+    const token = session?.access_token ?? null;
+
+    // Signed out
+    if (!token) {
+      prevAccessTokenRef.current = null;
+      return;
+    }
+
+    // Token newly set or changed (sign-in / session refresh)
+    if (prevAccessTokenRef.current !== token) {
+      prevAccessTokenRef.current = token;
+
+      // While we refetch, keep auth in a loading state so guards don't bounce.
+      setInternalLoading(true);
+
+      (async () => {
+        try {
+          // Clears in-memory cache and refetches active queries (including `Me`).
+          await apolloClient.resetStore();
+        } catch {
+          // If resetStore fails, the `useCurrentUser` hook will still retry.
+        }
+      })();
+    }
+  }, [session?.access_token, apolloClient]);
 
   const getToken = useCallback(async (): Promise<string | null> => {
     const { data } = await supabase.auth.getSession();

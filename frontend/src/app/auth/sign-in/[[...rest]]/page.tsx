@@ -22,7 +22,12 @@ export default async function SignInPage({
   const redirectCandidate = redirect_url ?? redirectParam;
 
   // Validate it's a safe relative path
-  const safeRedirect = redirectCandidate?.startsWith('/') ? redirectCandidate : undefined;
+  const safeRedirectRaw = redirectCandidate?.startsWith('/') ? redirectCandidate : undefined;
+
+  // If the redirect points to the landing page, prefer the post-auth router.
+  // The app intentionally allows signed-in users to view '/', so sending users
+  // there after login can look like "login didn't work" in production.
+  const safeRedirect = safeRedirectRaw === '/' ? undefined : safeRedirectRaw;
 
   // If user is already authenticated, redirect them immediately
   if (user) {
