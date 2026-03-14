@@ -9,6 +9,23 @@ import { GRAPHQL_URL, WS_URL } from '@/config/env';
 
 export type GetAuthToken = () => Promise<string | null | undefined>;
 
+function getCompanyIdForCurrentPath(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+
+  const w = window as any;
+  const explicit = w.__active_company_id as string | undefined;
+  if (explicit) return explicit;
+
+  const slugToId = (w.__company_slug_to_id as Record<string, string> | undefined) || undefined;
+  if (!slugToId) return undefined;
+
+  const path = window.location?.pathname || '';
+  const firstSegment = path.split('/').filter(Boolean)[0];
+  if (!firstSegment) return undefined;
+
+  return slugToId[firstSegment];
+}
+
 /**
  * Build the full Apollo link chain.
  *
@@ -23,10 +40,12 @@ export function createLinks(getAuthToken: GetAuthToken): ApolloLink {
   const authLink = setContext(async (_, { headers }) => {
     try {
       const token = await getAuthToken();
+      const companyId = getCompanyIdForCurrentPath();
       return {
         headers: {
           ...headers,
           Authorization: token ? `Bearer ${token}` : '',
+          ...(companyId ? { 'x-company-id': companyId } : null),
         },
       };
     } catch {
@@ -125,7 +144,11 @@ export function createLinks(getAuthToken: GetAuthToken): ApolloLink {
             url: WS_URL,
             connectionParams: async () => {
               const token = await getAuthToken();
-              return { Authorization: token ? `Bearer ${token}` : '' };
+              const companyId = getCompanyIdForCurrentPath();
+              return {
+                Authorization: token ? `Bearer ${token}` : '',
+                ...(companyId ? { 'x-company-id': companyId } : null),
+              };
             },
             shouldRetry: () => true,
             retryAttempts: 5,

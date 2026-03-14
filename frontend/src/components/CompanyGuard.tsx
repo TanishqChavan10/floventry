@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
 import { useSwitchCompany } from '@/hooks/apollo';
+import { useApolloClient } from '@apollo/client';
+import { clearPersistedCache } from '@/lib/apollo/client';
 
 interface CompanyGuardProps {
   children: React.ReactNode;
@@ -15,6 +17,8 @@ export default function CompanyGuard({ children }: CompanyGuardProps) {
   const params = useParams();
   const { user, isAuthenticated, loading } = useAuth();
   const companySlug = params?.slug as string;
+
+  const apolloClient = useApolloClient();
 
   const lastSwitchAttemptedForSlugRef = useRef<string | null>(null);
   const [isSwitchingCompany, setIsSwitchingCompany] = useState(false);
@@ -68,6 +72,10 @@ export default function CompanyGuard({ children }: CompanyGuardProps) {
               });
 
               if (data?.switchCompany?.success) {
+                // The active company context changes server-side, but many queries are
+                // identical (no variables) so Apollo's persisted cache can serve stale data.
+                clearPersistedCache();
+                await apolloClient.resetStore();
                 router.refresh();
               }
             } catch (err) {
@@ -80,7 +88,7 @@ export default function CompanyGuard({ children }: CompanyGuardProps) {
         }
       }
     }
-  }, [isAuthenticated, loading, router, user, companySlug, switchCompany]);
+  }, [isAuthenticated, loading, router, user, companySlug, switchCompany, apolloClient]);
 
   if (loading || isSwitchingCompany) {
     return (
@@ -110,6 +118,12 @@ export default function CompanyGuard({ children }: CompanyGuardProps) {
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
+  }
+
+  // Keep tenant context available globally for Apollo links.
+  // This prevents queries firing with a stale companyId during navigation.
+  if (typeof window !== 'undefined' && targetCompanyId) {
+    (window as any).__active_company_id = targetCompanyId;
   }
 
   // Only render children if authenticated and has at least one company

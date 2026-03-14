@@ -20,7 +20,6 @@ import { AuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
-import { AuthService } from '../auth/auth.service';
 import { UserCompany } from '../user-company/user-company.entity';
 
 @Controller('warehouses')
@@ -28,7 +27,6 @@ import { UserCompany } from '../user-company/user-company.entity';
 export class WarehouseController {
   constructor(
     private readonly warehouseService: WarehouseService,
-    private readonly authService: AuthService,
     @InjectRepository(UserCompany)
     private userCompanyRepository: Repository<UserCompany>,
   ) {}
@@ -40,31 +38,40 @@ export class WarehouseController {
     @Body() createWarehouseDto: CreateWarehouseDto,
     @Req() req: any,
   ) {
-    const user = await this.authService.syncUser(req.user.authId);
-    if (!user.activeCompanyId) {
+    const companyId = req?.user?.activeCompanyId as string | undefined;
+    const userId = req?.user?.id as string | undefined;
+
+    if (!userId) {
+      throw new BadRequestException('Invalid user');
+    }
+
+    if (!companyId) {
       throw new BadRequestException(
         'User does not have an active company selected',
       );
     }
     return this.warehouseService.create(
       createWarehouseDto,
-      user.activeCompanyId,
-      user.id,
+      companyId,
+      userId,
     );
   }
 
   @Get()
   async findAll(@Req() req: any, @Query('companyId') queryCompanyId?: string) {
-    const user = await this.authService.syncUser(req.user.authId);
+    const userId = req?.user?.id as string | undefined;
+    if (!userId) {
+      throw new BadRequestException('Invalid user');
+    }
 
     // If an explicit companyId is provided, use it (for immediate company-switch fetches).
     // Otherwise fall back to the user's activeCompanyId.
-    let companyId = queryCompanyId || user.activeCompanyId;
+    let companyId = queryCompanyId || (req?.user?.activeCompanyId as string | undefined);
 
     if (!companyId) {
       // If no activeCompanyId, try to get first company from user's companies
       const userCompanies = await this.userCompanyRepository.find({
-        where: { user_id: user.id },
+        where: { user_id: userId },
       });
 
       if (userCompanies.length === 0) {
@@ -78,7 +85,7 @@ export class WarehouseController {
     }
 
     const userCompany = await this.userCompanyRepository.findOne({
-      where: { user_id: user.id, company_id: companyId },
+      where: { user_id: userId, company_id: companyId },
     });
 
     if (!userCompany) {
@@ -91,7 +98,7 @@ export class WarehouseController {
     }
 
     // Others see assigned (scoped to active/selected company)
-    return this.warehouseService.findByUser(user.id, companyId);
+    return this.warehouseService.findByUser(userId, companyId);
   }
 
   @Get(':id')

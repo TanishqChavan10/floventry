@@ -113,6 +113,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [data, loading]);
 
+  // Expose a minimal company lookup for non-React code (Apollo links).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const w = window as any;
+    const companies = user?.companies || [];
+    w.__company_slug_to_id = companies.reduce((acc: Record<string, string>, c) => {
+      if (c?.slug && c?.id) acc[c.slug] = c.id;
+      return acc;
+    }, {});
+
+    // Keep this in sync so GraphQL requests always carry tenant context.
+    w.__active_company_id = user?.activeCompanyId || undefined;
+  }, [user?.companies, user?.activeCompanyId]);
+
   useEffect(() => {
     if (error) {
       setUser(null);

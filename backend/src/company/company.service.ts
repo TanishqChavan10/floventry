@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -176,6 +177,25 @@ export class CompanyService {
     });
 
     return this.getCompanyById(companyId);
+  }
+
+  /**
+   * Enforces that the user is an active member of the given company.
+   * This should be used by resolvers that accept a companyId/slug argument.
+   */
+  async assertActiveMembership(userId: string, companyId: string): Promise<void> {
+    const membership = await this.userCompanyRepository.findOne({
+      where: {
+        user_id: userId,
+        company_id: companyId,
+        status: 'active',
+      },
+      select: ['membership_id'],
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('Forbidden: not a member of this company');
+    }
   }
 
   async getCompanyBySlug(slug: string): Promise<Company> {

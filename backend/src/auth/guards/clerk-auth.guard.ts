@@ -69,15 +69,27 @@ export class AuthGuard implements CanActivate {
       //-------------------------------------------------------
       // 3. Determine activeCompanyId and role from DB
       //-------------------------------------------------------
-      const activeCompanyId = internalUser?.activeCompanyId ?? undefined;
+      const dbActiveCompanyId = internalUser?.activeCompanyId ?? undefined;
 
-      const dbRoleForActiveCompany = activeCompanyId
-        ? (internalUser as any)?.userCompanies?.find(
-            (uc: any) => uc.company_id === activeCompanyId,
-          )?.role
+      const headerCompanyId = (request.headers['x-company-id'] as string | undefined) || undefined;
+
+      const userCompanies: any[] = (internalUser as any)?.userCompanies || [];
+      const membershipForDbActive = dbActiveCompanyId
+        ? userCompanies.find((uc) => uc.company_id === dbActiveCompanyId)
         : undefined;
 
-      const activeRole = dbRoleForActiveCompany || undefined;
+      const membershipForHeader = headerCompanyId
+        ? userCompanies.find(
+            (uc) => uc.company_id === headerCompanyId && (uc.status ?? 'active') === 'active',
+          )
+        : undefined;
+
+      if (headerCompanyId && !membershipForHeader) {
+        throw new GraphQLError('Forbidden');
+      }
+
+      const activeCompanyId = headerCompanyId || dbActiveCompanyId;
+      const activeRole = (membershipForHeader || membershipForDbActive)?.role || undefined;
 
       //-------------------------------------------------------
       // 4. Get email from Supabase Auth user (or fallback to DB)

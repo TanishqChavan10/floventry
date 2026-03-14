@@ -73,19 +73,23 @@ export class CompanyResolver {
 
   @Query(() => Company)
   @UseGuards(AuthGuard)
-  async company(@Args('id') id: string) {
+  async company(@Args('id') id: string, @CurrentUser() user: any) {
+    await this.companyService.assertActiveMembership(user.id, id);
     return this.companyService.getCompanyById(id);
   }
 
   @Query(() => Company)
   @UseGuards(AuthGuard)
-  async companyBySlug(@Args('slug') slug: string) {
-    return this.companyService.getCompanyBySlug(slug);
+  async companyBySlug(@Args('slug') slug: string, @CurrentUser() user: any) {
+    const company = await this.companyService.getCompanyBySlug(slug);
+    await this.companyService.assertActiveMembership(user.id, company.id);
+    return company;
   }
 
   @Query(() => CompanyStats)
   @UseGuards(AuthGuard)
-  async companyStats(@Args('companyId') companyId: string) {
+  async companyStats(@Args('companyId') companyId: string, @CurrentUser() user: any) {
+    await this.companyService.assertActiveMembership(user.id, companyId);
     return this.companyService.getCompanyStats(companyId);
   }
 

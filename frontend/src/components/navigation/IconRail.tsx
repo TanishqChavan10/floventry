@@ -72,7 +72,7 @@ export function IconRail() {
         ? 'MANAGER'
         : 'STAFF';
 
-  let filteredSections = filterNavigationByRole(navigationSections, userRole);
+  const filteredSections = filterNavigationByRole(navigationSections, userRole);
 
   const logoHref = warehouseSlug
     ? `/${companySlug}/warehouses/${warehouseSlug}`
