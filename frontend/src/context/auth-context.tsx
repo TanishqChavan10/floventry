@@ -1,6 +1,14 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+  useRef,
+} from 'react';
 import { useApolloClient } from '@apollo/client';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { clearPersistedCache } from '@/lib/apollo/client';

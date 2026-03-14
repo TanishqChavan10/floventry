@@ -30,9 +30,7 @@ export default function CustomSignIn({ redirectUrl }: { redirectUrl?: string }) 
 
   /** Where to send the user after successful authentication */
   const postAuthUrl =
-    redirectUrl?.startsWith('/') && redirectUrl !== '/'
-      ? redirectUrl
-      : '/auth-redirect';
+    redirectUrl?.startsWith('/') && redirectUrl !== '/' ? redirectUrl : '/auth-redirect';
 
   // Redirect signed-in users away from sign-in page
   React.useEffect(() => {

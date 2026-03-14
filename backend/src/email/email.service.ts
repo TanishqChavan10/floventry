@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
-import SMTPTransport from 'nodemailer/lib/smtp-transport';
+import { Resend } from 'resend';
 import { generateInviteEmailTemplate } from './templates/invite-email.template';
 
 export interface SendInviteEmailParams {
@@ -14,87 +13,36 @@ export interface SendInviteEmailParams {
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private transporter: nodemailer.Transporter;
+  private resend?: Resend;
+  private fromEmail?: string;
 
   constructor() {
-    this.initializeTransporter();
+    this.initializeResendClient();
   }
 
-  private initializeTransporter() {
-    const host = process.env.SMTP_HOST || process.env.EMAIL_HOST;
-    const port = parseInt(
-      process.env.SMTP_PORT || process.env.EMAIL_PORT || '587',
-      10,
-    );
-    const user = process.env.SMTP_USER || process.env.EMAIL_USER;
-    const password = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD;
+  private initializeResendClient() {
+    const apiKey = process.env.RESEND_API_KEY;
+    const from =
+      process.env.RESEND_FROM || process.env.EMAIL_FROM || process.env.EMAIL_USER;
 
-    const forceIpv4 =
-      (process.env.SMTP_FORCE_IPV4 || '').toLowerCase() === 'true';
-    const requireTls =
-      (process.env.SMTP_REQUIRE_TLS || '').toLowerCase() === 'true';
-
-    const connectionTimeout = parseInt(
-      process.env.SMTP_CONNECTION_TIMEOUT_MS || '15000',
-      10,
-    );
-    const greetingTimeout = parseInt(
-      process.env.SMTP_GREETING_TIMEOUT_MS || '20000',
-      10,
-    );
-    const socketTimeout = parseInt(
-      process.env.SMTP_SOCKET_TIMEOUT_MS || '30000',
-      10,
-    );
-
-    if (!host || !user || !password) {
+    if (!apiKey) {
       this.logger.warn(
-        'Email configuration is incomplete. Email sending will be disabled.',
+        'RESEND_API_KEY is not set. Email sending will be disabled.',
       );
       return;
     }
 
-    this.logger.log(
-      `Configuring SMTP transport host=${host} port=${port} secure=${port === 465} forceIpv4=${forceIpv4} requireTls=${requireTls} tlsRejectUnauthorized=false`,
-    );
+    this.resend = new Resend(apiKey);
+    this.fromEmail = from;
 
-    type SmtpOptionsWithFamily = SMTPTransport.Options & { family?: 4 | 6 };
+    if (!this.fromEmail) {
+      this.logger.warn(
+        'Email FROM address is not set (RESEND_FROM / EMAIL_FROM). Email sending will be disabled.',
+      );
+      return;
+    }
 
-    const transportOptions: SmtpOptionsWithFamily = {
-      host,
-      port,
-      secure: port === 465, // true for 465, false for other ports
-      family: forceIpv4 ? 4 : undefined,
-      requireTLS: requireTls,
-      connectionTimeout,
-      greetingTimeout,
-      socketTimeout,
-      tls: {
-        // Helps some providers during TLS negotiation.
-        servername: host,
-        // Workaround for some cloud providers / SMTP relays where TLS handshake fails.
-        // NOTE: This disables certificate validation.
-        rejectUnauthorized: false,
-      },
-      auth: {
-        user,
-        pass: password,
-      },
-    };
-
-    this.transporter = nodemailer.createTransport(transportOptions);
-
-    // Verify connection configuration
-    this.transporter.verify((error) => {
-      if (error) {
-        this.logger.error(
-          `Email transporter verification failed (host=${host} port=${port}):`,
-          error,
-        );
-      } else {
-        this.logger.log('Email service is ready to send messages');
-      }
-    });
+    this.logger.log('Email service configured (provider=Resend)');
   }
 
   /**
@@ -106,26 +54,45 @@ export class EmailService {
     text?: string,
     html?: string,
   ): Promise<void> {
-    if (!this.transporter) {
+    if (!this.resend || !this.fromEmail) {
+      this.logger.warn('Email provider not configured. Skipping email send.');
+      return;
+    }
+
+    if (!text && !html) {
       this.logger.warn(
-        'Email transporter not configured. Skipping email send.',
+        `Email content missing (no text/html). Skipping email send to ${to}.`,
       );
       return;
     }
 
-    const from = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+    const base = {
+      from: this.fromEmail,
+      to,
+      subject,
+    };
+
+    const payload = html
+      ? text
+        ? ({ ...base, html, text } satisfies Parameters<
+            Resend['emails']['send']
+          >[0])
+        : ({ ...base, html } satisfies Parameters<Resend['emails']['send']>[0])
+      : ({ ...base, text: text! } satisfies Parameters<Resend['emails']['send']>[0]);
 
     try {
-      const info = await this.transporter.sendMail({
-        from,
-        to,
-        subject,
-        text,
-        html,
-      });
+      const { data, error } = await this.resend.emails.send(payload);
+
+      if (error) {
+        this.logger.error(
+          `Resend rejected the email to ${to}: ${error.message}`,
+          error,
+        );
+        throw new Error(error.message);
+      }
 
       this.logger.log(
-        `Email sent successfully to ${to}. MessageId: ${info.messageId}`,
+        `Email sent successfully to ${to}.${data?.id ? ` ResendId: ${data.id}` : ''}`,
       );
     } catch (error) {
       this.logger.error(`Failed to send email to ${to}:`, error);

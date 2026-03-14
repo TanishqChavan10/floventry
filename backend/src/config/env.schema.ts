@@ -84,6 +84,19 @@ export const envValidationSchema = Joi.object({
   AWS_REGION: Joi.string().default('us-east-1').description('AWS region'),
 
   S3_BUCKET_NAME: Joi.string().required().description('S3 bucket name'),
+
+  // Email (Resend)
+  RESEND_API_KEY: Joi.string()
+    .optional()
+    .description('Resend API key (if set, backend can send emails)'),
+
+  RESEND_FROM: Joi.string()
+    .optional()
+    .description('Default FROM address for Resend (e.g., "Flowventory <no-reply@yourdomain.com>")'),
+
+  EMAIL_FROM: Joi.string()
+    .optional()
+    .description('Legacy FROM address (fallback to RESEND_FROM) for outbound emails'),
 });
 
 /**
