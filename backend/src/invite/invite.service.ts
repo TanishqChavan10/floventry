@@ -4,8 +4,10 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository, DataSource, EntityManager } from 'typeorm';
 import { Invite } from './invite.entity';
@@ -41,6 +43,7 @@ export class InviteService {
     private warehouseRepository: Repository<Warehouse>,
     private emailService: EmailService,
     private authService: AuthService,
+    private readonly configService: ConfigService,
     private dataSource: DataSource,
     private userWarehouseService: UserWarehouseService,
     private readonly auditLogService: AuditLogService,
@@ -329,7 +332,24 @@ export class InviteService {
     );
 
     // SEND EMAIL
-    const invitationLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/invite/accept?token=${savedInvite.token}`;
+    const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
+    const configuredFrontendUrl = this.configService
+      .get<string>('FRONTEND_URL')
+      ?.trim();
+    const frontendUrl =
+      configuredFrontendUrl ||
+      (nodeEnv === 'production' ? undefined : 'http://localhost:3000');
+
+    if (!frontendUrl) {
+      this.logger.error(
+        'FRONTEND_URL is not set; refusing to send invite email with an invalid link.',
+      );
+      throw new InternalServerErrorException(
+        'Server misconfiguration: FRONTEND_URL is not set',
+      );
+    }
+
+    const invitationLink = `${frontendUrl.replace(/\/+$/, '')}/invite/accept?token=${savedInvite.token}`;
     try {
       await this.emailService.sendInviteEmail({
         to: email,

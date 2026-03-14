@@ -53,6 +53,18 @@ export const envValidationSchema = Joi.object({
     .default('http://localhost:3000')
     .description('CORS allowed origin'),
 
+  // Frontend URL (used for links in emails)
+  FRONTEND_URL: Joi.string()
+    .uri()
+    .when('NODE_ENV', {
+      is: 'production',
+      then: Joi.required(),
+      otherwise: Joi.optional().default('http://localhost:3000'),
+    })
+    .description(
+      'Public base URL of the frontend (e.g., https://app.yourdomain.com). Required in production.',
+    ),
+
   // Logging
   LOG_LEVEL: Joi.string()
     .valid('error', 'warn', 'info', 'debug')

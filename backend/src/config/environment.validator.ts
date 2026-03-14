@@ -43,6 +43,9 @@ export class EnvironmentValidator {
     console.log(
       `   CORS_ORIGIN: ${this.configService.get('CORS_ORIGIN', 'http://localhost:3000')}`,
     );
+    console.log(
+      `   FRONTEND_URL: ${this.configService.get('FRONTEND_URL', 'http://localhost:3000')}`,
+    );
 
     // Don't log sensitive information
     console.log(
