@@ -26,7 +26,7 @@ export class UserCompanyService {
     private authService: AuthService,
     private readonly auditLogService: AuditLogService,
     private readonly notificationsService: NotificationsService,
-  ) { }
+  ) {}
 
   async listUsersInCompany(companyId: string): Promise<UserCompany[]> {
     return this.userCompanyRepository.find({
@@ -61,7 +61,10 @@ export class UserCompanyService {
 
     // ── Admin RBAC restrictions ──────────────────────────────────────
     const hierarchy: Record<string, number> = {
-      STAFF: 1, MANAGER: 2, ADMIN: 3, OWNER: 4,
+      STAFF: 1,
+      MANAGER: 2,
+      ADMIN: 3,
+      OWNER: 4,
     };
     const requesterLevel = hierarchy[requesterRole] ?? 0;
     const targetCurrentLevel = hierarchy[membership.role] ?? 0;
@@ -77,7 +80,7 @@ export class UserCompanyService {
     // Rule 2: Admin cannot change the role of an existing Owner (demote Owner)
     if (membership.role === 'OWNER' && requesterRole !== 'OWNER') {
       throw new BadRequestException(
-        'Only the Owner can change another Owner\'s role',
+        "Only the Owner can change another Owner's role",
       );
     }
 
@@ -509,7 +512,10 @@ export class UserCompanyService {
         activeRole: undefined,
       });
     } catch (error) {
-      console.error('Failed to clear Supabase metadata for removed user:', error);
+      console.error(
+        'Failed to clear Supabase metadata for removed user:',
+        error,
+      );
       // Don't throw - member is already marked inactive in DB
     }
   }

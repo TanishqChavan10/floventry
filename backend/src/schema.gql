@@ -185,6 +185,27 @@ type BarcodeLookupResult {
   unit_type: ProductBarcodeUnitType!
 }
 
+"""Billing interval for subscription purchases"""
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+type BillingPaymentModel {
+  amount: Int!
+  companyId: String!
+  createdAt: DateTime!
+  currency: String!
+  id: String!
+  interval: BillingInterval!
+  paidAt: DateTime
+  plan: String!
+  razorpayOrderId: String
+  razorpayPaymentId: String
+  razorpaySubscriptionId: String
+  status: String!
+}
+
 type Category {
   company: Company!
   company_id: String!
@@ -406,6 +427,11 @@ input CreatePurchaseOrderInput {
   notes: String
   supplier_id: ID!
   warehouse_id: ID!
+}
+
+input CreateRazorpayOrderInput {
+  interval: BillingInterval!
+  plan: String!
 }
 
 input CreateSalesOrderInput {
@@ -748,6 +774,7 @@ type Mutation {
   createOpeningStock(input: CreateOpeningStockInput!): Stock!
   createProduct(input: CreateProductInput!): Product!
   createPurchaseOrder(input: CreatePurchaseOrderInput!): PurchaseOrder!
+  createRazorpayOrder(input: CreateRazorpayOrderInput!): RazorpayOrderPayload!
   createSalesOrder(input: CreateSalesOrderInput!): SalesOrder!
   createStock(input: CreateStockInput!): Stock!
   createSupplier(input: CreateSupplierInput!): Supplier!
@@ -816,6 +843,7 @@ type Mutation {
   validateProductImport(csvContent: String!): String!
   validateSupplierImport(csvContent: String!): String!
   validateUnitImport(csvContent: String!): String!
+  verifyRazorpayPayment(input: VerifyRazorpayPaymentInput!): VerifyPaymentResult!
 }
 
 type Notification {
@@ -1006,6 +1034,7 @@ type Query {
   allStock(limit: Int, offset: Int): [Stock!]!
   auditLogsConnection(filters: AuditLogFilterInput, input: CursorPaginationInput): AuditLogConnection!
   barcodeHistory(productId: String!): [BarcodeHistory!]!
+  billingHistory: [BillingPaymentModel!]!
   categories: [Category!]!
   companies: [Company!]!
   company(id: String!): Company!
@@ -1073,6 +1102,16 @@ type Query {
   warehouseTransfer(id: String!): WarehouseTransfer
   warehouseTransfers(filters: TransferFilterInput!): [WarehouseTransfer!]!
   warehouses: [Warehouse!]!
+}
+
+type RazorpayOrderPayload {
+  amount: Int!
+  currency: String!
+  interval: BillingInterval!
+  orderId: String!
+  plan: String!
+  receipt: String!
+  subscriptionId: String
 }
 
 type RecentInventoryEvent {
@@ -1618,6 +1657,18 @@ type ValidateInviteResponse {
   role: String!
   status: String!
   userExists: Boolean!
+}
+
+type VerifyPaymentResult {
+  newPlan: String
+  success: Boolean!
+}
+
+input VerifyRazorpayPaymentInput {
+  razorpayOrderId: String
+  razorpayPaymentId: String!
+  razorpaySignature: String!
+  razorpaySubscriptionId: String
 }
 
 type Warehouse {

@@ -183,7 +183,10 @@ export class CompanyService {
    * Enforces that the user is an active member of the given company.
    * This should be used by resolvers that accept a companyId/slug argument.
    */
-  async assertActiveMembership(userId: string, companyId: string): Promise<void> {
+  async assertActiveMembership(
+    userId: string,
+    companyId: string,
+  ): Promise<void> {
     const membership = await this.userCompanyRepository.findOne({
       where: {
         user_id: userId,
@@ -234,7 +237,9 @@ export class CompanyService {
     input: UpdateCompanyBarcodeSettingsInput,
     user: { role?: string } | null,
   ): Promise<Company> {
-    const company = await this.companyRepository.findOne({ where: { id: companyId } });
+    const company = await this.companyRepository.findOne({
+      where: { id: companyId },
+    });
     if (!company) {
       throw new NotFoundException('Company not found');
     }
@@ -250,10 +255,14 @@ export class CompanyService {
       throw new BadRequestException('barcodePrefix cannot contain spaces');
     }
     if (prefix.length > 20) {
-      throw new BadRequestException('barcodePrefix must be at most 20 characters');
+      throw new BadRequestException(
+        'barcodePrefix must be at most 20 characters',
+      );
     }
     if (suffix.length > 20) {
-      throw new BadRequestException('barcodeSuffix must be at most 20 characters');
+      throw new BadRequestException(
+        'barcodeSuffix must be at most 20 characters',
+      );
     }
     if (!Number.isInteger(padding) || padding < 3 || padding > 10) {
       throw new BadRequestException('barcodePadding must be between 3 and 10');
@@ -268,7 +277,9 @@ export class CompanyService {
 
     if (input.barcodeNextNumber !== undefined) {
       if (!isPrivileged) {
-        throw new BadRequestException('Not allowed to update barcodeNextNumber');
+        throw new BadRequestException(
+          'Not allowed to update barcodeNextNumber',
+        );
       }
 
       const next = input.barcodeNextNumber;

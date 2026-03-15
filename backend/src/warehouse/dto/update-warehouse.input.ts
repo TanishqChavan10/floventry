@@ -44,4 +44,3 @@ export class UpdateWarehouseInput {
   @Field({ nullable: true })
   is_default?: boolean;
 }
-

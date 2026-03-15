@@ -26,7 +26,7 @@ class InventoryAdjustmentResult {
 @Resolver()
 @UseGuards(AuthGuard, RolesGuard)
 export class AdjustmentResolver {
-  constructor(private readonly inventoryService: InventoryService) { }
+  constructor(private readonly inventoryService: InventoryService) {}
 
   /**
    * Create inventory adjustment for stock correction

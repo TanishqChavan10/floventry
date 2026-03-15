@@ -14,7 +14,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver(() => SalesOrder)
 export class SalesResolver {
-  constructor(private readonly salesService: SalesService) { }
+  constructor(private readonly salesService: SalesService) {}
 
   @Query(() => [SalesOrder])
   @UseGuards(AuthGuard)

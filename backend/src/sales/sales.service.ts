@@ -21,7 +21,7 @@ export class SalesService {
     @InjectRepository(SalesOrderItem)
     private salesOrderItemRepository: Repository<SalesOrderItem>,
     private dataSource: DataSource,
-  ) { }
+  ) {}
 
   async create(
     input: CreateSalesOrderInput,

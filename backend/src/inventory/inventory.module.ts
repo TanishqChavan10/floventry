@@ -49,12 +49,12 @@ import { StockLotModule } from './stock-lot/stock-lot.module';
     NotificationsModule,
     PurchaseOrdersModule,
     StockHealthModule, // Stock health intelligence
-    AuditModule,       // Company audit logs
+    AuditModule, // Company audit logs
     // ── Inventory sub-modules ──────────────────────────────────────────────
-    BarcodeModule,     // Barcode generation, label printing, CSV export
-    GRNModule,         // Goods Receipt Notes
-    TransferModule,    // Warehouse-to-warehouse transfers
-    StockLotModule,    // Stock lot loader (request-scoped DataLoader)
+    BarcodeModule, // Barcode generation, label printing, CSV export
+    GRNModule, // Goods Receipt Notes
+    TransferModule, // Warehouse-to-warehouse transfers
+    StockLotModule, // Stock lot loader (request-scoped DataLoader)
   ],
   providers: [
     // Core inventory: products, categories, units, stock
@@ -64,10 +64,10 @@ import { StockLotModule } from './stock-lot/stock-lot.module';
     UnitResolver,
     StockResolver,
     LowStockResolver,
-    AdjustmentResolver,   // Depends on InventoryService — kept in core module
+    AdjustmentResolver, // Depends on InventoryService — kept in core module
   ],
   // Re-export sub-modules so their exported services (GRNService, TransferService,
   // BarcodeFormatService etc.) stay available to modules that import InventoryModule.
   exports: [InventoryService, BarcodeModule, GRNModule, TransferModule],
 })
-export class InventoryModule { }
+export class InventoryModule {}

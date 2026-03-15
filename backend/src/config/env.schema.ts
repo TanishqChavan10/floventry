@@ -104,11 +104,38 @@ export const envValidationSchema = Joi.object({
 
   RESEND_FROM: Joi.string()
     .optional()
-    .description('Default FROM address for Resend (e.g., "Flowventory <no-reply@yourdomain.com>")'),
+    .description(
+      'Default FROM address for Resend (e.g., "Flowventory <no-reply@yourdomain.com>")',
+    ),
 
   EMAIL_FROM: Joi.string()
     .optional()
-    .description('Legacy FROM address (fallback to RESEND_FROM) for outbound emails'),
+    .description(
+      'Legacy FROM address (fallback to RESEND_FROM) for outbound emails',
+    ),
+
+  // Razorpay (Payments)
+  RAZORPAY_KEY_ID: Joi.string()
+    .optional()
+    .description(
+      'Razorpay key_id (safe to expose to clients, but stored here for server-side order creation)',
+    ),
+
+  RAZORPAY_KEY_SECRET: Joi.string()
+    .optional()
+    .description('Razorpay key_secret (server only; NEVER expose to clients)'),
+
+  RAZORPAY_WEBHOOK_SECRET: Joi.string()
+    .optional()
+    .description('Razorpay webhook secret (used to verify webhook signatures)'),
+
+  RAZORPAY_PLAN_ID_STANDARD: Joi.string()
+    .optional()
+    .description('Razorpay plan_id for STANDARD (used for subscriptions)'),
+
+  RAZORPAY_PLAN_ID_PRO: Joi.string()
+    .optional()
+    .description('Razorpay plan_id for PRO (used for subscriptions)'),
 });
 
 /**

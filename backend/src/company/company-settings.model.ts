@@ -35,9 +35,9 @@ export class CompanySettings {
   restrict_manager_catalog?: boolean;
 
   // Subscription / Plan flags
-    // Subscription / Plan
-    @Field({ nullable: false })
-    plan: 'FREE' | 'STANDARD' | 'PRO';
+  // Subscription / Plan
+  @Field({ nullable: false })
+  plan: 'FREE' | 'STANDARD' | 'PRO';
 
   @Field()
   created_at: Date;

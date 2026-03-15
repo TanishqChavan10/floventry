@@ -11,10 +11,7 @@ export function computeStockHealth(
 ): StockHealthFlag {
   const qty = Number(quantity ?? 0);
 
-  if (
-    qty === 0 ||
-    (minStockLevel != null && qty <= Number(minStockLevel))
-  ) {
+  if (qty === 0 || (minStockLevel != null && qty <= Number(minStockLevel))) {
     return StockHealthFlag.CRITICAL;
   }
 

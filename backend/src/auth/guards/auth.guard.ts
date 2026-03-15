@@ -62,8 +62,7 @@ export class AuthGuard implements CanActivate {
       //-------------------------------------------------------
       // 2. Fetch internal user (your DB user) with relations
       //-------------------------------------------------------
-      const internalUser =
-        await this.authService.getUserById(supabaseUserId);
+      const internalUser = await this.authService.getUserById(supabaseUserId);
 
       //-------------------------------------------------------
       // 3. Determine activeCompanyId and role from DB
@@ -72,7 +71,8 @@ export class AuthGuard implements CanActivate {
 
       // Allow the client to specify company context per request.
       // This is validated against the user's active memberships.
-      const headerCompanyId = (request.headers['x-company-id'] as string | undefined) || undefined;
+      const headerCompanyId =
+        (request.headers['x-company-id'] as string | undefined) || undefined;
 
       const userCompanies: any[] = (internalUser as any)?.userCompanies || [];
       const membershipForDbActive = dbActiveCompanyId
@@ -81,7 +81,9 @@ export class AuthGuard implements CanActivate {
 
       const membershipForHeader = headerCompanyId
         ? userCompanies.find(
-            (uc) => uc.company_id === headerCompanyId && (uc.status ?? 'active') === 'active',
+            (uc) =>
+              uc.company_id === headerCompanyId &&
+              (uc.status ?? 'active') === 'active',
           )
         : undefined;
 
@@ -90,7 +92,8 @@ export class AuthGuard implements CanActivate {
       }
 
       const activeCompanyId = headerCompanyId || dbActiveCompanyId;
-      const activeRole = (membershipForHeader || membershipForDbActive)?.role || undefined;
+      const activeRole =
+        (membershipForHeader || membershipForDbActive)?.role || undefined;
 
       //-------------------------------------------------------
       // 4. Get email from Supabase Auth user (or fallback to DB)

@@ -48,18 +48,20 @@ export class CompanyStatsService {
    */
   async adjustCounters(
     companyId: string,
-    deltas: Partial<Record<
-      | 'total_products'
-      | 'total_stock_units'
-      | 'low_stock_count'
-      | 'critical_stock_count'
-      | 'expiring_soon_count'
-      | 'expired_count'
-      | 'total_warehouses'
-      | 'total_purchase_orders'
-      | 'total_sales_orders',
-      number
-    >>,
+    deltas: Partial<
+      Record<
+        | 'total_products'
+        | 'total_stock_units'
+        | 'low_stock_count'
+        | 'critical_stock_count'
+        | 'expiring_soon_count'
+        | 'expired_count'
+        | 'total_warehouses'
+        | 'total_purchase_orders'
+        | 'total_sales_orders',
+        number
+      >
+    >,
     manager?: EntityManager,
   ): Promise<void> {
     const repo = manager
@@ -80,9 +82,7 @@ export class CompanyStatsService {
 
     for (const [key, delta] of Object.entries(deltas)) {
       if (delta === 0 || delta === undefined) continue;
-      setClauses.push(
-        `"${key}" = GREATEST("${key}" + $${paramIndex}, 0)`,
-      );
+      setClauses.push(`"${key}" = GREATEST("${key}" + $${paramIndex}, 0)`);
       values.push(delta);
       paramIndex++;
     }
@@ -148,8 +148,10 @@ export class CompanyStatsService {
     if (oldHealth !== newHealth) {
       if (oldHealth === 'LOW') deltas.low_stock_count = -1;
       if (oldHealth === 'CRITICAL') deltas.critical_stock_count = -1;
-      if (newHealth === 'LOW') deltas.low_stock_count = (deltas.low_stock_count ?? 0) + 1;
-      if (newHealth === 'CRITICAL') deltas.critical_stock_count = (deltas.critical_stock_count ?? 0) + 1;
+      if (newHealth === 'LOW')
+        deltas.low_stock_count = (deltas.low_stock_count ?? 0) + 1;
+      if (newHealth === 'CRITICAL')
+        deltas.critical_stock_count = (deltas.critical_stock_count ?? 0) + 1;
     }
 
     if (Object.keys(deltas).length > 0) {
@@ -191,8 +193,10 @@ export class CompanyStatsService {
     const deltas: Record<string, number> = {};
     if (oldStatus === 'EXPIRING_SOON') deltas.expiring_soon_count = -1;
     if (oldStatus === 'EXPIRED') deltas.expired_count = -1;
-    if (newStatus === 'EXPIRING_SOON') deltas.expiring_soon_count = (deltas.expiring_soon_count ?? 0) + 1;
-    if (newStatus === 'EXPIRED') deltas.expired_count = (deltas.expired_count ?? 0) + 1;
+    if (newStatus === 'EXPIRING_SOON')
+      deltas.expiring_soon_count = (deltas.expiring_soon_count ?? 0) + 1;
+    if (newStatus === 'EXPIRED')
+      deltas.expired_count = (deltas.expired_count ?? 0) + 1;
 
     if (Object.keys(deltas).length > 0) {
       await this.adjustCounters(companyId, deltas, manager);
@@ -208,7 +212,10 @@ export class CompanyStatsService {
    *   - Periodic nightly reconciliation cron
    *   - Manual admin repair
    */
-  async recalculate(companyId: string, manager?: EntityManager): Promise<CompanyStats> {
+  async recalculate(
+    companyId: string,
+    manager?: EntityManager,
+  ): Promise<CompanyStats> {
     const repo = manager
       ? manager.getRepository(CompanyStats)
       : this.statsRepository;
@@ -262,6 +269,8 @@ export class CompanyStatsService {
       },
     );
 
-    return repo.findOne({ where: { company_id: companyId } }) as Promise<CompanyStats>;
+    return repo.findOne({
+      where: { company_id: companyId },
+    }) as Promise<CompanyStats>;
   }
 }

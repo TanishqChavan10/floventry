@@ -8,9 +8,20 @@ import {
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
-import { IsArray, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 import { AuthGuard } from '../../auth/guards/auth.guard';
-import { BarcodeThermalLabelService, type ThermalLabelSize } from './barcode-thermal-label.service';
+import {
+  BarcodeThermalLabelService,
+  type ThermalLabelSize,
+} from './barcode-thermal-label.service';
 
 class GenerateThermalZplDto {
   @IsArray()
@@ -49,7 +60,7 @@ export class ThermalLabelController {
       companyId,
       productIds: body.productIds,
       copies: body.copies ?? 1,
-      labelSize: (body.labelSize ?? '2x1') as ThermalLabelSize,
+      labelSize: body.labelSize ?? '2x1',
     });
 
     return zpl;

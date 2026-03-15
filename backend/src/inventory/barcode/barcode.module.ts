@@ -16,10 +16,19 @@ import { BarcodesController } from './barcodes.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Product, ProductBarcodeUnit, BarcodeHistory, Company]),
+    TypeOrmModule.forFeature([
+      Product,
+      ProductBarcodeUnit,
+      BarcodeHistory,
+      Company,
+    ]),
     AuthModule,
   ],
-  controllers: [BarcodeLabelController, ThermalLabelController, BarcodesController],
+  controllers: [
+    BarcodeLabelController,
+    ThermalLabelController,
+    BarcodesController,
+  ],
   providers: [
     BarcodeService,
     BarcodeFormatService,
@@ -27,6 +36,11 @@ import { BarcodesController } from './barcodes.controller';
     BarcodeThermalLabelService,
     BarcodeLabelResolver,
   ],
-  exports: [BarcodeService, BarcodeFormatService, BarcodeLabelService, BarcodeThermalLabelService],
+  exports: [
+    BarcodeService,
+    BarcodeFormatService,
+    BarcodeLabelService,
+    BarcodeThermalLabelService,
+  ],
 })
 export class BarcodeModule {}

@@ -96,44 +96,59 @@ export class GlobalSearchService {
       };
     }
 
-    const [products, warehouses, documents, suppliers, categories, purchaseOrders, salesOrders] =
-      await Promise.all([
-        this.searchProducts({
-          companyId: params.companyId,
-          query: q,
-          role: params.role,
-        }),
-        this.searchWarehouses({
-          companyId: params.companyId,
-          query: q,
-          userId: params.userId,
-          role: params.role,
-        }),
-        this.searchDocuments({
-          companyId: params.companyId,
-          query: q,
-          role: params.role,
-        }),
-        this.searchSuppliers({
-          companyId: params.companyId,
-          query: q,
-        }),
-        this.searchCategories({
-          companyId: params.companyId,
-          query: q,
-        }),
-        this.searchPurchaseOrders({
-          companyId: params.companyId,
-          query: q,
-          role: params.role,
-        }),
-        this.searchSalesOrders({
-          companyId: params.companyId,
-          query: q,
-        }),
-      ]);
+    const [
+      products,
+      warehouses,
+      documents,
+      suppliers,
+      categories,
+      purchaseOrders,
+      salesOrders,
+    ] = await Promise.all([
+      this.searchProducts({
+        companyId: params.companyId,
+        query: q,
+        role: params.role,
+      }),
+      this.searchWarehouses({
+        companyId: params.companyId,
+        query: q,
+        userId: params.userId,
+        role: params.role,
+      }),
+      this.searchDocuments({
+        companyId: params.companyId,
+        query: q,
+        role: params.role,
+      }),
+      this.searchSuppliers({
+        companyId: params.companyId,
+        query: q,
+      }),
+      this.searchCategories({
+        companyId: params.companyId,
+        query: q,
+      }),
+      this.searchPurchaseOrders({
+        companyId: params.companyId,
+        query: q,
+        role: params.role,
+      }),
+      this.searchSalesOrders({
+        companyId: params.companyId,
+        query: q,
+      }),
+    ]);
 
-    return { products, warehouses, documents, suppliers, categories, purchaseOrders, salesOrders };
+    return {
+      products,
+      warehouses,
+      documents,
+      suppliers,
+      categories,
+      purchaseOrders,
+      salesOrders,
+    };
   }
 
   private async searchProducts(params: {

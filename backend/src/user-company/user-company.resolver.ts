@@ -12,7 +12,7 @@ import { Role } from '../auth/enums/role.enum';
 
 @Resolver(() => UserCompany)
 export class UserCompanyResolver {
-  constructor(private readonly userCompanyService: UserCompanyService) { }
+  constructor(private readonly userCompanyService: UserCompanyService) {}
 
   @Query(() => [UserCompany])
   @UseGuards(AuthGuard)
@@ -37,7 +37,11 @@ export class UserCompanyResolver {
   ) {
     const requestingUserId = context.req.user.id;
     const requesterRole = (context.req.user.role || '').toUpperCase();
-    return this.userCompanyService.changeRole(input, requestingUserId, requesterRole);
+    return this.userCompanyService.changeRole(
+      input,
+      requestingUserId,
+      requesterRole,
+    );
   }
 
   @Mutation(() => Boolean)

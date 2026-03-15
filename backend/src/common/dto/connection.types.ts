@@ -7,10 +7,7 @@ import { CursorPageInfo } from './pagination.types';
  * Usage:
  *   const { Edge, Connection } = createConnectionTypes('Product', Product);
  */
-export function createConnectionTypes<T>(
-  name: string,
-  NodeType: Type<T>,
-) {
+export function createConnectionTypes<T>(name: string, NodeType: Type<T>) {
   @ObjectType(`${name}Edge`)
   class Edge {
     @Field(() => NodeType)

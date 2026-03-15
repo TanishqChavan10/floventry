@@ -6,11 +6,11 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuditLogService } from './audit-log.service';
+import { AuditLogResponse, AuditLogFilterInput } from './dto/audit-log.dto';
 import {
-  AuditLogResponse,
-  AuditLogFilterInput,
-} from './dto/audit-log.dto';
-import { PaginationInput, CursorPaginationInput } from '../common/dto/pagination.types';
+  PaginationInput,
+  CursorPaginationInput,
+} from '../common/dto/pagination.types';
 import { AuditLogConnection } from '../common/dto/connections';
 
 @Resolver()

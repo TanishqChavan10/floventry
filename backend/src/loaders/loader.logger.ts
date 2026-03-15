@@ -19,8 +19,6 @@ export function logLoaderBatch(
       `[SLOW] ${loaderName}: batch=${batchSize} ids, took ${durationMs}ms`,
     );
   } else if (process.env.NODE_ENV === 'development') {
-    logger.debug(
-      `${loaderName}: batch=${batchSize} ids, took ${durationMs}ms`,
-    );
+    logger.debug(`${loaderName}: batch=${batchSize} ids, took ${durationMs}ms`);
   }
 }

@@ -6,7 +6,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { Product } from '../entities/product.entity';
-import { ProductBarcodeUnit, ProductBarcodeUnitType } from './entities/product-barcode-unit.entity';
+import {
+  ProductBarcodeUnit,
+  ProductBarcodeUnitType,
+} from './entities/product-barcode-unit.entity';
 
 @Injectable()
 export class BarcodeService {
@@ -88,7 +91,10 @@ export class BarcodeService {
     return safe.slice(0, 6);
   }
 
-  private formatCompanySequenceBarcode(prefix: string, sequence: number): string {
+  private formatCompanySequenceBarcode(
+    prefix: string,
+    sequence: number,
+  ): string {
     const num = String(Math.max(0, Math.floor(sequence))).padStart(6, '0');
     return `${prefix}-${num}`;
   }
@@ -105,7 +111,10 @@ export class BarcodeService {
 
     const productRaw = await this.productRepository
       .createQueryBuilder('p')
-      .select('MAX(CAST(SUBSTRING(p.barcode from :tailRegex) AS INTEGER))', 'max')
+      .select(
+        'MAX(CAST(SUBSTRING(p.barcode from :tailRegex) AS INTEGER))',
+        'max',
+      )
       .where('p.company_id = :companyId', { companyId: params.companyId })
       .andWhere('p.barcode LIKE :like', { like })
       .andWhere('p.barcode ~ :fullRegex', { fullRegex })
@@ -114,7 +123,10 @@ export class BarcodeService {
 
     const unitRaw = await this.productBarcodeUnitRepository
       .createQueryBuilder('u')
-      .select('MAX(CAST(SUBSTRING(u.barcode_value from :tailRegex) AS INTEGER))', 'max')
+      .select(
+        'MAX(CAST(SUBSTRING(u.barcode_value from :tailRegex) AS INTEGER))',
+        'max',
+      )
       .where('u.company_id = :companyId', { companyId: params.companyId })
       .andWhere('u.barcode_value LIKE :like', { like })
       .andWhere('u.barcode_value ~ :fullRegex', { fullRegex })
@@ -124,7 +136,10 @@ export class BarcodeService {
     const pMax = productRaw?.max ? Number(productRaw.max) : 0;
     const uMax = unitRaw?.max ? Number(unitRaw.max) : 0;
 
-    return Math.max(Number.isFinite(pMax) ? pMax : 0, Number.isFinite(uMax) ? uMax : 0);
+    return Math.max(
+      Number.isFinite(pMax) ? pMax : 0,
+      Number.isFinite(uMax) ? uMax : 0,
+    );
   }
 
   /**
@@ -135,7 +150,10 @@ export class BarcodeService {
    * - Uniqueness is enforced across products (active/inactive), alternates, and packaging barcodes.
    * - Uses retry strategy to reduce collision risk under concurrent creation.
    */
-  async generateUniqueBarcode(companyId: string, prefix = 'FLO'): Promise<string> {
+  async generateUniqueBarcode(
+    companyId: string,
+    prefix = 'FLO',
+  ): Promise<string> {
     const normalizedPrefix = this.normalizeCompanyBarcodePrefix(prefix);
     const max = await this.getMaxCompanySequenceForPrefix({
       companyId,
@@ -145,7 +163,10 @@ export class BarcodeService {
     // Try sequentially from max+1 upward.
     const start = Math.max(0, Math.floor(max)) + 1;
     for (let i = 0; i < 250; i++) {
-      const candidate = this.formatCompanySequenceBarcode(normalizedPrefix, start + i);
+      const candidate = this.formatCompanySequenceBarcode(
+        normalizedPrefix,
+        start + i,
+      );
       try {
         const normalized = await this.normalizeAndValidateForCompany({
           companyId,
@@ -291,10 +312,14 @@ export class BarcodeService {
       .createQueryBuilder('u')
       .select(['u.id'])
       .where('u.company_id = :companyId', { companyId: params.companyId })
-      .andWhere('u.barcode_value = ANY(:barcodes)', { barcodes: uniqueBarcodes });
+      .andWhere('u.barcode_value = ANY(:barcodes)', {
+        barcodes: uniqueBarcodes,
+      });
 
     if (params.excludeBarcodeUnitId) {
-      unitQb.andWhere('u.id != :excludeUnitId', { excludeUnitId: params.excludeBarcodeUnitId });
+      unitQb.andWhere('u.id != :excludeUnitId', {
+        excludeUnitId: params.excludeBarcodeUnitId,
+      });
     }
 
     const unitConflict = await unitQb.getOne();
@@ -374,22 +399,22 @@ export class BarcodeService {
   async resolveBarcodeWithUnit(params: {
     companyId: string;
     barcode: string;
-  }): Promise<
-    | {
-        product: Product;
-        barcode_value: string;
-        unit_type: ProductBarcodeUnit['unit_type'];
-        quantity_multiplier: number;
-      }
-    | null
-  > {
+  }): Promise<{
+    product: Product;
+    barcode_value: string;
+    unit_type: ProductBarcodeUnit['unit_type'];
+    quantity_multiplier: number;
+  } | null> {
     const normalized = this.canonicalizeForScan(params.barcode);
     if (!normalized) {
       throw new BadRequestException('Barcode is required');
     }
 
     // If the scan looks like EAN-13, validate checksum early.
-    if (this.looksLikeEan13(normalized) && !this.isValidEan13Checksum(normalized)) {
+    if (
+      this.looksLikeEan13(normalized) &&
+      !this.isValidEan13Checksum(normalized)
+    ) {
       throw new BadRequestException('Invalid EAN-13 checksum');
     }
 
@@ -403,7 +428,11 @@ export class BarcodeService {
 
     if (unit) {
       const product = await this.productRepository.findOne({
-        where: { id: unit.product_id, company_id: params.companyId, is_active: true },
+        where: {
+          id: unit.product_id,
+          company_id: params.companyId,
+          is_active: true,
+        },
         relations: ['category', 'supplier'],
       });
 
@@ -416,7 +445,8 @@ export class BarcodeService {
         product,
         barcode_value: normalized,
         unit_type: unit.unit_type,
-        quantity_multiplier: Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1,
+        quantity_multiplier:
+          Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1,
       };
     }
 

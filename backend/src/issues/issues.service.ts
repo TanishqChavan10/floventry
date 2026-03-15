@@ -42,7 +42,7 @@ export class IssuesService {
     private notificationsService: NotificationsService,
     private readonly auditLogService: AuditLogService,
     private dataSource: DataSource,
-  ) { }
+  ) {}
 
   async create(
     input: CreateIssueNoteInput,
@@ -326,7 +326,7 @@ export class IssuesService {
         const daysUntilExpiry = Math.ceil(
           (normalizeExpiryToEndOfDayUTC(new Date(lot.expiry_date)).getTime() -
             now.getTime()) /
-          (1000 * 60 * 60 * 24),
+            (1000 * 60 * 60 * 24),
         );
         if (daysUntilExpiry <= 30) {
           expiryStatus = 'EXPIRING_SOON';

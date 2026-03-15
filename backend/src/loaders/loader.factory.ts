@@ -51,12 +51,27 @@ export class LoaderFactory {
 
     return {
       productLoader: createProductLoader(this.productRepository, safeCompanyId),
-      supplierLoader: createSupplierLoader(this.supplierRepository, safeCompanyId),
-      warehouseLoader: createWarehouseLoader(this.warehouseRepository, safeCompanyId),
-      categoryLoader: createCategoryLoader(this.categoryRepository, safeCompanyId),
+      supplierLoader: createSupplierLoader(
+        this.supplierRepository,
+        safeCompanyId,
+      ),
+      warehouseLoader: createWarehouseLoader(
+        this.warehouseRepository,
+        safeCompanyId,
+      ),
+      categoryLoader: createCategoryLoader(
+        this.categoryRepository,
+        safeCompanyId,
+      ),
       userLoader: createUserLoader(this.userRepository),
-      productsBySupplierLoader: createProductsBySupplierLoader(this.productRepository, safeCompanyId),
-      productCountBySupplierLoader: createProductCountBySupplierLoader(this.productRepository, safeCompanyId),
+      productsBySupplierLoader: createProductsBySupplierLoader(
+        this.productRepository,
+        safeCompanyId,
+      ),
+      productCountBySupplierLoader: createProductCountBySupplierLoader(
+        this.productRepository,
+        safeCompanyId,
+      ),
     };
   }
 }

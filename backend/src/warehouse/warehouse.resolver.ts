@@ -4,9 +4,7 @@ import { WarehouseService } from './warehouse.service';
 import { Warehouse } from './warehouse.entity';
 import { UserWarehouse } from './models/user-warehouse.model';
 import { CreateWarehouseInput } from './dto/create-warehouse.input';
-import {
-  UpdateWarehouseInput,
-} from './dto/update-warehouse.input';
+import { UpdateWarehouseInput } from './dto/update-warehouse.input';
 import { AssignUserToWarehouseInput } from './dto/assign-user-warehouse.input';
 import {
   WarehouseKPIs,
@@ -37,7 +35,7 @@ export class WarehouseResolver {
     private readonly warehouseService: WarehouseService,
     private readonly auditLogService: AuditLogService,
     private readonly notificationsService: NotificationsService,
-  ) { }
+  ) {}
 
   @Mutation(() => Warehouse)
   @UseGuards(AuthGuard, RolesGuard)
@@ -50,15 +48,26 @@ export class WarehouseResolver {
       throw new Error('No active company');
     }
 
-    const warehouse = await this.warehouseService.create(input, user.activeCompanyId, user.id);
+    const warehouse = await this.warehouseService.create(
+      input,
+      user.activeCompanyId,
+      user.id,
+    );
 
     await this.auditLogService.record({
       companyId: user.activeCompanyId,
-      actor: { id: user.id, email: user.email || '', role: user.role || 'OWNER' },
+      actor: {
+        id: user.id,
+        email: user.email || '',
+        role: user.role || 'OWNER',
+      },
       action: AuditAction.WAREHOUSE_CREATED,
       entityType: AuditEntityType.WAREHOUSE,
       entityId: warehouse.id,
-      metadata: { warehouseName: warehouse.name, warehouseSlug: warehouse.slug },
+      metadata: {
+        warehouseName: warehouse.name,
+        warehouseSlug: warehouse.slug,
+      },
     });
 
     return warehouse;
@@ -74,7 +83,6 @@ export class WarehouseResolver {
     return this.warehouseService.update(id, input);
   }
 
-
   @Mutation(() => Boolean)
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(Role.OWNER, Role.ADMIN)
@@ -87,7 +95,11 @@ export class WarehouseResolver {
 
     await this.auditLogService.record({
       companyId: user.activeCompanyId,
-      actor: { id: user.id, email: user.email || '', role: user.role || 'ADMIN' },
+      actor: {
+        id: user.id,
+        email: user.email || '',
+        role: user.role || 'ADMIN',
+      },
       action: AuditAction.WAREHOUSE_ARCHIVED,
       entityType: AuditEntityType.WAREHOUSE,
       entityId: id,
@@ -148,7 +160,11 @@ export class WarehouseResolver {
 
     await this.auditLogService.record({
       companyId: user.activeCompanyId,
-      actor: { id: user.id, email: user.email || '', role: user.role || 'OWNER' },
+      actor: {
+        id: user.id,
+        email: user.email || '',
+        role: user.role || 'OWNER',
+      },
       action: AuditAction.WAREHOUSE_REACTIVATED,
       entityType: AuditEntityType.WAREHOUSE,
       entityId: id,

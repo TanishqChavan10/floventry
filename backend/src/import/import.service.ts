@@ -161,7 +161,11 @@ export class ImportService {
     const errorRows: ValidatedRow[] = [];
 
     const normalizeKey = (value: unknown): string =>
-      typeof value === 'string' ? value.trim().toLowerCase() : String(value ?? '').trim().toLowerCase();
+      typeof value === 'string'
+        ? value.trim().toLowerCase()
+        : String(value ?? '')
+            .trim()
+            .toLowerCase();
 
     // Ensure uniqueness within this validation batch. DB uniqueness checks won't catch duplicates
     // within the same CSV until execution time.
@@ -174,7 +178,9 @@ export class ImportService {
       where: { company_id: companyId },
       select: ['sku', 'barcode'],
     });
-    const existingSKUKeys = new Set(existingProducts.map((p) => normalizeKey(p.sku)));
+    const existingSKUKeys = new Set(
+      existingProducts.map((p) => normalizeKey(p.sku)),
+    );
     const existingBarcodeKeys = new Set(
       existingProducts
         .map((p) => (p.barcode ? normalizeReserved(p.barcode) : ''))
@@ -220,7 +226,8 @@ export class ImportService {
       const errors: ValidationError[] = [];
 
       // Validate SKU
-      const skuRaw = typeof row.sku === 'string' ? row.sku : String(row.sku ?? '');
+      const skuRaw =
+        typeof row.sku === 'string' ? row.sku : String(row.sku ?? '');
       const skuTrimmed = skuRaw.trim();
       const skuKey = normalizeKey(skuTrimmed);
 
@@ -302,11 +309,12 @@ export class ImportService {
 
       if (inputBarcodeRaw) {
         try {
-          const normalized = await this.barcodeService.normalizeAndValidateForCompany({
-            companyId,
-            barcode: inputBarcodeRaw,
-            alternateBarcodes: null,
-          });
+          const normalized =
+            await this.barcodeService.normalizeAndValidateForCompany({
+              companyId,
+              barcode: inputBarcodeRaw,
+              alternateBarcodes: null,
+            });
 
           const canonical = normalized.barcode;
           if (!canonical) {
@@ -424,7 +432,8 @@ export class ImportService {
 
     // Ensure uniqueness within this import batch (the DB uniqueness check won't see uncommitted inserts).
     const reservedBarcodes = new Set<string>();
-    const normalizeReserved = (value: string) => this.barcodeService.normalizeBarcode(value) ?? '';
+    const normalizeReserved = (value: string) =>
+      this.barcodeService.normalizeBarcode(value) ?? '';
 
     const normalizeKey = (value: unknown): string =>
       typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -446,15 +455,15 @@ export class ImportService {
       return words.join('').slice(0, 6);
     };
 
-
-
     try {
       // Preload existing master data keys (case-insensitive) for fast existence checks + shortCode generation.
       const existingUnits = await queryRunner.manager.find(Unit, {
         where: { company_id: companyId },
         select: ['id', 'name', 'shortCode'],
       });
-      const unitShortCodes = new Set(existingUnits.map((u) => normalizeKey(u.shortCode)));
+      const unitShortCodes = new Set(
+        existingUnits.map((u) => normalizeKey(u.shortCode)),
+      );
 
       for (const row of validatedRows) {
         try {
@@ -528,11 +537,15 @@ export class ImportService {
             where: [
               {
                 company_id: companyId,
-                shortCode: Raw((alias) => `LOWER(${alias}) = LOWER(:v)`, { v: unitValue }),
+                shortCode: Raw((alias) => `LOWER(${alias}) = LOWER(:v)`, {
+                  v: unitValue,
+                }),
               },
               {
                 company_id: companyId,
-                name: Raw((alias) => `LOWER(${alias}) = LOWER(:v)`, { v: unitValue }),
+                name: Raw((alias) => `LOWER(${alias}) = LOWER(:v)`, {
+                  v: unitValue,
+                }),
               },
             ],
             select: ['id', 'name', 'shortCode'],
@@ -545,7 +558,9 @@ export class ImportService {
             let i = 2;
             while (unitShortCodes.has(normalizeKey(candidate))) {
               const suffix = String(i);
-              candidate = `${base}`.slice(0, Math.max(1, maxLen - suffix.length)) + suffix;
+              candidate =
+                `${base}`.slice(0, Math.max(1, maxLen - suffix.length)) +
+                suffix;
               i++;
             }
             unitShortCodes.add(normalizeKey(candidate));
@@ -575,32 +590,37 @@ export class ImportService {
           let nextBarcodeRaw: string | null = null;
 
           const inputBarcodeRaw =
-            typeof row.data.barcode === 'string' && row.data.barcode.trim().length > 0
+            typeof row.data.barcode === 'string' &&
+            row.data.barcode.trim().length > 0
               ? row.data.barcode
               : null;
 
           if (inputBarcodeRaw) {
-            const normalized = await this.barcodeService.normalizeAndValidateForCompany({
-              companyId,
-              barcode: inputBarcodeRaw,
-              alternateBarcodes: null,
-            });
+            const normalized =
+              await this.barcodeService.normalizeAndValidateForCompany({
+                companyId,
+                barcode: inputBarcodeRaw,
+                alternateBarcodes: null,
+              });
 
             const canonical = normalized.barcode;
             if (canonical) {
               const key = normalizeReserved(canonical);
               if (key && reservedBarcodes.has(key)) {
-                throw new BadRequestException('Duplicate barcode within import batch');
+                throw new BadRequestException(
+                  'Duplicate barcode within import batch',
+                );
               }
               if (key) reservedBarcodes.add(key);
               nextBarcodeRaw = canonical;
             }
           } else {
-            nextBarcodeRaw = await this.barcodeFormatService.generateNextCompanyBarcodeWithManager(
-              queryRunner.manager,
-              companyId,
-              { reservedBarcodes },
-            );
+            nextBarcodeRaw =
+              await this.barcodeFormatService.generateNextCompanyBarcodeWithManager(
+                queryRunner.manager,
+                companyId,
+                { reservedBarcodes },
+              );
           }
 
           const product = queryRunner.manager.create(Product, {
@@ -661,7 +681,9 @@ export class ImportService {
         successCount,
         validatedRows.length - successCount,
       )
-      .catch((err) => console.error('Failed to send import notification:', err));
+      .catch((err) =>
+        console.error('Failed to send import notification:', err),
+      );
 
     return {
       successCount,
@@ -1150,7 +1172,9 @@ export class ImportService {
         successCount,
         validatedRows.length - successCount,
       )
-      .catch((err) => console.error('Failed to send import notification:', err));
+      .catch((err) =>
+        console.error('Failed to send import notification:', err),
+      );
 
     return {
       successCount,

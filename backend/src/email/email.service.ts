@@ -23,7 +23,9 @@ export class EmailService {
   private initializeResendClient() {
     const apiKey = process.env.RESEND_API_KEY;
     const from =
-      process.env.RESEND_FROM || process.env.EMAIL_FROM || process.env.EMAIL_USER;
+      process.env.RESEND_FROM ||
+      process.env.EMAIL_FROM ||
+      process.env.EMAIL_USER;
 
     if (!apiKey) {
       this.logger.warn(
@@ -78,7 +80,9 @@ export class EmailService {
             Resend['emails']['send']
           >[0])
         : ({ ...base, html } satisfies Parameters<Resend['emails']['send']>[0])
-      : ({ ...base, text: text! } satisfies Parameters<Resend['emails']['send']>[0]);
+      : ({ ...base, text: text! } satisfies Parameters<
+          Resend['emails']['send']
+        >[0]);
 
     try {
       const { data, error } = await this.resend.emails.send(payload);

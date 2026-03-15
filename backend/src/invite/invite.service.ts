@@ -48,7 +48,7 @@ export class InviteService {
     private userWarehouseService: UserWarehouseService,
     private readonly auditLogService: AuditLogService,
     private readonly notificationsService: NotificationsService,
-  ) { }
+  ) {}
 
   private async validateWarehousesBelongToCompany(
     companyId: string,

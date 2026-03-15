@@ -1,4 +1,12 @@
-import { BadRequestException, Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -52,7 +60,11 @@ export class BarcodesController {
           csvEscape(p.name),
           csvEscape(p.sku),
           csvEscape(p.barcode ?? ''),
-          csvEscape(Array.isArray((p as any).alternate_barcodes) ? (p as any).alternate_barcodes.join('|') : ''),
+          csvEscape(
+            Array.isArray((p as any).alternate_barcodes)
+              ? (p as any).alternate_barcodes.join('|')
+              : '',
+          ),
         ].join(','),
       );
     }
@@ -60,7 +72,10 @@ export class BarcodesController {
     const csv = lines.join('\n');
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename="barcodes-export.csv"');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="barcodes-export.csv"',
+    );
     return res.send(csv);
   }
 }

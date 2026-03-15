@@ -17,7 +17,7 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 @Resolver(() => WarehouseTransfer)
 @UseGuards(AuthGuard, RolesGuard, WarehouseGuard)
 export class TransferResolver {
-  constructor(private transferService: TransferService) { }
+  constructor(private transferService: TransferService) {}
 
   // Staff can view transfers for their assigned warehouse
   @Query(() => [WarehouseTransfer], { name: 'warehouseTransfers' })
@@ -76,7 +76,10 @@ export class TransferResolver {
   // Post: MANAGER+ only
   @Mutation(() => WarehouseTransfer)
   @Roles(Role.OWNER, Role.ADMIN, Role.MANAGER)
-  async postWarehouseTransfer(@Args('id') id: string, @CurrentUser() user: any) {
+  async postWarehouseTransfer(
+    @Args('id') id: string,
+    @CurrentUser() user: any,
+  ) {
     if (!user.activeCompanyId) {
       throw new BadRequestException('Active company required');
     }

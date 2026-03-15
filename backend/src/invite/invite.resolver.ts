@@ -73,7 +73,9 @@ export class InviteResolver {
       throw new BadRequestException('Token is required');
     }
     const invite = await this.inviteService.validateInviteToken(token);
-    const userExists = await this.inviteService.checkEmailHasAccount(invite.email);
+    const userExists = await this.inviteService.checkEmailHasAccount(
+      invite.email,
+    );
     return {
       email: invite.email,
       companyName: invite.company?.name || 'Unknown Company',
@@ -102,9 +104,7 @@ export class InviteResolver {
     if (!context.req.user?.authId) {
       return [];
     }
-    const user = await this.authService.getUserById(
-      context.req.user.authId,
-    );
+    const user = await this.authService.getUserById(context.req.user.authId);
     if (!user || !user.email) {
       return [];
     }

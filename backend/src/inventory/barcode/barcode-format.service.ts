@@ -105,7 +105,8 @@ export class BarcodeFormatService {
     let nextNumber = this.parseNextNumber(company.barcode_next_number);
 
     const reserved = options?.reservedBarcodes;
-    const normalizeReservedKey = (value: string) => this.barcodeService.normalizeBarcode(value) ?? '';
+    const normalizeReservedKey = (value: string) =>
+      this.barcodeService.normalizeBarcode(value) ?? '';
 
     // Retry loop to handle collisions (e.g. format change mid-way, admin sets next too low).
     for (let attempt = 0; attempt < 5000; attempt++) {
@@ -117,11 +118,12 @@ export class BarcodeFormatService {
       });
 
       try {
-        const normalized = await this.barcodeService.normalizeAndValidateForCompany({
-          companyId,
-          barcode: candidate,
-          alternateBarcodes: null,
-        });
+        const normalized =
+          await this.barcodeService.normalizeAndValidateForCompany({
+            companyId,
+            barcode: candidate,
+            alternateBarcodes: null,
+          });
 
         if (normalized.barcode) {
           const key = reserved ? normalizeReservedKey(normalized.barcode) : '';

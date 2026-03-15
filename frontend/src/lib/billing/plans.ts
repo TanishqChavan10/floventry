@@ -4,7 +4,6 @@ export interface PricingPlan {
   id: 'free' | 'standard' | 'pro';
   name: PlanTier;
   tagline: string;
-  monthlyPrice: number;
   yearlyPrice: number;
   cta: string;
   ctaHref: string;
@@ -18,7 +17,6 @@ export const pricingPlans: PricingPlan[] = [
     id: 'free',
     name: 'Free',
     tagline: 'Full inventory workflow — no strings attached.',
-    monthlyPrice: 0,
     yearlyPrice: 0,
     cta: 'Sign up free',
     ctaHref: '/auth/sign-up',
@@ -42,7 +40,6 @@ export const pricingPlans: PricingPlan[] = [
     id: 'standard',
     name: 'Standard',
     tagline: 'Automation, exports, and multi-warehouse.',
-    monthlyPrice: 1499,
     yearlyPrice: 999,
     cta: 'Subscribe',
     ctaHref: '/auth/sign-up',
@@ -67,8 +64,7 @@ export const pricingPlans: PricingPlan[] = [
     id: 'pro',
     name: 'Pro',
     tagline: 'Advanced analytics, automation & control.',
-    monthlyPrice: 3499,
-    yearlyPrice: 2499,
+    yearlyPrice: 1499,
     cta: 'Subscribe',
     ctaHref: '/auth/sign-up',
     ctaStyle: 'outline',

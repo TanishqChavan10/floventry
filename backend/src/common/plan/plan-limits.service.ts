@@ -14,7 +14,12 @@ export type Plan = 'FREE' | 'STANDARD' | 'PRO';
 export const PLAN_LIMITS: Record<Plan, Record<ResourceType, number>> = {
   FREE: { product: 100, warehouse: 1, member: 2, supplier: 10 },
   STANDARD: { product: 500, warehouse: 3, member: 5, supplier: 50 },
-  PRO: { product: Infinity, warehouse: Infinity, member: Infinity, supplier: Infinity },
+  PRO: {
+    product: Infinity,
+    warehouse: Infinity,
+    member: Infinity,
+    supplier: Infinity,
+  },
 };
 
 @Injectable()

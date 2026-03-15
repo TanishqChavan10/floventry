@@ -83,10 +83,22 @@ import { BarcodeFormatService } from './barcode/barcode-format.service';
 import { AuditLogService } from '../audit/audit-log.service';
 import { AuditAction, AuditEntityType } from '../audit/enums/audit.enums';
 import { NotificationsService } from '../notifications/notifications.service';
-import { BarcodeHistory, BarcodeHistoryChangeType } from './barcode/entities/barcode-history.entity';
-import { ProductBarcodeUnit, ProductBarcodeUnitType } from './barcode/entities/product-barcode-unit.entity';
+import {
+  BarcodeHistory,
+  BarcodeHistoryChangeType,
+} from './barcode/entities/barcode-history.entity';
+import {
+  ProductBarcodeUnit,
+  ProductBarcodeUnitType,
+} from './barcode/entities/product-barcode-unit.entity';
 import { UpsertProductBarcodeUnitInput } from './barcode/dto/product-barcode-unit.input';
-import { PaginationInput, PageInfo, CursorPaginationInput, encodeCursor, decodeCursor } from '../common/dto/pagination.types';
+import {
+  PaginationInput,
+  PageInfo,
+  CursorPaginationInput,
+  encodeCursor,
+  decodeCursor,
+} from '../common/dto/pagination.types';
 import { ILike } from 'typeorm';
 
 @Injectable()
@@ -115,7 +127,7 @@ export class InventoryService {
     private readonly barcodeFormatService: BarcodeFormatService,
     private readonly auditLogService: AuditLogService,
     private readonly notificationsService: NotificationsService,
-  ) { }
+  ) {}
 
   // --- Packaging/Multi-unit barcodes ---
 
@@ -140,24 +152,35 @@ export class InventoryService {
       throw new NotFoundException('Product not found');
     }
 
-    const normalized = this.barcodeService.normalizeBarcode(params.input.barcode_value);
+    const normalized = this.barcodeService.normalizeBarcode(
+      params.input.barcode_value,
+    );
     if (!normalized) {
       throw new BadRequestException('Barcode is required');
     }
 
-    const primary = this.barcodeService.normalizeBarcode(product.barcode) ?? null;
+    const primary =
+      this.barcodeService.normalizeBarcode(product.barcode) ?? null;
     const alternates = Array.isArray((product as any).alternate_barcodes)
       ? ((product as any).alternate_barcodes as any[])
-        .map((v) => (typeof v === 'string' ? this.barcodeService.normalizeBarcode(v) : null))
-        .filter((v): v is string => typeof v === 'string' && v.length > 0)
+          .map((v) =>
+            typeof v === 'string'
+              ? this.barcodeService.normalizeBarcode(v)
+              : null,
+          )
+          .filter((v): v is string => typeof v === 'string' && v.length > 0)
       : [];
 
     if (primary && primary === normalized) {
-      throw new BadRequestException('Packaging barcode cannot equal the primary product barcode');
+      throw new BadRequestException(
+        'Packaging barcode cannot equal the primary product barcode',
+      );
     }
 
     if (alternates.includes(normalized)) {
-      throw new BadRequestException('Packaging barcode cannot equal an alternate product barcode');
+      throw new BadRequestException(
+        'Packaging barcode cannot equal an alternate product barcode',
+      );
     }
 
     await this.barcodeService.assertCompanyBarcodeUniqueness({
@@ -177,7 +200,9 @@ export class InventoryService {
         throw new NotFoundException('Packaging barcode unit not found');
       }
       if (existing.product_id !== params.input.product_id) {
-        throw new ForbiddenException('Cannot move barcode unit between products');
+        throw new ForbiddenException(
+          'Cannot move barcode unit between products',
+        );
       }
 
       entity = this.productBarcodeUnitRepository.merge(existing, {
@@ -427,7 +452,7 @@ export class InventoryService {
         ? barcodeCandidateRaw.trim().length > 0
           ? barcodeCandidateRaw
           : null
-        : barcodeCandidateRaw ?? null;
+        : (barcodeCandidateRaw ?? null);
 
     const ensuredBarcode =
       nextBarcodeRaw === null
@@ -552,8 +577,6 @@ export class InventoryService {
     };
   }
 
-
-
   async getBarcodeHistory(params: {
     companyId: string;
     productId: string;
@@ -598,7 +621,10 @@ export class InventoryService {
     return this.unitRepository.save(unit);
   }
 
-  async findAllUnits(companyId: string, includeArchived = false): Promise<Unit[]> {
+  async findAllUnits(
+    companyId: string,
+    includeArchived = false,
+  ): Promise<Unit[]> {
     return this.unitRepository.find({
       where: includeArchived
         ? { company_id: companyId }
@@ -1097,7 +1123,10 @@ export class InventoryService {
         company_id: companyId,
         warehouse_id: input.warehouse_id,
         product_id: input.product_id,
-        quantity: input.adjustment_type === AdjustmentType.IN ? adjustmentQty : -adjustmentQty,
+        quantity:
+          input.adjustment_type === AdjustmentType.IN
+            ? adjustmentQty
+            : -adjustmentQty,
         received_at: new Date(),
         source_type: LotSourceType.ADJUSTMENT,
         source_id: null, // No specific source for adjustments
@@ -2155,9 +2184,9 @@ export class InventoryService {
         ),
         days_to_expiry: lot.expiry_date
           ? Math.ceil(
-            (lot.expiry_date.getTime() - new Date().getTime()) /
-            (1000 * 60 * 60 * 24),
-          )
+              (lot.expiry_date.getTime() - new Date().getTime()) /
+                (1000 * 60 * 60 * 24),
+            )
           : undefined,
       }));
   }

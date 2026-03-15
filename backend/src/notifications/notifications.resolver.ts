@@ -1,4 +1,11 @@
-import { Resolver, Query, Mutation, Subscription, Args, Int } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Subscription,
+  Args,
+  Int,
+} from '@nestjs/graphql';
 import { Inject, UseGuards } from '@nestjs/common';
 import { PubSub } from 'graphql-subscriptions';
 import { NotificationsService } from './notifications.service';

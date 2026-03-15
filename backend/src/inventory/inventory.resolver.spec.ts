@@ -170,47 +170,47 @@ describe('ProductResolver › createProduct', () => {
   // What WE verify here: the method functions correctly for allowed roles
   // and that the service is only called when a valid user is present.
 
-    describe('roles', () => {
-      it('OWNER → should call service and return product', async () => {
-        inventoryService.createProduct.mockResolvedValue(mockProduct);
-        const result = await resolver.createProduct(
-          PRODUCT_INPUT as any,
-          makeUser('OWNER'),
-        );
-        expect(result).toEqual(mockProduct);
-        expect(inventoryService.createProduct).toHaveBeenCalledTimes(1);
-      });
-
-      it('ADMIN → should call service and return product', async () => {
-        inventoryService.createProduct.mockResolvedValue(mockProduct);
-        const result = await resolver.createProduct(
-          PRODUCT_INPUT as any,
-          makeUser('ADMIN'),
-        );
-        expect(result).toEqual(mockProduct);
-      });
-
-      it('MANAGER → should call service and return product', async () => {
-        // MANAGER is in @Roles(OWNER, ADMIN, MANAGER) — allowed by guard
-        inventoryService.createProduct.mockResolvedValue(mockProduct);
-        const result = await resolver.createProduct(
-          PRODUCT_INPUT as any,
-          makeUser('MANAGER'),
-        );
-        expect(result).toEqual(mockProduct);
-      });
-
-      it('STAFF → guard denies before method (RolesGuard blocks)', () => {
-        // In production the RolesGuard returns false before the method runs.
-        // Verified in roles.guard.spec.ts.  Here we confirm that if a STAFF
-        // user somehow reached the method body, the service would still be
-        // called (no role check inside the method itself).
-        inventoryService.createProduct.mockResolvedValue(mockProduct);
-        expect(
-          resolver.createProduct(PRODUCT_INPUT as any, makeUser('STAFF')),
-        ).resolves.toEqual(mockProduct);
-      });
+  describe('roles', () => {
+    it('OWNER → should call service and return product', async () => {
+      inventoryService.createProduct.mockResolvedValue(mockProduct);
+      const result = await resolver.createProduct(
+        PRODUCT_INPUT as any,
+        makeUser('OWNER'),
+      );
+      expect(result).toEqual(mockProduct);
+      expect(inventoryService.createProduct).toHaveBeenCalledTimes(1);
     });
+
+    it('ADMIN → should call service and return product', async () => {
+      inventoryService.createProduct.mockResolvedValue(mockProduct);
+      const result = await resolver.createProduct(
+        PRODUCT_INPUT as any,
+        makeUser('ADMIN'),
+      );
+      expect(result).toEqual(mockProduct);
+    });
+
+    it('MANAGER → should call service and return product', async () => {
+      // MANAGER is in @Roles(OWNER, ADMIN, MANAGER) — allowed by guard
+      inventoryService.createProduct.mockResolvedValue(mockProduct);
+      const result = await resolver.createProduct(
+        PRODUCT_INPUT as any,
+        makeUser('MANAGER'),
+      );
+      expect(result).toEqual(mockProduct);
+    });
+
+    it('STAFF → guard denies before method (RolesGuard blocks)', () => {
+      // In production the RolesGuard returns false before the method runs.
+      // Verified in roles.guard.spec.ts.  Here we confirm that if a STAFF
+      // user somehow reached the method body, the service would still be
+      // called (no role check inside the method itself).
+      inventoryService.createProduct.mockResolvedValue(mockProduct);
+      expect(
+        resolver.createProduct(PRODUCT_INPUT as any, makeUser('STAFF')),
+      ).resolves.toEqual(mockProduct);
+    });
+  });
 
   // ─── Success ─────────────────────────────────────────────
 

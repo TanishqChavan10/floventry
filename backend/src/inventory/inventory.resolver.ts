@@ -52,8 +52,15 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../auth/enums/role.enum';
 import { Supplier } from '../supplier/supplier.entity';
-import { PaginationInput, PageInfo, CursorPaginationInput } from '../common/dto/pagination.types';
-import { ProductConnection, StockMovementConnection } from '../common/dto/connections';
+import {
+  PaginationInput,
+  PageInfo,
+  CursorPaginationInput,
+} from '../common/dto/pagination.types';
+import {
+  ProductConnection,
+  StockMovementConnection,
+} from '../common/dto/connections';
 import { ObjectType, Field } from '@nestjs/graphql';
 import { StockLotLoader } from './stock-lot/stock-lot.loader';
 
@@ -69,7 +76,7 @@ export class PaginatedProductsResult {
 @Resolver(() => Category)
 @UseGuards(AuthGuard)
 export class CategoryResolver {
-  constructor(private readonly inventoryService: InventoryService) { }
+  constructor(private readonly inventoryService: InventoryService) {}
 
   @Mutation(() => Category)
   @UseGuards(RolesGuard)
@@ -115,7 +122,7 @@ export class CategoryResolver {
 @Resolver(() => Product)
 @UseGuards(AuthGuard)
 export class ProductResolver {
-  constructor(private readonly inventoryService: InventoryService) { }
+  constructor(private readonly inventoryService: InventoryService) {}
 
   @Mutation(() => Product)
   @UseGuards(RolesGuard)
@@ -213,7 +220,11 @@ export class ProductResolver {
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
-    return this.inventoryService.updateProduct(input, user.activeCompanyId, user.id);
+    return this.inventoryService.updateProduct(
+      input,
+      user.activeCompanyId,
+      user.id,
+    );
   }
 
   @Query(() => [BarcodeHistory], { name: 'barcodeHistory' })
@@ -287,7 +298,7 @@ export class ProductResolver {
 @Resolver(() => Unit)
 @UseGuards(AuthGuard)
 export class UnitResolver {
-  constructor(private readonly inventoryService: InventoryService) { }
+  constructor(private readonly inventoryService: InventoryService) {}
 
   @Mutation(() => Unit)
   @UseGuards(RolesGuard)
@@ -304,11 +315,15 @@ export class UnitResolver {
   @Query(() => [Unit], { name: 'units' })
   async findAll(
     @CurrentUser() user: any,
-    @Args('includeArchived', { type: () => Boolean, nullable: true }) includeArchived?: boolean,
+    @Args('includeArchived', { type: () => Boolean, nullable: true })
+    includeArchived?: boolean,
   ) {
     if (!user.activeCompanyId)
       throw new BadRequestException('Active company required');
-    return this.inventoryService.findAllUnits(user.activeCompanyId, includeArchived ?? false);
+    return this.inventoryService.findAllUnits(
+      user.activeCompanyId,
+      includeArchived ?? false,
+    );
   }
 
   @Mutation(() => Unit)
@@ -339,7 +354,7 @@ export class StockResolver {
   constructor(
     private readonly inventoryService: InventoryService,
     private readonly stockLotLoader: StockLotLoader,
-  ) { }
+  ) {}
 
   @ResolveField(() => [StockLot], { name: 'lots', nullable: true })
   async resolveLots(@Parent() stock: Stock) {

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from '../entities/product.entity';
@@ -14,7 +18,10 @@ export class BarcodeThermalLabelService {
     private readonly barcodeService: BarcodeService,
   ) {}
 
-  private getLabelDots(size: ThermalLabelSize): { width: number; height: number } {
+  private getLabelDots(size: ThermalLabelSize): {
+    width: number;
+    height: number;
+  } {
     // Assume 203dpi printers (common Zebra/TSC).
     // 4x6 inch at 203dpi: 812 x 1218 dots.
     if (size === '4x6') {
@@ -31,7 +38,10 @@ export class BarcodeThermalLabelService {
     return (text ?? '').replace(/[\^~]/g, ' ');
   }
 
-  private chooseBarcodeZpl(barcodeValue: string): { command: string; human: boolean } {
+  private chooseBarcodeZpl(barcodeValue: string): {
+    command: string;
+    human: boolean;
+  } {
     // EAN-13: ^BE, Code128: ^BC
     if (/^\d{13}$/.test(barcodeValue)) {
       return { command: '^BEN,60,Y,N', human: true };
@@ -58,11 +68,14 @@ export class BarcodeThermalLabelService {
       throw new BadRequestException('copies must be between 1 and 100');
     }
 
-    const labelSize = (params.labelSize ?? '2x1') as ThermalLabelSize;
+    const labelSize = params.labelSize ?? '2x1';
     const dots = this.getLabelDots(labelSize);
 
     const products = await this.productRepository.find({
-      where: params.productIds.map((id) => ({ id, company_id: params.companyId })),
+      where: params.productIds.map((id) => ({
+        id,
+        company_id: params.companyId,
+      })),
     });
 
     if (!products.length) {
@@ -174,7 +187,9 @@ export class BarcodeThermalLabelService {
     }
 
     if (!chunks.length) {
-      throw new BadRequestException('No printable barcodes found for the selection');
+      throw new BadRequestException(
+        'No printable barcodes found for the selection',
+      );
     }
 
     return chunks.join('\n');

@@ -112,7 +112,8 @@ export class ExpiryScannerService implements OnModuleInit {
       where: { company_id: companyId },
     });
 
-    const warningDays = settings?.expiry_warning_days ?? STANDARD_EXPIRY_WARNING_DAYS;
+    const warningDays =
+      settings?.expiry_warning_days ?? STANDARD_EXPIRY_WARNING_DAYS;
 
     settingsCache.set(companyId, warningDays);
     return warningDays;

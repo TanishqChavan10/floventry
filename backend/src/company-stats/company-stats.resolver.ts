@@ -24,7 +24,9 @@ export class CompanyStatsResolver {
 
   @Mutation(() => CompanyStats)
   @Roles(Role.OWNER, Role.ADMIN)
-  async recalculateCompanyStats(@CurrentUser() user: any): Promise<CompanyStats> {
+  async recalculateCompanyStats(
+    @CurrentUser() user: any,
+  ): Promise<CompanyStats> {
     if (!user?.activeCompanyId) {
       throw new Error('Active company required');
     }

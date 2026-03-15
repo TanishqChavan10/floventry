@@ -112,7 +112,10 @@ export class ImportResolver {
     @CurrentUser() user: any,
     @Args('autoCreateMissingUnits', { type: () => Boolean, nullable: true })
     autoCreateMissingUnits?: boolean,
-    @Args('autoCreateMissingCategories', { type: () => Boolean, nullable: true })
+    @Args('autoCreateMissingCategories', {
+      type: () => Boolean,
+      nullable: true,
+    })
     autoCreateMissingCategories?: boolean,
     @Args('autoCreateMissingSuppliers', { type: () => Boolean, nullable: true })
     autoCreateMissingSuppliers?: boolean,

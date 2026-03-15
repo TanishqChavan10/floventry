@@ -127,7 +127,6 @@ function Cell({ value }: { value: CellValue }) {
 /* ─── Main component ────────────────────────────────────────────────────── */
 export default function PricingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [yearly, setYearly] = useState(true);
 
   return (
     <div className="min-h-screen bg-white text-neutral-900 font-sans">
@@ -141,40 +140,13 @@ export default function PricingPage() {
         <p className="mx-auto mt-4 max-w-xl text-lg text-neutral-600 leading-relaxed">
           Transform how your business does inventory. Find the right Floventry plan for you.
         </p>
-
-        {/* Billing toggle */}
-        <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-neutral-200 bg-neutral-50 p-1">
-          <button
-            onClick={() => setYearly(false)}
-            className={`rounded-full px-5 py-2 text-sm font-semibold transition-colors ${
-              !yearly
-                ? 'bg-white text-neutral-900 shadow-sm border border-neutral-200'
-                : 'text-neutral-500'
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setYearly(true)}
-            className={`rounded-full px-5 py-2 text-sm font-semibold transition-colors ${
-              yearly
-                ? 'bg-white text-neutral-900 shadow-sm border border-neutral-200'
-                : 'text-neutral-500'
-            }`}
-          >
-            Yearly
-            <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-700">
-              Save 33%
-            </span>
-          </button>
-        </div>
       </section>
 
       {/* ── Plan cards ── */}
       <section className="pb-24 px-6">
-        <div className="mx-auto max-w-[1200px] grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="mx-auto max-w-300 grid grid-cols-1 gap-6 md:grid-cols-3">
           {pricingPlans.map((plan) => {
-            const price = yearly ? plan.yearlyPrice : plan.monthlyPrice;
+            const price = plan.yearlyPrice;
             const isPopular = plan.popular;
             return (
               <div
@@ -213,16 +185,9 @@ export default function PricingPage() {
                       <span
                         className={`ml-1 text-sm ${isPopular ? 'text-neutral-400' : 'text-neutral-500'}`}
                       >
-                        /mo
+                        /yr
                       </span>
                     </>
-                  )}
-                  {price !== null && price > 0 && yearly && (
-                    <p
-                      className={`mt-1 text-xs ${isPopular ? 'text-neutral-400' : 'text-neutral-500'}`}
-                    >
-                      Billed yearly
-                    </p>
                   )}
                 </div>
 
@@ -279,13 +244,13 @@ export default function PricingPage() {
           })}
         </div>
         <p className="mt-6 text-center text-xs text-neutral-400">
-          All prices shown in INR. No credit card required for free trial.
+          All prices shown in INR (per year).
         </p>
       </section>
 
       {/* ── Compare plans table ── */}
       <section className="border-t border-neutral-200 py-24 px-6">
-        <div className="mx-auto max-w-[1200px]">
+        <div className="mx-auto max-w-300">
           <h2 className="text-3xl font-semibold tracking-tight text-neutral-900 mb-12 text-center">
             Compare Plans
           </h2>
@@ -338,7 +303,7 @@ export default function PricingPage() {
       {/* ── Bottom CTA ── */}
       <section className="border-t border-neutral-200 py-24 px-6 text-center">
         <h2 className="text-3xl font-semibold tracking-tight text-neutral-900 md:text-4xl">
-          Try Floventry free for 14 days.
+          Try Floventry free 
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-lg text-neutral-600 leading-relaxed">
           Track your inventory, supplies, and tools — no credit card required.

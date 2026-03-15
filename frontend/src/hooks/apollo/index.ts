@@ -1,5 +1,6 @@
 export * from './useAuth';
 export * from './useBackgroundSync';
+export * from './useBilling';
 export * from './useCacheEviction';
 export * from './useCancellableQuery';
 export * from './useCatalog';

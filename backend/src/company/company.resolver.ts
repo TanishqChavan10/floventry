@@ -1,4 +1,13 @@
-import { Resolver, Query, Mutation, Args, ResolveField, Parent, Int, Float } from '@nestjs/graphql';
+import {
+  Resolver,
+  Query,
+  Mutation,
+  Args,
+  ResolveField,
+  Parent,
+  Int,
+  Float,
+} from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { Company, SwitchCompanyResponse } from './company.model';
@@ -43,10 +52,16 @@ export class CompanyResolver {
     const role = typeof user?.role === 'string' ? user.role.toUpperCase() : '';
     const isPrivileged = role === Role.ADMIN || role === Role.OWNER;
     if (!isPrivileged) return null;
-    if (user?.activeCompanyId && company?.id && user.activeCompanyId !== company.id) return null;
+    if (
+      user?.activeCompanyId &&
+      company?.id &&
+      user.activeCompanyId !== company.id
+    )
+      return null;
 
     const raw = company?.barcode_next_number;
-    const num = typeof raw === 'string' || typeof raw === 'number' ? Number(raw) : NaN;
+    const num =
+      typeof raw === 'string' || typeof raw === 'number' ? Number(raw) : NaN;
     return Number.isFinite(num) ? num : null;
   }
 
@@ -88,7 +103,10 @@ export class CompanyResolver {
 
   @Query(() => CompanyStats)
   @UseGuards(AuthGuard)
-  async companyStats(@Args('companyId') companyId: string, @CurrentUser() user: any) {
+  async companyStats(
+    @Args('companyId') companyId: string,
+    @CurrentUser() user: any,
+  ) {
     await this.companyService.assertActiveMembership(user.id, companyId);
     return this.companyService.getCompanyStats(companyId);
   }

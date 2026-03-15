@@ -12,8 +12,15 @@ import {
 } from './entities/warehouse-transfer.entity';
 import { WarehouseTransferItem } from './entities/warehouse-transfer-item.entity';
 import { Stock } from '../entities/stock.entity';
-import { StockLot, LotSourceType } from '../stock-lot/entities/stock-lot.entity';
-import { StockMovement, MovementType, ReferenceType } from '../entities/stock-movement.entity';
+import {
+  StockLot,
+  LotSourceType,
+} from '../stock-lot/entities/stock-lot.entity';
+import {
+  StockMovement,
+  MovementType,
+  ReferenceType,
+} from '../entities/stock-movement.entity';
 import {
   CreateTransferInput,
   UpdateTransferInput,
@@ -329,7 +336,9 @@ export class TransferService {
           },
         });
 
-        let destRunningQty = destStock ? Math.floor(Number(destStock.quantity)) : 0;
+        let destRunningQty = destStock
+          ? Math.floor(Number(destStock.quantity))
+          : 0;
         const destPreviousQty = destRunningQty;
 
         if (!destStock) {
@@ -469,11 +478,16 @@ export class TransferService {
       this.notificationsService
         .notifyTransferCompleted(
           transfer.company_id,
-          await this.notificationsService.getRecipients(transfer.company_id, transfer.source_warehouse_id),
+          await this.notificationsService.getRecipients(
+            transfer.company_id,
+            transfer.source_warehouse_id,
+          ),
           result.id,
           result.transfer_number,
         )
-        .catch((err) => console.error('Failed to send transfer notification:', err));
+        .catch((err) =>
+          console.error('Failed to send transfer notification:', err),
+        );
 
       return result;
     } catch (error) {

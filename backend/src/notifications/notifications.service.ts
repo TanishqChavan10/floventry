@@ -10,7 +10,11 @@ import {
 import { UserCompany } from '../user-company/user-company.entity';
 import { UserWarehouse } from '../auth/entities/user-warehouse.entity';
 import { Role } from '../auth/enums/role.enum';
-import { CursorPaginationInput, encodeCursor, decodeCursor } from '../common/dto/pagination.types';
+import {
+  CursorPaginationInput,
+  encodeCursor,
+  decodeCursor,
+} from '../common/dto/pagination.types';
 import { PUB_SUB } from '../common/pubsub/pubsub.module';
 
 @Injectable()

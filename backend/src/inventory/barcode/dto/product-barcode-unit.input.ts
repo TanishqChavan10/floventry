@@ -1,5 +1,14 @@
 import { Field, ID, InputType, Float } from '@nestjs/graphql';
-import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 import { ProductBarcodeUnitType } from '../entities/product-barcode-unit.entity';
 
 @InputType()

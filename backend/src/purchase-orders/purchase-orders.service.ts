@@ -94,14 +94,15 @@ export class PurchaseOrdersService {
 
     const where: any = { company_id: companyId };
 
-    const [items, totalCount] =
-      await this.purchaseOrderRepository.findAndCount({
+    const [items, totalCount] = await this.purchaseOrderRepository.findAndCount(
+      {
         where,
         relations: ['warehouse', 'supplier', 'user', 'items', 'items.product'],
         order: { created_at: 'DESC' },
         take: first,
         skip: offset,
-      });
+      },
+    );
 
     const edges = items.map((node, i) => ({
       node,

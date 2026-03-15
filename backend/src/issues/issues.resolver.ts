@@ -16,7 +16,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver(() => IssueNote)
 export class IssuesResolver {
-  constructor(private readonly issuesService: IssuesService) { }
+  constructor(private readonly issuesService: IssuesService) {}
 
   // Warehouse-scoped: Staff allowed (WarehouseGuard enforces assignment)
   @Query(() => [IssueNote])
@@ -42,7 +42,11 @@ export class IssuesResolver {
     if (!user.activeCompanyId) {
       return [];
     }
-    return this.issuesService.findAllByCompany(user.activeCompanyId, limit, offset);
+    return this.issuesService.findAllByCompany(
+      user.activeCompanyId,
+      limit,
+      offset,
+    );
   }
 
   @Query(() => IssueNote)

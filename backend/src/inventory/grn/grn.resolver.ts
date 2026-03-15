@@ -17,7 +17,7 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 @Resolver(() => GoodsReceiptNote)
 @UseGuards(AuthGuard, RolesGuard, WarehouseGuard)
 export class GRNResolver {
-  constructor(private grnService: GRNService) { }
+  constructor(private grnService: GRNService) {}
 
   // Staff can view GRNs in their assigned warehouse
   @Query(() => [GoodsReceiptNote], { name: 'grns' })

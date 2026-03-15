@@ -49,10 +49,20 @@ export function createProductsBySupplierLoader(
           supplier_id: In([...supplierIds]),
           company_id: companyId,
         },
-        select: { id: true, name: true, sku: true, unit: true, supplier_id: true },
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          unit: true,
+          supplier_id: true,
+        },
         order: { name: 'ASC' },
       });
-      logLoaderBatch('ProductsBySupplierLoader', supplierIds.length, Date.now() - start);
+      logLoaderBatch(
+        'ProductsBySupplierLoader',
+        supplierIds.length,
+        Date.now() - start,
+      );
 
       const grouped = new Map<string, Product[]>();
       for (const product of products) {
@@ -87,9 +97,15 @@ export function createProductCountBySupplierLoader(
         .andWhere('product.company_id = :companyId', { companyId })
         .groupBy('product.supplier_id')
         .getRawMany<{ supplier_id: string; count: string }>();
-      logLoaderBatch('ProductCountBySupplierLoader', supplierIds.length, Date.now() - start);
+      logLoaderBatch(
+        'ProductCountBySupplierLoader',
+        supplierIds.length,
+        Date.now() - start,
+      );
 
-      const countMap = new Map(counts.map((c) => [c.supplier_id, parseInt(c.count, 10)]));
+      const countMap = new Map(
+        counts.map((c) => [c.supplier_id, parseInt(c.count, 10)]),
+      );
       return supplierIds.map((id) => countMap.get(id) ?? 0);
     },
     { maxBatchSize: MAX_BATCH_SIZE, cache: true },

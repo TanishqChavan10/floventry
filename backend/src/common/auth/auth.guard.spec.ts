@@ -150,7 +150,9 @@ describe('AuthGuard', () => {
     });
 
     it('should throw when token is invalid', async () => {
-      const ctx = createHttpContext({ authorization: 'Bearer invalid.jwt.token' });
+      const ctx = createHttpContext({
+        authorization: 'Bearer invalid.jwt.token',
+      });
       await expect(guard.canActivate(ctx)).rejects.toThrow(GraphQLError);
     });
 

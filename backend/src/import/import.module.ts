@@ -34,7 +34,12 @@ import { NotificationsModule } from '../notifications/notifications.module';
     AuditModule,
     NotificationsModule,
   ],
-  providers: [ImportService, ImportResolver, BarcodeService, BarcodeFormatService],
+  providers: [
+    ImportService,
+    ImportResolver,
+    BarcodeService,
+    BarcodeFormatService,
+  ],
   exports: [ImportService],
 })
 export class ImportModule {}

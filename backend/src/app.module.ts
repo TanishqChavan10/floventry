@@ -28,6 +28,7 @@ import { ExpiryScannerModule } from './expiry-scanner/expiry-scanner.module';
 import { AuditModule } from './audit/audit.module';
 import { GlobalSearchModule } from './search/global-search.module';
 import { PubSubModule } from './common/pubsub/pubsub.module';
+import { BillingModule } from './billing/billing.module';
 
 @Module({
   imports: [
@@ -89,6 +90,7 @@ import { PubSubModule } from './common/pubsub/pubsub.module';
     RoleModule,
     GlobalSearchModule,
     PubSubModule,
+    BillingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

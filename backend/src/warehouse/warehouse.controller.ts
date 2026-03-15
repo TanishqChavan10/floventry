@@ -50,11 +50,7 @@ export class WarehouseController {
         'User does not have an active company selected',
       );
     }
-    return this.warehouseService.create(
-      createWarehouseDto,
-      companyId,
-      userId,
-    );
+    return this.warehouseService.create(createWarehouseDto, companyId, userId);
   }
 
   @Get()
@@ -66,7 +62,8 @@ export class WarehouseController {
 
     // If an explicit companyId is provided, use it (for immediate company-switch fetches).
     // Otherwise fall back to the user's activeCompanyId.
-    let companyId = queryCompanyId || (req?.user?.activeCompanyId as string | undefined);
+    let companyId =
+      queryCompanyId || (req?.user?.activeCompanyId as string | undefined);
 
     if (!companyId) {
       // If no activeCompanyId, try to get first company from user's companies
