@@ -298,7 +298,7 @@ export class BillingService {
       await this.billingPaymentRepository.save(renewalPayment);
       await this.companySettingsRepository.update(
         { company_id: companyId },
-        { plan },
+        { plan, cancel_at: null },
       );
       return;
     }
@@ -330,7 +330,7 @@ export class BillingService {
       if (shouldDowngradeNow) {
         await this.companySettingsRepository.update(
           { company_id: companyId },
-          { plan: 'FREE' },
+          { plan: 'FREE', cancel_at: null },
         );
       }
 
@@ -394,7 +394,7 @@ export class BillingService {
 
         await this.companySettingsRepository.update(
           { company_id: paymentRecord.company_id },
-          { plan: paymentRecord.plan },
+          { plan: paymentRecord.plan, cancel_at: null },
         );
       }
     }
@@ -653,6 +653,14 @@ export class BillingService {
       cancel_at_cycle_end: 1,
     });
 
+    const currentEnd = this.unixToDateOrUndefined((result as any)?.current_end);
+    
+    // Save the cancel date so the UI knows it will not renew
+    await this.companySettingsRepository.update(
+      { company_id: user.activeCompanyId },
+      { cancel_at: currentEnd || new Date() },
+    );
+
     return {
       success: true,
       subscriptionId,
@@ -692,7 +700,7 @@ export class BillingService {
 
     await this.companySettingsRepository.update(
       { company_id: user.activeCompanyId },
-      { plan: newPlan },
+      { plan: newPlan, cancel_at: null },
     );
 
     return {

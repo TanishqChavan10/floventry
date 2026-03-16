@@ -58,6 +58,9 @@ export class CompanySettings {
   })
   plan: 'FREE' | 'STANDARD' | 'PRO';
 
+  @Column({ type: 'timestamp', nullable: true })
+  cancel_at: Date | null;
+
   @CreateDateColumn()
   created_at: Date;
 }

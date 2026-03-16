@@ -39,6 +39,9 @@ export class CompanySettings {
   @Field({ nullable: false })
   plan: 'FREE' | 'STANDARD' | 'PRO';
 
+  @Field({ nullable: true })
+  cancel_at?: Date;
+
   @Field()
   created_at: Date;
 }

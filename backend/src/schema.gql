@@ -200,10 +200,16 @@ type BillingPaymentModel {
   interval: BillingInterval!
   paidAt: DateTime
   plan: String!
+  razorpayInvoiceId: String
+  razorpayInvoiceUrl: String
   razorpayOrderId: String
   razorpayPaymentId: String
   razorpaySubscriptionId: String
   status: String!
+}
+
+input CancelRazorpaySubscriptionInput {
+  razorpaySubscriptionId: String
 }
 
 type Category {
@@ -216,6 +222,11 @@ type Category {
   name: String!
   products: [Product!]
   updated_at: DateTime!
+}
+
+input ChangeRazorpaySubscriptionPlanInput {
+  newPlan: String!
+  razorpaySubscriptionId: String
 }
 
 type Company {
@@ -321,6 +332,7 @@ type CompanyMemberDetails {
 
 type CompanySettings {
   allow_negative_stock: Boolean
+  cancel_at: DateTime
   company_id: ID!
   created_at: DateTime!
   currency: String
@@ -762,8 +774,10 @@ type Mutation {
   cancelInvite(inviteId: String!): Boolean!
   cancelIssueNote(id: ID!): IssueNote!
   cancelPurchaseOrder(id: String!): PurchaseOrder!
+  cancelRazorpaySubscription(input: CancelRazorpaySubscriptionInput!): SubscriptionActionResult!
   cancelSalesOrder(id: ID!): SalesOrder!
   cancelWarehouseTransfer(id: String!): WarehouseTransfer!
+  changeRazorpaySubscriptionPlan(input: ChangeRazorpaySubscriptionPlanInput!): SubscriptionActionResult!
   confirmSalesOrder(id: ID!): SalesOrder!
   createCategory(input: CreateCategoryInput!): Category!
   createCompany(input: CreateCompanyInput!): Company!
@@ -807,6 +821,7 @@ type Mutation {
   postIssueNote(id: ID!): IssueNote!
   postWarehouseTransfer(id: String!): WarehouseTransfer!
   reactivateWarehouse(id: ID!): Warehouse!
+  refundRazorpayPayment(input: RefundRazorpayPaymentInput!): RefundResult!
   removeCategory(id: String!): Boolean!
   removeMemberValidated(membershipId: String!): Boolean!
   removeProduct(id: String!): Boolean!
@@ -1132,6 +1147,17 @@ enum ReferenceType {
   TRANSFER
 }
 
+input RefundRazorpayPaymentInput {
+  amount: Int
+  razorpayPaymentId: String!
+}
+
+type RefundResult {
+  refundId: String
+  status: String
+  success: Boolean!
+}
+
 """User roles in the company"""
 enum Role {
   ADMIN
@@ -1365,6 +1391,15 @@ type StockStatusDistribution {
 type Subscription {
   """Listen for new notifications for the current user"""
   notificationCreated: Notification!
+}
+
+type SubscriptionActionResult {
+  cancelAtCycleEnd: Boolean
+  currentEnd: DateTime
+  newPlan: String
+  status: String
+  subscriptionId: String
+  success: Boolean!
 }
 
 type Supplier {
