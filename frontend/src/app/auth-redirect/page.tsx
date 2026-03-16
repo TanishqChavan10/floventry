@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { getRoleHomePath } from '@/lib/role-home-path';
+import { useApolloClient } from '@apollo/client';
+import { API_URL } from '@/config/env';
 
 /**
  * Post-authentication redirect page
@@ -13,6 +15,7 @@ import { getRoleHomePath } from '@/lib/role-home-path';
 export default function AuthRedirect() {
   const router = useRouter();
   const { user, isAuthenticated, loading, isLoaded, isSignedIn, error } = useAuth();
+  const apolloClient = useApolloClient();
   const [backendDown, setBackendDown] = useState(false);
   const lastNavigationRef = useRef<string | null>(null);
 
@@ -62,22 +65,60 @@ export default function AuthRedirect() {
     }
   }, [isAuthenticated, user, loading, isLoaded, isSignedIn, error, router]);
 
+  // If the user is signed in but the backend is in a cold start, keep a friendly
+  // loading screen up and retry until the server responds.
+  useEffect(() => {
+    if (!backendDown) return;
+
+    const controller = new AbortController();
+    let disposed = false;
+    let attempt = 0;
+
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const waitForBackend = async () => {
+      while (!disposed) {
+        try {
+          const res = await fetch(`${API_URL}/health`, {
+            method: 'GET',
+            cache: 'no-store',
+            signal: controller.signal,
+          });
+
+          if (res.ok) {
+            // Backend is up — force Apollo to refetch `me` under the current token.
+            await apolloClient.resetStore();
+            setBackendDown(false);
+            return;
+          }
+        } catch {
+          // Ignore network errors during cold start.
+        }
+
+        attempt += 1;
+        // Exponential backoff up to 8s (Render free tier can take ~30-60s to wake).
+        const delayMs = Math.min(500 * 2 ** Math.min(attempt, 5), 8000);
+        await sleep(delayMs);
+      }
+    };
+
+    waitForBackend();
+
+    return () => {
+      disposed = true;
+      controller.abort();
+    };
+  }, [backendDown, apolloClient]);
+
   if (backendDown) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="text-center max-w-sm space-y-4">
-          <AlertCircle className="mx-auto h-10 w-10 text-red-500" />
-          <h2 className="text-lg font-semibold text-neutral-900">Unable to reach server</h2>
+          <Loader2 className="mx-auto h-10 w-10 animate-spin text-neutral-900" />
+          <h2 className="text-lg font-semibold text-neutral-900">Starting server…</h2>
           <p className="text-sm text-neutral-600">
-            You&apos;re signed in but we couldn&apos;t connect to the server. Please try again.
+            The backend is waking up on the free plan. We&apos;ll continue automatically.
           </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-neutral-900 text-white text-sm hover:bg-neutral-800 transition"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Retry
-          </button>
         </div>
       </div>
     );

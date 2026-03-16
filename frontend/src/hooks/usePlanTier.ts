@@ -12,6 +12,8 @@ export interface UsePlanTierReturn {
   isPro: boolean;
   /** Whether the company is on the Free plan. */
   isFree: boolean;
+  /** Date when the subscription will cancel, if applicable. */
+  cancelAt: Date | null;
   /** Loading state while fetching company data. */
   loading: boolean;
 }
@@ -31,10 +33,14 @@ export function usePlanTier(): UsePlanTierReturn {
   else if (planRaw === 'STANDARD') plan = 'Standard';
   else plan = 'Free';
 
+  const cancelAtRaw = data?.companyBySlug?.settings?.cancel_at;
+  const cancelAt = cancelAtRaw ? new Date(cancelAtRaw) : null;
+
   return {
     plan,
     isPro: plan === 'Pro',
     isFree: plan === 'Free',
+    cancelAt,
     loading,
   };
 }

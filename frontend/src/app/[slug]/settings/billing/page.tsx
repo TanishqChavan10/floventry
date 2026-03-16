@@ -7,6 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Check, Download } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { usePlanTier } from '@/hooks/usePlanTier';
 import { useRbac } from '@/hooks/use-rbac';
 import { formatPlanPrice, pricingPlans } from '@/lib/billing/plans';
@@ -126,7 +134,7 @@ function formatInrFromPaise(paise: number): string {
 export default function BillingSettingsPage() {
   const params = useParams();
   const slug = params?.slug as string;
-  const { plan, isPro, isFree, loading } = usePlanTier();
+  const { plan, isPro, isFree, cancelAt, loading } = usePlanTier();
   const rbac = useRbac();
   const currentTier = plan;
 
@@ -142,6 +150,8 @@ export default function BillingSettingsPage() {
     loading: historyLoading,
     refetch: refetchHistory,
   } = useBillingHistory({ skip: !canManageBilling });
+
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   const isBusy = creatingOrder || verifyingPayment || cancellingSubscription || changingPlan;
   const billingHistory = useMemo<BillingHistoryRow[]>(
@@ -189,7 +199,7 @@ export default function BillingSettingsPage() {
       const checkoutId: string = order.subscriptionId || order.orderId;
       const isSubscription: boolean = !!order.subscriptionId;
 
-      const checkoutImageUrl = new URL('/1.svg', window.location.origin).toString();
+      const checkoutImageUrl = new URL('/4.svg', window.location.origin).toString();
 
       const options: RazorpayCheckoutOptions = {
         key: keyId,
@@ -285,11 +295,16 @@ export default function BillingSettingsPage() {
         return;
       }
 
-      const ok = window.confirm(
-        'Cancel subscription renewal? Your plan will remain active until the end of the current billing period.',
-      );
-      if (!ok) return;
+      setIsCancelModalOpen(true);
+    } catch (e) {
+      toast.error(getErrorMessage(e) || 'Unable to initiate cancellation');
+    }
+  }
 
+  async function confirmCancelSubscription() {
+    try {
+      setIsCancelModalOpen(false);
+      
       const res = await cancelSubscription({
         variables: { input: {} },
       });
@@ -365,14 +380,21 @@ export default function BillingSettingsPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div>
-                  <p className="text-2xl font-bold text-foreground">{currentTier}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {currentTier}
+                    {cancelAt && !isFree && (
+                      <Badge variant="destructive" className="ml-3 text-xs align-middle">
+                        Cancels on {cancelAt.toLocaleDateString()}
+                      </Badge>
+                    )}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     {isPro ? 'Renews yearly' : isFree ? 'No payment required' : 'Renews yearly'}
                   </p>
                 </div>
               </div>
 
-              {canManageBilling && !isFree && (
+              {canManageBilling && !isFree && !cancelAt && (
                 <Button
                   variant="outline"
                   disabled={isBusy}
@@ -539,6 +561,27 @@ export default function BillingSettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={isCancelModalOpen} onOpenChange={setIsCancelModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Subscription?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel your plan? Your subscription will remain
+              active until the end of the current billing period, but it will not automatically
+              renew.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsCancelModalOpen(false)} disabled={isBusy}>
+              Keep Plan
+            </Button>
+            <Button variant="destructive" onClick={() => void confirmCancelSubscription()} disabled={isBusy}>
+              {cancellingSubscription ? 'Cancelling...' : 'Cancel Renewal'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
