@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "@vercel/speed-insights": "^2.0.0",
-    "dataloader": "^2.2.3"
-  }
-}
