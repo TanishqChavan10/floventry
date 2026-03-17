@@ -6,6 +6,7 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  Relation,
 } from 'typeorm';
 import { SalesOrder } from './sales-order.entity';
 import { Product } from '../../inventory/entities/product.entity';
@@ -25,7 +26,7 @@ export class SalesOrderItem {
   @Field(() => SalesOrder)
   @ManyToOne(() => SalesOrder, (order) => order.items, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'sales_order_id' })
-  sales_order: SalesOrder;
+  sales_order: Relation<SalesOrder>;
 
   @Field()
   @Column('uuid')
@@ -34,7 +35,7 @@ export class SalesOrderItem {
   @Field(() => Product)
   @ManyToOne(() => Product, { nullable: false })
   @JoinColumn({ name: 'product_id' })
-  product: Product;
+  product: Relation<Product>;
 
   @Field(() => Float)
   @Column('decimal', { precision: 10, scale: 2 })

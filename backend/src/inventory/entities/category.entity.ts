@@ -9,6 +9,7 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  Relation,
 } from 'typeorm';
 import { Product } from './product.entity';
 import { Company } from '../../company/company.entity';
@@ -29,7 +30,7 @@ export class Category {
   @Field(() => CompanyModel)
   @ManyToOne(() => Company, { nullable: false })
   @JoinColumn({ name: 'company_id' })
-  company: Company;
+  company: Relation<Company>;
 
   @Field()
   @Column()
@@ -45,7 +46,7 @@ export class Category {
 
   @Field(() => [Product], { nullable: true })
   @OneToMany(() => Product, (product) => product.category)
-  products: Product[];
+  products: Relation<Product>[];
 
   @Field()
   @CreateDateColumn()

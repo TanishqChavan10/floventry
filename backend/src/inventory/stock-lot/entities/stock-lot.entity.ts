@@ -7,6 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  Relation,
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { Company } from '../../../company/company.entity';
@@ -84,14 +85,14 @@ export class StockLot {
   // Relations
   @ManyToOne(() => Company)
   @JoinColumn({ name: 'company_id' })
-  company: Company;
+  company: Relation<Company>;
 
   @ManyToOne(() => Warehouse)
   @JoinColumn({ name: 'warehouse_id' })
-  warehouse: Warehouse;
+  warehouse: Relation<Warehouse>;
 
   @Field(() => Product)
   @ManyToOne(() => Product)
   @JoinColumn({ name: 'product_id' })
-  product: Product;
+  product: Relation<Product>;
 }

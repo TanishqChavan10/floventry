@@ -82,7 +82,8 @@ export const GET_COMPANY_BY_SLUG = gql`
       }
       settings {
         id
-          plan
+        plan
+        cancel_at
         currency
         timezone
         # Inventory

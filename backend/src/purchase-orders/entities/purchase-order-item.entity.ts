@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Relation,
 } from 'typeorm';
 import { ObjectType, Field, ID, Float } from '@nestjs/graphql';
 import { PurchaseOrder } from './purchase-order.entity';
@@ -27,7 +28,7 @@ export class PurchaseOrderItem {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'purchase_order_id' })
-  purchase_order: PurchaseOrder;
+  purchase_order: Relation<PurchaseOrder>;
 
   @Field()
   @Column('uuid')
@@ -36,7 +37,7 @@ export class PurchaseOrderItem {
   @Field(() => Product)
   @ManyToOne(() => Product, { nullable: false })
   @JoinColumn({ name: 'product_id' })
-  product: Product;
+  product: Relation<Product>;
 
   @Field(() => Float)
   @Column('decimal', { precision: 10, scale: 2 })

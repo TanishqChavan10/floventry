@@ -9,6 +9,7 @@ import {
   OneToMany,
   JoinColumn,
   Index,
+  Relation,
 } from 'typeorm';
 import { Company } from '../../../company/company.entity';
 import { Warehouse } from '../../../warehouse/warehouse.entity';
@@ -43,7 +44,7 @@ export class WarehouseTransfer {
 
   @ManyToOne(() => Company, { nullable: false })
   @JoinColumn({ name: 'company_id' })
-  company: Company;
+  company: Relation<Company>;
 
   @Field()
   @Column('uuid')
@@ -52,7 +53,7 @@ export class WarehouseTransfer {
   @Field(() => Warehouse)
   @ManyToOne(() => Warehouse, { nullable: false })
   @JoinColumn({ name: 'source_warehouse_id' })
-  source_warehouse: Warehouse;
+  source_warehouse: Relation<Warehouse>;
 
   @Field()
   @Column('uuid')
@@ -61,7 +62,7 @@ export class WarehouseTransfer {
   @Field(() => Warehouse)
   @ManyToOne(() => Warehouse, { nullable: false })
   @JoinColumn({ name: 'destination_warehouse_id' })
-  destination_warehouse: Warehouse;
+  destination_warehouse: Relation<Warehouse>;
 
   @Field()
   @Column({ unique: true })
@@ -86,7 +87,7 @@ export class WarehouseTransfer {
   @Field(() => User, { nullable: true })
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'created_by' })
-  user: User;
+  user: Relation<User>;
 
   @Field({ nullable: true })
   @Column({ nullable: true })
@@ -96,7 +97,7 @@ export class WarehouseTransfer {
   @OneToMany(() => WarehouseTransferItem, (item) => item.warehouse_transfer, {
     cascade: true,
   })
-  items: WarehouseTransferItem[];
+  items: Relation<WarehouseTransferItem>[];
 
   @Field()
   @CreateDateColumn()

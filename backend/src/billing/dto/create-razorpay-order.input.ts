@@ -10,4 +10,7 @@ export class CreateRazorpayOrderInput {
 
   @Field(() => BillingInterval)
   interval: BillingInterval;
+
+  @Field({ nullable: true })
+  idempotencyKey?: string;
 }

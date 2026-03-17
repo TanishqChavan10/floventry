@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Relation,
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { GoodsReceiptNote } from './goods-receipt-note.entity';
@@ -23,7 +24,7 @@ export class GRNItem {
 
   @ManyToOne(() => GoodsReceiptNote, (grn) => grn.items, { nullable: false })
   @JoinColumn({ name: 'goods_receipt_note_id' })
-  goods_receipt_note: GoodsReceiptNote;
+  goods_receipt_note: Relation<GoodsReceiptNote>;
 
   @Column('uuid')
   purchase_order_item_id: string;
@@ -31,7 +32,7 @@ export class GRNItem {
   @Field(() => PurchaseOrderItem)
   @ManyToOne(() => PurchaseOrderItem, { nullable: false })
   @JoinColumn({ name: 'purchase_order_item_id' })
-  purchase_order_item: PurchaseOrderItem;
+  purchase_order_item: Relation<PurchaseOrderItem>;
 
   @Column('uuid')
   product_id: string;
@@ -39,7 +40,7 @@ export class GRNItem {
   @Field(() => Product)
   @ManyToOne(() => Product, { nullable: false })
   @JoinColumn({ name: 'product_id' })
-  product: Product;
+  product: Relation<Product>;
 
   @Field()
   @Column({ type: 'decimal', precision: 10, scale: 2 })

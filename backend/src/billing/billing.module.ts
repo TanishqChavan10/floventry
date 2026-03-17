@@ -7,10 +7,11 @@ import { BillingPayment } from './entities/billing-payment.entity';
 import { CompanySettings } from '../company/company-settings.entity';
 import { RazorpayWebhookController } from './razorpay-webhook.controller';
 import { AuthModule } from '../auth/auth.module';
+import { RazorpayWebhookEvent } from './entities/razorpay-webhook-event.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([BillingPayment, CompanySettings]),
+    TypeOrmModule.forFeature([BillingPayment, CompanySettings, RazorpayWebhookEvent]),
     ConfigModule,
     AuthModule,
   ],

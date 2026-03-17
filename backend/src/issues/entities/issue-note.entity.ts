@@ -8,6 +8,7 @@ import {
   OneToMany,
   JoinColumn,
   Index,
+  Relation,
 } from 'typeorm';
 import { Company } from '../../company/company.entity';
 import { Warehouse } from '../../warehouse/warehouse.entity';
@@ -42,7 +43,7 @@ export class IssueNote {
 
   @ManyToOne(() => Company, { nullable: false })
   @JoinColumn({ name: 'company_id' })
-  company: Company;
+  company: Relation<Company>;
 
   @Field()
   @Column('uuid')
@@ -51,7 +52,7 @@ export class IssueNote {
   @Field(() => Warehouse, { nullable: true })
   @ManyToOne(() => Warehouse, { nullable: true })
   @JoinColumn({ name: 'warehouse_id' })
-  warehouse: Warehouse;
+  warehouse: Relation<Warehouse>;
 
   @Field()
   @Column({ type: 'varchar', length: 50, unique: true })
@@ -64,7 +65,7 @@ export class IssueNote {
   @Field(() => SalesOrder, { nullable: true })
   @ManyToOne(() => SalesOrder, { nullable: true })
   @JoinColumn({ name: 'sales_order_id' })
-  sales_order: SalesOrder;
+  sales_order: Relation<SalesOrder>;
 
   @Field(() => IssueNoteStatus)
   @Column({
@@ -81,7 +82,7 @@ export class IssueNote {
   @Field(() => User, { nullable: true })
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'issued_by' })
-  issuer: User;
+  issuer: Relation<User>;
 
   @Field({ nullable: true })
   @Column({ type: 'timestamp', nullable: true })
@@ -89,7 +90,7 @@ export class IssueNote {
 
   @Field(() => [IssueNoteItem], { nullable: true })
   @OneToMany(() => IssueNoteItem, (item) => item.issue_note, { cascade: true })
-  items: IssueNoteItem[];
+  items: Relation<IssueNoteItem>[];
 
   @Field()
   @CreateDateColumn()

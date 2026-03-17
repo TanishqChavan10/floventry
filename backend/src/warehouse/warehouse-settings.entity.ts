@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   OneToOne,
   JoinColumn,
+  Relation,
 } from 'typeorm';
 import { Warehouse } from './warehouse.entity';
 
@@ -15,7 +16,7 @@ export class WarehouseSettings {
 
   @OneToOne(() => Warehouse, (warehouse) => warehouse.settings)
   @JoinColumn({ name: 'warehouse_id' })
-  warehouse: Warehouse;
+  warehouse: Relation<Warehouse>;
 
   @Column('uuid')
   warehouse_id: string;

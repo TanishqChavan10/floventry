@@ -10,6 +10,7 @@ import {
   OneToOne,
   JoinColumn,
   Index,
+  Relation,
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { Company } from '../company/company.entity';
@@ -98,13 +99,13 @@ export class Warehouse {
   // Relationships
   @ManyToOne(() => Company)
   @JoinColumn({ name: 'company_id' })
-  company: Company;
+  company: Relation<Company>;
 
   @Field(() => WarehouseSettingsModel, { nullable: true })
   @OneToOne(() => WarehouseSettings, (settings) => settings.warehouse, {
     cascade: true,
   })
-  settings: WarehouseSettings;
+  settings: Relation<WarehouseSettings>;
 
   // Removed commented code - userWarehouses relation
 }

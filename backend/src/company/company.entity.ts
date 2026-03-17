@@ -9,6 +9,7 @@ import {
   OneToMany,
   JoinColumn,
   ManyToOne,
+  Relation,
 } from 'typeorm';
 import { CompanySettings } from './company-settings.entity';
 import { UserCompany } from '../user-company/user-company.entity';
@@ -98,18 +99,18 @@ export class Company {
   // Relationships
   @ManyToOne(() => User, { nullable: false })
   @JoinColumn({ name: 'created_by' })
-  createdBy: User;
+  createdBy: Relation<User>;
 
   @OneToOne(() => CompanySettings, (settings) => settings.company, {
     cascade: true,
   })
-  settings: CompanySettings;
+  settings: Relation<CompanySettings>;
 
   @OneToMany(() => UserCompany, (userCompany) => userCompany.company)
-  userCompanies: UserCompany[];
+  userCompanies: Relation<UserCompany>[];
 
   @OneToMany(() => Warehouse, (warehouse) => warehouse.company)
-  warehouses: Warehouse[];
+  warehouses: Relation<Warehouse>[];
 
   // Catalog relationships (lazy loading - only fetch when needed)
   // Using lazy: true to avoid circular dependency issues

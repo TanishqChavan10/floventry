@@ -311,6 +311,7 @@ export default function BillingSettingsPage() {
 
       if (res.data?.cancelRazorpaySubscription?.success) {
         toast.success('Subscription cancellation scheduled');
+        await apolloClient.refetchQueries({ include: ['GetCompanyBySlug'] });
       } else {
         toast.error('Unable to cancel subscription');
       }

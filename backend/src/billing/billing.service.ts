@@ -86,6 +86,8 @@ function computeAmountInPaise(
   return Math.round(amountInInr * 100);
 }
 
+import { RazorpayWebhookEvent } from './entities/razorpay-webhook-event.entity';
+
 @Injectable()
 export class BillingService {
   constructor(
@@ -94,6 +96,8 @@ export class BillingService {
     private readonly billingPaymentRepository: Repository<BillingPayment>,
     @InjectRepository(CompanySettings)
     private readonly companySettingsRepository: Repository<CompanySettings>,
+    @InjectRepository(RazorpayWebhookEvent)
+    private readonly webhookEventRepository: Repository<RazorpayWebhookEvent>,
   ) {}
 
   private getRazorpayClient(): Razorpay {
@@ -220,6 +224,7 @@ export class BillingService {
   async handleRazorpayWebhook(params: {
     rawBody: Buffer;
     signature?: string;
+    eventId?: string;
     body: unknown;
   }): Promise<void> {
     this.verifyRazorpayWebhookSignature({
@@ -229,6 +234,21 @@ export class BillingService {
 
     const body = params.body as RazorpayWebhookBody;
     const event = body?.event;
+
+    if (params.eventId && event) {
+      try {
+        await this.webhookEventRepository.insert({
+          event_id: params.eventId,
+          event_type: event,
+        });
+      } catch (error: any) {
+        // If it's a unique constraint violation (code 23505 in Postgres), we already processed it
+        if (error.code === '23505' || error.message?.includes('unique constraint')) {
+          return; // Idempotent success
+        }
+        throw error;
+      }
+    }
 
     const paymentEntity = body?.payload?.payment?.entity;
     const orderEntity = body?.payload?.order?.entity;
@@ -432,6 +452,28 @@ export class BillingService {
   ): Promise<RazorpayOrderPayload> {
     this.assertCanManageBilling(user);
 
+    if (input.idempotencyKey) {
+      const existingPayment = await this.billingPaymentRepository.findOne({
+        where: {
+          company_id: user.activeCompanyId,
+          idempotency_key: input.idempotencyKey,
+        },
+      });
+
+      if (existingPayment) {
+        // Return existing payload if the key matches a previous request
+        return {
+          orderId: existingPayment.razorpay_order_id ?? existingPayment.razorpay_subscription_id ?? '',
+          subscriptionId: existingPayment.razorpay_subscription_id,
+          amount: existingPayment.amount,
+          currency: existingPayment.currency,
+          receipt: existingPayment.receipt ?? '',
+          plan: existingPayment.plan,
+          interval: existingPayment.interval,
+        };
+      }
+    }
+
     const plan = input.plan;
     const interval = input.interval;
 
@@ -470,6 +512,7 @@ export class BillingService {
         status: 'CREATED',
         razorpay_subscription_id: subscription.id,
         receipt,
+        idempotency_key: input.idempotencyKey,
       });
 
       await this.billingPaymentRepository.save(payment);
@@ -510,6 +553,7 @@ export class BillingService {
       status: 'CREATED',
       razorpay_order_id: order.id,
       receipt,
+      idempotency_key: input.idempotencyKey,
     });
 
     await this.billingPaymentRepository.save(payment);
@@ -648,10 +692,28 @@ export class BillingService {
     const razorpay = this.getRazorpayClient();
 
     // Cancel renewal only: keep subscription active until current_end.
-    const cancelAtCycleEnd = true;
-    const result = await (razorpay as any).subscriptions.cancel(subscriptionId, {
-      cancel_at_cycle_end: 1,
-    });
+    let cancelAtCycleEnd = true;
+    let result;
+
+    try {
+      result = await (razorpay as any).subscriptions.cancel(subscriptionId, {
+        cancel_at_cycle_end: 1,
+      });
+    } catch (error: any) {
+      if (
+        error?.statusCode === 400 &&
+        error?.error?.description?.includes('no billing cycle is going on')
+      ) {
+        // The subscription hasn't fully started its first billing cycle yet.
+        // We must cancel it immediately instead of at cycle end.
+        cancelAtCycleEnd = false;
+        result = await (razorpay as any).subscriptions.cancel(subscriptionId, {
+          cancel_at_cycle_end: 0,
+        });
+      } else {
+        throw error;
+      }
+    }
 
     const currentEnd = this.unixToDateOrUndefined((result as any)?.current_end);
     

@@ -64,4 +64,8 @@ export class BillingPayment {
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
+
+  @Index()
+  @Column({ nullable: true })
+  idempotency_key?: string;
 }

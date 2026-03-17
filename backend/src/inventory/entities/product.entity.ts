@@ -8,6 +8,7 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  Relation,
 } from 'typeorm';
 import { Category } from './category.entity';
 import { Supplier } from '../../supplier/supplier.entity';
@@ -33,7 +34,7 @@ export class Product {
   @Field(() => CompanyModel)
   @ManyToOne(() => Company, { nullable: false })
   @JoinColumn({ name: 'company_id' })
-  company: Company;
+  company: Relation<Company>;
 
   @Field()
   @Column()
@@ -61,7 +62,7 @@ export class Product {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'category_id' })
-  category: Category;
+  category: Relation<Category>;
 
   @Field({ nullable: true })
   @Column({ nullable: true })
@@ -74,7 +75,7 @@ export class Product {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'supplier_id' })
-  supplier: Supplier;
+  supplier: Relation<Supplier>;
 
   @Field()
   @Column()

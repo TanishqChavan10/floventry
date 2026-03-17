@@ -7,6 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  Relation,
 } from 'typeorm';
 import { WarehouseTransfer } from './warehouse-transfer.entity';
 import { Product } from '../../entities/product.entity';
@@ -28,7 +29,7 @@ export class WarehouseTransferItem {
     nullable: false,
   })
   @JoinColumn({ name: 'warehouse_transfer_id' })
-  warehouse_transfer: WarehouseTransfer;
+  warehouse_transfer: Relation<WarehouseTransfer>;
 
   @Field()
   @Column('uuid')
@@ -37,7 +38,7 @@ export class WarehouseTransferItem {
   @Field(() => Product)
   @ManyToOne(() => Product, { nullable: false })
   @JoinColumn({ name: 'product_id' })
-  product: Product;
+  product: Relation<Product>;
 
   @Field(() => Int)
   @Column('integer')

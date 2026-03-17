@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   OneToOne,
   JoinColumn,
+  Relation,
 } from 'typeorm';
 import { Company } from './company.entity';
 
@@ -15,7 +16,7 @@ export class CompanySettings {
 
   @OneToOne(() => Company, (company) => company.settings)
   @JoinColumn({ name: 'company_id' })
-  company: Company;
+  company: Relation<Company>;
 
   @Column('uuid')
   company_id: string; // FK → companies

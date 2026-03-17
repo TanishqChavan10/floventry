@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
   PrimaryColumn,
+  Relation,
 } from 'typeorm';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import GraphQLJSONObject from 'graphql-type-json';
@@ -49,8 +50,8 @@ export class User {
 
   // Relationships
   @OneToMany(() => UserCompany, (userCompany) => userCompany.user)
-  userCompanies: UserCompany[];
+  userCompanies: Relation<UserCompany>[];
 
   @OneToMany(() => UserWarehouse, (userWarehouse) => userWarehouse.user)
-  userWarehouses: UserWarehouse[];
+  userWarehouses: Relation<UserWarehouse>[];
 }

@@ -6,6 +6,7 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  Relation,
 } from 'typeorm';
 import { IssueNote } from './issue-note.entity';
 import { Product } from '../../inventory/entities/product.entity';
@@ -28,7 +29,7 @@ export class IssueNoteItem {
   @Field(() => IssueNote)
   @ManyToOne(() => IssueNote, (note) => note.items, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'issue_note_id' })
-  issue_note: IssueNote;
+  issue_note: Relation<IssueNote>;
 
   @Field()
   @Column('uuid')
@@ -37,7 +38,7 @@ export class IssueNoteItem {
   @Field(() => Product)
   @ManyToOne(() => Product, { nullable: false })
   @JoinColumn({ name: 'product_id' })
-  product: Product;
+  product: Relation<Product>;
 
   @Field({ nullable: true })
   @Column('uuid', { nullable: true })
@@ -46,7 +47,7 @@ export class IssueNoteItem {
   @Field(() => StockLot, { nullable: true })
   @ManyToOne(() => StockLot, { nullable: true })
   @JoinColumn({ name: 'stock_lot_id' })
-  stock_lot: StockLot;
+  stock_lot: Relation<StockLot>;
 
   @Field(() => Float)
   @Column('decimal', { precision: 10, scale: 2 })

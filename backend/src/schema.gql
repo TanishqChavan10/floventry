@@ -442,6 +442,7 @@ input CreatePurchaseOrderInput {
 }
 
 input CreateRazorpayOrderInput {
+  idempotencyKey: String
   interval: BillingInterval!
   plan: String!
 }

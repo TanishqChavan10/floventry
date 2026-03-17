@@ -18,6 +18,7 @@ export class RazorpayWebhookController {
   async handleWebhook(
     @Req() req: Request & { rawBody?: Buffer },
     @Headers('x-razorpay-signature') signature?: string,
+    @Headers('x-razorpay-event-id') eventId?: string,
   ) {
     const rawBody = req.rawBody;
     if (!rawBody || !Buffer.isBuffer(rawBody)) {
@@ -28,6 +29,7 @@ export class RazorpayWebhookController {
     await this.billingService.handleRazorpayWebhook({
       signature,
       rawBody,
+      eventId,
       body: req.body,
     });
 

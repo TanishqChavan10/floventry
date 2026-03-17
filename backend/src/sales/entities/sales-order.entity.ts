@@ -15,6 +15,7 @@ import {
   OneToMany,
   JoinColumn,
   Index,
+  Relation,
 } from 'typeorm';
 import { Company } from '../../company/company.entity';
 import { User } from '../../auth/entities/user.entity';
@@ -46,7 +47,7 @@ export class SalesOrder {
 
   @ManyToOne(() => Company, { nullable: false })
   @JoinColumn({ name: 'company_id' })
-  company: Company;
+  company: Relation<Company>;
 
   @Field()
   @Column({ type: 'varchar', length: 50, unique: true })
@@ -91,13 +92,13 @@ export class SalesOrder {
   @Field(() => User)
   @ManyToOne(() => User, { nullable: false })
   @JoinColumn({ name: 'created_by' })
-  creator: User;
+  creator: Relation<User>;
 
   @Field(() => [SalesOrderItem], { nullable: true })
   @OneToMany(() => SalesOrderItem, (item) => item.sales_order, {
     cascade: true,
   })
-  items: SalesOrderItem[];
+  items: Relation<SalesOrderItem>[];
 
   @Field()
   @CreateDateColumn()

@@ -8,6 +8,7 @@ import {
   OneToMany,
   JoinColumn,
   Index,
+  Relation,
 } from 'typeorm';
 import { ObjectType, Field, ID, registerEnumType } from '@nestjs/graphql';
 import { Company } from '../../../company/company.entity';
@@ -41,7 +42,7 @@ export class GoodsReceiptNote {
 
   @ManyToOne(() => Company, { nullable: false })
   @JoinColumn({ name: 'company_id' })
-  company: Company;
+  company: Relation<Company>;
 
   @Column('uuid')
   warehouse_id: string;
@@ -49,7 +50,7 @@ export class GoodsReceiptNote {
   @Field(() => Warehouse)
   @ManyToOne(() => Warehouse, { nullable: false })
   @JoinColumn({ name: 'warehouse_id' })
-  warehouse: Warehouse;
+  warehouse: Relation<Warehouse>;
 
   @Column('uuid')
   purchase_order_id: string;
@@ -57,7 +58,7 @@ export class GoodsReceiptNote {
   @Field(() => PurchaseOrder)
   @ManyToOne(() => PurchaseOrder, { nullable: false })
   @JoinColumn({ name: 'purchase_order_id' })
-  purchase_order: PurchaseOrder;
+  purchase_order: Relation<PurchaseOrder>;
 
   @Field()
   @Column({ type: 'varchar', length: 50, unique: true })
@@ -85,7 +86,7 @@ export class GoodsReceiptNote {
   @Field(() => User, { nullable: true })
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'created_by' })
-  user: User;
+  user: Relation<User>;
 
   @Field({ nullable: true })
   @Column({ type: 'varchar', length: 50, nullable: true })
@@ -97,7 +98,7 @@ export class GoodsReceiptNote {
   @Field(() => User, { nullable: true })
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'posted_by' })
-  posted_by_user: User;
+  posted_by_user: Relation<User>;
 
   @Field({ nullable: true })
   @Column({ type: 'timestamp', nullable: true })
@@ -107,7 +108,7 @@ export class GoodsReceiptNote {
   @OneToMany(() => GRNItem, (item) => item.goods_receipt_note, {
     cascade: true,
   })
-  items: GRNItem[];
+  items: Relation<GRNItem>[];
 
   @Field()
   @CreateDateColumn()

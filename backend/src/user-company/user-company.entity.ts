@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Relation,
 } from 'typeorm';
 import { Company } from '../company/company.entity';
 
@@ -38,7 +39,7 @@ export class UserCompany {
 
   @ManyToOne(() => Company)
   @JoinColumn({ name: 'company_id' })
-  company: Company;
+  company: Relation<Company>;
 
   // @ManyToOne(() => Role)
   // @JoinColumn({ name: 'role_id' })
@@ -47,5 +48,5 @@ export class UserCompany {
 
   @ManyToOne(() => User, (user) => user.userCompanies)
   @JoinColumn({ name: 'user_id' })
-  user: User;
+  user: Relation<User>;
 }
