@@ -117,7 +117,7 @@ export default function AuthRedirect() {
           <Loader2 className="mx-auto h-10 w-10 animate-spin text-neutral-900" />
           <h2 className="text-lg font-semibold text-neutral-900">Starting server…</h2>
           <p className="text-sm text-neutral-600">
-            The backend is waking up on the free plan. We&apos;ll continue automatically.
+            Establishing secure connection to the server... We&apos;ll continue automatically.
           </p>
         </div>
       </div>

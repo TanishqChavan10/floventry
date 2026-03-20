@@ -304,7 +304,7 @@ export default function BillingSettingsPage() {
   async function confirmCancelSubscription() {
     try {
       setIsCancelModalOpen(false);
-      
+
       const res = await cancelSubscription({
         variables: { input: {} },
       });
@@ -340,10 +340,16 @@ export default function BillingSettingsPage() {
 
       toast.error('Unable to update plan');
     } catch (e) {
-      // Fallback: if plan IDs aren\'t configured for subscription updates, use checkout.
+      // Fallback: if plan IDs aren't configured for subscription updates, use checkout.
       const msg = getErrorMessage(e);
-      if (typeof msg === 'string' && msg.toLowerCase().includes('plan_id')) {
-        toast.message('Falling back to checkout...');
+      const isConfigError = typeof msg === 'string' && msg.toLowerCase().includes('plan_id');
+      // If the subscription ID is invalid (e.g. stale/expired/cancelled on Razorpay), fallback to new sub.
+      const isInvalidIdError =
+        typeof msg === 'string' &&
+        (msg.includes('The ID provided is invalid') || msg.includes('could not be found'));
+
+      if (isConfigError || isInvalidIdError) {
+        toast.message('Starting new subscription...');
         await handleSubscribe(newPlan === 'PRO' ? 'pro' : 'standard');
         return;
       }
@@ -568,16 +574,19 @@ export default function BillingSettingsPage() {
           <DialogHeader>
             <DialogTitle>Cancel Subscription?</DialogTitle>
             <DialogDescription>
-              Are you sure you want to cancel your plan? Your subscription will remain
-              active until the end of the current billing period, but it will not automatically
-              renew.
+              Are you sure you want to cancel your plan? Your subscription will remain active until
+              the end of the current billing period, but it will not automatically renew.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setIsCancelModalOpen(false)} disabled={isBusy}>
               Keep Plan
             </Button>
-            <Button variant="destructive" onClick={() => void confirmCancelSubscription()} disabled={isBusy}>
+            <Button
+              variant="destructive"
+              onClick={() => void confirmCancelSubscription()}
+              disabled={isBusy}
+            >
               {cancellingSubscription ? 'Cancelling...' : 'Cancel Renewal'}
             </Button>
           </DialogFooter>
