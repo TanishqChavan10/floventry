@@ -135,7 +135,7 @@ export default function PricingPage() {
       {/* ── Hero heading ── */}
       <section className="pt-20 pb-10 text-center px-6">
         <h1 className="text-4xl font-semibold tracking-tight text-neutral-900 md:text-5xl">
-          Start Your 14-Day Free Trial Today.
+          Get Started with Floventry.
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-lg text-neutral-600 leading-relaxed">
           Transform how your business does inventory. Find the right Floventry plan for you.
@@ -303,7 +303,7 @@ export default function PricingPage() {
       {/* ── Bottom CTA ── */}
       <section className="border-t border-neutral-200 py-24 px-6 text-center">
         <h2 className="text-3xl font-semibold tracking-tight text-neutral-900 md:text-4xl">
-          Try Floventry free 
+          Try Floventry free
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-lg text-neutral-600 leading-relaxed">
           Track your inventory, supplies, and tools — no credit card required.
@@ -313,7 +313,7 @@ export default function PricingPage() {
             href="/auth/sign-up"
             className="inline-flex h-12 items-center justify-center rounded-full bg-[#E53935] px-8 text-base font-semibold text-white hover:bg-[#D32F2F]"
           >
-            Start free trial
+            Get started
           </Link>
           <Link
             href="mailto:hello@floventry.online"

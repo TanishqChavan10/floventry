@@ -16,7 +16,7 @@ export default function CTASection() {
             href="/auth/sign-up"
             className="inline-flex h-12 items-center justify-center rounded-full bg-[#E53935] px-7 text-base font-semibold text-white hover:bg-[#D32F2F]"
           >
-            Start free trial
+            Get started
           </Link>
           <Link
             href="/pricing"

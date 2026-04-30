@@ -100,7 +100,7 @@ function ReportingVisual() {
       </div>
       <div className="flex items-end gap-2 h-24 mb-4">
         {bars.map((h, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center">
+          <div key={i} className="flex-1 h-full flex flex-col justify-end">
             <div className="w-full rounded-t-md bg-[#E53935]/80" style={{ height: `${h}%` }} />
           </div>
         ))}
